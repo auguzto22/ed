@@ -1,0 +1,14 @@
+precision highp float;
+uniform sampler2D uTexSampler;
+uniform sampler2D uHistory0;
+uniform sampler2D uHistory1;
+uniform sampler2D uHistory2;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform float uProgress;
+uniform float uIntensity;
+uniform vec4 uEffectMask;
+uniform vec4 uEffectMaskTransform;
+uniform float uEffectMaskAspect;
+uniform float uBlendMode;
+varying vec2 vUv;

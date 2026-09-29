@@ -1,0 +1,13 @@
+/audio/
+/no_speech/*/*.wav
+/work/
+/state.json
+/manifests/*.jsonl
+/reports/*.jsonl
+/reports/*.json
+/reports/*.txt
+/errors/recly_user_corrections/hard_examples.jsonl
+/.venv/
+**/__pycache__/
+/reports/audit_100.jsonl
+/reports/confusions.json

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="capcut_black">#0D0E12</color>
+    <color name="capcut_surface">#15171E</color>
+    <color name="capcut_card">#181B24</color>
+    <color name="capcut_border">#262A36</color>
+    <color name="capcut_border_active">#3B4254</color>
+    <color name="capcut_text_primary">#FFFFFF</color>
+    <color name="capcut_text_secondary">#7E8594</color>
+    <color name="capcut_accent_cyan">#2F6BFF</color>
+    <color name="capcut_accent_green">#30D158</color>
+    <color name="capcut_ripple">#20FFFFFF</color>
+</resources>

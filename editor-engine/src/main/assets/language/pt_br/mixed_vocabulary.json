@@ -1,0 +1,48 @@
+{
+  "locale": "pt-BR",
+  "categories": {
+    "social_media": [
+      {"canonical":"Instagram","pronunciationVariants":["Instagrã"]},
+      {"canonical":"Insta"}, {"canonical":"TikTok"}, {"canonical":"YouTube"},
+      {"canonical":"WhatsApp"}, {"canonical":"Discord"}, {"canonical":"Twitter"},
+      {"canonical":"X"}, {"canonical":"Facebook"}, {"canonical":"Reddit"},
+      {"canonical":"Twitch"}, {"canonical":"Telegram"}, {"canonical":"Google"},
+      {"canonical":"ChatGPT"}, {"canonical":"CapCut"}
+    ],
+    "internet": [
+      {"canonical":"link"}, {"canonical":"site"}, {"canonical":"app"},
+      {"canonical":"feed"}, {"canonical":"story"}, {"canonical":"stories"},
+      {"canonical":"reels"}, {"canonical":"shorts"}, {"canonical":"live"},
+      {"canonical":"like"}, {"canonical":"follow"}, {"canonical":"unfollow"},
+      {"canonical":"hashtag"}, {"canonical":"trend"}, {"canonical":"trending"},
+      {"canonical":"meme"}, {"canonical":"spoiler"}, {"canonical":"online"}, {"canonical":"offline"}
+    ],
+    "content": [
+      {"canonical":"podcast","pronunciationVariants":["pódcast","pódcást","pódkésti"]},
+      {"canonical":"podcasts","pronunciationVariants":["pódcasts"]},
+      {"canonical":"stream"}, {"canonical":"streamer"}, {"canonical":"streaming"},
+      {"canonical":"gameplay","pronunciationVariants":["gueimplei"]},
+      {"canonical":"gaming"}, {"canonical":"video"}, {"canonical":"short"},
+      {"canonical":"react"}, {"canonical":"reaction"}
+    ],
+    "technology": [
+      {"canonical":"download","pronunciationVariants":["daunloud"]},
+      {"canonical":"upload"}, {"canonical":"setup"}, {"canonical":"PC"},
+      {"canonical":"notebook"}, {"canonical":"smartphone"}, {"canonical":"software"},
+      {"canonical":"hardware"}, {"canonical":"plugin"}, {"canonical":"API"},
+      {"canonical":"server"}, {"canonical":"cloud"}, {"canonical":"AI"}
+    ],
+    "gaming": [
+      {"canonical":"game"}, {"canonical":"gamer"}, {"canonical":"streamer"},
+      {"canonical":"loot"}, {"canonical":"skin"}, {"canonical":"ranked"},
+      {"canonical":"boss"}, {"canonical":"speedrun"}, {"canonical":"noob"}
+    ],
+    "pt_br_slang": [
+      {"canonical":"mano"}, {"canonical":"mané"}, {"canonical":"véi","pronunciationVariants":["vei"]},
+      {"canonical":"velho"}, {"canonical":"pô"}, {"canonical":"caraca"}, {"canonical":"bora"},
+      {"canonical":"oxe"}, {"canonical":"oxente"}, {"canonical":"eita"}, {"canonical":"tá"},
+      {"canonical":"tô"}, {"canonical":"cê"}, {"canonical":"pra"}, {"canonical":"pro"},
+      {"canonical":"né"}, {"canonical":"vamo"}, {"canonical":"tá ligado"}
+    ]
+  }
+}

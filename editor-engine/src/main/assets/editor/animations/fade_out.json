@@ -1,0 +1,19 @@
+{
+  "id": "recly_fade_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Fade de saida",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 1,
+      "opacity": 0
+    }
+  ]
+}

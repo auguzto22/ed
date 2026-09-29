@@ -1,0 +1,21 @@
+{
+  "id": "recly_zoom_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Aproximar",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "zoom": 0.5,
+      "opacity": 0,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

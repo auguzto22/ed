@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#080808"
+    tools:ignore="UseAppTint">
+
+    <!-- Fundo de seda preta com ondas Bézier abstratas e suaves gerado inteiramente via código -->
+    <com.termex.replay15.ui.BlackSilkBackground
+        android:id="@+id/libraryBgSilk"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ScrollView
+        android:id="@+id/libraryScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="18dp"
+            android:paddingTop="18dp"
+            android:paddingBottom="108dp">
+
+            <!-- Back Button -->
+            <FrameLayout
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/recly_circle_dark_btn"
+                android:elevation="6dp"
+                android:clickable="true"
+                android:contentDescription="Voltar"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_pro_back"
+                    android:tint="#F5F5F5" />
+            </FrameLayout>
+
+            <!-- Title & Subtitle -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="sans-serif-black"
+                android:text="Seu estúdio"
+                android:textColor="#F5F5F5"
+                android:textSize="26sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Projetos, gravações e replays."
+                android:textColor="#A5A5AA"
+                android:textSize="14sp" />
+
+            <!-- Primary Action Button: + Novo projeto -->
+            <Button
+                android:id="@+id/btnNewProject"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/recly_pill_white"
+                android:elevation="8dp"
+                android:fontFamily="sans-serif-bold"
+                android:stateListAnimator="@null"
+                android:text="+ Novo projeto"
+                android:textAllCaps="false"
+                android:textColor="#080808"
+                android:textSize="16sp" />
+
+            <!-- Segmented Tabs Bar: Projetos | Gravações | Replays -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/recly_segmented_bar"
+                android:elevation="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <TextView
+                    android:id="@+id/tabProjects"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/recly_tab_active"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Projetos"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:id="@+id/tabRecordings"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Gravações"
+                    android:textColor="#8E8E93"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:id="@+id/tabReplays"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Replays"
+                    android:textColor="#8E8E93"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Container 1: Projetos Tab -->
+            <LinearLayout
+                android:id="@+id/containerProjects"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical">
+
+                <!-- Empty State Card (matching reference 20260914_151749.png) -->
+                <LinearLayout
+                    android:id="@+id/cardEmptyProjects"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/recly_card_dark"
+                    android:elevation="14dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="26dp">
+
+                    <!-- Glow Circular Badge with Folder -->
+                    <FrameLayout
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:background="@drawable/recly_circle_glow">
+
+                        <ImageView
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_pro_folder_large" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:gravity="center"
+                        android:text="Seu próximo projeto&#10;começa aqui."
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:text="Importe um vídeo e edite sem&#10;alterar o original."
+                        android:textColor="#A1A1AA"
+                        android:textSize="13sp" />
+
+                    <!-- Import Video Button -->
+                    <LinearLayout
+                        android:id="@+id/btnImportVideo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="20dp"
+                        android:background="@drawable/recly_pill_secondary"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="20dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_pro_upload"
+                            android:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Importar vídeo"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <!-- Security Badge -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_pro_shield"
+                            android:tint="#A1A1AA" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="Seus arquivos originais são preservados."
+                            android:textColor="#A1A1AA"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Saved Projects List (when available) -->
+                <LinearLayout
+                    android:id="@+id/listProjects"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Container 2: Gravações Tab -->
+            <LinearLayout
+                android:id="@+id/containerRecordings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/cardEmptyRecordings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/recly_card_dark"
+                    android:elevation="12dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="26dp">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_pro_video"
+                        android:tint="#52525B" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Nenhuma gravação ainda"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Suas gravações de tela aparecerão aqui."
+                        android:textColor="#A1A1AA"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/listRecordings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Container 3: Replays Tab -->
+            <LinearLayout
+                android:id="@+id/containerReplays"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/cardEmptyReplays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/recly_card_dark"
+                    android:elevation="12dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="26dp">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_save_15"
+                        android:tint="#52525B" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Nenhum replay salvo"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Seus replays instantâneos aparecerão aqui."
+                        android:textColor="#A1A1AA"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/listReplays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom Floating Dock with Biblioteca active -->
+    <include layout="@layout/recly_bottom_dock" />
+
+</FrameLayout>

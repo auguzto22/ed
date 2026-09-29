@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Recly Editor</string>
+    <string name="app_title">Recly Editor</string>
+    <string name="open_video">Abrir último vídeo</string>
+    <string name="share_video">Compartilhar último vídeo</string>
+    <string name="no_video_app">Nenhum aplicativo instalado conseguiu abrir este vídeo.</string>
+    <string name="no_share_app">Nenhum aplicativo de compartilhamento está disponível.</string>
+    <string name="edit_last_video">Editar último vídeo</string>
+    <string name="editor_library">Editor de vídeo / Meus projetos</string>
+</resources>

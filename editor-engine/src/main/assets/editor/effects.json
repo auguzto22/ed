@@ -1,0 +1,4861 @@
+[
+  {
+    "id": "recly_gaussian",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Gaussian Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_gaussian.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "multiPass": true,
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Raio",
+        "type": "float",
+        "min": 0.0,
+        "max": 40.0,
+        "default": 8.0
+      },
+      {
+        "id": "horizontal",
+        "name": "Horizontal",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "vertical",
+        "name": "Vertical",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "recly_directional_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Directional Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_directional_blur.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Distancia",
+        "type": "float",
+        "min": 1.0,
+        "max": 60.0,
+        "default": 12.0
+      },
+      {
+        "id": "angle",
+        "name": "Angulo (rad)",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "motion_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Motion Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_directional_blur.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 80.0,
+        "default": 18.0
+      },
+      {
+        "id": "angle",
+        "name": "Direcao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.785
+      }
+    ]
+  },
+  {
+    "id": "recly_zoom_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Zoom Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_zoom_blur.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "strength",
+        "name": "Forca",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.4,
+        "default": 0.12
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      }
+    ]
+  },
+  {
+    "id": "radial_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Radial Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_blur_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Raio",
+        "type": "float",
+        "min": 1.0,
+        "max": 40.0,
+        "default": 14.0
+      },
+      {
+        "id": "amount",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "angle",
+        "name": "Rotacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "background_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Background Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_blur_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Raio do fundo",
+        "type": "float",
+        "min": 1.0,
+        "max": 35.0,
+        "default": 16.0
+      },
+      {
+        "id": "amount",
+        "name": "Opacidade do desfoque",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "angle",
+        "name": "Abertura",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "lens_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Lens Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_blur_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Bokeh Raio",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 12.0
+      },
+      {
+        "id": "amount",
+        "name": "Abertura Lente",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "angle",
+        "name": "Rotacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "tilt_shift",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Tilt Shift",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_blur_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Desfoque",
+        "type": "float",
+        "min": 1.0,
+        "max": 35.0,
+        "default": 15.0
+      },
+      {
+        "id": "amount",
+        "name": "Largura da faixa",
+        "type": "float",
+        "min": 0.1,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Posicao X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Posicao Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "angle",
+        "name": "Inclinacao (rad)",
+        "type": "float",
+        "min": -3.141,
+        "max": 3.141,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "focus_pull",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Focus Pull",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_blur_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Desfoque max",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 14.0
+      },
+      {
+        "id": "amount",
+        "name": "Transicao",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Ponto de Foco X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Ponto de Foco Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "angle",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "speed_blur",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Speed Blur",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_blur_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Rastro",
+        "type": "float",
+        "min": 1.0,
+        "max": 50.0,
+        "default": 20.0
+      },
+      {
+        "id": "amount",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.2
+      },
+      {
+        "id": "center_x",
+        "name": "Origem X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Origem Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "angle",
+        "name": "Direcao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "recly_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Camera Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Translacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 30.0,
+        "default": 8.0
+      },
+      {
+        "id": "frequency",
+        "name": "Frequencia",
+        "type": "float",
+        "min": 0.1,
+        "max": 20.0,
+        "default": 4.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 8.0,
+        "default": 1.2
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.35
+      }
+    ]
+  },
+  {
+    "id": "handheld_camera",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Handheld Camera",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Deriva Manual",
+        "type": "float",
+        "min": 0.0,
+        "max": 20.0,
+        "default": 4.5
+      },
+      {
+        "id": "frequency",
+        "name": "Cadencia",
+        "type": "float",
+        "min": 0.1,
+        "max": 10.0,
+        "default": 1.6
+      },
+      {
+        "id": "rotation",
+        "name": "Inclinacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 0.6
+      },
+      {
+        "id": "decay",
+        "name": "Amortecimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "impact_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Impact Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Impacto",
+        "type": "float",
+        "min": 0.0,
+        "max": 40.0,
+        "default": 24.0
+      },
+      {
+        "id": "frequency",
+        "name": "Frequencia",
+        "type": "float",
+        "min": 0.1,
+        "max": 25.0,
+        "default": 12.0
+      },
+      {
+        "id": "rotation",
+        "name": "Torcao",
+        "type": "float",
+        "min": 0.0,
+        "max": 10.0,
+        "default": 4.0
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento Rapido",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.85
+      }
+    ]
+  },
+  {
+    "id": "micro_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Micro Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Micro Deslocamento",
+        "type": "float",
+        "min": 0.0,
+        "max": 10.0,
+        "default": 2.5
+      },
+      {
+        "id": "frequency",
+        "name": "Frequencia Rapida",
+        "type": "float",
+        "min": 5.0,
+        "max": 30.0,
+        "default": 18.0
+      },
+      {
+        "id": "rotation",
+        "name": "Micro Angulo",
+        "type": "float",
+        "min": 0.0,
+        "max": 3.0,
+        "default": 0.4
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "heavy_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Heavy Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Tremor Forte",
+        "type": "float",
+        "min": 0.0,
+        "max": 50.0,
+        "default": 26.0
+      },
+      {
+        "id": "frequency",
+        "name": "Frequencia",
+        "type": "float",
+        "min": 1.0,
+        "max": 20.0,
+        "default": 7.0
+      },
+      {
+        "id": "rotation",
+        "name": "Balanco Forte",
+        "type": "float",
+        "min": 0.0,
+        "max": 12.0,
+        "default": 5.5
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.25
+      }
+    ]
+  },
+  {
+    "id": "vibration",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Vibration",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Vibracao",
+        "type": "float",
+        "min": 0.0,
+        "max": 15.0,
+        "default": 2.0
+      },
+      {
+        "id": "frequency",
+        "name": "Hz Ultra",
+        "type": "float",
+        "min": 10.0,
+        "max": 40.0,
+        "default": 24.0
+      },
+      {
+        "id": "rotation",
+        "name": "Vibracao Angular",
+        "type": "float",
+        "min": 0.0,
+        "max": 3.0,
+        "default": 0.3
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "jitter",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Jitter",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Salto",
+        "type": "float",
+        "min": 0.0,
+        "max": 25.0,
+        "default": 7.0
+      },
+      {
+        "id": "frequency",
+        "name": "Passo",
+        "type": "float",
+        "min": 2.0,
+        "max": 30.0,
+        "default": 14.0
+      },
+      {
+        "id": "rotation",
+        "name": "Desvio Angular",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 2.0
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "bounce_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Bounce Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Quique Vertical",
+        "type": "float",
+        "min": 0.0,
+        "max": 35.0,
+        "default": 15.0
+      },
+      {
+        "id": "frequency",
+        "name": "Elasticidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 15.0,
+        "default": 5.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 4.0,
+        "default": 0.8
+      },
+      {
+        "id": "decay",
+        "name": "Perda de Energia",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.45
+      }
+    ]
+  },
+  {
+    "id": "rotation_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Rotation Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Translacao Minima",
+        "type": "float",
+        "min": 0.0,
+        "max": 15.0,
+        "default": 3.0
+      },
+      {
+        "id": "frequency",
+        "name": "Velocidade Giro",
+        "type": "float",
+        "min": 0.5,
+        "max": 15.0,
+        "default": 4.5
+      },
+      {
+        "id": "rotation",
+        "name": "Amplitude Angular",
+        "type": "float",
+        "min": 0.0,
+        "max": 15.0,
+        "default": 7.0
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "beat_shake",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Beat Shake",
+    "category": "Camera",
+    "engine": "SHAKE",
+    "shader": "recly_shake.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Batida",
+        "type": "float",
+        "min": 0.0,
+        "max": 30.0,
+        "default": 14.0
+      },
+      {
+        "id": "frequency",
+        "name": "BPM Ritmo",
+        "type": "float",
+        "min": 0.5,
+        "max": 8.0,
+        "default": 2.2
+      },
+      {
+        "id": "rotation",
+        "name": "Giro do Beat",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 1.8
+      },
+      {
+        "id": "decay",
+        "name": "Retorno",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.6
+      }
+    ]
+  },
+  {
+    "id": "zoom_in",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Zoom In",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Escala",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.35
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": -45.0,
+        "max": 45.0,
+        "default": 0.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "zoom_out",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Zoom Out",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Recuo",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.35
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": -45.0,
+        "max": 45.0,
+        "default": 0.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "recly_punch_zoom",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Punch Zoom",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_punch_zoom.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Impacto",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.45,
+        "default": 0.18
+      },
+      {
+        "id": "attack",
+        "name": "Ataque",
+        "type": "float",
+        "min": 0.01,
+        "max": 0.8,
+        "default": 0.08
+      },
+      {
+        "id": "release",
+        "name": "Retorno",
+        "type": "float",
+        "min": 0.02,
+        "max": 0.9,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "zoom_3d",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "3D Zoom",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Profundidade 3D",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.45
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.1,
+        "max": 6.0,
+        "default": 1.4
+      },
+      {
+        "id": "rotation",
+        "name": "Inclinacao",
+        "type": "float",
+        "min": -30.0,
+        "max": 30.0,
+        "default": 5.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "smooth_zoom",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Smooth Zoom",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Amplitude",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.25
+      },
+      {
+        "id": "speed",
+        "name": "Fluidez",
+        "type": "float",
+        "min": 0.1,
+        "max": 4.0,
+        "default": 0.8
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": -20.0,
+        "max": 20.0,
+        "default": 0.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "dolly_zoom",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Dolly Zoom",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Vertigo",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.2,
+        "default": 0.4
+      },
+      {
+        "id": "speed",
+        "name": "Dinamica",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.2
+      },
+      {
+        "id": "rotation",
+        "name": "Distorcao",
+        "type": "float",
+        "min": -20.0,
+        "max": 20.0,
+        "default": 0.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "zoom_rotate",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Zoom Rotate",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Zoom",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.2,
+        "default": 0.3
+      },
+      {
+        "id": "speed",
+        "name": "Giro (Hz)",
+        "type": "float",
+        "min": 0.1,
+        "max": 6.0,
+        "default": 1.5
+      },
+      {
+        "id": "rotation",
+        "name": "Angulo Maximo",
+        "type": "float",
+        "min": 0.0,
+        "max": 90.0,
+        "default": 18.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "zoom_blur_motion",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Zoom Blur Motion",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Forca Streak",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.45
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.1,
+        "max": 8.0,
+        "default": 2.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": -30.0,
+        "max": 30.0,
+        "default": 0.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "recly_zoom_pulse",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Beat Zoom",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_zoom_pulse.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Pulso",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.25,
+        "default": 0.08
+      },
+      {
+        "id": "frequency",
+        "name": "BPM",
+        "type": "float",
+        "min": 0.2,
+        "max": 10.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "elastic_zoom",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Elastic Zoom",
+    "category": "Motion",
+    "engine": "TRANSFORM_MOTION",
+    "shader": "recly_motion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Elasticidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.55
+      },
+      {
+        "id": "speed",
+        "name": "Frequencia Mola",
+        "type": "float",
+        "min": 0.5,
+        "max": 8.0,
+        "default": 3.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotacao",
+        "type": "float",
+        "min": -30.0,
+        "max": 30.0,
+        "default": 0.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 7.0,
+        "default": 7.0
+      }
+    ]
+  },
+  {
+    "id": "recly_rgb",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "RGB Split",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_rgb.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "distance",
+        "name": "Distancia",
+        "type": "float",
+        "min": 0.0,
+        "max": 40.0,
+        "default": 8.0
+      },
+      {
+        "id": "angle",
+        "name": "Angulo (rad)",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "horizontal_offset",
+        "name": "Offset horizontal",
+        "type": "float",
+        "min": -40.0,
+        "max": 40.0,
+        "default": 0.0
+      },
+      {
+        "id": "vertical_offset",
+        "name": "Offset vertical",
+        "type": "float",
+        "min": -40.0,
+        "max": 40.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "recly_chromatic",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Chromatic Aberration",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_chromatic.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Dispersao",
+        "type": "float",
+        "min": 0.0,
+        "max": 30.0,
+        "default": 7.0
+      }
+    ]
+  },
+  {
+    "id": "recly_glitch",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Digital Glitch",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Probabilidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.22
+      },
+      {
+        "id": "distance",
+        "name": "Deslocamento",
+        "type": "float",
+        "min": 0.0,
+        "max": 80.0,
+        "default": 18.0
+      },
+      {
+        "id": "blocks",
+        "name": "Blocos",
+        "type": "float",
+        "min": 4.0,
+        "max": 80.0,
+        "default": 24.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 12.0
+      }
+    ]
+  },
+  {
+    "id": "vhs_glitch",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "VHS Glitch",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.65
+      },
+      {
+        "id": "distance",
+        "name": "Jitter da Fita",
+        "type": "float",
+        "min": 0.0,
+        "max": 50.0,
+        "default": 16.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 10.0
+      },
+      {
+        "id": "slices",
+        "name": "Linhas",
+        "type": "float",
+        "min": 10.0,
+        "max": 100.0,
+        "default": 40.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "datamosh_style",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Datamosh Style",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Macroblocos",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.55
+      },
+      {
+        "id": "distance",
+        "name": "Arrasto",
+        "type": "float",
+        "min": 0.0,
+        "max": 60.0,
+        "default": 25.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 20.0,
+        "default": 6.0
+      },
+      {
+        "id": "slices",
+        "name": "Tamanho Bloco",
+        "type": "float",
+        "min": 6.0,
+        "max": 40.0,
+        "default": 14.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "tv_static",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "TV Static",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Estatica",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      },
+      {
+        "id": "distance",
+        "name": "Distorcao",
+        "type": "float",
+        "min": 0.0,
+        "max": 40.0,
+        "default": 5.0
+      },
+      {
+        "id": "speed",
+        "name": "Frequencia Ruido",
+        "type": "float",
+        "min": 1.0,
+        "max": 40.0,
+        "default": 24.0
+      },
+      {
+        "id": "slices",
+        "name": "Sinal",
+        "type": "float",
+        "min": 5.0,
+        "max": 60.0,
+        "default": 20.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "recly_scanlines",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Scanlines",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_scanlines.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "spacing",
+        "name": "Espacamento",
+        "type": "float",
+        "min": 1.0,
+        "max": 12.0,
+        "default": 3.0
+      },
+      {
+        "id": "speed",
+        "name": "Movimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 80.0,
+        "default": 10.0
+      }
+    ]
+  },
+  {
+    "id": "pixel_sort_style",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Pixel Sort Style",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Ordenamento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.7
+      },
+      {
+        "id": "distance",
+        "name": "Comprimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 80.0,
+        "default": 35.0
+      },
+      {
+        "id": "speed",
+        "name": "Variacao",
+        "type": "float",
+        "min": 1.0,
+        "max": 20.0,
+        "default": 4.0
+      },
+      {
+        "id": "slices",
+        "name": "Densidade",
+        "type": "float",
+        "min": 5.0,
+        "max": 50.0,
+        "default": 25.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "block_glitch",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Block Glitch",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Blocos Afetados",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "distance",
+        "name": "Desvio",
+        "type": "float",
+        "min": 0.0,
+        "max": 70.0,
+        "default": 22.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 12.0
+      },
+      {
+        "id": "slices",
+        "name": "Grade",
+        "type": "float",
+        "min": 4.0,
+        "max": 50.0,
+        "default": 16.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "signal_error",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Signal Error",
+    "category": "Glitch",
+    "engine": "RGB_CHANNEL",
+    "shader": "recly_glitch_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Perda de Sinal",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.6
+      },
+      {
+        "id": "distance",
+        "name": "Deslocamento",
+        "type": "float",
+        "min": 0.0,
+        "max": 60.0,
+        "default": 20.0
+      },
+      {
+        "id": "speed",
+        "name": "Frequencia",
+        "type": "float",
+        "min": 1.0,
+        "max": 25.0,
+        "default": 8.0
+      },
+      {
+        "id": "slices",
+        "name": "Faixas",
+        "type": "float",
+        "min": 5.0,
+        "max": 40.0,
+        "default": 15.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "recly_glow",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Glow",
+    "category": "Light",
+    "engine": "GLOW_BLOOM",
+    "shader": "recly_glow.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "multiPass": true,
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Raio",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 10.0
+      },
+      {
+        "id": "threshold",
+        "name": "Limiar",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      }
+    ]
+  },
+  {
+    "id": "recly_bloom",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Bloom",
+    "category": "Light",
+    "engine": "GLOW_BLOOM",
+    "shader": "recly_bloom.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "multiPass": true,
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Raio",
+        "type": "float",
+        "min": 1.0,
+        "max": 40.0,
+        "default": 12.0
+      },
+      {
+        "id": "threshold",
+        "name": "Limiar",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.58
+      },
+      {
+        "id": "gain",
+        "name": "Ganho",
+        "type": "float",
+        "min": 0.0,
+        "max": 3.0,
+        "default": 0.8
+      }
+    ]
+  },
+  {
+    "id": "recly_neon_edge",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Neon Glow",
+    "category": "Light",
+    "engine": "GLOW_BLOOM",
+    "shader": "recly_neon_edge.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Espessura",
+        "type": "float",
+        "min": 1.0,
+        "max": 8.0,
+        "default": 2.0
+      },
+      {
+        "id": "gain",
+        "name": "Intensidade Neon",
+        "type": "float",
+        "min": 0.5,
+        "max": 8.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "edge_glow",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Edge Glow",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_light_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Luminosidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "frequency",
+        "name": "Variacao",
+        "type": "float",
+        "min": 0.1,
+        "max": 10.0,
+        "default": 1.0
+      },
+      {
+        "id": "color_r",
+        "name": "Vermelho",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.2
+      },
+      {
+        "id": "color_g",
+        "name": "Verde",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      },
+      {
+        "id": "color_b",
+        "name": "Azul",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 4.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "light_leak",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Light Leak",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_light_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Intensidade Vazamento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.75
+      },
+      {
+        "id": "frequency",
+        "name": "Flicker Luz",
+        "type": "float",
+        "min": 0.1,
+        "max": 8.0,
+        "default": 1.2
+      },
+      {
+        "id": "color_r",
+        "name": "Tom Quente R",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "color_g",
+        "name": "Tom Quente G",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.55
+      },
+      {
+        "id": "color_b",
+        "name": "Tom Quente B",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.2
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 4.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "lens_flare",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Lens Flare",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_light_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Brilho Anamorfico",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "frequency",
+        "name": "Movimento",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "color_r",
+        "name": "Cor R",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      },
+      {
+        "id": "color_g",
+        "name": "Cor G",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.75
+      },
+      {
+        "id": "color_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 4.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "recly_flash",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "White Flash",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_flash.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Brilho",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.65
+      },
+      {
+        "id": "frequency",
+        "name": "Frequencia",
+        "type": "float",
+        "min": 0.2,
+        "max": 12.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "color_flash",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Color Flash",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_light_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Explosao de Cor",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.8
+      },
+      {
+        "id": "frequency",
+        "name": "Ritmo",
+        "type": "float",
+        "min": 0.2,
+        "max": 10.0,
+        "default": 2.5
+      },
+      {
+        "id": "color_r",
+        "name": "Matiz R",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "color_g",
+        "name": "Matiz G",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.15
+      },
+      {
+        "id": "color_b",
+        "name": "Matiz B",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.45
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 4.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "strobe",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Strobe",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_light_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Forca Estroboscopica",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.85
+      },
+      {
+        "id": "frequency",
+        "name": "Hz Strobo",
+        "type": "float",
+        "min": 1.0,
+        "max": 20.0,
+        "default": 6.0
+      },
+      {
+        "id": "color_r",
+        "name": "Cor R",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "color_g",
+        "name": "Cor G",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "color_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 4.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "recly_flicker",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Light Flicker",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_flicker.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Variacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.35,
+        "default": 0.05
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.1,
+        "max": 12.0,
+        "default": 1.8
+      }
+    ]
+  },
+  {
+    "id": "recly_vhs",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "VHS",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_vhs.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "noise",
+        "name": "Ruido",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.4,
+        "default": 0.1
+      },
+      {
+        "id": "jitter",
+        "name": "Instabilidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 30.0,
+        "default": 6.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.5,
+        "max": 20.0,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "old_film",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Old Film",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Envelhecimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 24.0,
+        "default": 12.0
+      },
+      {
+        "id": "grain",
+        "name": "Grao",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.4,
+        "default": 0.12
+      },
+      {
+        "id": "scratch_density",
+        "name": "Arranhoes",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "recly_film_grain",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Film Grain",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_grain.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Quantidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.5,
+        "default": 0.08
+      },
+      {
+        "id": "size",
+        "name": "Tamanho",
+        "type": "float",
+        "min": 1.0,
+        "max": 8.0,
+        "default": 2.0
+      },
+      {
+        "id": "monochrome",
+        "name": "Monocromatico",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "dust_scratches",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Dust & Scratches",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Poeira Visivel",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.75
+      },
+      {
+        "id": "speed",
+        "name": "Taxa de Quadros",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 18.0
+      },
+      {
+        "id": "grain",
+        "name": "Textura",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.3,
+        "default": 0.08
+      },
+      {
+        "id": "scratch_density",
+        "name": "Arranhoes Verticais",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.2
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "film_burn",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Film Burn",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Queima da Borda",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.8
+      },
+      {
+        "id": "speed",
+        "name": "Variacao Temporal",
+        "type": "float",
+        "min": 0.2,
+        "max": 10.0,
+        "default": 2.0
+      },
+      {
+        "id": "grain",
+        "name": "Fogo/Brasa",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.3,
+        "default": 0.05
+      },
+      {
+        "id": "scratch_density",
+        "name": "Calor",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "film_8mm",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "8mm Film",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Aspecto 8mm",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.85
+      },
+      {
+        "id": "speed",
+        "name": "Obturador 18fps",
+        "type": "float",
+        "min": 1.0,
+        "max": 24.0,
+        "default": 18.0
+      },
+      {
+        "id": "grain",
+        "name": "Grao Rustico",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.4,
+        "default": 0.14
+      },
+      {
+        "id": "scratch_density",
+        "name": "Vignette",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "super_16_look",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Super 16 Look",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_halation.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Halacao 16mm",
+        "type": "float",
+        "min": 1.0,
+        "max": 40.0,
+        "default": 10.0
+      },
+      {
+        "id": "threshold",
+        "name": "Limiar Realce",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.62
+      },
+      {
+        "id": "amount",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.55
+      },
+      {
+        "id": "warmth",
+        "name": "Tom Organico",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.7
+      }
+    ]
+  },
+  {
+    "id": "sepia_film",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Sepia Film",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Tom Sepia",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.9
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 1.0,
+        "max": 20.0,
+        "default": 8.0
+      },
+      {
+        "id": "grain",
+        "name": "Grao Vintage",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.3,
+        "default": 0.08
+      },
+      {
+        "id": "scratch_density",
+        "name": "Densidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "retro_camcorder",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Retro Camcorder",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_film_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Textura Camcorder",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      },
+      {
+        "id": "speed",
+        "name": "Interlacing",
+        "type": "float",
+        "min": 1.0,
+        "max": 30.0,
+        "default": 15.0
+      },
+      {
+        "id": "grain",
+        "name": "Ruido CCD",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.3,
+        "default": 0.07
+      },
+      {
+        "id": "scratch_density",
+        "name": "Filtro",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.8
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "recly_crt",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "CRT Television",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_crt.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "curvature",
+        "name": "Curvatura Tubo",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.2,
+        "default": 0.3
+      },
+      {
+        "id": "scanlines",
+        "name": "Scanlines",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.8,
+        "default": 0.22
+      },
+      {
+        "id": "chromatic",
+        "name": "Fosforo RGB",
+        "type": "float",
+        "min": 0.0,
+        "max": 12.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "recly_fisheye",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Fisheye",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_fisheye.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Curvatura",
+        "type": "float",
+        "min": -1.5,
+        "max": 2.0,
+        "default": 0.65
+      },
+      {
+        "id": "zoom",
+        "name": "Compensar zoom",
+        "type": "float",
+        "min": 0.7,
+        "max": 1.6,
+        "default": 1.08
+      }
+    ]
+  },
+  {
+    "id": "recly_lens",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Lens Distortion",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_lens.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Curvatura",
+        "type": "float",
+        "min": -0.8,
+        "max": 0.8,
+        "default": 0.25
+      },
+      {
+        "id": "zoom",
+        "name": "Compensar zoom",
+        "type": "float",
+        "min": 0.8,
+        "max": 1.4,
+        "default": 1.08
+      }
+    ]
+  },
+  {
+    "id": "bulge",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Bulge",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_distortion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Esfera Convexa",
+        "type": "float",
+        "min": -1.0,
+        "max": 2.0,
+        "default": 0.7
+      },
+      {
+        "id": "radius",
+        "name": "Raio do Bulbo",
+        "type": "float",
+        "min": 0.1,
+        "max": 1.0,
+        "default": 0.45
+      },
+      {
+        "id": "speed",
+        "name": "Dinamica",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "pinch",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Pinch",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_distortion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Succao Concava",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.8
+      },
+      {
+        "id": "radius",
+        "name": "Raio",
+        "type": "float",
+        "min": 0.1,
+        "max": 1.0,
+        "default": 0.45
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "recly_ripple",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Ripple",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_ripple.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Forca",
+        "type": "float",
+        "min": 0.0,
+        "max": 40.0,
+        "default": 8.0
+      },
+      {
+        "id": "frequency",
+        "name": "Aneis",
+        "type": "float",
+        "min": 2.0,
+        "max": 40.0,
+        "default": 16.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 12.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "recly_wave",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Wave",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_wave.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Amplitude",
+        "type": "float",
+        "min": 0.0,
+        "max": 50.0,
+        "default": 10.0
+      },
+      {
+        "id": "frequency",
+        "name": "Frequencia",
+        "type": "float",
+        "min": 1.0,
+        "max": 40.0,
+        "default": 12.0
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 12.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "heat_haze",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Heat Haze",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_distortion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Refracao Termica",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.5,
+        "default": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Escopo",
+        "type": "float",
+        "min": 0.2,
+        "max": 1.5,
+        "default": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Turbulencia",
+        "type": "float",
+        "min": 0.2,
+        "max": 6.0,
+        "default": 1.5
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "water_distortion",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Water Distortion",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_distortion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Correnteza",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.5,
+        "default": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Profundidade",
+        "type": "float",
+        "min": 0.2,
+        "max": 1.5,
+        "default": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Fluxo",
+        "type": "float",
+        "min": 0.2,
+        "max": 6.0,
+        "default": 1.2
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "twirl",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Twirl",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_distortion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Angulo Torcao",
+        "type": "float",
+        "min": -3.0,
+        "max": 3.0,
+        "default": 1.2
+      },
+      {
+        "id": "radius",
+        "name": "Raio Vortex",
+        "type": "float",
+        "min": 0.1,
+        "max": 1.0,
+        "default": 0.45
+      },
+      {
+        "id": "speed",
+        "name": "Giro",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "turbulence_distortion",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Turbulence Distortion",
+    "category": "Distortion",
+    "engine": "DISTORTION_UV",
+    "shader": "recly_distortion_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Turbulencia",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.8
+      },
+      {
+        "id": "radius",
+        "name": "Area",
+        "type": "float",
+        "min": 0.2,
+        "max": 1.5,
+        "default": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Oscilacao",
+        "type": "float",
+        "min": 0.2,
+        "max": 6.0,
+        "default": 1.5
+      },
+      {
+        "id": "center_x",
+        "name": "Centro X",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "center_y",
+        "name": "Centro Y",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "motion_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Motion Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Persistencia",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.75
+      },
+      {
+        "id": "decay",
+        "name": "Decaimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.3
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "ghost_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Ghost Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Fantasma Opacidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.7
+      },
+      {
+        "id": "decay",
+        "name": "Atraso",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "frame_echo",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Frame Echo",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Ecos de Quadros",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.65
+      },
+      {
+        "id": "decay",
+        "name": "Intervalo",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "rgb_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "RGB Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Atraso de Cores",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      },
+      {
+        "id": "decay",
+        "name": "Separacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.35
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "light_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Light Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Rastro de Luz",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.85
+      },
+      {
+        "id": "decay",
+        "name": "Dissipacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.25
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "long_exposure_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Long Exposure Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Longa Exposicao",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.9
+      },
+      {
+        "id": "decay",
+        "name": "Acumulo",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.2
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "clone_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Clone Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Clone Opacidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.75
+      },
+      {
+        "id": "decay",
+        "name": "Atraso Clone",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "shadow_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Shadow Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Sombra de Movimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.7
+      },
+      {
+        "id": "decay",
+        "name": "Escurecimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 7.0
+      }
+    ]
+  },
+  {
+    "id": "smear_trail",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Smear Trail",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Borrão de Rastro",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      },
+      {
+        "id": "decay",
+        "name": "Fluidez",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.3
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 8.0
+      }
+    ]
+  },
+  {
+    "id": "afterimage",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Afterimage",
+    "category": "Trail",
+    "engine": "TEMPORAL_TRAIL",
+    "shader": "recly_temporal_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "temporal": true,
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Pos-imagem",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.85
+      },
+      {
+        "id": "decay",
+        "name": "Persistencia Inversa",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 9.0
+      }
+    ]
+  },
+  {
+    "id": "recly_mirror",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Mirror",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_mirror.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "horizontal",
+        "name": "Espelho horizontal",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "vertical",
+        "name": "Espelho vertical",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "kaleidoscope",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Kaleidoscope",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Forca",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "segments",
+        "name": "Segmentos",
+        "type": "float",
+        "min": 2.0,
+        "max": 16.0,
+        "default": 6.0
+      },
+      {
+        "id": "angle",
+        "name": "Rotacao (rad)",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "prism",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Prism",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Refracao Prisma",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "segments",
+        "name": "Fitas",
+        "type": "float",
+        "min": 1.0,
+        "max": 10.0,
+        "default": 3.0
+      },
+      {
+        "id": "angle",
+        "name": "Angulo Dispersao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.5
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "glass_distortion",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Glass Distortion",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Relevo Vidro",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "segments",
+        "name": "Canelado",
+        "type": "float",
+        "min": 1.0,
+        "max": 15.0,
+        "default": 4.0
+      },
+      {
+        "id": "angle",
+        "name": "Orientacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "split_screen",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Split Screen",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 1.0
+      },
+      {
+        "id": "segments",
+        "name": "Grade (2x2, 3x3)",
+        "type": "float",
+        "min": 2.0,
+        "max": 5.0,
+        "default": 2.0
+      },
+      {
+        "id": "angle",
+        "name": "Rotacao",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "double_exposure",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Double Exposure",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Sobreposicao Laranja",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.65
+      },
+      {
+        "id": "segments",
+        "name": "Contraste",
+        "type": "float",
+        "min": 1.0,
+        "max": 5.0,
+        "default": 1.5
+      },
+      {
+        "id": "angle",
+        "name": "Offset",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "recly_posterize",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Posterize",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_posterize.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "levels",
+        "name": "Niveis de cor",
+        "type": "float",
+        "min": 2.0,
+        "max": 32.0,
+        "default": 8.0
+      }
+    ]
+  },
+  {
+    "id": "recly_pixel",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Pixelate / Mosaic",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_pixel.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "size",
+        "name": "Tamanho do pixel",
+        "type": "float",
+        "min": 2.0,
+        "max": 80.0,
+        "default": 14.0
+      }
+    ]
+  },
+  {
+    "id": "edge_detection",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Edge Detection",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Sensibilidade Borda",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "segments",
+        "name": "Espessura",
+        "type": "float",
+        "min": 1.0,
+        "max": 4.0,
+        "default": 1.0
+      },
+      {
+        "id": "angle",
+        "name": "Angulo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "emboss_relief",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Emboss / Relief",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_creative_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Altura do Relevo",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "segments",
+        "name": "Escala",
+        "type": "float",
+        "min": 1.0,
+        "max": 5.0,
+        "default": 1.0
+      },
+      {
+        "id": "angle",
+        "name": "Luz Direcional (rad)",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.283,
+        "default": 0.785
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 6.0,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "smoke",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Smoke",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Densidade Fumaca",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.8
+      },
+      {
+        "id": "speed",
+        "name": "Ascensao",
+        "type": "float",
+        "min": 0.1,
+        "max": 5.0,
+        "default": 1.2
+      },
+      {
+        "id": "size",
+        "name": "Escala Vapor",
+        "type": "float",
+        "min": 0.5,
+        "max": 3.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 0.0
+      }
+    ]
+  },
+  {
+    "id": "fire",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Fire",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Labaredas",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.9
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade Chamas",
+        "type": "float",
+        "min": 0.2,
+        "max": 5.0,
+        "default": 1.5
+      },
+      {
+        "id": "size",
+        "name": "Altura Fogo",
+        "type": "float",
+        "min": 0.5,
+        "max": 3.0,
+        "default": 1.2
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 1.0
+      }
+    ]
+  },
+  {
+    "id": "sparks",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Sparks",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Faiscas",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.85
+      },
+      {
+        "id": "speed",
+        "name": "Subida",
+        "type": "float",
+        "min": 0.2,
+        "max": 6.0,
+        "default": 2.0
+      },
+      {
+        "id": "size",
+        "name": "Tamanho Brasa",
+        "type": "float",
+        "min": 0.2,
+        "max": 2.5,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 2.0
+      }
+    ]
+  },
+  {
+    "id": "lightning",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Lightning",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Relampagos",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Taxa de Descarga",
+        "type": "float",
+        "min": 0.2,
+        "max": 8.0,
+        "default": 2.5
+      },
+      {
+        "id": "size",
+        "name": "Espessura Raio",
+        "type": "float",
+        "min": 0.2,
+        "max": 3.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 3.0
+      }
+    ]
+  },
+  {
+    "id": "rain",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Rain",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Intensidade Chuva",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.9
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade Queda",
+        "type": "float",
+        "min": 0.5,
+        "max": 5.0,
+        "default": 2.0
+      },
+      {
+        "id": "size",
+        "name": "Gotas",
+        "type": "float",
+        "min": 0.3,
+        "max": 3.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 4.0
+      }
+    ]
+  },
+  {
+    "id": "snow",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Snow",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Flocos de Neve",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.85
+      },
+      {
+        "id": "speed",
+        "name": "Queda Suave",
+        "type": "float",
+        "min": 0.2,
+        "max": 4.0,
+        "default": 1.0
+      },
+      {
+        "id": "size",
+        "name": "Tamanho Floco",
+        "type": "float",
+        "min": 0.3,
+        "max": 2.5,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "dust_particles",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Dust Particles",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Particulas Bokeh",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.75
+      },
+      {
+        "id": "speed",
+        "name": "Flutuacao",
+        "type": "float",
+        "min": 0.1,
+        "max": 4.0,
+        "default": 0.8
+      },
+      {
+        "id": "size",
+        "name": "Orbes de Luz",
+        "type": "float",
+        "min": 0.3,
+        "max": 3.0,
+        "default": 1.2
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "sparkles",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Sparkles",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Brilho Cintilante",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.85
+      },
+      {
+        "id": "speed",
+        "name": "Piscada (Hz)",
+        "type": "float",
+        "min": 0.2,
+        "max": 6.0,
+        "default": 1.5
+      },
+      {
+        "id": "size",
+        "name": "Estrelas Cross",
+        "type": "float",
+        "min": 0.3,
+        "max": 2.5,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 7.0
+      }
+    ]
+  },
+  {
+    "id": "energy_aura",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Energy Aura",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Aura de Energia",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.9
+      },
+      {
+        "id": "speed",
+        "name": "Pulso de Plasma",
+        "type": "float",
+        "min": 0.2,
+        "max": 5.0,
+        "default": 1.8
+      },
+      {
+        "id": "size",
+        "name": "Expansao",
+        "type": "float",
+        "min": 0.3,
+        "max": 3.0,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 8.0
+      }
+    ]
+  },
+  {
+    "id": "floating_bubbles",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Floating Bubbles",
+    "category": "Particles",
+    "engine": "PARTICLE",
+    "shader": "recly_particle_engine.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Bolhas de Sabao",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.8
+      },
+      {
+        "id": "speed",
+        "name": "Subida Bolhas",
+        "type": "float",
+        "min": 0.2,
+        "max": 4.0,
+        "default": 1.2
+      },
+      {
+        "id": "size",
+        "name": "Tamanho Bolha",
+        "type": "float",
+        "min": 0.3,
+        "max": 2.5,
+        "default": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Modo",
+        "type": "float",
+        "min": 0.0,
+        "max": 9.0,
+        "default": 9.0
+      }
+    ]
+  },
+  {
+    "id": "recly_vignette",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Vinheta cinematografica",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_vignette.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Escurecimento",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.55
+      },
+      {
+        "id": "softness",
+        "name": "Suavidade",
+        "type": "float",
+        "min": 0.05,
+        "max": 0.8,
+        "default": 0.35
+      }
+    ]
+  },
+  {
+    "id": "recly_noise",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Ruido analogico",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_noise.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Quantidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 0.5,
+        "default": 0.08
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 30.0,
+        "default": 12.0
+      }
+    ]
+  },
+  {
+    "id": "recly_halation",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Halation",
+    "category": "Film",
+    "engine": "FILM_NOISE",
+    "shader": "recly_halation.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "radius",
+        "name": "Raio",
+        "type": "float",
+        "min": 1.0,
+        "max": 40.0,
+        "default": 10.0
+      },
+      {
+        "id": "threshold",
+        "name": "Limiar",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.62
+      },
+      {
+        "id": "amount",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.55
+      },
+      {
+        "id": "warmth",
+        "name": "Calor vermelho",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.7
+      }
+    ]
+  },
+  {
+    "id": "recly_mosaic",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Mosaico",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_mosaic.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "size",
+        "name": "Tamanho",
+        "type": "float",
+        "min": 2.0,
+        "max": 100.0,
+        "default": 18.0
+      }
+    ]
+  },
+  {
+    "id": "recly_sharpen",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Nitidez",
+    "category": "Creative",
+    "engine": "CREATIVE",
+    "shader": "recly_sharpen.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Quantidade segura",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.5,
+        "default": 0.35
+      }
+    ]
+  }
+]

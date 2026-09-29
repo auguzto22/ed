@@ -1,0 +1,22 @@
+{
+  "id": "recly_rotate_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Giro com mola",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "rotation": -30,
+      "zoom": 0.7,
+      "opacity": 0,
+      "easing": "SPRING"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

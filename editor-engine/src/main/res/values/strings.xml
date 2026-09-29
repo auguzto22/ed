@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="volume_replay_accessibility_description">Permite salvar o Replay ao apertar duas vezes o botão de diminuir volume. O Recly não lê o conteúdo da tela.</string>
+    <string name="app_name">Recly</string>
+    <string name="app_title">Recly</string>
+    <string name="status_label">Status</string>
+    <string name="status_idle">Desativado</string>
+    <string name="status_requesting">Solicitando permissão</string>
+    <string name="status_recording">Replay ativo</string>
+    <string name="status_normal_recording">Gravando vídeo completo</string>
+    <string name="status_saving">Salvando vídeo</string>
+    <string name="status_finalizing_recording">Finalizando e enviando à Galeria</string>
+    <string name="status_stopped">Parado</string>
+    <string name="buffer_format">Buffer: %1$.1f de %2$d segundos</string>
+    <string name="buffer_empty">Buffer vazio</string>
+    <string name="buffer_memory_format">Buffer de vídeo + áudio: %.1f MB</string>
+    <string name="detail_with_memory">%1$s\n%2$s</string>
+    <string name="start_normal_recording">Iniciar gravação normal</string>
+    <string name="normal_recording_explanation">Escolha de 15 a 60 FPS. Ao tocar em “Parar e salvar”, o vídeo completo vai para Galeria › Movies › GravadorDeTela. O aviso “transmitindo” é o nome do Android para a captura local; este app não envia a tela para a internet.</string>
+    <string name="normal_fps_label">FPS da gravação normal</string>
+    <string name="replay_fps_label">FPS do Replay</string>
+    <string name="normal_resolution_label">Resolução da gravação normal</string>
+    <string name="replay_resolution_label">Resolução do Replay</string>
+    <string name="select_fps">Escolher FPS</string>
+    <string name="select_resolution">Escolher resolução</string>
+    <string name="fps_explanation">720p a 24 ou 30 FPS equilibra nitidez e consumo. Full HD, 4K e FPS alto usam muito mais memória, bateria e espaço. A resolução indica o lado menor do vídeo, mantendo a proporção da tela. Se necessário, o app reduz os FPS antes da resolução e mostra a configuração usada.</string>
+    <string-array name="frame_rate_options">
+        <item>15 FPS</item>
+        <item>24 FPS</item>
+        <item>30 FPS</item>
+        <item>60 FPS</item>
+        <item>120 FPS</item>
+        <item>144 FPS</item>
+    </string-array>
+    <string-array name="resolution_options">
+        <item>480p</item>
+        <item>720p HD</item>
+        <item>1080p Full HD</item>
+        <item>1440p 2K</item>
+        <item>2160p 4K</item>
+    </string-array>
+    <string name="choose_game_and_start">Escolher jogo e ativar Replay</string>
+    <string name="choose_game_title">Escolha o jogo para o Replay</string>
+    <string name="game_picker_loading">Procurando jogos instalados…</string>
+    <string name="game_picker_empty">Nenhum jogo ou aplicativo iniciável foi encontrado.</string>
+    <string name="game_entry_detected">🎮 %1$s</string>
+    <string name="app_entry_fallback">%1$s · aplicativo</string>
+    <string name="opening_game">Abrindo %1$s com o Replay já ativo…</string>
+    <string name="game_launch_failed">O Replay está ativo, mas não foi possível abrir %1$s.</string>
+    <string name="stop_and_save_normal">Parar e salvar gravação</string>
+    <string name="stop_replay">Desativar Replay</string>
+    <string name="open_video">Abrir último vídeo</string>
+    <string name="share_video">Compartilhar último vídeo</string>
+    <string name="privacy_explanation">O gravador usa somente o som interno permitido pelo jogo ou aplicativo; o microfone nunca é aberto. Cada sessão exige autorização de tela e uma notificação visível. Telas protegidas podem aparecer pretas ou sem som.</string>
+    <string name="add_tile">Adicionar aos Ajustes Rápidos</string>
+    <string name="tile_label">Salvar Replay</string>
+    <string name="tile_active">Replay ativo</string>
+    <string name="tile_inactive">Ative no app</string>
+    <string name="notification_channel_capture">Gravação de tela e áudio interno</string>
+    <string name="notification_channel_capture_description">Notificação obrigatória enquanto o gravador captura a tela e a reprodução interna</string>
+    <string name="notification_channel_results">Vídeos salvos e avisos</string>
+    <string name="notification_replay_active_title">Replay ativo</string>
+    <string name="notification_replay_active_subtitle">Guardando os últimos %1$d segundos</string>
+    <string name="notification_normal_recording_title">Gravando a tela</string>
+    <string name="notification_replay_paused_title">Replay pausado</string>
+    <string name="notification_normal_paused_title">Gravação pausada</string>
+    <string name="notification_paused_subtitle">Toque em Continuar para retomar a captura</string>
+    <string name="notification_saving_title">Salvando gravação</string>
+    <string name="notification_saving_subtitle">Finalizando e enviando à Galeria…</string>
+    <string name="notification_action_save_replay">Salvar replay</string>
+    <string name="notification_action_pause">Pausar</string>
+    <string name="notification_action_resume">Continuar</string>
+    <string name="notification_action_end">Encerrar</string>
+    <string name="notification_active_title">Replay 15 está ativo</string>
+    <string name="notification_active_text">Tela e áudio interno estão sendo capturados. Toque em Salvar Replay para guardar o trecho anterior.</string>
+    <string name="notification_normal_title">Gravação normal em andamento</string>
+    <string name="notification_normal_text">A tela e o áudio interno estão sendo gravados localmente. Toque em Parar e salvar para publicar o vídeo na Galeria.</string>
+    <string name="notification_normal_finalizing_text">Finalizando o MP4 e publicando o vídeo na Galeria…</string>
+    <string name="notification_saving_text">Salvando o trecho anterior; a captura continua.</string>
+    <string name="notification_action_save">Salvar %1$ds</string>
+    <string name="notification_action_stop">Parar</string>
+    <string name="notification_action_stop_and_save">Parar e salvar</string>
+    <string name="notification_saved_title">Vídeo do Replay 15 salvo</string>
+    <string name="notification_saved_text">Duração: %.1f s. Salvo na Galeria em Movies/GravadorDeTela. Toque para abrir.</string>
+    <string name="notification_saved_without_audio_text">Duração: %.1f s. Salvo na Galeria, mas o jogo não forneceu áudio compatível.</string>
+    <string name="notification_normal_saved_title">Gravação completa salva</string>
+    <string name="notification_normal_saved_text">Duração: %.1f s. O vídeo completo foi salvo em Galeria › Movies › GravadorDeTela.</string>
+    <string name="notification_normal_saved_without_audio_text">Duração: %.1f s. O vídeo completo foi salvo na Galeria, mas sem áudio interno compatível.</string>
+    <string name="notification_save_problem_title">Não foi possível salvar a gravação</string>
+    <string name="notification_audio_unavailable_title">Vídeo continua sem áudio interno</string>
+    <string name="notification_stopped_title">A gravação foi interrompida</string>
+    <string name="capture_permissions_required">Permita notificações e gravação de áudio para capturar a tela e o som interno. O gravador não abre o microfone.</string>
+    <string name="notifications_disabled">As notificações do gravador estão desativadas. Ative-as nas configurações antes de iniciar a captura.</string>
+    <string name="consent_denied">Autorização de captura negada. Inicie novamente o modo desejado para tentar outra vez.</string>
+    <string name="starting_capture">Preparando vídeo H.264 e áudio interno AAC…</string>
+    <string name="starting_normal_capture">Preparando a gravação contínua H.264 com áudio interno AAC…</string>
+    <string name="capture_started">Replay ativo no FPS selecionado; somente os segundos recentes ficam comprimidos em RAM.</string>
+    <string name="normal_capture_started">O vídeo completo está sendo gravado localmente. Toque em “Parar e salvar” para enviá-lo à Galeria.</string>
+    <string name="normal_recording_saved">Gravação completa de %.1f segundos salva na Galeria.</string>
+    <string name="normal_recording_saved_without_audio">Gravação completa de %.1f segundos salva na Galeria, mas sem áudio interno compatível.</string>
+    <string name="normal_save_instruction">No modo de gravação normal, use “Parar e salvar gravação”. O vídeo completo será enviado à Galeria.</string>
+    <string name="save_too_soon">Aguarde o buffer completar %1$d segundos antes de salvar.</string>
+    <string name="save_not_ready">O primeiro quadro do vídeo ainda está sendo preparado. Tente salvar novamente em um instante.</string>
+    <string name="save_busy">Um vídeo já está sendo salvo.</string>
+    <string name="capture_not_active">A captura não está ativa.</string>
+    <string name="audio_capture_disabled_detail">O áudio interno falhou (%1$s), mas a captura de vídeo continua e ainda pode ser salva.</string>
+    <string name="video_saved">Vídeo salvo com %.1f segundos.</string>
+    <string name="video_saved_without_audio">Vídeo salvo com %.1f segundos, mas sem áudio interno compatível.</string>
+    <string name="no_video_app">Nenhum aplicativo instalado conseguiu abrir este vídeo.</string>
+    <string name="no_share_app">Nenhum aplicativo de compartilhamento está disponível.</string>
+    <string name="tile_added">Botão adicionado aos Ajustes Rápidos.</string>
+    <string name="tile_already_added">O botão já está nos Ajustes Rápidos.</string>
+    <string name="tile_not_added">O Android não adicionou o botão. Você ainda pode adicioná-lo editando o painel.</string>
+    <string name="edit_last_video">Editar último vídeo ou Replay</string>
+    <string name="editor_library">Editor de vídeo / Meus projetos</string>
+</resources>

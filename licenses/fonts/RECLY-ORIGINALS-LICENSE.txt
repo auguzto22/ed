@@ -1,0 +1,14 @@
+Recly Original Font License 1.0
+
+Copyright 2026 Recly. All glyph designs and font software in the Recly Originals
+families are original works created for the Recly project.
+
+Permission is granted to use, reproduce, modify, embed, subset, and redistribute
+these font files as part of the Recly application, its exported media, its tests,
+and official Recly builds. The fonts may be embedded in commercial Recly APKs and
+application bundles.
+
+This notice must be retained with the editable font source and in Recly's license
+records. The Recly names and trademarks are not licensed for unrelated products.
+
+These fonts are provided "as is", without warranty of any kind.

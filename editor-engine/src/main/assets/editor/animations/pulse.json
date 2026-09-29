@@ -1,0 +1,22 @@
+{
+  "id": "recly_pulse",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Pulso",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.5,
+      "zoom": 1.08
+    },
+    {
+      "time": 1
+    }
+  ]
+}

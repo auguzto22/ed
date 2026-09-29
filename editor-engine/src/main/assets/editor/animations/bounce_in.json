@@ -1,0 +1,21 @@
+{
+  "id": "recly_bounce_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Quique",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "y": 0.3,
+      "opacity": 0,
+      "easing": "BOUNCE"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

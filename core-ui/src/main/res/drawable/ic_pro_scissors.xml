@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Top loop -->
+    <path
+        android:pathData="M6,3 A3,3 0,1 0,6,9 A3,3 0,1 0,6,3"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+    <!-- Bottom loop -->
+    <path
+        android:pathData="M6,15 A3,3 0,1 0,6,21 A3,3 0,1 0,6,15"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+    <!-- Crossing blades -->
+    <path
+        android:pathData="M8.5,8 L19,17 M8.5,16 L19,7"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+</vector>

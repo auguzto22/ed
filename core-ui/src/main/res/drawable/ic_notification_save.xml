@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <!-- Ícone de notificação: Gravação / Salvar Momento nítido sem disquete -->
+    <path
+        android:pathData="M10,2.5 C5.86,2.5 2.5,5.86 2.5,10 C2.5,14.14 5.86,17.5 10,17.5 C14.14,17.5 17.5,14.14 17.5,10"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+    <path
+        android:pathData="M10,0.5 L12.5,2.8 L10,5.1"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+    <path
+        android:pathData="M9,7.5 L13,10 L9,12.5 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

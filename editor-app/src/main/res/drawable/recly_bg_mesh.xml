@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fundo preto profundo -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#040406" />
+        </shape>
+    </item>
+
+    <!-- Mancha de luz superior / cabeçalho -->
+    <item
+        android:top="-60dp"
+        android:right="-60dp"
+        android:width="420dp"
+        android:height="360dp"
+        android:gravity="top|end">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="280dp"
+                android:startColor="#38FFFFFF"
+                android:centerColor="#14FFFFFF"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- Mancha de luz lateral direita média -->
+    <item
+        android:top="360dp"
+        android:right="-100dp"
+        android:width="440dp"
+        android:height="340dp"
+        android:gravity="top|end">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="260dp"
+                android:startColor="#26FFFFFF"
+                android:centerColor="#0DFFFFFF"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- Mancha de luz lateral esquerda média-baixa -->
+    <item
+        android:top="700dp"
+        android:left="-90dp"
+        android:width="460dp"
+        android:height="360dp"
+        android:gravity="top|start">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="270dp"
+                android:startColor="#24FFFFFF"
+                android:centerColor="#0CFFFFFF"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- Mancha de luz inferior atrás do dock -->
+    <item
+        android:bottom="-120dp"
+        android:width="540dp"
+        android:height="320dp"
+        android:gravity="bottom|center_horizontal">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="300dp"
+                android:startColor="#2AFFFFFF"
+                android:centerColor="#0FFFFFFF"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+</layer-list>

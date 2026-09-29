@@ -1,0 +1,21 @@
+{
+  "id": "recly_slide_left",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Deslizar da esquerda",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "x": -0.4,
+      "opacity": 0,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

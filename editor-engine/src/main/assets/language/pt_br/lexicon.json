@@ -1,0 +1,9 @@
+{
+  "locale": "pt-BR",
+  "slang": ["mano", "véi", "vei", "bora", "vambora", "da hora", "daora", "oxe", "oxente", "eita", "vish", "cê", "ocê", "tô", "tá", "né", "pô", "bagulho", "rolê", "massa", "brabo", "sinistro", "insano", "parada", "vacilo", "mó", "treta", "zoeira", "perrengue", "tamo", "demorou", "fechou", "partiu", "se pá", "de boa", "na moral", "tá ligado"],
+  "internet": ["tankar", "tankei", "cringe", "flopar", "flopou", "viralizar", "meme", "hype", "cancelar", "fandom", "shippar", "stalkear", "engajamento", "algoritmo", "reels", "shorts", "stories", "trend", "react", "publi", "feed", "hashtag", "dm", "link", "postar", "printar"],
+  "gaming": ["farmar", "nerfar", "buffar", "lag", "fps", "gameplay", "setup", "stream", "live", "loot", "skin", "ranked", "drop", "spawn", "respawn", "pvp", "npc", "boss", "speedrun", "hitbox", "ping", "clipar", "camper", "noob", "rushar", "zerar", "craftar", "buildar"],
+  "technology": ["render", "renderizar", "preview", "timeline", "keyframe", "codec", "bitrate", "frame", "upload", "download", "backup", "streaming", "podcast", "thumbnail", "transição", "legenda", "corte", "filtro", "overlay", "plugin", "android", "iphone", "kotlin", "opengl", "glsl", "mediacodec", "mediaprojection"],
+  "brands": ["recly", "capcut", "tiktok", "youtube", "instagram", "whatsapp", "discord", "twitch", "telegram", "spotify", "netflix", "google", "apple", "samsung", "windows", "linux", "playstation", "xbox", "minecraft", "roblox", "fortnite", "free fire", "valorant"],
+  "regionalisms": ["arretado", "abestado", "visse", "égua", "pai d'égua", "bah", "tri", "guria", "piá", "uai", "trem", "sô", "mano", "meu", "égua", "oxente", "oxe"]
+}

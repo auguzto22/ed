@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sombra sutil da aba ativa elevada -->
+    <item android:top="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#33000000" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+
+    <!-- Vidro translúcido mais claro elevado (segunda camada de vidro) -->
+    <item android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#36FFFFFF"
+                android:centerColor="#26FFFFFF"
+                android:endColor="#1EFFFFFF" />
+            <corners android:radius="22dp" />
+            <stroke
+                android:width="1dp"
+                android:color="#48FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- Brilho superior specular de chanfro -->
+    <item
+        android:left="2dp"
+        android:right="2dp"
+        android:top="1dp"
+        android:height="12dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#36FFFFFF"
+                android:endColor="#00FFFFFF" />
+            <corners
+                android:topLeftRadius="21dp"
+                android:topRightRadius="21dp" />
+        </shape>
+    </item>
+</layer-list>

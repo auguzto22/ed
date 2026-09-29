@@ -1,0 +1,633 @@
+{
+  "filters": {
+    "ORIGINAL": {
+      "atlas": "filters_atlas_01",
+      "col": 0,
+      "row": 0
+    },
+    "MONO": {
+      "atlas": "filters_atlas_01",
+      "col": 1,
+      "row": 0
+    },
+    "NEGATIVE": {
+      "atlas": "filters_atlas_01",
+      "col": 2,
+      "row": 0
+    },
+    "CINEMA": {
+      "atlas": "filters_atlas_01",
+      "col": 3,
+      "row": 0
+    },
+    "VIBRANT": {
+      "atlas": "filters_atlas_01",
+      "col": 0,
+      "row": 1
+    },
+    "WARM": {
+      "atlas": "filters_atlas_01",
+      "col": 1,
+      "row": 1
+    },
+    "COOL": {
+      "atlas": "filters_atlas_01",
+      "col": 2,
+      "row": 1
+    },
+    "VINTAGE": {
+      "atlas": "filters_atlas_01",
+      "col": 3,
+      "row": 1
+    },
+    "GOLDEN": {
+      "atlas": "filters_atlas_01",
+      "col": 0,
+      "row": 2
+    },
+    "ROSE": {
+      "atlas": "filters_atlas_01",
+      "col": 1,
+      "row": 2
+    },
+    "TEAL_ORANGE": {
+      "atlas": "filters_atlas_01",
+      "col": 2,
+      "row": 2
+    },
+    "NIGHT": {
+      "atlas": "filters_atlas_01",
+      "col": 3,
+      "row": 2
+    },
+    "FADE": {
+      "atlas": "filters_atlas_01",
+      "col": 0,
+      "row": 3
+    },
+    "MATTE": {
+      "atlas": "filters_atlas_01",
+      "col": 1,
+      "row": 3
+    },
+    "RETRO": {
+      "atlas": "filters_atlas_01",
+      "col": 2,
+      "row": 3
+    },
+    "DREAM": {
+      "atlas": "filters_atlas_01",
+      "col": 3,
+      "row": 3
+    },
+    "TROPICAL": {
+      "atlas": "filters_atlas_02",
+      "col": 0,
+      "row": 0
+    },
+    "URBAN": {
+      "atlas": "filters_atlas_02",
+      "col": 1,
+      "row": 0
+    },
+    "FOOD": {
+      "atlas": "filters_atlas_02",
+      "col": 2,
+      "row": 0
+    },
+    "PORTRAIT": {
+      "atlas": "filters_atlas_02",
+      "col": 3,
+      "row": 0
+    },
+    "AUTUMN": {
+      "atlas": "filters_atlas_02",
+      "col": 0,
+      "row": 1
+    },
+    "ICE": {
+      "atlas": "filters_atlas_02",
+      "col": 1,
+      "row": 1
+    },
+    "NEON": {
+      "atlas": "filters_atlas_02",
+      "col": 2,
+      "row": 1
+    },
+    "DOCUMENTARY": {
+      "atlas": "filters_atlas_02",
+      "col": 3,
+      "row": 1
+    },
+    "SUNSET": {
+      "atlas": "filters_atlas_02",
+      "col": 0,
+      "row": 2
+    },
+    "LAVENDER": {
+      "atlas": "filters_atlas_02",
+      "col": 1,
+      "row": 2
+    },
+    "EMERALD": {
+      "atlas": "filters_atlas_02",
+      "col": 2,
+      "row": 2
+    },
+    "NOIR": {
+      "atlas": "filters_atlas_02",
+      "col": 3,
+      "row": 2
+    },
+    "SOFT": {
+      "atlas": "filters_atlas_02",
+      "col": 0,
+      "row": 3
+    },
+    "DRAMA": {
+      "atlas": "filters_atlas_02",
+      "col": 1,
+      "row": 3
+    },
+    "LOW_LIGHT": {
+      "atlas": "filters_atlas_02",
+      "col": 2,
+      "row": 3
+    },
+    "CLEAN": {
+      "atlas": "filters_atlas_02",
+      "col": 3,
+      "row": 3
+    }
+  },
+  "effects": {
+    "cyber_signal": {
+      "atlas": "effects_atlas_01",
+      "col": 0,
+      "row": 0
+    },
+    "impact_combo": {
+      "atlas": "effects_atlas_01",
+      "col": 1,
+      "row": 0
+    },
+    "soft_dream": {
+      "atlas": "effects_atlas_01",
+      "col": 2,
+      "row": 0
+    },
+    "broken_tape": {
+      "atlas": "effects_atlas_01",
+      "col": 3,
+      "row": 0
+    },
+    "neon_arcade": {
+      "atlas": "effects_atlas_01",
+      "col": 0,
+      "row": 1
+    },
+    "liquid_lens": {
+      "atlas": "effects_atlas_01",
+      "col": 1,
+      "row": 1
+    },
+    "clean_film": {
+      "atlas": "effects_atlas_01",
+      "col": 2,
+      "row": 1
+    },
+    "film_35mm": {
+      "atlas": "effects_atlas_01",
+      "col": 3,
+      "row": 1
+    },
+    "vintage_film": {
+      "atlas": "effects_atlas_01",
+      "col": 0,
+      "row": 2
+    },
+    "dark_cinema": {
+      "atlas": "effects_atlas_01",
+      "col": 1,
+      "row": 2
+    },
+    "warm_cinema": {
+      "atlas": "effects_atlas_01",
+      "col": 2,
+      "row": 2
+    },
+    "cold_cinema": {
+      "atlas": "effects_atlas_01",
+      "col": 3,
+      "row": 2
+    },
+    "kill_impact": {
+      "atlas": "effects_atlas_01",
+      "col": 0,
+      "row": 3
+    },
+    "headshot": {
+      "atlas": "effects_atlas_01",
+      "col": 1,
+      "row": 3
+    },
+    "damage": {
+      "atlas": "effects_atlas_01",
+      "col": 2,
+      "row": 3
+    },
+    "explosion": {
+      "atlas": "effects_atlas_01",
+      "col": 3,
+      "row": 3
+    },
+    "speed": {
+      "atlas": "effects_atlas_02",
+      "col": 0,
+      "row": 0
+    },
+    "beat_zoom": {
+      "atlas": "effects_atlas_02",
+      "col": 1,
+      "row": 0
+    },
+    "victory": {
+      "atlas": "effects_atlas_02",
+      "col": 2,
+      "row": 0
+    },
+    "film_look": {
+      "atlas": "effects_atlas_02",
+      "col": 3,
+      "row": 0
+    }
+  },
+  "transitions": {
+    "cross_dissolve": {
+      "atlas": "transitions_atlas_01",
+      "col": 0,
+      "row": 0
+    },
+    "fade": {
+      "atlas": "transitions_atlas_01",
+      "col": 1,
+      "row": 0
+    },
+    "dip_to_black": {
+      "atlas": "transitions_atlas_01",
+      "col": 2,
+      "row": 0
+    },
+    "dip_to_white": {
+      "atlas": "transitions_atlas_01",
+      "col": 3,
+      "row": 0
+    },
+    "fade_through_black": {
+      "atlas": "transitions_atlas_01",
+      "col": 0,
+      "row": 1
+    },
+    "fade_through_white": {
+      "atlas": "transitions_atlas_01",
+      "col": 1,
+      "row": 1
+    },
+    "slide_left": {
+      "atlas": "transitions_atlas_01",
+      "col": 2,
+      "row": 1
+    },
+    "slide_right": {
+      "atlas": "transitions_atlas_01",
+      "col": 3,
+      "row": 1
+    },
+    "slide_up": {
+      "atlas": "transitions_atlas_01",
+      "col": 0,
+      "row": 2
+    },
+    "slide_down": {
+      "atlas": "transitions_atlas_01",
+      "col": 1,
+      "row": 2
+    },
+    "push_left": {
+      "atlas": "transitions_atlas_01",
+      "col": 2,
+      "row": 2
+    },
+    "push_right": {
+      "atlas": "transitions_atlas_01",
+      "col": 3,
+      "row": 2
+    },
+    "push_up": {
+      "atlas": "transitions_atlas_01",
+      "col": 0,
+      "row": 3
+    },
+    "push_down": {
+      "atlas": "transitions_atlas_01",
+      "col": 1,
+      "row": 3
+    },
+    "wipe_left": {
+      "atlas": "transitions_atlas_01",
+      "col": 2,
+      "row": 3
+    },
+    "wipe_right": {
+      "atlas": "transitions_atlas_01",
+      "col": 3,
+      "row": 3
+    },
+    "wipe_up": {
+      "atlas": "transitions_atlas_02",
+      "col": 0,
+      "row": 0
+    },
+    "wipe_down": {
+      "atlas": "transitions_atlas_02",
+      "col": 1,
+      "row": 0
+    },
+    "diagonal_wipe": {
+      "atlas": "transitions_atlas_02",
+      "col": 2,
+      "row": 0
+    },
+    "circle_wipe": {
+      "atlas": "transitions_atlas_02",
+      "col": 3,
+      "row": 0
+    },
+    "radial_wipe": {
+      "atlas": "transitions_atlas_02",
+      "col": 0,
+      "row": 1
+    },
+    "soft_wipe": {
+      "atlas": "transitions_atlas_02",
+      "col": 1,
+      "row": 1
+    },
+    "zoom_in": {
+      "atlas": "transitions_atlas_02",
+      "col": 2,
+      "row": 1
+    },
+    "zoom_out": {
+      "atlas": "transitions_atlas_02",
+      "col": 3,
+      "row": 1
+    },
+    "zoom_through": {
+      "atlas": "transitions_atlas_02",
+      "col": 0,
+      "row": 2
+    },
+    "punch_zoom": {
+      "atlas": "transitions_atlas_02",
+      "col": 1,
+      "row": 2
+    },
+    "smooth_zoom": {
+      "atlas": "transitions_atlas_02",
+      "col": 2,
+      "row": 2
+    },
+    "zoom_blur": {
+      "atlas": "transitions_atlas_02",
+      "col": 3,
+      "row": 2
+    },
+    "zoom_rotate": {
+      "atlas": "transitions_atlas_02",
+      "col": 0,
+      "row": 3
+    },
+    "whip_left": {
+      "atlas": "transitions_atlas_02",
+      "col": 1,
+      "row": 3
+    },
+    "whip_right": {
+      "atlas": "transitions_atlas_02",
+      "col": 2,
+      "row": 3
+    },
+    "whip_up": {
+      "atlas": "transitions_atlas_02",
+      "col": 3,
+      "row": 3
+    },
+    "whip_down": {
+      "atlas": "transitions_atlas_03",
+      "col": 0,
+      "row": 0
+    },
+    "motion_swipe": {
+      "atlas": "transitions_atlas_03",
+      "col": 1,
+      "row": 0
+    },
+    "fast_pan": {
+      "atlas": "transitions_atlas_03",
+      "col": 2,
+      "row": 0
+    },
+    "blur_dissolve": {
+      "atlas": "transitions_atlas_03",
+      "col": 3,
+      "row": 0
+    },
+    "gaussian_blur_trans": {
+      "atlas": "transitions_atlas_03",
+      "col": 0,
+      "row": 1
+    },
+    "directional_blur_trans": {
+      "atlas": "transitions_atlas_03",
+      "col": 1,
+      "row": 1
+    },
+    "radial_blur_trans": {
+      "atlas": "transitions_atlas_03",
+      "col": 2,
+      "row": 1
+    },
+    "white_flash": {
+      "atlas": "transitions_atlas_03",
+      "col": 3,
+      "row": 1
+    },
+    "color_flash": {
+      "atlas": "transitions_atlas_03",
+      "col": 0,
+      "row": 2
+    },
+    "light_leak": {
+      "atlas": "transitions_atlas_03",
+      "col": 1,
+      "row": 2
+    },
+    "film_burn": {
+      "atlas": "transitions_atlas_03",
+      "col": 2,
+      "row": 2
+    },
+    "glow_flash": {
+      "atlas": "transitions_atlas_03",
+      "col": 3,
+      "row": 2
+    },
+    "digital_glitch": {
+      "atlas": "transitions_atlas_03",
+      "col": 0,
+      "row": 3
+    },
+    "rgb_glitch": {
+      "atlas": "transitions_atlas_03",
+      "col": 1,
+      "row": 3
+    },
+    "signal_glitch": {
+      "atlas": "transitions_atlas_03",
+      "col": 2,
+      "row": 3
+    },
+    "vhs_glitch": {
+      "atlas": "transitions_atlas_03",
+      "col": 3,
+      "row": 3
+    },
+    "luma_fade": {
+      "atlas": "transitions_atlas_04",
+      "col": 0,
+      "row": 0
+    },
+    "luma_wipe": {
+      "atlas": "transitions_atlas_04",
+      "col": 1,
+      "row": 0
+    },
+    "ripple": {
+      "atlas": "transitions_atlas_04",
+      "col": 2,
+      "row": 0
+    },
+    "wave": {
+      "atlas": "transitions_atlas_04",
+      "col": 3,
+      "row": 0
+    },
+    "fisheye_trans": {
+      "atlas": "transitions_atlas_04",
+      "col": 0,
+      "row": 1
+    },
+    "warp_trans": {
+      "atlas": "transitions_atlas_04",
+      "col": 1,
+      "row": 1
+    },
+    "lens_distortion_trans": {
+      "atlas": "transitions_atlas_04",
+      "col": 2,
+      "row": 1
+    },
+    "spin": {
+      "atlas": "transitions_atlas_04",
+      "col": 3,
+      "row": 1
+    },
+    "spin_zoom": {
+      "atlas": "transitions_atlas_04",
+      "col": 0,
+      "row": 2
+    },
+    "rotate_push": {
+      "atlas": "transitions_atlas_04",
+      "col": 1,
+      "row": 2
+    },
+    "flip_horizontal": {
+      "atlas": "transitions_atlas_04",
+      "col": 2,
+      "row": 2
+    },
+    "flip_vertical": {
+      "atlas": "transitions_atlas_04",
+      "col": 3,
+      "row": 2
+    },
+    "cube_left": {
+      "atlas": "transitions_atlas_04",
+      "col": 0,
+      "row": 3
+    },
+    "cube_right": {
+      "atlas": "transitions_atlas_04",
+      "col": 1,
+      "row": 3
+    },
+    "page_turn": {
+      "atlas": "transitions_atlas_04",
+      "col": 2,
+      "row": 3
+    },
+    "perspective_slide": {
+      "atlas": "transitions_atlas_04",
+      "col": 3,
+      "row": 3
+    },
+    "split_reveal": {
+      "atlas": "transitions_atlas_05",
+      "col": 0,
+      "row": 0
+    },
+    "split_horizontal": {
+      "atlas": "transitions_atlas_05",
+      "col": 1,
+      "row": 0
+    },
+    "split_vertical": {
+      "atlas": "transitions_atlas_05",
+      "col": 2,
+      "row": 0
+    },
+    "mosaic_reveal": {
+      "atlas": "transitions_atlas_05",
+      "col": 3,
+      "row": 0
+    },
+    "pixel_dissolve": {
+      "atlas": "transitions_atlas_05",
+      "col": 0,
+      "row": 1
+    },
+    "prism_trans": {
+      "atlas": "transitions_atlas_05",
+      "col": 1,
+      "row": 1
+    },
+    "mirror_trans": {
+      "atlas": "transitions_atlas_05",
+      "col": 2,
+      "row": 1
+    },
+    "kaleidoscope_trans": {
+      "atlas": "transitions_atlas_05",
+      "col": 3,
+      "row": 1
+    },
+    "glass_trans": {
+      "atlas": "transitions_atlas_05",
+      "col": 0,
+      "row": 2
+    }
+  }
+}

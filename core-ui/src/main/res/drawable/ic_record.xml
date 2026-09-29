@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Gravação: Anel de captura com ponto vermelho de estúdio -->
+    <path
+        android:pathData="M12,3 A9,9 0,1 1,11.9,3 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:fillColor="@android:color/transparent" />
+    <path
+        android:pathData="M12,7 A5,5 0,1 1,11.9,7 Z"
+        android:fillColor="#EF4444" />
+</vector>

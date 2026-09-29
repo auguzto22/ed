@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 1. Sombra externa escura e profunda da ilha flutuante -->
+    <item
+        android:top="5dp"
+        android:left="2dp"
+        android:right="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#80000000" />
+            <corners android:radius="36dp" />
+        </shape>
+    </item>
+
+    <!-- 2. Corpo de cristal fumê espesso translúcido refinado com borda branca -->
+    <item android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#6E16161C"
+                android:centerColor="#520E0E12"
+                android:endColor="#3A08080A" />
+            <corners android:radius="36dp" />
+            <stroke
+                android:width="1dp"
+                android:color="#4AFFFFFF" />
+        </shape>
+    </item>
+
+    <!-- 3. Camada de vidro translúcido -->
+    <item
+        android:left="1dp"
+        android:right="1dp"
+        android:top="1dp"
+        android:bottom="5dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#22FFFFFF"
+                android:centerColor="#14FFFFFF"
+                android:endColor="#0CFFFFFF" />
+            <corners android:radius="35dp" />
+        </shape>
+    </item>
+
+    <!-- 4. Brilho superior specular de chanfro -->
+    <item
+        android:left="2dp"
+        android:right="2dp"
+        android:top="1dp"
+        android:height="26dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#3EFFFFFF"
+                android:centerColor="#16FFFFFF"
+                android:endColor="#00FFFFFF" />
+            <corners
+                android:topLeftRadius="35dp"
+                android:topRightRadius="35dp" />
+        </shape>
+    </item>
+
+    <!-- 5. Brilho suave na borda esquerda -->
+    <item
+        android:left="1dp"
+        android:top="2dp"
+        android:bottom="6dp"
+        android:width="20dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:startColor="#26FFFFFF"
+                android:endColor="#00FFFFFF" />
+            <corners
+                android:topLeftRadius="35dp"
+                android:bottomLeftRadius="35dp" />
+        </shape>
+    </item>
+</layer-list>

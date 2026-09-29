@@ -1,0 +1,20 @@
+{
+  "id": "recly_zoom_away",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Expandir",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 1,
+      "zoom": 1.8,
+      "opacity": 0
+    }
+  ]
+}

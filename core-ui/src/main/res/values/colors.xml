@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Identidade Visual Oficial Recly (Minimalista / Escura / Premium) -->
+    <color name="recly_bg_main">#080808</color>
+    <color name="recly_bg_secondary">#0D0D0F</color>
+    <color name="recly_surface">#141416</color>
+    <color name="recly_card_base">#18181B</color>
+    <color name="recly_card_elevated">#222226</color>
+    <color name="recly_card_highlight">#28282C</color>
+
+    <!-- Bordas Translúcidas (8% a 18% Branco) -->
+    <color name="recly_border_subtle">#14FFFFFF</color>   <!-- ~8% -->
+    <color name="recly_border_medium">#1FFFFFFF</color>   <!-- ~12% -->
+    <color name="recly_border_bright">#2EFFFFFF</color>   <!-- ~18% -->
+
+    <!-- Tipografia Oficial -->
+    <color name="recly_text_primary">#F5F5F5</color>
+    <color name="recly_text_secondary">#A5A5AA</color>
+    <color name="recly_text_disabled">#66666C</color>
+
+    <!-- Destaques Monocromáticos -->
+    <color name="recly_accent_white">#FFFFFF</color>
+    <color name="recly_accent_silver">#D4D4D8</color>
+    <color name="recly_accent_gray_light">#E4E4E7</color>
+
+    <!-- Estado de Gravação Ativa / Erro (Único detalhe vermelho) -->
+    <color name="recly_accent_red">#EF4444</color>
+    <color name="recly_accent_red_dark">#DC2626</color>
+
+    <!-- Aliases para compatibilidade total com código existente -->
+    <color name="primary">#18181B</color>
+    <color name="primary_dark">#080808</color>
+    <color name="accent">#F5F5F5</color>
+    <color name="surface">#080808</color>
+    <color name="surface_elevated">#141416</color>
+    <color name="surface_soft">#0D0D0F</color>
+    <color name="glass_card_bg">#18181B</color>
+    <color name="glass_card_elevated">#222226</color>
+    <color name="glass_card_subtle">#141416</color>
+    <color name="card_gradient_start">#1D1D21</color>
+    <color name="card_gradient_end">#141416</color>
+    <color name="card_border">#1FFFFFFF</color>
+    <color name="card_border_highlight">#2EFFFFFF</color>
+    <color name="border">#1FFFFFFF</color>
+    <color name="border_subtle">#14FFFFFF</color>
+    <color name="divider">#1FFFFFFF</color>
+    <color name="icon_background">#18181B</color>
+    <color name="text_primary">#F5F5F5</color>
+    <color name="text_secondary">#A5A5AA</color>
+    <color name="text_muted">#66666C</color>
+    <color name="text_on_dark">#F5F5F5</color>
+    <color name="recording_red">#EF4444</color>
+    <color name="success">#D4D4D8</color>
+    <color name="warning">#E4E4E7</color>
+</resources>

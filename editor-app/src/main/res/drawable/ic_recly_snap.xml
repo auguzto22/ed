@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Ímã / Magneto de Alinhamento Limpo e Moderno -->
+    <path
+        android:pathData="M5,4 L5,11 C5,14.87 8.13,18 12,18 C15.87,18 19,14.87 19,11 L19,4 L14.5,4 L14.5,11 C14.5,12.38 13.38,13.5 12,13.5 C10.62,13.5 9.5,12.38 9.5,11 L9.5,4 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+    <!-- Polos magnéticos -->
+    <path
+        android:pathData="M5,8 L9.5,8 M14.5,8 L19,8"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+</vector>

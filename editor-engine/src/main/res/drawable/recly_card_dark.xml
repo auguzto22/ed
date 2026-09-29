@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 1. Sombra profunda difusa -->
+    <item
+        android:top="4dp"
+        android:left="1dp"
+        android:right="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#99000000" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+
+    <!-- 2. Corpo do Card: Gradiente monocromático luxuoso (#222226 -> #18181B) com borda branca 14% -->
+    <item android:bottom="3dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#F0222226"
+                android:centerColor="#E61C1C20"
+                android:endColor="#E818181B" />
+            <corners android:radius="24dp" />
+            <stroke
+                android:width="1dp"
+                android:color="#24FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- 3. Iluminação interna suave -->
+    <item
+        android:left="1dp"
+        android:right="1dp"
+        android:top="1dp"
+        android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#14FFFFFF"
+                android:centerColor="#08FFFFFF"
+                android:endColor="#00000000" />
+            <corners android:radius="23dp" />
+        </shape>
+    </item>
+
+    <!-- 4. Chanfro especular prateado sutil na borda superior -->
+    <item
+        android:left="2dp"
+        android:right="2dp"
+        android:top="1dp"
+        android:height="18dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#26FFFFFF"
+                android:centerColor="#0DFFFFFF"
+                android:endColor="#00000000" />
+            <corners
+                android:topLeftRadius="23dp"
+                android:topRightRadius="23dp" />
+        </shape>
+    </item>
+</layer-list>
+

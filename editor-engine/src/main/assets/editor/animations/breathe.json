@@ -1,0 +1,22 @@
+{
+  "id": "recly_breathe",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Respirar",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.5,
+      "zoom": 1.035
+    },
+    {
+      "time": 1
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "recly_heartbeat",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Batimento",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.15,
+      "zoom": 1.08
+    },
+    {
+      "time": 0.3
+    },
+    {
+      "time": 0.45,
+      "zoom": 1.04
+    },
+    {
+      "time": 0.6
+    },
+    {
+      "time": 1
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Logotipo Recly: Acabamento Premium Prata/Branco Metálico -->
+    <path
+        android:pathData="M3,5 L30,5 C40,5 45,10 45,19 C45,27 40,32 33,32 L25,24 L30,24 C34,24 36,22 36,19 C36,16 34,14 30,14 L12,14 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:startX="3" android:startY="5" android:endX="43" android:endY="34" android:startColor="#FFFFFF" android:endColor="#A1A1AA" android:type="linear" />
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M3,22 L17,22 L43,45 L29,45 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:startX="3" android:startY="22" android:endX="43" android:endY="45" android:startColor="#E4E4E7" android:endColor="#71717A" android:type="linear" />
+        </aapt:attr>
+    </path>
+</vector>

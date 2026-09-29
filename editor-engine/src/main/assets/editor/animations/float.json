@@ -1,0 +1,26 @@
+{
+  "id": "recly_float",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Flutuar",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.25,
+      "y": -0.025
+    },
+    {
+      "time": 0.75,
+      "y": 0.025
+    },
+    {
+      "time": 1
+    }
+  ]
+}

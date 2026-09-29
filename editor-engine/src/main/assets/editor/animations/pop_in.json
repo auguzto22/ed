@@ -1,0 +1,21 @@
+{
+  "id": "recly_pop_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Pop com mola",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "zoom": 0.65,
+      "opacity": 0,
+      "easing": "SPRING"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

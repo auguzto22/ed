@@ -1,0 +1,21 @@
+{
+  "id": "recly_slide_up",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Subir",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "y": 0.4,
+      "opacity": 0,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

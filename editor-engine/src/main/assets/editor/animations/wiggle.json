@@ -1,0 +1,26 @@
+{
+  "id": "recly_wiggle",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Balancar",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.25,
+      "rotation": -4
+    },
+    {
+      "time": 0.75,
+      "rotation": 4
+    },
+    {
+      "time": 1
+    }
+  ]
+}

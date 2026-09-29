@@ -1,0 +1,21 @@
+{
+  "id": "recly_rotate_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Giro de saida",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 1,
+      "rotation": 45,
+      "zoom": 0.7,
+      "opacity": 0
+    }
+  ]
+}
