@@ -41,11 +41,18 @@ data class FontMetadata(
     val sha256: String = "",
     /** Estimated file size in bytes. */
     val fileSize: Long = 0,
+    /** Author or designer of the font. */
+    val author: String = "Google Fonts Contributors",
+    /** Text used for preview in font selectors (defaults to "Aa"). */
+    val previewText: String = "Aa",
     /** Whether the font is currently downloaded and cached on disk. Mutable at runtime. */
     var downloaded: Boolean = false,
     /** Absolute local path when downloaded, empty otherwise. */
     var localPath: String = "",
 ) {
+    val familyName: String get() = family
+    val assetPath: String get() = if (downloaded) localPath else remoteUrl
+    val variants: List<String> get() = styles
     init {
         require(id.matches(Regex("[a-z0-9_]{1,80}"))) { "Invalid font id: $id" }
         require(family.isNotBlank() && displayName.isNotBlank())

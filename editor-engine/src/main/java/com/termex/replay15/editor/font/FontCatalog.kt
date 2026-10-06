@@ -111,6 +111,21 @@ object FontCatalog {
      */
     fun loadCatalog(context: Context) {
         try {
+            // Register built-in font credits first
+            builtIns.forEach { asset ->
+                com.termex.replay15.editor.licenses.ResourceCreditsRegistry.register(
+                    com.termex.replay15.editor.licenses.ResourceLicenseMetadata(
+                        id = asset.id,
+                        name = asset.displayName,
+                        author = if (asset.isOriginalRecly) "Recly Originals Team" else "Open Source Contributor",
+                        source = if (asset.isOriginalRecly) "Recly" else "Bundled Font",
+                        license = asset.license,
+                        category = "Font",
+                        tags = builtInTags[asset.id] ?: emptyList(),
+                    )
+                )
+            }
+
             val json = context.assets.open("fonts/font_catalog.json").bufferedReader().readText()
             val array = JSONArray(json)
             val parsed = mutableListOf<FontMetadata>()
@@ -124,10 +139,10 @@ object FontCatalog {
 
                 val meta = FontMetadata(
                     id = id,
-                    family = obj.getString("family"),
+                    family = obj.optString("family", obj.optString("familyName", id)),
                     displayName = obj.getString("displayName"),
                     weights = obj.optJSONArray("weights")?.let { w -> List(w.length()) { w.getInt(it) } } ?: listOf(400),
-                    styles = obj.optJSONArray("styles")?.let { s -> List(s.length()) { s.getString(it) } } ?: listOf("normal"),
+                    styles = (obj.optJSONArray("styles") ?: obj.optJSONArray("variants"))?.let { s -> List(s.length()) { s.getString(it) } } ?: listOf("normal"),
                     variable = obj.optBoolean("variable", false),
                     subsets = obj.optJSONArray("subsets")?.let { s -> List(s.length()) { s.getString(it) } } ?: listOf("latin"),
                     category = obj.optString("category", "SANS").let { cat ->
@@ -135,9 +150,11 @@ object FontCatalog {
                     },
                     tags = obj.optJSONArray("tags")?.let { t -> List(t.length()) { t.getString(it) } } ?: emptyList(),
                     source = obj.optString("source", "google-fonts"),
+                    author = obj.optString("author", "Google Fonts Contributors"),
                     license = license,
                     licenseUrl = obj.optString("licenseUrl", ""),
-                    remoteUrl = obj.optString("remoteUrl", ""),
+                    remoteUrl = obj.optString("remoteUrl", obj.optString("assetPath", "")),
+                    previewText = obj.optString("previewText", "Aa"),
                     version = obj.optString("version", ""),
                     sha256 = obj.optString("sha256", ""),
                     fileSize = obj.optLong("fileSize", 0),
@@ -147,6 +164,22 @@ object FontCatalog {
                     meta.localPath = fontCache.diskFile(id)?.absolutePath ?: ""
                 }
                 parsed.add(meta)
+
+                // Register in attribution registry
+                com.termex.replay15.editor.licenses.ResourceCreditsRegistry.register(
+                    com.termex.replay15.editor.licenses.ResourceLicenseMetadata(
+                        id = id,
+                        name = meta.displayName,
+                        author = meta.author,
+                        source = meta.source,
+                        license = meta.license,
+                        licenseUrl = meta.licenseUrl,
+                        sourceUrl = meta.remoteUrl,
+                        version = meta.version,
+                        category = "Font",
+                        tags = meta.tags,
+                    )
+                )
 
                 // Register in the unified ID map so find/requireOrDefault work for downloaded fonts.
                 if (meta.downloaded) {
@@ -180,12 +213,43 @@ object FontCatalog {
     fun tagsFor(id: String): List<String> =
         builtInTags[id] ?: findRemote(id)?.tags ?: emptyList()
 
+    /** Weights available for a given font ID. */
+    fun weightsFor(id: String): List<Int> =
+        findRemote(id)?.weights ?: listOf(find(id)?.weight ?: 400)
+
+    /** Style variants available for a given font ID. */
+    fun variantsFor(id: String): List<String> =
+        findRemote(id)?.styles ?: listOf(if (find(id)?.italic == true) "italic" else "normal")
+
+    /** Preview text for a given font ID (defaulting to "Aa"). */
+    fun previewTextFor(id: String): String =
+        findRemote(id)?.previewText ?: "Aa"
+
+    // ── Favorites & Recents ─────────────────────────────────────────────────────
+
+    fun favorites(context: Context): Set<String> =
+        FontLibraryPreferences(context).favorites()
+
+    fun toggleFavorite(context: Context, id: String) {
+        FontLibraryPreferences(context).toggleFavorite(id)
+    }
+
+    fun recents(context: Context): List<String> =
+        FontLibraryPreferences(context).recent()
+
+    fun markRecent(context: Context, id: String) {
+        FontLibraryPreferences(context).markRecent(id)
+    }
+
     // ── Lookup ──────────────────────────────────────────────────────────────────
 
     fun find(id: String): FontAsset? = byId[id]
     fun requireOrDefault(id: String): FontAsset = byId[id] ?: requireNotNull(byId[DEFAULT_ID])
 
-    // ── Filtering ───────────────────────────────────────────────────────────────
+    // ── Filtering & Search ──────────────────────────────────────────────────────
+
+    /** Search fonts across built-ins and remote catalog. */
+    fun search(query: String): List<FontAsset> = filter(query = query)
 
     /** Filter [all] by category, optional tag, and optional search query. */
     fun filter(

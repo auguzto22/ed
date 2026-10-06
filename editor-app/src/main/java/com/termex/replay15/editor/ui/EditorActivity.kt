@@ -23,12 +23,31 @@ import com.termex.replay15.editor.media.MediaSourceAccess
 import com.termex.replay15.editor.media.SubtitleImport
 import com.termex.replay15.editor.media.CubeLut
 import com.termex.replay15.editor.media.SubtitleDocument
+import com.termex.replay15.editor.audio.AudioEnhance
+import com.termex.replay15.editor.autoedit.AutoEditCancellation
+import com.termex.replay15.editor.autoedit.ClipAnalyzer
+import com.termex.replay15.editor.beat.BeatMap
+import com.termex.replay15.editor.beat.BeatDetector
+import com.termex.replay15.editor.beat.BeatOptions
+import com.termex.replay15.editor.motion.SmoothSlowMoCache
+import com.termex.replay15.editor.motion.SmoothSlowMoPlanner
+import com.termex.replay15.editor.motion.SmoothSlowMoPreferences
+import com.termex.replay15.editor.motion.SmoothSlowMoProfile
+import com.termex.replay15.editor.domain.formatSpeed
 import com.termex.replay15.editor.captions.CaptionGenerationSession
 import com.termex.replay15.editor.captions.CaptionCorrectionMemory
 import com.termex.replay15.editor.captions.CaptionCorrectionRecord
 import com.termex.replay15.editor.captions.CaptionErrorType
 import com.termex.replay15.editor.captions.CaptionGenerationOptions
+import com.termex.replay15.editor.captions.CaptionProviderFactory
+import com.termex.replay15.editor.captions.CaptionCorrectionService
+import com.termex.replay15.editor.captions.CaptionTranslationFailed
+import com.termex.replay15.editor.captions.CaptionTranslationService
+import com.termex.replay15.editor.captions.CorrectionFailed
 import com.termex.replay15.editor.captions.GeminiCaptionGenerator
+import com.termex.replay15.editor.highlights.HighlightDetector
+import com.termex.replay15.editor.highlights.HighlightResult
+import com.termex.replay15.editor.highlights.Highlight
 import com.termex.replay15.editor.render.EditorFonts
 import com.termex.replay15.editor.render.GlResourcePool
 import com.termex.replay15.editor.render.RenderPlan
@@ -40,6 +59,18 @@ import com.termex.replay15.editor.project.ProjectStore
 import com.termex.replay15.editor.font.FontCatalog
 import com.termex.replay15.editor.font.FontRepository
 import com.termex.replay15.editor.timeline.TimelineView
+import com.termex.replay15.editor.color.AutoColorEngine
+import com.termex.replay15.editor.color.ColorMatchEngine
+import com.termex.replay15.editor.motion.MotionBlurEngine
+import com.termex.replay15.editor.motion.MotionBlurSettings
+import com.termex.replay15.editor.presets.PresetCatalog
+import com.termex.replay15.editor.scopes.ScopeFrameSampler
+import com.termex.replay15.editor.stabilize.LumaFrame
+import com.termex.replay15.editor.stabilize.VideoStabilizer
+import com.termex.replay15.editor.stabilize.StabilizationProfile
+import com.termex.replay15.editor.stabilize.StabilizationPath
+import com.termex.replay15.editor.stabilize.CameraMotion
+import com.termex.replay15.editor.stabilize.MotionEstimator
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
@@ -57,6 +88,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
+/** Beats closer than this are the same moment, not two marks. */
+private const val MARKER_MERGE_US = 200_000L
+
 
 @android.annotation.SuppressLint("GestureBackNavigation")
 class EditorActivity : Activity() {
@@ -87,6 +121,7 @@ class EditorActivity : Activity() {
     private lateinit var transitionTools: TransitionTools
     private lateinit var animationTools: AnimationTools
     private lateinit var autoEditPanel: AutoEditPanel
+    private lateinit var autoReframePanel: AutoReframePanel
     private lateinit var referenceStylePanel: ReferenceStylePanel
     private lateinit var previewBox: FrameLayout
     private lateinit var frame: FrameLayout
@@ -116,6 +151,8 @@ class EditorActivity : Activity() {
     private var voiceStartUs = 0L
     private var voiceStartedAt = 0L
     private var voiceDialog: AlertDialog? = null
+    /** Non-null while the editor is editing inside a compound; see [CompoundEditing]. */
+    private var openCompoundId: String? = null
     private val voiceLimit = Runnable { finishVoiceover(true) }
     private var replaceStickerId: String? = null
     private var pendingLutClipId: String? = null
@@ -305,53 +342,26 @@ class EditorActivity : Activity() {
         }
         addView(closeBtn, LinearLayout.LayoutParams(dp(36), dp(36)))
 
-        // Project title with dropdown indicator (Novo projeto ▼)
+        // Spacer to push quality + export to the right
         projectTitleView = TextView(this@EditorActivity).apply {
-            text = "${project.name.ifBlank { "Novo projeto" }}  ▾"
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            isClickable = true
-            isFocusable = true
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            val value = android.util.TypedValue()
-            theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
-            setBackgroundResource(value.resourceId)
-            setOnClickListener { projectPanel() }
+            text = ""
+            isClickable = false
+            isFocusable = false
         }
-        addView(projectTitleView, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(4), 0, dp(4), 0) })
+        addView(projectTitleView, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Search tools button (🔍)
-        val searchBtn = FrameLayout(this@EditorActivity).apply {
-            contentDescription = "Buscar ferramentas"
-            isClickable = true
-            isFocusable = true
-            val bg = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1), EditorStyle.BORDER)
-                cornerRadius = dp(10).toFloat()
-            }
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
-            val icon = ImageView(context).apply {
-                setImageResource(R.drawable.ic_pro_search)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
-            }
-            addView(icon, FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER))
-            setOnClickListener { searchTools() }
-        }
-        addView(searchBtn, LinearLayout.LayoutParams(dp(36), dp(36)).apply { setMargins(0, 0, dp(6), 0) })
-
-        // Export quality button (Resolution selector, e.g. "1080p", "720p")
+        // Export quality – plain text, no button frame
         quality = action("${project.export.shortSide}p") { exportPanel(false) }.apply {
             contentDescription = "Qualidade de exportação"
             tooltipText = "Qualidade de exportação"
-            minWidth = dp(56); minimumWidth = dp(56)
+            setBackgroundColor(Color.TRANSPARENT)
+            setTextColor(0xFF8E8E93.toInt())
+            textSize = 13f
+            minWidth = dp(44); minimumWidth = dp(44)
             minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(8), dp(2), dp(8), dp(2))
+            setPadding(dp(4), dp(2), dp(8), dp(2))
         }
-        addView(quality, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(6), 0) })
+        addView(quality, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(4), 0) })
 
         // Export button (White pill, black text)
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
@@ -417,37 +427,9 @@ class EditorActivity : Activity() {
         }
         addView(clock, LinearLayout.LayoutParams(-2, -2))
 
-        // Spacer
-        addView(View(this@EditorActivity), LinearLayout.LayoutParams(0, 0, 1f))
-
-        // Frame step back & forward
-        val prevFrame = controlBtn("Quadro anterior", R.drawable.ic_recly_prev_frame) {
-            seek(position - SECOND / project.export.fps)
-        }
-        addView(prevFrame, LinearLayout.LayoutParams(dp(38), dp(38)).apply { setMargins(0, 0, dp(6), 0) })
-
-        val nextFrame = controlBtn("Próximo quadro", R.drawable.ic_recly_next_frame) {
-            seek(position + SECOND / project.export.fps)
-        }
-        addView(nextFrame, LinearLayout.LayoutParams(dp(38), dp(38)).apply { setMargins(0, 0, dp(8), 0) })
-
-        // Undo & Redo
-        undo = controlBtn("Desfazer", R.drawable.ic_recly_undo) {
-            if (!busy && history.canUndo) performHistoryEdit { history.undo() }
-        }
-        addView(undo, LinearLayout.LayoutParams(dp(38), dp(38)).apply { setMargins(0, 0, dp(6), 0) })
-
-        redo = controlBtn("Refazer", R.drawable.ic_recly_redo) {
-            if (!busy && history.canRedo) performHistoryEdit { history.redo() }
-        }
-        addView(redo, LinearLayout.LayoutParams(dp(38), dp(38)).apply { setMargins(0, 0, dp(6), 0) })
-
-        // Fullscreen toggle
-        val fsBtn = controlBtn("Tela cheia", R.drawable.ic_recly_fullscreen) {
-            fullscreen = !fullscreen
-            listOf<View>(this@EditorActivity.top, timelinePane, this@EditorActivity.bottom, info).forEach { v -> v.visibility = if (fullscreen) View.GONE else View.VISIBLE }
-        }
-        addView(fsBtn, LinearLayout.LayoutParams(dp(38), dp(38)))
+        // Undo & Redo dummy views so refresh() doesn't NPE
+        undo = View(this@EditorActivity)
+        redo = View(this@EditorActivity)
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
@@ -653,74 +635,158 @@ class EditorActivity : Activity() {
 
     private fun buildTimelineContainer(landscape: Boolean): LinearLayout = column().apply {
         setBackgroundColor(EditorStyle.BG)
-
-        val timelineHeader = row().apply {
-            setPadding(dp(12), dp(4), dp(12), dp(4))
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        // "+ Adicionar áudio" button
-        val addAudioBtn = LinearLayout(this@EditorActivity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            isClickable = true
-            isFocusable = true
-            setPadding(dp(10), dp(5), dp(12), dp(5))
-            val bg = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1), EditorStyle.BORDER)
-                cornerRadius = dp(14).toFloat()
-            }
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
-            val icon = ImageView(context).apply {
-                setImageResource(R.drawable.ic_pro_plus)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
-            }
-            addView(icon, LinearLayout.LayoutParams(dp(14), dp(14)))
-            val txt = label("+ Adicionar áudio", 12f, Color.WHITE).apply {
-                setPadding(dp(6), 0, 0, 0)
-                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            }
-            addView(txt)
-            setOnClickListener { audioPanel() }
-        }
-        timelineHeader.addView(addAudioBtn, LinearLayout.LayoutParams(-2, dp(32)))
-
-        // Spacer
-        timelineHeader.addView(View(this@EditorActivity), LinearLayout.LayoutParams(0, 0, 1f))
-
-        // Snap button
-        val snapBtn = FrameLayout(this@EditorActivity).apply {
-            contentDescription = "Encaixe magnético"
-            isClickable = true
-            isFocusable = true
-            val bg = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1), EditorStyle.BORDER)
-                cornerRadius = dp(10).toFloat()
-            }
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
-            val icon = ImageView(context).apply {
-                setImageResource(R.drawable.ic_recly_snap)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
-            }
-            addView(icon, FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER))
-            setOnClickListener {
-                timeline.snapping = !timeline.snapping
-                Toast.makeText(this@EditorActivity, if (timeline.snapping) "Encaixe magnético ativado" else "Encaixe magnético desativado", Toast.LENGTH_SHORT).show()
-            }
-        }
-        timelineHeader.addView(snapBtn, LinearLayout.LayoutParams(dp(36), dp(32)).apply { setMargins(0, 0, dp(4), 0) })
-
-        // Marker button
-        timelineHeader.addView(iconAction("Marcador") { markerPanel() }, LinearLayout.LayoutParams(dp(36), dp(32)).apply { setMargins(0, 0, dp(4), 0) })
-
-        // Zoom buttons
-        timelineHeader.addView(iconAction("Zoom menos") { timeline.zoom(.7f) }, LinearLayout.LayoutParams(dp(36), dp(32)).apply { setMargins(0, 0, dp(4), 0) })
-        timelineHeader.addView(iconAction("Zoom mais") { timeline.zoom(1.4f) }, LinearLayout.LayoutParams(dp(36), dp(32)))
-
-        addView(timelineHeader)
+        addView(compoundBar(), LinearLayout.LayoutParams(-1, dp(34)))
         addView(timeline, LinearLayout.LayoutParams(-1, 0, 1f))
+    }
+
+    /** Shown only while a compound is open: name, child count and the way back to the main project. */
+    private fun compoundBar(): LinearLayout = row().apply {
+        id = 0x5245434C
+        visibility = View.GONE
+        setPadding(dp(12), 0, dp(12), 0)
+        gravity = Gravity.CENTER_VERTICAL
+        val bg = GradientDrawable().apply {
+            setColor(0x2E8E7CF0)
+            cornerRadius = dp(10).toFloat()
+        }
+        background = bg
+        val back = TextView(this@EditorActivity).apply {
+            text = "‹  Projeto"
+            textSize = 12f
+            setTextColor(Color.WHITE)
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            setPadding(dp(10), dp(6), dp(10), dp(6))
+            isClickable = true; isFocusable = true
+            contentDescription = "Voltar ao projeto principal"
+            setOnClickListener { closeCompound() }
+        }
+        addView(back)
+        addView(label("", 12f, 0xFFB8AEF5.toInt()).apply { id = 0x5245434E; setPadding(dp(6), 0, 0, 0) },
+            LinearLayout.LayoutParams(0, -2, 1f))
+        addView(TextView(this@EditorActivity).apply {
+            text = "⋯"
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+            isClickable = true; isFocusable = true
+            contentDescription = "Opcoes do compound"
+            setOnClickListener { openCompound()?.let(::compoundMenu) }
+        })
+    }
+
+    private fun openCompound(): CompoundClip? = openCompoundId?.let { id -> project.compounds.firstOrNull { it.id == id } }
+
+    /** Playhead is clamped to the child range while a compound is open, so scrubbing stays nested. */
+    private fun clampToOpenCompound(us: Long): Long {
+        val compound = openCompound() ?: return us.coerceIn(0, project.durationUs)
+        val from = CompoundEditing.startUs(project, compound)
+        val to = (CompoundEditing.endUs(project, compound) - 1L).coerceAtLeast(from)
+        return us.coerceIn(from, to)
+    }
+
+    private fun openCompound(compound: CompoundClip) {
+        openCompoundId = compound.id
+        selected = CompoundEditing.indices(project, compound).firstOrNull() ?: -1
+        timeline.selected = selected
+        videoHandles.mainClipIndex = selected
+        position = CompoundEditing.startUs(project, compound)
+        refresh(reload = false)
+        seek(position)
+    }
+
+    private fun closeCompound() {
+        openCompoundId = null
+        refresh(reload = false)
+        Toast.makeText(this, "De volta ao projeto principal", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun compoundMenu(compound: CompoundClip) {
+        val children = CompoundEditing.children(project, compound)
+        val body = column().apply { setPadding(dp(16), 0, dp(16), dp(8)) }
+        body.addView(label(compound.name, 16f, Color.WHITE).apply {
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
+        })
+        body.addView(label("${children.size} clipes  •  ${timeLabel(CompoundEditing.durationUs(project, compound))}", 12f, EditorStyle.MUTED).apply {
+            setPadding(0, 0, 0, dp(10))
+        })
+        val dialog = sheet("Compound", body)
+        body.addView(editorToolCard("Renomear", "Nome do grupo", accent = true) {
+            dialog.dismiss()
+            renameCompoundDialog(compound)
+        }, LinearLayout.LayoutParams(-1, dp(66)).apply { bottomMargin = dp(6) })
+        body.addView(editorToolCard("Abrir clips", "Editar os clipes filhos", accent = true) {
+            dialog.dismiss(); openCompound(compound)
+        }, LinearLayout.LayoutParams(-1, dp(66)).apply { bottomMargin = dp(6) })
+        body.addView(editorToolCard("Desagrupar", "Manter os clipes, tirar o grupo", danger = true) {
+            dialog.dismiss()
+            if (openCompoundId == compound.id) openCompoundId = null
+            edit(CompoundEditing.ungroup(project, compound.id))
+        }, LinearLayout.LayoutParams(-1, dp(66)))
+    }
+
+    private fun renameCompoundDialog(compound: CompoundClip) {
+        val field = EditText(this).apply { setText(compound.name); setSelection(text.length) }
+        AlertDialog.Builder(this).setTitle("Renomear compound")
+            .setView(field)
+            .setPositiveButton("Salvar") { _, _ -> edit(CompoundEditing.rename(project, compound.id, field.text.toString())) }
+            .setNegativeButton("Cancelar", null).show()
+    }
+
+    /** Entry point: group the selected clip with the ones next to it on the main track. */
+    private fun createCompoundPanel() {
+        val clip = selectedClip() ?: return
+        val anchor = project.indexAt(position).coerceAtLeast(0)
+        val here = project.videos.indexOfFirst { it.id == clip.id }.let { if (it >= 0) it else anchor }
+        if (project.videos.size < 2) { error(" Sao necessarios pelo menos dois clipes na timeline."); return }
+        val previous = (here - 1).takeIf { it >= 0 }?.takeUnless { project.videos[it].let { v -> CompoundEditing.isGrouped(project, v.id) } }
+        val next = (here + 1).takeIf { it in project.videos.indices && !CompoundEditing.isGrouped(project, project.videos[it].id) }
+        val existing = CompoundEditing.at(project, clipId = clip.id)
+        val options = mutableListOf<String>()
+        val actions = mutableListOf<() -> Unit>()
+        if (previous != null) {
+            options += "Com o clipe anterior (${project.videos[previous].name.take(24)})"
+            actions += { groupRange(previous, here) }
+        }
+        if (next != null) {
+            options += "Com o proximo clipe (${project.videos[next].name.take(24)})"
+            actions += { groupRange(here, next) }
+        }
+        if (previous != null && next != null) {
+            options += "Com os dois vizinhos (${project.videos.size} clipes em sequencia)"
+            actions += { groupRange(previous, next) }
+        }
+        if (options.isEmpty()) {
+            error("Vizinho indisponivel: os clipes ao lado ja pertencem a outros compounds.")
+            return
+        }
+        val body = column().apply { setPadding(dp(16), 0, dp(16), dp(8)) }
+        body.addView(label(compoundRangeSummary(here), 12f, EditorStyle.MUTED).apply { setPadding(0, 0, 0, dp(8)) })
+        val dialog = sheet("Criar compound", body)
+        options.forEachIndexed { index, option ->
+            body.addView(editorToolCard(option.substringBefore(" ("), option.substringAfter("(", "").dropLast(1), accent = true) {
+                dialog.dismiss(); actions[index]()
+            }, LinearLayout.LayoutParams(-1, dp(66)).apply { bottomMargin = dp(6) })
+        }
+        if (existing != null) {
+            body.addView(editorToolCard("Abrir ${existing.name}", "${existing.childCount} clipes agrupados", accent = true) {
+                dialog.dismiss(); openCompound(existing)
+            }, LinearLayout.LayoutParams(-1, dp(66)).apply { bottomMargin = dp(6) })
+        }
+    }
+
+    private fun compoundRangeSummary(index: Int): String {
+        val start = project.startOf(index)
+        val clip = project.videos.getOrNull(index) ?: return ""
+        return "Clipe ${index + 1} de ${project.videos.size}  •  ${timeLabel(clip.durationUs)}  •  a partir de ${timeLabel(start)}"
+    }
+
+    private fun groupRange(from: Int, to: Int) {
+        val next = CompoundEditing.group(project, from, to)
+        if (next.compounds.size == project.compounds.size) { error("Nao foi possivel criar o compound nessa selecao."); return }
+        val created = next.compounds.firstOrNull { it !in project.compounds }
+        selected = from
+        edit(next)
+        if (created != null) Toast.makeText(this, "Compound criado com ${created.childCount} clipes. Use Editar > Abrir para editar por dentro.", Toast.LENGTH_LONG).show()
     }
 
     private fun addOrToggleKeyframeAtPlayhead() {
@@ -815,7 +881,7 @@ class EditorActivity : Activity() {
         root.addView(workspace, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val monitor = column()
-        workspace.addView(monitor, if (landscape) LinearLayout.LayoutParams(0, -1, 1.15f) else LinearLayout.LayoutParams(-1, 0, 0.46f))
+        workspace.addView(monitor, if (landscape) LinearLayout.LayoutParams(0, -1, 1.15f) else LinearLayout.LayoutParams(-1, 0, 0.62f))
 
         previewBox = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
@@ -842,6 +908,16 @@ class EditorActivity : Activity() {
             }
             onMainSelected = { index ->
                 selectMainClip(index)
+            }
+            onTrackSelected = { track, clip ->
+                videoHandles.trackId = track
+                videoHandles.clipId = clip
+                timeline.selectedLayerId = clip
+                selected = -1
+                timeline.selected = -1
+                handles.selected = null
+                stickerHandles.selected = null
+                updateContextualTools()
             }
         }
         frame.addView(videoHandles, FrameLayout.LayoutParams(-1, -1))
@@ -936,6 +1012,13 @@ class EditorActivity : Activity() {
                 else refresh(reload = false)
             },
         )
+        autoReframePanel = AutoReframePanel(
+            this,
+            { project },
+            { selected },
+            { suggested -> previewEdit(suggested) },
+            { suggested -> edit(suggested) },
+        )
         referenceStylePanel = ReferenceStylePanel(
             this, { project }, { selected }, ::pickReferenceVideo,
             { suggested -> previewEdit(suggested) }, { suggested -> edit(suggested) },
@@ -953,7 +1036,7 @@ class EditorActivity : Activity() {
 
         val divider = buildDivider(workspace, monitor, landscape)
         workspace.addView(divider, 1, if (landscape) LinearLayout.LayoutParams(dp(10), -1) else LinearLayout.LayoutParams(-1, dp(6)))
-        workspace.addView(timelinePane, if (landscape) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 0.54f))
+        workspace.addView(timelinePane, if (landscape) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 0.38f))
 
         bottom = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; setBackgroundColor(EditorStyle.PANEL) }
         contextualTools = row().apply { setPadding(dp(8), dp(4), dp(8), dp(6)) }
@@ -1022,18 +1105,31 @@ class EditorActivity : Activity() {
             selected in project.videos.indices -> {
                 val currentClip = project.videos[selected]
                 val nextClip = project.videos.getOrNull(selected + 1)
+                val group = CompoundEditing.at(project, clipId = currentClip.id)
                 val list = mutableListOf(
                     "Dividir" to { splitAtCursor() },
+                    "Auto Cor" to { autoColor() },
+                    "Auto Reframe" to { autoReframePanel.open() },
                     "Keyframe" to { addOrToggleKeyframeAtPlayhead() },
                     "Velocidade" to { speedPanel() },
                     "Volume" to { volumePanel() },
                     "Transformar" to { transformPanel() },
+                    "Estabilizar" to { stabilizeVideoPanel() },
+                    "Presets" to { presetsPanel() },
+                    "LUTs" to { openLutBrowser() },
+                    "Scopes" to { scopesPanel() },
                     "Máscara" to { videoMaskPanel(currentClip) },
                     "Rastreamento" to { trackingPanel() },
                     "Filtros" to { filters() },
                     "Efeitos" to { effectTools.open(currentClip.id) },
                     "Remover Fundo" to { backgroundRemovalTools.open(currentClip.id) },
                 )
+                if (group != null) {
+                    list.add("Abrir" to { openCompound(group) })
+                    list.add("Fechar" to { closeCompound() })
+                } else {
+                    list.add("Compound" to { createCompoundPanel() })
+                }
                 if (nextClip != null) {
                     list.add("Transição" to { transitionTools.open(currentClip.id, nextClip.id) })
                 }
@@ -1049,8 +1145,10 @@ class EditorActivity : Activity() {
             else -> listOf(
                 "Áudio" to { audioPanel() },
                 "Texto" to { textMenu() },
+                "Stickers" to { stickerMenu() },
                 "Voz" to { voiceoverPanel() },
                 "Legendas" to { subtitleMenu() },
+                "Auto Edit" to { autoEditPanel.open() },
                 "Ajustar" to { adjustmentsPanel() },
                 "Filtros" to { selectedClipAtCursor(); filters() },
                 "Efeitos" to { effectTools.adjustments() },
@@ -1065,6 +1163,9 @@ class EditorActivity : Activity() {
     }
 
     private fun selectMainClip(index: Int) {
+        if (openCompoundId != null && !isInsideOpenCompound(index)) {
+            closeCompound()
+        }
         selected = index.takeIf { it in project.videos.indices } ?: -1
         timeline.selected = selected
         handles.selected = null
@@ -1075,6 +1176,13 @@ class EditorActivity : Activity() {
         timeline.selectedLayerId = null
         info.text = project.videos.getOrNull(selected)?.name ?: "Novo projeto"
         updateContextualTools()
+    }
+
+    /** Selection is confined to the compound's own clips while one is open. */
+    private fun isInsideOpenCompound(index: Int): Boolean {
+        val compound = openCompound() ?: return true
+        val clip = project.videos.getOrNull(index) ?: return false
+        return clip.id in compound.childIds
     }
 
     private fun clearSelection() {
@@ -1098,30 +1206,32 @@ class EditorActivity : Activity() {
         if (frame.layoutParams.width != fw || frame.layoutParams.height != fh)
             frame.layoutParams = FrameLayout.LayoutParams(fw, fh, Gravity.CENTER)
     }
-    private fun edit(next: Project) {
+    private fun edit(next: Project, recordCaptionCorrections: Boolean = true) {
         if (!loaded || busy) return
         val before = project
         val resumePlayback = preview.playWhenReady
         runCatching { sessionController.apply(next) }.fold(
             { if (it) {
-                val previousCaptions = before.texts.filter { it.isCaption }.associateBy { it.id }
-                val corrections = next.texts.mapNotNull { changed ->
-                    val old = previousCaptions[changed.id]
-                    if (old != null && old.text != changed.text) CaptionCorrectionRecord(
-                        audioSegment = "project:${before.id}:${old.startUs / 1_000}-${old.endUs / 1_000}",
-                        prediction = old.text,
-                        correctText = changed.text,
-                        errorType = CaptionErrorType.PHONETIC_CONFUSION,
-                        modelVersion = "editor-caption",
-                        startMs = old.startUs / 1_000,
-                        endMs = old.endUs / 1_000,
-                    ) else null
-                }
-                if (corrections.isNotEmpty()) {
-                    val projectId = before.id
-                    io.execute {
-                        val memory = CaptionCorrectionMemory(File(filesDir, "caption_corrections/$projectId.json"))
-                        corrections.forEach { memory.record(it) }
+                if (recordCaptionCorrections) {
+                    val previousCaptions = before.texts.filter { it.isCaption }.associateBy { it.id }
+                    val corrections = next.texts.mapNotNull { changed ->
+                        val old = previousCaptions[changed.id]
+                        if (old != null && old.text != changed.text) CaptionCorrectionRecord(
+                            audioSegment = "project:${before.id}:${old.startUs / 1_000}-${old.endUs / 1_000}",
+                            prediction = old.text,
+                            correctText = changed.text,
+                            errorType = CaptionErrorType.PHONETIC_CONFUSION,
+                            modelVersion = "editor-caption",
+                            startMs = old.startUs / 1_000,
+                            endMs = old.endUs / 1_000,
+                        ) else null
+                    }
+                    if (corrections.isNotEmpty()) {
+                        val projectId = before.id
+                        io.execute {
+                            val memory = CaptionCorrectionMemory(File(filesDir, "caption_corrections/$projectId.json"))
+                            corrections.forEach { memory.record(it) }
+                        }
                     }
                 }
                 afterEdit(before, resumePlayback)
@@ -1146,6 +1256,31 @@ class EditorActivity : Activity() {
         else { preview.update(project); refresh(reload = false) }
         main.removeCallbacks(autosave); main.postDelayed(autosave, 1200)
         checkAndRequestProxies(project)
+        checkAndRequestInterpolatedPreviews(project)
+    }
+
+    /**
+     * Interpolated previews are preview-only artifacts and are not persisted with the project,
+     * so they have to be re-attached whenever the editor is opened. The rendered file itself
+     * survives in the cache, so this only costs a cache lookup.
+     */
+    private fun checkAndRequestInterpolatedPreviews(currentProject: Project) {
+        val profile = SmoothSlowMoPreferences.profile(this)
+        if (!profile.enabled) return
+        for (clip in currentProject.allVideos) {
+            if (clip.derivedUri != null || clip.image) continue
+            SmoothSlowMoCache.requestIfNeeded(applicationContext, clip, profile) { clipId, derivedUri ->
+                runOnUiThread {
+                    if (isDestroyed) return@runOnUiThread
+                    val latest = project
+                    val updated = latest.mapVideo(clipId) { it.copy(derivedUri = derivedUri.toString()) }
+                    if (updated != latest) {
+                        history.updateWithoutHistory(updated)
+                        preview.update(updated, redrawIfPaused = true)
+                    }
+                }
+            }
+        }
     }
 
     private fun checkAndRequestProxies(currentProject: Project) {
@@ -1193,9 +1328,22 @@ class EditorActivity : Activity() {
         val playIconRes = if (preview.isPlaying) R.drawable.ic_recly_pause else R.drawable.ic_recly_play
         (play as? ViewGroup)?.findViewById<ImageView>(1001)?.setImageResource(playIconRes)
         empty.visibility = if (project.allVideos.isEmpty()) View.VISIBLE else View.GONE
-        info.text = "${project.name}  /  ${project.videos.size} clipes  •  ${project.audio.size} audios  •  ${project.texts.size + project.stickers.size} camadas"
+        val compound = openCompound()
+        if (openCompoundId != null && compound == null) openCompoundId = null
+        val bar = timelinePane.findViewById<LinearLayout>(0x5245434C)
+        if (bar != null) {
+            val active = openCompound()
+            bar.visibility = if (active == null) View.GONE else View.VISIBLE
+            if (active != null) {
+                bar.findViewById<TextView>(0x5245434E).text =
+                    "${active.name}  •  ${active.childCount} clipes  •  ${timeLabel(CompoundEditing.durationUs(project, active))}"
+            }
+        }
+        info.text = "${project.name}  /  ${project.videos.size} clipes" +
+            (if (project.compounds.isEmpty()) "" else "  •  ${project.compounds.size} compound${if (project.compounds.size > 1) "s" else ""}") +
+            "  •  ${project.audio.size} audios  •  ${project.texts.size + project.stickers.size} camadas"
         if (::projectTitleView.isInitialized) {
-            projectTitleView.text = "${project.name.ifBlank { "Novo projeto" }}  ▾"
+            projectTitleView.text = ""
         }
         updateContextualTools()
         updatePosition(); fitPreview()
@@ -1205,7 +1353,7 @@ class EditorActivity : Activity() {
     }
     /** Decoder seeks are coalesced by the preview engine; UI feedback stays immediate. */
     private fun scrub(us: Long) {
-        position = us.coerceIn(0, project.durationUs)
+        position = clampToOpenCompound(us)
         syncSelectedClipToPosition()
         updatePosition()
         preview.seek(position)
@@ -1213,7 +1361,7 @@ class EditorActivity : Activity() {
 
     private fun seek(us: Long) {
         if (preview.playWhenReady && !preview.isScrubbing) preview.pause()
-        position = us.coerceIn(0, project.durationUs)
+        position = clampToOpenCompound(us)
         syncSelectedClipToPosition()
         preview.seek(position)
         updatePosition()
@@ -1244,7 +1392,7 @@ class EditorActivity : Activity() {
             dialog.setNeutralButton("Remover") { _, _ ->
                 val videos = project.videos.filterIndexed { position, _ -> position != index }
                 selected = -1
-                edit(project.copy(videos = videos, transitions = project.cleanTransitions(videos)))
+                edit(CompoundEditing.sanitize(project.copy(videos = videos, transitions = project.cleanTransitions(videos), compounds = emptyList())))
             }
             dialog.setPositiveButton("Substituir") { _, _ -> pick(false, index) }
         }
@@ -1326,7 +1474,7 @@ class EditorActivity : Activity() {
         }
         if (voiceRecorder != null) finishVoiceover(false)
         PreviewPerformanceController.onTierChangedListener = null
-        autoEditPanel.close(); referenceStylePanel.close(); preview.release(); timeline.release(); videoTrackTools.close(); effectTools.close(); backgroundRemovalTools.close(); transitionTools.close(); animationTools.close(); io.shutdown(); super.onDestroy()
+        autoEditPanel.close(); autoReframePanel.close(); referenceStylePanel.close(); preview.release(); timeline.release(); videoTrackTools.close(); effectTools.close(); backgroundRemovalTools.close(); transitionTools.close(); animationTools.close(); io.shutdown(); super.onDestroy()
     }
 
     override fun onTrimMemory(level: Int) {
@@ -1553,11 +1701,15 @@ class EditorActivity : Activity() {
     }
     private fun colorPanel() {
         val clip = selectedClip() ?: return
+        val localUs = (position - project.startOf(selected)).coerceIn(0L, clip.durationUs)
+        val lutPreviewTimeUs = clip.timeMap.sourceAt(localUs)
         StudioPanels.grade(this, clip,
             { changed -> edit(project.mapVideo(clip.id) { changed }) },
             { pickLut(clip.id) },
             { changed -> previewEdit(project.mapVideo(clip.id) { changed }) },
-            { previewEdit(project) })
+            { previewEdit(project) },
+            lutDirectory = File(filesDir, "editor-luts"),
+            timestampUs = lutPreviewTimeUs)
     }
     private fun masksPanel() {
         val clip = selectedClip() ?: return
@@ -1691,7 +1843,12 @@ class EditorActivity : Activity() {
         io.execute {
             val result = runCatching {
                 val directory = File(filesDir, "editor-luts").apply { check(exists() || mkdirs()) }
-                val file = File(directory, "${newId()}.cube")
+                val sourceName = contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "LUT.cube"
+                require(sourceName.endsWith(".cube", ignoreCase = true)) { "Selecione um arquivo .cube" }
+                val safeName = sourceName.trim().replace(Regex("[^\\p{L}\\p{N}._ -]"), "_").take(90).ifBlank { "LUT.cube" }
+                val file = File(directory, "${newId()}_$safeName")
                 try {
                     contentResolver.openInputStream(uri)?.use { source -> file.outputStream().use { dest ->
                         val buffer = ByteArray(16_384); var total = 0
@@ -1706,6 +1863,84 @@ class EditorActivity : Activity() {
             runOnUiThread { if (!isDestroyed) { busy = false; result.fold({ edit(it) }, { refresh(); error("Falha ao importar LUT: ${it.message}") }) } }
         }
     }
+    private fun beatPanel() {
+        val audio = timeline.selectedLayerId?.let { id -> project.audio.find { it.id == id } }
+        val clip = if (audio == null) selectedClip() else null
+        if (clip?.image == true) { error("Imagens nao tem ritmo para analisar"); return }
+        val body = column()
+        var sensitivity = 1f
+        body.addView(sectionTitle("Batidas", "Acha o BPM do audio selecionado e marca o ritmo na timeline."))
+        body.addView(label(
+            if (audio != null) "Analisando a faixa ${audio.name}." else "Analisando o audio do clipe de video selecionado.",
+            color = EditorStyle.MUTED))
+        slider(body, "Sensibilidade (%)", 100, 300) { sensitivity = it / 100f }
+        lateinit var dialog: Dialog
+        body.addView(action("Detectar batidas", true) {
+            if (busy) { Toast.makeText(this, "Aguarde o processamento terminar", Toast.LENGTH_SHORT).show(); return@action }
+            dialog.dismiss()
+            busy = true
+            info.text = "Analisando o ritmo..."
+            io.execute {
+                val result = runCatching {
+                    val samples =
+                    if (audio != null) ClipAnalyzer.analyzeAudio(applicationContext, audio, AutoEditCancellation())
+                    else ClipAnalyzer.analyzeAudio(applicationContext, clip!!, AutoEditCancellation())
+                    BeatDetector.detect(samples, BeatOptions(sensitivity = sensitivity))
+                }
+                runOnUiThread {
+                    if (isDestroyed) return@runOnUiThread
+                    busy = false
+                    result.fold({ beatResult(it) }, { refresh(); error("Falha ao analisar o audio: ${it.message}") })
+                }
+            }
+        })
+        dialog = sheet("Batidas", body)
+    }
+
+    /**
+     * Shows what was found before anything is written, so a bad detection never costs the
+     * user an undo to get rid of.
+     */
+    private fun beatResult(map: BeatMap) {
+        val body = column()
+        if (map.isEmpty) {
+            body.addView(sectionTitle("Nenhuma batida", "O clipe selecionado nao tem audio com ritmo claro."))
+            body.addView(label("Tente aumentar a sensibilidade, ou confira se o clipe tem faixa de audio.", color = EditorStyle.MUTED))
+            lateinit var empty: Dialog
+            body.addView(action("Fechar") { empty.dismiss() })
+            empty = sheet("Batidas", body)
+            return
+        }
+
+        body.addView(sectionTitle(
+            "${map.bpm.toInt()} BPM",
+            "${map.beats.size} batidas, ${(map.confidence * 100).toInt()}% de encaixe no ritmo.",
+        ))
+        val preview = run {
+            val first = map.beats.first().timeUs
+            val last = map.beats.last().timeUs
+            "${timeLabel(first)} ate ${timeLabel(last)}"
+        }
+        body.addView(label(preview, color = EditorStyle.MUTED))
+
+        val room = 500 - project.markers.size
+        val fresh = map.toMarkers().filter { marker ->
+            project.markers.none { kotlin.math.abs(it.timeUs - marker.timeUs) < MARKER_MERGE_US }
+        }
+        if (fresh.size > room) {
+            body.addView(label("So cabem $room marcadores novos; o limite e 500.", color = EditorStyle.MUTED))
+        }
+
+        lateinit var dialog: Dialog
+        if (fresh.isNotEmpty()) body.addView(action("Marcar ${minOf(fresh.size, room)} batidas", true) {
+            val added = fresh.take(room)
+            edit(project.copy(markers = (project.markers + added).sortedBy { it.timeUs }))
+            dialog.dismiss()
+        })
+        body.addView(action("Fechar") { dialog.dismiss() })
+        dialog = sheet("Batidas", body)
+    }
+
     private fun markerPanel(id: String? = null) {
         if (project.durationUs <= 0) return
         if (id == null && project.markers.size >= 500) { error("Limite de 500 marcadores"); return }
@@ -1795,6 +2030,302 @@ class EditorActivity : Activity() {
         videoHandles.mainClipIndex = selected
     }
 
+    private fun autoColor() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe de vídeo ou foto"); return }
+        val localUs = (position - project.startOf(selected)).coerceIn(0L, clip.durationUs)
+        val sourceTimeUs = clip.timeMap.sourceAt(localUs)
+        io.execute {
+            val retriever = android.media.MediaMetadataRetriever()
+            val frameBitmap = runCatching {
+                retriever.setDataSource(this, Uri.parse(clip.uri))
+                retriever.getFrameAtTime(sourceTimeUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            }.getOrNull()
+            runCatching { retriever.release() }
+            if (frameBitmap == null) {
+                runOnUiThread { Toast.makeText(this, "Não foi possível capturar o quadro.", Toast.LENGTH_SHORT).show() }
+                return@execute
+            }
+            val stats = AutoColorEngine.analyze(frameBitmap)
+            val adjustment = AutoColorEngine.calculate(stats)
+            frameBitmap.recycle()
+            runOnUiThread {
+                val updatedClip = adjustment.applyTo(clip)
+                edit(project.changeVideo(selected) { updatedClip })
+                Toast.makeText(this, "Auto Cor aplicada com sucesso!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun colorMatchPanel() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe"); return }
+        val otherClips = project.videos.filterIndexed { index, _ -> index != selected }
+        if (otherClips.isEmpty()) {
+            error("Adicione outro clipe no projeto para usar como referência de cor.")
+            return
+        }
+        choose("Selecione o clipe de referência", otherClips.mapIndexed { idx, it -> "${idx + 1}. ${it.name}" }) { choiceIdx ->
+            val refClip = otherClips[choiceIdx]
+            val refTimeUs = (refClip.inUs + refClip.outUs) / 2
+            val targetTimeUs = clip.timeMap.sourceAt((position - project.startOf(selected)).coerceIn(0L, clip.durationUs))
+            io.execute {
+                val r1 = android.media.MediaMetadataRetriever()
+                val r2 = android.media.MediaMetadataRetriever()
+                val refBitmap = runCatching {
+                    r1.setDataSource(this@EditorActivity, Uri.parse(refClip.uri))
+                    r1.getFrameAtTime(refTimeUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                }.getOrNull()
+                val targetBitmap = runCatching {
+                    r2.setDataSource(this@EditorActivity, Uri.parse(clip.uri))
+                    r2.getFrameAtTime(targetTimeUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                }.getOrNull()
+                runCatching { r1.release() }
+                runCatching { r2.release() }
+                if (refBitmap == null || targetBitmap == null) {
+                    runOnUiThread { Toast.makeText(this@EditorActivity, "Falha ao ler quadros dos clipes.", Toast.LENGTH_SHORT).show() }
+                    return@execute
+                }
+                val refStats = AutoColorEngine.analyze(refBitmap)
+                val targetStats = AutoColorEngine.analyze(targetBitmap)
+                val matchResult = ColorMatchEngine.match(refStats, targetStats)
+                refBitmap.recycle()
+                targetBitmap.recycle()
+                runOnUiThread {
+                    val updated = matchResult.applyTo(clip, strength = 0.85f)
+                    edit(project.changeVideo(selected) { updated })
+                    Toast.makeText(this@EditorActivity, "Cores combinadas com '${refClip.name}'!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun scopesPanel() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe de vídeo"); return }
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(4)) }
+        body.addView(sectionTitle("Scopes de Vídeo", "Waveform, Vectorscope e Histograma para análise de cor profissional."))
+        val sampler = ScopeFrameSampler(this)
+        val panel = ScopePanel(this, sampler)
+        body.addView(panel.spinner(), LinearLayout.LayoutParams(-1, dp(48)))
+        body.addView(panel.root, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        panel.show(project, selected, position)
+        sheet("Scopes de Vídeo", body)
+    }
+
+    private fun openLutBrowser() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe"); return }
+        val localUs = (position - project.startOf(selected)).coerceIn(0L, clip.durationUs)
+        val lutPreviewTimeUs = clip.timeMap.sourceAt(localUs)
+        val dir = File(filesDir, "editor-luts").apply { mkdirs() }
+        LutBrowser.show(
+            activity = this,
+            directory = dir,
+            clip = clip,
+            timestampUs = lutPreviewTimeUs,
+            currentPath = clip.grade.lutPath,
+            currentStrength = clip.grade.lutStrength,
+            preview = { path, strength -> previewEdit(project.changeVideo(selected) { it.copy(grade = it.grade.copy(lutPath = path, lutStrength = strength)) }) },
+            restore = { previewEdit(project) },
+            choose = { path, strength -> edit(project.changeVideo(selected) { it.copy(grade = it.grade.copy(lutPath = path, lutStrength = strength)) }) },
+            onImport = { pickLut(clip.id) },
+        )
+    }
+
+    private fun presetsPanel() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe"); return }
+        val presets = PresetCatalog.all()
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(6)) }
+        body.addView(sectionTitle("Catálogo de Presets", "Estilos completos de cores, visual e atmosfera."))
+        val grid = GridLayout(this).apply { columnCount = 2 }
+        lateinit var dialog: Dialog
+        presets.forEach { preset ->
+            grid.addView(editorToolCard(preset.name, preset.description.take(45)) {
+                dialog.dismiss()
+                val grade = preset.colorGrade
+                if (grade != null) {
+                    edit(project.changeVideo(selected) { target ->
+                        target.copy(
+                            filter = grade.filterIndex,
+                            brightness = grade.brightness,
+                            contrast = grade.contrast,
+                            saturation = grade.saturation,
+                            hue = grade.hue,
+                            lightness = grade.lightness,
+                            temperature = grade.temperature,
+                            grade = grade.grade,
+                        )
+                    })
+                    Toast.makeText(this, "Preset '${preset.name}' aplicado!", Toast.LENGTH_SHORT).show()
+                }
+            }, GridLayout.LayoutParams().apply {
+                width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            })
+        }
+        val scroll = ScrollView(this).apply { addView(grid) }
+        body.addView(scroll, LinearLayout.LayoutParams(-1, dp(380)))
+        dialog = sheet("Presets", body)
+    }
+
+    private fun motionBlurPanel() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe"); return }
+        if (clip.keyframes.size < 2) {
+            error("Adicione pelo menos 2 keyframes no clipe para gerar motion blur.")
+            return
+        }
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(6)) }
+        body.addView(sectionTitle("Motion Blur Vetorial", "Gera desfoque de movimento realista baseado na velocidade dos keyframes."))
+        var amount = 0.5f
+        var samples = 0.4f
+        var shutter = 180f
+        slider(body, "Intensidade (%)", (amount * 100).toInt(), 100) { amount = it / 100f }
+        slider(body, "Amostras", (samples * 100).toInt(), 100) { samples = it / 100f }
+        slider(body, "Ângulo do Shutter (°)", shutter.toInt(), 360) { shutter = it.toFloat() }
+        body.addView(action("Aplicar Motion Blur", accent = true) {
+            val settings = MotionBlurSettings(amount = amount, samples = samples, shutterAngleDegrees = shutter)
+            val effect = MotionBlurEngine.build(clip, settings, id = newId())
+            if (effect != null) {
+                edit(project.changeVideo(selected) { it.copy(effects = it.effects + effect) })
+                Toast.makeText(this, "Motion Blur aplicado!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Velocidade insuficiente nos keyframes para produzir desfoque.", Toast.LENGTH_SHORT).show()
+            }
+        })
+        sheet("Motion Blur", body)
+    }
+
+    private fun stabilizeVideoPanel() {
+        val clip = selectedClip() ?: run { error("Selecione um clipe de vídeo"); return }
+        if (clip.image) { error("Estabilização requer um clipe de vídeo"); return }
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(6)) }
+        body.addView(sectionTitle("Estabilização de Vídeo", "Analisa e remove a trepidação da câmera gerando keyframes de correção com auto-enquadramento."))
+        val profiles = listOf("Recomendado (Balanceado)", "Mínimo (Corte suave)", "Forte (Máxima estabilidade)")
+        val profileEnums = listOf(
+            StabilizationProfile.RECOMMENDED,
+            StabilizationProfile.MINIMAL,
+            StabilizationProfile.STRONG,
+        )
+        var selectedProfile = profileEnums[0]
+        val spinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item, profiles)
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    selectedProfile = profileEnums[position]
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+            }
+        }
+        body.addView(spinner, LinearLayout.LayoutParams(-1, dp(48)))
+        lateinit var dialog: Dialog
+        body.addView(action("Iniciar Estabilização", accent = true) {
+            dialog.dismiss()
+            runStabilization(clip, selectedProfile)
+        }, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(10) })
+        dialog = sheet("Estabilizar Vídeo", body)
+    }
+
+    private fun runStabilization(clip: VideoClip, profile: StabilizationProfile) {
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("Estabilizando vídeo")
+            .setMessage("Analisando movimento dos quadros...")
+            .setCancelable(false)
+            .show()
+        val canceled = java.util.concurrent.atomic.AtomicBoolean(false)
+        io.execute {
+            val retriever = android.media.MediaMetadataRetriever()
+            val lumaFrames = mutableListOf<Pair<Long, LumaFrame>>()
+            runCatching {
+                retriever.setDataSource(this, Uri.parse(clip.uri))
+                val stepUs = 100_000L // 10 fps sampling
+                var currentUs = clip.inUs
+                while (currentUs < clip.outUs && !canceled.get()) {
+                    val bmp = retriever.getFrameAtTime(currentUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                    if (bmp != null) {
+                        val localUs = currentUs - clip.inUs
+                        lumaFrames.add(localUs to LumaFrame.from(bmp, size = 64))
+                        bmp.recycle()
+                    }
+                    currentUs += stepUs
+                }
+            }
+            runCatching { retriever.release() }
+            if (canceled.get() || lumaFrames.size < 3) {
+                runOnUiThread {
+                    progressDialog.dismiss()
+                    if (!canceled.get()) Toast.makeText(this, "Não foi possível extrair quadros suficientes para estabilização.", Toast.LENGTH_SHORT).show()
+                }
+                return@execute
+            }
+            val motions = ArrayList<CameraMotion>()
+            val estimator = MotionEstimator()
+            var prev: LumaFrame? = null
+            for ((timeUs, frame) in lumaFrames) {
+                val before = prev
+                prev = frame
+                if (before != null) {
+                    estimator.estimate(before, frame, timeUs)?.let(motions::add)
+                }
+            }
+            val corrections = StabilizationPath(profile).correct(motions)
+            val stabilizer = VideoStabilizer(profile)
+            val keyframes = stabilizer.toKeyframes(clip, corrections)
+            runOnUiThread {
+                progressDialog.dismiss()
+                if (keyframes.isNotEmpty()) {
+                    edit(project.changeVideo(selected) { it.copy(keyframes = keyframes) })
+                    Toast.makeText(this, "Vídeo estabilizado! ${keyframes.size} pontos de correção aplicados.", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "O vídeo já está estável.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun lottieStickersPanel() {
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes do sticker"); return }
+        if (project.stickers.size >= 24) { error("Limite de 24 camadas visuais atingido"); return }
+        val lottieItems = listOf(
+            Triple("like_heart.json", "Coração / Like ❤️", "Animação vibrante de coração e like"),
+            Triple("fire_flame.json", "Fogo / Em Alta 🔥", "Chama ardente para momentos épicos"),
+            Triple("confetti_blast.json", "Confete / Festa 🎉", "Explosão festiva de confetes coloridos"),
+            Triple("star_burst.json", "Estrela / Brilho ⭐", "Estrela estourando com brilho e energia"),
+            Triple("arrow_bounce.json", "Seta Animada ⬇️", "Seta saltitante para chamar atenção"),
+        )
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(6)) }
+        body.addView(sectionTitle("Stickers Animados", "Escolha um elemento animado em vetor para sobrepor no vídeo."))
+        lateinit var dialog: Dialog
+        val grid = GridLayout(this).apply { columnCount = 2 }
+        lottieItems.forEach { (filename, title, desc) ->
+            grid.addView(editorToolCard(title, desc) {
+                dialog.dismiss()
+                val targetFile = File(filesDir, "lottie_$filename")
+                if (!targetFile.exists()) {
+                    assets.open("editor/lottie/$filename").use { input ->
+                        targetFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                }
+                val start = position.coerceIn(0L, (project.durationUs - SECOND).coerceAtLeast(0L))
+                val end = (start + 3 * SECOND).coerceAtMost(project.durationUs)
+                val newSticker = StickerClip(
+                    id = newId(),
+                    uri = Uri.fromFile(targetFile).toString(),
+                    name = title,
+                    startUs = start,
+                    endUs = end,
+                    size = 0.35f,
+                    x = 0.5f,
+                    y = 0.5f,
+                )
+                edit(project.copy(stickers = project.stickers + newSticker))
+                stickerHandles.selected = newSticker.id
+                Toast.makeText(this, "Sticker '$title' adicionado!", Toast.LENGTH_SHORT).show()
+            }, GridLayout.LayoutParams().apply {
+                width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            })
+        }
+        body.addView(grid)
+        dialog = sheet("Stickers Animados", body)
+    }
+
     private fun editTools() {
         val clip = selectedClip() ?: return
         val body = column().apply { setPadding(dp(4), 0, dp(4), dp(4)) }
@@ -1817,7 +2348,18 @@ class EditorActivity : Activity() {
         }
         addTool("Dividir", "No cursor") { splitAtCursor() }
         addTool("✨ Auto Edit", "Edicao inteligente") { autoEditPanel.open() }
+        addTool("Auto Reframe", "Enquadrar sujeito IA") { autoReframePanel.open() }
+        addTool("Auto Cor", "Equilíbrio com 1 toque") { autoColor() }
+        addTool("Color Match", "Copiar cor de outro clipe") { colorMatchPanel() }
+        addTool("Presets", "Looks cinematográficos") { presetsPanel() }
+        addTool("Navegador LUTs", "Comparar LUTs 3D") { openLutBrowser() }
+        addTool("Estabilizar", "Remover trepidação") { stabilizeVideoPanel() }
+        addTool("Motion Blur", "Desfoque de movimento") { motionBlurPanel() }
+        addTool("Scopes", "Waveform e Histograma") { scopesPanel() }
+        addTool("Stickers Lottie", "Elementos animados") { lottieStickersPanel() }
         addTool("Velocidade", "Constante e curvas") { speedPanel() }
+        addTool("Batidas", "Achar o BPM e marcar") { beatPanel() }
+        addTool("Movimento suave", "Camera lenta sem serrilhado") { smoothSlowMoPanel() }
         addTool("Volume", "Som do clipe") { volumePanel() }
         addTool("Extrair audio", "Do video") { extractAudio() }
         addTool("Ajustar", "Cor e luz") { adjustmentsPanel() }
@@ -1835,6 +2377,15 @@ class EditorActivity : Activity() {
         addTool("Girar", "90 graus") { edit(project.changeVideo(selected) { it.copy(rotation = (it.rotation + 90) % 360) }) }
         addTool("Espelhar", "Horizontal") { edit(project.changeVideo(selected) { it.copy(flip = !it.flip) }) }
         addTool("Duplicar", "Criar copia") { duplicateSelected() }
+        val group = CompoundEditing.at(project, clipId = clip.id)
+        if (group == null) addTool("Criar compound", "Agrupar clipes") { createCompoundPanel() }
+        else {
+            addTool("Abrir ${group.name}", "${group.childCount} clipes") { openCompound(group) }
+            addTool("Desagrupar", "Tirar o grupo") {
+                if (openCompoundId == group.id) openCompoundId = null
+                edit(CompoundEditing.ungroup(project, group.id))
+            }
+        }
         addTool("Copiar estilo", "Efeitos do clipe") { copyClipStyle() }
         if (copiedClipStyle != null) addTool("Colar estilo", "Aplicar efeitos") { pasteClipStyle() }
         addTool("Mover", "Ordem do clipe") { movePanel() }
@@ -1902,8 +2453,16 @@ class EditorActivity : Activity() {
 
     private fun confirmDeleteSelected() {
         val clip = project.videos.getOrNull(selected) ?: return
-        AlertDialog.Builder(this).setTitle("Excluir clipe?").setMessage("${clip.name} sera removido somente deste projeto.")
-            .setPositiveButton("Excluir") { _, _ -> edit(project.copy(videos = project.videos.filterIndexed { i, _ -> i != selected })) }
+        val group = CompoundEditing.at(project, clipId = clip.id)
+        val message = if (group != null) {
+            "${clip.name} sera removido. O compound \"${group.name}\" perde este clipe e sera desfeito."
+        } else "${clip.name} sera removido somente deste projeto."
+        AlertDialog.Builder(this).setTitle("Excluir clipe?").setMessage(message)
+            .setPositiveButton("Excluir") { _, _ ->
+                if (openCompoundId == group?.id) openCompoundId = null
+                val remaining = project.videos.filterIndexed { i, _ -> i != selected }
+                edit(CompoundEditing.sanitize(project.copy(videos = remaining, transitions = project.cleanTransitions(remaining), compounds = emptyList())))
+            }
             .setNegativeButton("Cancelar", null).show()
     }
     private fun numberField(parent: LinearLayout, title: String, value: Double): EditText {
@@ -2025,19 +2584,85 @@ class EditorActivity : Activity() {
             seek(position)
         }
     }
+    private fun smoothSlowMoPanel() {
+        val clip = selectedClip() ?: return
+        val body = column()
+        val current = SmoothSlowMoPreferences.profile(this)
+        var index = SmoothSlowMoProfile.entries.indexOf(current)
+        val plan = SmoothSlowMoPlanner.plan(clip, current)
+
+        // The panel has to tell the truth about what it will actually do, otherwise the
+        // control reads as broken when the clip simply is not slowed down yet.
+        val explanation = when {
+            clip.image -> "Imagens nao tem quadros para interpolar."
+            current == SmoothSlowMoProfile.OFF ->
+                "Desligado: o clipe em camera lenta mostra os quadros originais esticados."
+            plan == null ->
+                "Este clipe nao esta em camera lenta (minimo ${formatSpeed(SmoothSlowMoPlanner.slowestSpeed(clip))}). " +
+                    "Reduza a velocidade em Velocidade e volte aqui."
+            SmoothSlowMoCache.isRendering(clip.id) -> "Gerando a previa interpolada em segundo plano..."
+            else -> "Vai gerar ${plan.outputFps} quadros por segundo a partir de ${formatSpeed(plan.slowestSpeed)} de camera lenta. O arquivo original nao e alterado e a exportacao usa o original."
+        }
+        body.addView(label(explanation, color = EditorStyle.MUTED))
+
+        slider(body, "Qualidade", index, SmoothSlowMoProfile.entries.lastIndex) { index = it }
+        body.addView(label(
+            SmoothSlowMoProfile.entries[index].let { "${it.label} - ${it.maxOutputFps} fps" },
+            color = EditorStyle.MUTED,
+        ))
+
+        lateinit var dialog: Dialog
+        body.addView(action("Aplicar", true) {
+            val profile = SmoothSlowMoProfile.entries[index]
+            SmoothSlowMoPreferences.setProfile(this, profile)
+            val request = SmoothSlowMoPlanner.plan(clip, profile)
+            if (request == null) {
+                Toast.makeText(this, "Nada a gerar: este clipe nao esta em camera lenta", Toast.LENGTH_SHORT).show()
+            } else {
+                SmoothSlowMoCache.requestIfNeeded(applicationContext, clip, profile) { clipId, derivedUri ->
+                    runOnUiThread {
+                        if (isDestroyed) return@runOnUiThread
+                        val current = project
+                        val updated = current.mapVideo(clipId) { it.copy(derivedUri = derivedUri.toString()) }
+                        if (updated != current) {
+                            // Swapping preview media is not a user edit, so it must not
+                            // create an undo step the user never made.
+                            history.updateWithoutHistory(updated)
+                            preview.update(updated, redrawIfPaused = true)
+                        }
+                    }
+                }
+                Toast.makeText(this, "Gerando previa interpolada em segundo plano", Toast.LENGTH_SHORT).show()
+            }
+            dialog.dismiss()
+        })
+        dialog = sheet("Movimento suave", body)
+    }
+
     private fun volumePanel() {
         val clip = selectedClip() ?: return
         val body = column(); var volume = (clip.volume * 100).toInt()
         var fadeInMs = (clip.audioFadeInUs / 1000).toInt()
         var fadeOutMs = (clip.audioFadeOutUs / 1000).toInt()
+        var noiseReduction = (clip.enhance.noiseReduction * 100).toInt()
+        var voiceEnhance = (clip.enhance.voiceEnhance * 100).toInt()
+        var compression = (clip.enhance.compression * 100).toInt()
+        var normalize = (clip.enhance.normalize * 100).toInt()
         slider(body, "Volume (%)", volume, 200) { volume = it }
         slider(body, "Fade-in do audio (ms)", fadeInMs, 10_000) { fadeInMs = it }
         slider(body, "Fade-out do audio (ms)", fadeOutMs, 10_000) { fadeOutMs = it }
+        body.addView(sectionTitle("Tratamento do audio", "Reduz ruido, destaca a voz e deixa o volume mais constante."))
+        slider(body, "Reduzir ruido (%)", noiseReduction, 100) { noiseReduction = it }
+        slider(body, "Destacar voz (%)", voiceEnhance, 100) { voiceEnhance = it }
+        slider(body, "Compressao (%)", compression, 100) { compression = it }
+        slider(body, "Normalizar volume (%)", normalize, 100) { normalize = it }
         body.addView(label("Os fades sao ajustados automaticamente se forem maiores que metade do clipe. Acima de 100% o volume pode distorcer.", color = EditorStyle.MUTED))
         lateinit var dialog: Dialog
         body.addView(action("Aplicar", true) {
             edit(project.changeVideo(selected) { it.copy(
                 volume = volume / 100f, audioFadeInUs = fadeInMs * 1000L, audioFadeOutUs = fadeOutMs * 1000L,
+                enhance = AudioEnhance(noiseReduction / 100f, voiceEnhance / 100f,
+                    compression / 100f, normalize / 100f),
             ) }); dialog.dismiss()
         })
         dialog = sheet("Volume do clipe", body)
@@ -2191,12 +2816,103 @@ class EditorActivity : Activity() {
         var hue = clip.hue.toInt()
         var lightness = clip.lightness.toInt()
         var temperature = (clip.temperature * 100).toInt()
+        var exposure = clip.grade.exposure
+        var shadows = clip.grade.shadows
+        var highlights = clip.grade.highlights
         fun adjusted(current: VideoClip) = current.copy(
             brightness = brightness / 100f, contrast = contrast / 100f,
             saturation = saturation.toFloat(), hue = hue.toFloat(), lightness = lightness.toFloat(),
             temperature = temperature / 100f,
+            grade = current.grade.copy(exposure = exposure, shadows = shadows, highlights = highlights),
         )
         fun draft() = previewEdit(project.mapVideo(clip.id) { adjusted(it) })
+        val colorButtons = row()
+        colorButtons.addView(action("✦ Auto Color") {
+            if (busy) return@action
+            val sourceUs = clip.timeMap.sourceAt((position - project.startOf(selected)).coerceIn(0L, clip.durationUs))
+            io.execute {
+                val autoAdj = runCatching {
+                    val retriever = android.media.MediaMetadataRetriever()
+                    try {
+                        retriever.setDataSource(this@EditorActivity, Uri.parse(clip.uri))
+                        val frame = retriever.getScaledFrameAtTime(sourceUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST, 160, 90)
+                        frame?.let { sampled ->
+                            try { com.termex.replay15.editor.color.AutoColorEngine.evaluate(sampled) }
+                            finally { if (!sampled.isRecycled) sampled.recycle() }
+                        }
+                    } finally {
+                        retriever.release()
+                    }
+                }.getOrNull()
+
+                if (autoAdj != null) {
+                    runOnUiThread {
+                        if (isDestroyed) return@runOnUiThread
+                        val corrected = autoAdj.applyTo(clip)
+                        brightness = (corrected.brightness * 100).toInt().coerceIn(-100, 100)
+                        contrast = (corrected.contrast * 100).toInt().coerceIn(-90, 90)
+                        saturation = corrected.saturation.toInt().coerceIn(-100, 100)
+                        temperature = (corrected.temperature * 100).toInt().coerceIn(-100, 100)
+                        exposure = corrected.grade.exposure
+                        shadows = corrected.grade.shadows
+                        highlights = corrected.grade.highlights
+                        draft()
+                        Toast.makeText(this@EditorActivity, "Cor automática aplicada na prévia", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    runOnUiThread {
+                        if (!isDestroyed) Toast.makeText(this@EditorActivity, "Não foi possível analisar o quadro", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(2) })
+
+        val otherClips = project.videos.filterIndexed { idx, _ -> idx != selected }
+        if (otherClips.isNotEmpty()) {
+            colorButtons.addView(action("⚖ Color Match") {
+                val names = otherClips.mapIndexed { idx, c -> "${idx + 1}. ${c.name.take(30)}" }
+                choose("Escolha o clipe de referência", names) { chosenIdx ->
+                    val refClip = otherClips[chosenIdx]
+                    val refSourceUs = refClip.timeMap.sourceAt(refClip.durationUs / 2)
+                    val targetSourceUs = clip.timeMap.sourceAt((position - project.startOf(selected)).coerceIn(0L, clip.durationUs))
+                    io.execute {
+                        val matchResult = runCatching {
+                            val refRetriever = android.media.MediaMetadataRetriever()
+                            val targetRetriever = android.media.MediaMetadataRetriever()
+                            try {
+                                refRetriever.setDataSource(this@EditorActivity, Uri.parse(refClip.uri))
+                                targetRetriever.setDataSource(this@EditorActivity, Uri.parse(clip.uri))
+                                val refFrame = refRetriever.getScaledFrameAtTime(refSourceUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST, 160, 90)
+                                val targetFrame = targetRetriever.getScaledFrameAtTime(targetSourceUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST, 160, 90)
+                                if (refFrame != null && targetFrame != null) {
+                                    val result = com.termex.replay15.editor.color.ColorMatchEngine.match(refFrame, targetFrame)
+                                    refFrame.recycle()
+                                    targetFrame.recycle()
+                                    result
+                                } else null
+                            } finally {
+                                refRetriever.release()
+                                targetRetriever.release()
+                            }
+                        }.getOrNull()
+
+                        if (matchResult != null) {
+                            runOnUiThread {
+                                if (isDestroyed) return@runOnUiThread
+                                brightness = ((clip.brightness + matchResult.brightnessOffset) * 100).toInt().coerceIn(-100, 100)
+                                contrast = ((clip.contrast + matchResult.contrastOffset) * 100).toInt().coerceIn(-90, 90)
+                                saturation = (clip.saturation + matchResult.saturationOffset).toInt().coerceIn(-100, 100)
+                                temperature = ((clip.temperature + matchResult.temperatureOffset) * 100).toInt().coerceIn(-100, 100)
+                                draft()
+                                Toast.makeText(this@EditorActivity, "Cores equalizadas com o clipe de referência", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginStart = dp(2) })
+        }
+        body.addView(colorButtons, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(4) })
+
         slider(body, "Brilho", brightness + 100, 200) { brightness = it - 100; draft() }
         slider(body, "Contraste", contrast + 90, 180) { contrast = it - 90; draft() }
         slider(body, "Saturacao", saturation + 100, 200) { saturation = it - 100; draft() }
@@ -2206,7 +2922,8 @@ class EditorActivity : Activity() {
         lateinit var dialog: Dialog
         val footer = row()
         footer.addView(action("Restaurar") {
-            edit(project.changeVideo(selected) { it.copy(brightness = 0f, contrast = 0f, saturation = 0f, hue = 0f, lightness = 0f, temperature = 0f) })
+            edit(project.changeVideo(selected) { it.copy(brightness = 0f, contrast = 0f, saturation = 0f, hue = 0f, lightness = 0f, temperature = 0f,
+                grade = it.grade.copy(exposure = 0f, shadows = 0f, highlights = 0f)) })
             dialog.dismiss()
         }, LinearLayout.LayoutParams(0, dp(56), 1f).apply { marginEnd = dp(4) })
         footer.addView(action("Aplicar ajustes", true) {
@@ -2219,6 +2936,7 @@ class EditorActivity : Activity() {
                 brightness = brightness / 100f, contrast = contrast / 100f,
                 saturation = saturation.toFloat(), hue = hue.toFloat(), lightness = lightness.toFloat(),
                 temperature = temperature / 100f,
+                grade = video.grade.copy(exposure = exposure, shadows = shadows, highlights = highlights),
             ) }))
             dialog.dismiss()
         })
@@ -2251,13 +2969,25 @@ class EditorActivity : Activity() {
         slider(body, "Volume (%)", volume, 200) { volume = it }
         slider(body, "Fade-in (ms)", fadeInMs, 10_000) { fadeInMs = it }
         slider(body, "Fade-out (ms)", fadeOutMs, 10_000) { fadeOutMs = it }
+        body.addView(sectionTitle("Tratamento do audio", "Reduz ruido, destaca a voz e deixa o volume mais constante."))
+        var noiseReduction = (audio.enhance.noiseReduction * 100).toInt()
+        var voiceEnhance = (audio.enhance.voiceEnhance * 100).toInt()
+        var compression = (audio.enhance.compression * 100).toInt()
+        var normalize = (audio.enhance.normalize * 100).toInt()
+        slider(body, "Reduzir ruido (%)", noiseReduction, 100) { noiseReduction = it }
+        slider(body, "Destacar voz (%)", voiceEnhance, 100) { voiceEnhance = it }
+        slider(body, "Compressao (%)", compression, 100) { compression = it }
+        slider(body, "Normalizar volume (%)", normalize, 100) { normalize = it }
+        body.addView(label("O tratamento roda no preview e na exportacao. Use fones para avaliar a voz.", color = EditorStyle.MUTED))
         body.addView(label("Uma faixa de musica adicional, misturada ao som dos videos. O audio termina junto com a timeline.", color = EditorStyle.MUTED))
         lateinit var dialog: Dialog
         body.addView(action("Aplicar", true) {
             runCatching {
                 require(seconds(start) < project.durationUs)
                 audio.copy(startUs = seconds(start), inUs = seconds(sourceStart), outUs = seconds(sourceEnd),
-                    volume = volume / 100f, fadeInUs = fadeInMs * 1000L, fadeOutUs = fadeOutMs * 1000L)
+                    volume = volume / 100f, fadeInUs = fadeInMs * 1000L, fadeOutUs = fadeOutMs * 1000L,
+                    enhance = AudioEnhance(noiseReduction / 100f, voiceEnhance / 100f,
+                        compression / 100f, normalize / 100f))
             }.fold({ changed ->
                 edit(project.copy(audio = project.audio.map { if (it.id == id) changed else it })); dialog.dismiss()
             }, { error("Intervalo de audio invalido") })
@@ -2370,10 +3100,19 @@ class EditorActivity : Activity() {
 
     private fun stickerMenu() {
         if (project.durationUs <= 0) { error("Adicione um video antes da camada de imagem"); return }
-        if (project.stickers.isEmpty()) { pickSticker(); return }
-        choose("Camadas de imagem", listOf("+ Adicionar imagem / sticker") + project.stickers.mapIndexed { index, sticker ->
+        val options = mutableListOf(
+            "+ Adicionar imagem da galeria",
+            "+ Sticker animado (Lottie)",
+        ) + project.stickers.mapIndexed { index, sticker ->
             "${index + 1}. ${sticker.name.take(42)}"
-        }) { index -> if (index == 0) pickSticker() else stickerPanel(project.stickers[index - 1].id) }
+        }
+        choose("Camadas Visuais & Stickers", options) { index ->
+            when (index) {
+                0 -> pickSticker()
+                1 -> lottieStickersPanel()
+                else -> stickerPanel(project.stickers[index - 2].id)
+            }
+        }
     }
 
     private fun stickerPanel(id: String) {
@@ -2464,6 +3203,16 @@ class EditorActivity : Activity() {
         })
         body.addView(action("Gerar legendas automáticas", true) { dialog.dismiss(); automaticCaptionsDialog() })
         body.addView(action("Importar arquivo SRT", true) { dialog.dismiss(); pickSubtitles() })
+        val captionCount = project.texts.count { it.isCaption }
+        if (captionCount > 0 && CaptionProviderFactory.captionTextCorrector() != null) {
+            body.addView(action("Corrigir legendas com Gemini", true) { dialog.dismiss(); correctCaptionsWithGemini() })
+        }
+        if (captionCount > 0 && CaptionProviderFactory.captionTranslator() != null) {
+            body.addView(action("Traduzir legendas", true) { dialog.dismiss(); captionTranslationDialog() })
+        }
+        if (captionCount > 0) {
+            body.addView(action("Melhores momentos", true) { dialog.dismiss(); detectHighlights() })
+        }
         body.addView(action("Fonte global das legendas") {
             dialog.dismiss()
             StudioPanels.fonts(this, project.captionGlobalFontId) { selected ->
@@ -2490,6 +3239,317 @@ class EditorActivity : Activity() {
                 .setType("application/x-subrip").putExtra(Intent.EXTRA_TITLE, "Legendas.srt"), 706) }.onFailure { error("Seletor de destino indisponivel") }
         })
         dialog = sheet("Legendas", body)
+    }
+
+    private fun captionTranslationDialog() {
+        val snapshot = project
+        val captions = snapshot.texts.count { it.isCaption }
+        if (captions == 0) { error("Este projeto ainda não tem legendas para traduzir"); return }
+        val languages = listOf(
+            "Inglês (EUA)" to "en-US",
+            "Espanhol (Espanha)" to "es-ES",
+            "Espanhol (México)" to "es-MX",
+            "Francês" to "fr-FR",
+            "Alemão" to "de-DE",
+            "Italiano" to "it-IT",
+            "Japonês" to "ja-JP",
+            "Coreano" to "ko-KR",
+            "Chinês simplificado" to "zh-CN",
+        )
+        val body = column()
+        body.addView(label("TRADUZIR LEGENDAS", 11f, EditorStyle.ACCENT).apply {
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        body.addView(label("$captions blocos serão traduzidos de uma vez. Os tempos e a divisão atual são preservados; Desfazer restaura os textos originais.", 12f, EditorStyle.MUTED))
+        val target = Spinner(this).apply {
+            adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item, languages.map { it.first })
+        }
+        body.addView(label("Idioma de saída", 12f, EditorStyle.MUTED))
+        body.addView(target)
+        lateinit var dialog: Dialog
+        body.addView(action("Traduzir legendas", true) {
+            val language = languages[target.selectedItemPosition.coerceIn(languages.indices)]
+            dialog.dismiss()
+            translateCaptions(language.second, language.first)
+        })
+        dialog = sheet("Traduzir legendas", body)
+    }
+
+    private fun translateCaptions(targetLanguageCode: String, targetLanguageName: String) {
+        if (busy) return
+        val translator = CaptionProviderFactory.captionTranslator()
+        if (translator == null) {
+            error("A tradução requer uma chave Gemini em DEBUG ou um backend HTTPS configurado.")
+            return
+        }
+        val snapshot = project
+        val captionCount = snapshot.texts.count { it.isCaption }
+        if (captionCount == 0) { error("Este projeto ainda não tem legendas para traduzir"); return }
+
+        val operationId = captionSession.begin()
+        val cancellation = captionSession.cancellation(operationId)
+        busy = true
+        preview.pause()
+        info.text = "Preparando tradução..."
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("Traduzir legendas")
+            .setMessage("Preparando tradução...")
+            .setNegativeButton("Cancelar") { _, _ -> captionSession.cancel(); captionJob?.cancel(); info.text = "Cancelando tradução..." }
+            .create().apply { setCancelable(false); show() }
+        captionJob = captionScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    CaptionTranslationService(translator).translate(
+                        project = snapshot,
+                        targetLanguageCode = targetLanguageCode,
+                        progress = { completed, total ->
+                            main.post {
+                                if (!isDestroyed && progressDialog.isShowing) {
+                                    val message = "Traduzindo blocos $completed/$total para $targetLanguageName..."
+                                    progressDialog.setMessage(message)
+                                    info.text = message
+                                }
+                            }
+                        },
+                        checkCancelled = { cancellation.check() },
+                    )
+                }
+            }
+            if (isDestroyed) return@launch
+            progressDialog.dismiss()
+            busy = false
+            result.fold({ updated ->
+                if (runCatching { cancellation.check() }.isFailure) {
+                    info.text = "Tradução cancelada"
+                    return@fold
+                }
+                edit(updated, recordCaptionCorrections = false)
+                info.text = "$captionCount legendas traduzidas para $targetLanguageName."
+            }, { failure ->
+                if (failure is CancellationException) info.text = "Tradução cancelada"
+                else error(captionTranslationErrorMessage(failure))
+            })
+        }
+    }
+
+    private fun correctCaptionsWithGemini() {
+        if (busy) return
+        val corrector = CaptionProviderFactory.captionTextCorrector()
+        if (corrector == null) {
+            error("A correção requer uma chave Gemini em DEBUG ou um backend HTTPS configurado.")
+            return
+        }
+        val snapshot = project
+        if (snapshot.texts.none { it.isCaption }) {
+            error("Este projeto ainda não tem legendas para corrigir.")
+            return
+        }
+
+        val operationId = captionSession.begin()
+        val cancellation = captionSession.cancellation(operationId)
+        busy = true
+        preview.pause()
+        info.text = "Preparando correção contextual..."
+        val progressText = label("Preparando correção...", 15f)
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("Corrigir legendas")
+            .setView(progressText)
+            .setNegativeButton("Cancelar") { _, _ ->
+                captionSession.cancel()
+                captionJob?.cancel()
+                info.text = "Cancelando correção..."
+            }
+            .create().apply { setCancelable(false); show() }
+
+        captionJob = captionScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    CaptionCorrectionService(corrector).correct(
+                        project = snapshot,
+                        progress = { completed, total ->
+                            main.post {
+                                if (!isDestroyed && progressDialog.isShowing) {
+                                    val message = "Corrigindo blocos $completed/$total..."
+                                    progressText.text = message
+                                    info.text = message
+                                }
+                            }
+                        },
+                        checkCancelled = { cancellation.check() },
+                    )
+                }
+            }
+            if (isDestroyed) return@launch
+            progressDialog.dismiss()
+            busy = false
+            result.fold({ corrected ->
+                if (runCatching { cancellation.check() }.isFailure) {
+                    info.text = "Correção cancelada"
+                    return@fold
+                }
+                if (corrected.correctedCount == 0) {
+                    info.text = "Nenhuma correção segura necessária; os textos originais foram mantidos."
+                } else {
+                    // One project-history entry preserves the original and corrected text for Undo.
+                    edit(corrected.project)
+                    info.text = "${corrected.correctedCount} legendas corrigidas. Desfazer restaura os textos anteriores."
+                }
+            }, { failure ->
+                if (failure is CancellationException) info.text = "Correção cancelada"
+                else error(captionCorrectionErrorMessage(failure))
+            })
+        }
+    }
+
+    private fun captionCorrectionErrorMessage(error: Throwable): String = when (error) {
+        is CorrectionFailed -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.InvalidApiKey -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.NoInternet -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.QuotaExceeded -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.CaptionBackendNotConfigured -> error.message.orEmpty()
+        else -> "Não foi possível corrigir as legendas. Tente novamente mais tarde."
+    }
+
+    private fun captionTranslationErrorMessage(error: Throwable): String = when (error) {
+        is CaptionTranslationFailed -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.InvalidApiKey -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.NoInternet -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.QuotaExceeded -> error.message.orEmpty()
+        is com.termex.replay15.editor.captions.CaptionBackendNotConfigured -> error.message.orEmpty()
+        else -> "Não foi possível traduzir as legendas. Tente novamente mais tarde."
+    }
+
+    private fun detectHighlights() {
+        if (busy) return
+        val snapshot = project
+        val captionCount = snapshot.texts.count { it.isCaption }
+        if (captionCount == 0) { error("Este projeto ainda não tem legendas. Gere legendas primeiro."); return }
+
+        val operationId = captionSession.begin()
+        val cancellation = captionSession.cancellation(operationId)
+        busy = true
+        preview.pause()
+        info.text = "Analisando melhores momentos..."
+        val progressText = label("Preparando análise...", 15f)
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("Melhores momentos")
+            .setView(progressText)
+            .setNegativeButton("Cancelar") { _, _ ->
+                captionSession.cancel()
+                captionJob?.cancel()
+                info.text = "Análise cancelada"
+            }
+            .create().apply { setCancelable(false); show() }
+
+        captionJob = captionScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    // Collect audio energy from all clips (skip images)
+                    val audioToken = AutoEditCancellation()
+                    val audioSamples = snapshot.videos.filter { !it.image }.flatMap { clip ->
+                        cancellation.check()
+                        runCatching {
+                            val analysis = ClipAnalyzer.analyze(
+                                this@EditorActivity, clip,
+                                emptyList(), // no words needed for energy analysis
+                                audioToken,
+                            ) { _ -> }
+                            analysis.audio
+                        }.getOrDefault(emptyList())
+                    }
+
+                    val detector = HighlightDetector()
+                    detector.detect(
+                        project = snapshot,
+                        audioSamples = audioSamples,
+                        maxHighlights = 10,
+                        checkCancelled = { cancellation.check() },
+                        progress = { stage, completed, total ->
+                            main.post {
+                                if (!isDestroyed && progressDialog.isShowing) {
+                                    progressText.text = stage
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+            if (isDestroyed) return@launch
+            progressDialog.dismiss()
+            busy = false
+            result.fold(
+                onSuccess = { highlightResult ->
+                    if (runCatching { cancellation.check() }.isFailure) {
+                        info.text = "Análise cancelada"
+                        return@fold
+                    }
+                    if (highlightResult.highlights.isEmpty()) {
+                        info.text = "Nenhum momento de destaque identificado."
+                        if (highlightResult.warnings.isNotEmpty()) {
+                            error(highlightResult.warnings.joinToString("\n"))
+                        }
+                    } else {
+                        showHighlightResults(highlightResult)
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) info.text = "Análise cancelada"
+                    else error("Não foi possível analisar os melhores momentos: ${failure.message ?: "erro desconhecido"}")
+                },
+            )
+        }
+    }
+
+    private fun showHighlightResults(result: HighlightResult) {
+        val snapshot = project
+        val body = column()
+        body.addView(label("MELHORES MOMENTOS", 11f, EditorStyle.ACCENT).apply {
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        body.addView(label(
+            "${result.highlights.size} destaques encontrados. Toque para navegar, confirme para criar marcadores.",
+            12f, EditorStyle.MUTED
+        ))
+
+        if (result.warnings.isNotEmpty()) {
+            body.addView(label(result.warnings.joinToString("\n"), 11f, 0xFFFFC66D.toInt()))
+        }
+
+        lateinit var dialog: Dialog
+
+        // List each highlight as a tappable item
+        result.highlights.sortedBy { it.startMs }.forEachIndexed { index, highlight ->
+            val timeLabel = "${timeLabel(highlight.startMs * 1_000L)} — ${timeLabel(highlight.endMs * 1_000L)}"
+            val scoreStars = "★".repeat((highlight.score * 5).toInt().coerceIn(1, 5))
+            val text = "$scoreStars  $timeLabel\n${highlight.reason}"
+            body.addView(action(text) {
+                // Navigate to the highlight start
+                seek(highlight.startMs * 1_000L)
+            })
+        }
+
+        // "Add as markers" button
+        body.addView(action("Adicionar como marcadores", true) {
+            val markers = result.highlights.map { it.toMarker() }
+            val existing = snapshot.markers
+            // Filter out markers that are too close to existing ones
+            val fresh = markers.filter { newMarker ->
+                existing.none { abs(it.timeUs - newMarker.timeUs) < MARKER_MERGE_US }
+            }
+            val room = 500 - existing.size
+            if (fresh.isEmpty()) {
+                info.text = "Todos os destaques já possuem marcadores próximos."
+            } else {
+                val added = fresh.take(room)
+                edit(snapshot.copy(markers = (existing + added).sortedBy { it.timeUs }))
+                info.text = "${added.size} marcadores de destaque adicionados."
+            }
+            dialog.dismiss()
+        })
+
+        // "Select a specific range" button
+        body.addView(action("Fechar") { dialog.dismiss() })
+        dialog = sheet("Melhores momentos", body)
     }
 
     private fun captionVocabularyDialog() {
@@ -3199,6 +4259,15 @@ class EditorActivity : Activity() {
     }
     private fun searchTools() {
         val tools = listOf<Pair<String, () -> Unit>>("Importar video ou foto" to { pick(false) }, "Editar / Dividir / Excluir" to { editTools() },
+            "Auto Reframe / Enquadramento Inteligente IA" to { autoReframePanel.open() },
+            "Auto Cor / Equilíbrio automático" to { autoColor() },
+            "Color Match / Combinar cor com outro clipe" to { colorMatchPanel() },
+            "Catálogo de Presets / Looks" to { presetsPanel() },
+            "Navegador de LUTs 3D" to { openLutBrowser() },
+            "Estabilização de Vídeo / Antitremedeira" to { stabilizeVideoPanel() },
+            "Motion Blur Vetorial" to { motionBlurPanel() },
+            "Scopes de Vídeo / Waveform / Histograma" to { scopesPanel() },
+            "Stickers Animados Lottie" to { lottieStickersPanel() },
             "Aparar" to { trimPanel() }, "Velocidade" to { speedPanel() }, "Volume" to { volumePanel() }, "Extrair audio" to { extractAudio() },
             "Transformar / Zoom / Posicao / Desfoque" to { transformPanel() }, "Transicoes" to { transitionPanel() },
             "Keyframes / Animar / Interpolacao" to { keyframePanel() }, "Cor / Curvas / LUT / Nitidez / Grao / Vinheta" to { colorPanel() },

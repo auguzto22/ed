@@ -99,6 +99,52 @@
     ]
   },
   {
+    "id": "recly_motion_blur_vector",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Motion Blur Automatico",
+    "category": "Blur",
+    "engine": "BLUR",
+    "shader": "recly_motion_blur.frag",
+    "license": "Recly original",
+    "cost": "MEDIUM",
+    "parameters": [
+      {
+        "id": "dx",
+        "name": "Deslocamento X",
+        "type": "float",
+        "min": -200.0,
+        "max": 200.0,
+        "default": 0.0
+      },
+      {
+        "id": "dy",
+        "name": "Deslocamento Y",
+        "type": "float",
+        "min": -200.0,
+        "max": 200.0,
+        "default": 0.0
+      },
+      {
+        "id": "amount",
+        "name": "Intensidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 2.0,
+        "default": 0.35
+      },
+      {
+        "id": "samples",
+        "name": "Amostras",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4
+      }
+    ]
+  },
+  {
     "id": "recly_zoom_blur",
     "version": 1,
     "engineVersion": 1,

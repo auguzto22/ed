@@ -275,8 +275,7 @@ class TimelineView(context: Context) : View(context) {
         while (tick <= project.durationUs && x(tick) <= width) {
             val xx = x(tick)
             text(c, java.lang.String.format(java.util.Locale.ROOT, "%02d:%02d", tick / SECOND / 60, tick / SECOND % 60), xx + dp(3f), dp(16f), 0xFF8E8E93.toInt(), 9f)
-            paint.color = 0xFF222222.toInt(); paint.strokeWidth = dp(1f)
-            c.drawLine(xx, dp(22f), xx, height.toFloat(), paint); tick += step
+            tick += step
         }
         project.camera.keyframes.forEach { key ->
             val xx = x(key.timeUs)
@@ -419,6 +418,26 @@ class TimelineView(context: Context) : View(context) {
                     c.drawPath(path, paint)
                     paint.style = Paint.Style.FILL
                 }
+            }
+        }
+        // Compound groups: a bracket spanning the child clips plus a label, drawn above the main
+        // track row. Purely decorative; selection and seeking keep using the same clip indices.
+        project.compounds.forEach { compound ->
+            val first = CompoundEditing.indices(project, compound).minOrNull() ?: return@forEach
+            val last = CompoundEditing.indices(project, compound).maxOrNull() ?: return@forEach
+            val left = x(visualStart(first))
+            val right = x(visualEnd(last))
+            if (right < gutter - dp(40f) || left > width + dp(40f)) return@forEach
+            val top = dp(39f); val bottom = dp(45f)
+            paint.color = compound.color; paint.style = Paint.Style.FILL
+            c.drawRoundRect(left, top, right, bottom, dp(3f), dp(3f), paint)
+            paint.color = compound.color; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
+            c.drawRoundRect(x(visualStart(first)) - dp(1f), dp(46f), x(visualEnd(last)) + dp(1f), dp(119f), dp(6f), dp(6f), paint)
+            paint.style = Paint.Style.FILL
+            if (right - left > dp(46f)) {
+                c.save(); c.clipRect(left, top, right, bottom)
+                text(c, compound.name, left + dp(5f), top + dp(5.5f), 0xFF16161A.toInt(), 8f)
+                c.restore()
             }
         }
         c.save(); c.clipRect(gutter, dp(130f), width.toFloat(), height.toFloat())
@@ -1174,14 +1193,14 @@ class TimelineView(context: Context) : View(context) {
                         invalidate()
                     } else if (isPlayheadGrabbed) {
                         beginScrubSession()
-                        val scrubTarget = snap(time(e.x))
+                        val scrubTarget = time(e.x)
                         onScrub(scrubTarget)
                         invalidate()
                     } else {
                         beginScrubSession()
                         val scaledDelta = precisionController.scaleDelta(e.x - downX)
                         val targetTime = (downPosition - (scaledDelta / pixelsPerSecond * SECOND).toLong()).coerceIn(0, project.durationUs)
-                        onScrub(snap(targetTime))
+                        onScrub(targetTime)
                     }
                 }
                 lastX = e.x; lastY = e.y
@@ -1257,10 +1276,10 @@ class TimelineView(context: Context) : View(context) {
                         }
                     } else if (gesture == 1) {
                         if (isPlayheadGrabbed) {
-                            onSeek(snap(time(e.x)))
+                            onSeek(time(e.x))
                         } else {
                             val scaledDelta = precisionController.scaleDelta(e.x - downX)
-                            onSeek(snap((downPosition - (scaledDelta / pixelsPerSecond * SECOND).toLong()).coerceIn(0, project.durationUs)))
+                            onSeek((downPosition - (scaledDelta / pixelsPerSecond * SECOND).toLong()).coerceIn(0, project.durationUs))
                         }
                     }
                 } else if (!scaled && !isDragging) {
@@ -1284,13 +1303,13 @@ class TimelineView(context: Context) : View(context) {
                         }
                     } else if (downY < dp(48f)) {
                         handledTap = true
-                        onSeek(snap(point))
+                        onSeek(point)
                     } else if (downY in dp(48f)..dp(120f)) {
                         handledTap = true
                         if (pendingClipSelect in project.videos.indices) {
                             onSelect(pendingClipSelect)
                         }
-                        onSeek(snap(point))
+                        onSeek(point)
                     } else if (downY >= dp(130f)) {
                         val lane = lanes.getOrNull(((downY - dp(132f) + vertical) / dp(39f)).toInt())
                         lane?.segments?.firstOrNull { point in it.start until it.end }?.let { s ->

@@ -22,7 +22,8 @@ import java.io.File
 
 object StudioPanels {
     fun grade(activity: Activity, clip: VideoClip, apply: (VideoClip) -> Unit, importLut: () -> Unit,
-        preview: (VideoClip) -> Unit = {}, restore: () -> Unit = {}) = with(activity) {
+        preview: (VideoClip) -> Unit = {}, restore: () -> Unit = {}, lutDirectory: File? = null,
+        timestampUs: Long = -1L) = with(activity) {
         val body = column()
         var grade = clip.grade
         fun update(change: (StudioGrade) -> StudioGrade) { grade = change(grade); preview(clip.copy(grade = grade)) }
@@ -70,9 +71,32 @@ object StudioPanels {
         slider(body, "Vinheta (%)", (grade.vignette * 100).toInt(), 100) { update { grade -> grade.copy(vignette = it / 100f) } }
         slider(body, "Grao de filme (%)", (grade.grain * 100).toInt(), 100) { update { grade -> grade.copy(grain = it / 100f) } }
         slider(body, "Nitidez (%)", (grade.sharpen * 100).toInt(), 100) { update { grade -> grade.copy(sharpen = it / 100f) } }
-        body.addView(sectionTitle("LUT 3D", if (grade.lutPath.isBlank()) "Importe seu arquivo de cor .cube" else File(grade.lutPath).name))
-        slider(body, "Intensidade da LUT (%)", (grade.lutStrength * 100).toInt(), 100) { update { grade -> grade.copy(lutStrength = it / 100f) } }
         lateinit var dialog: Dialog
+        body.addView(sectionTitle("LUT 3D"))
+        val lutName = label(if (grade.lutPath.isBlank()) "Nenhuma LUT selecionada" else File(grade.lutPath).name, 13f, EditorStyle.MUTED)
+        body.addView(lutName)
+        val lutStrengthSlider = slider(body, "Intensidade da LUT (%)", (grade.lutStrength * 100).toInt(), 100) {
+            update { grade -> grade.copy(lutStrength = it / 100f) }
+        }
+        if (lutDirectory != null) body.addView(action("Abrir navegador de LUTs") {
+            LutBrowser.show(
+                activity = this,
+                directory = lutDirectory,
+                clip = clip,
+                timestampUs = timestampUs.takeIf { it >= 0L } ?: ((clip.inUs + clip.outUs) / 2),
+                currentPath = grade.lutPath,
+                currentStrength = grade.lutStrength,
+                preview = { path, strength -> preview(clip.copy(grade = grade.copy(lutPath = path, lutStrength = strength))) },
+                restore = { preview(clip.copy(grade = grade)) },
+                choose = { path, strength ->
+                    grade = grade.copy(lutPath = path, lutStrength = strength)
+                    lutName.text = File(path).name
+                    lutStrengthSlider.progress = (strength * 100).toInt()
+                    preview(clip.copy(grade = grade))
+                },
+                onImport = { apply(clip.copy(grade = grade)); dialog.dismiss(); importLut() },
+            )
+        })
         body.addView(action("Importar LUT .cube") { apply(clip.copy(grade = grade)); dialog.dismiss(); importLut() })
         if (grade.lutPath.isNotBlank()) body.addView(action("Remover LUT") { grade = grade.copy(lutPath = ""); apply(clip.copy(grade = grade)); dialog.dismiss() })
         body.addView(action("Aplicar cor e efeitos", true) { apply(clip.copy(grade = grade)); dialog.dismiss() })

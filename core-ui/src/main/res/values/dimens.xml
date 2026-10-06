@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing -->
+    <dimen name="space_1">4dp</dimen>
+    <dimen name="space_2">8dp</dimen>
+    <dimen name="space_3">12dp</dimen>
+    <dimen name="space_4">16dp</dimen>
+    <dimen name="space_5">20dp</dimen>
+    <dimen name="space_6">24dp</dimen>
+    <dimen name="space_8">32dp</dimen>
+    <dimen name="space_10">40dp</dimen>
+    <dimen name="space_12">48dp</dimen>
+
+    <!-- Icon sizes -->
+    <dimen name="icon_sm">16dp</dimen>
+    <dimen name="icon_md">20dp</dimen>
+    <dimen name="icon_lg">24dp</dimen>
+    <dimen name="icon_xl">32dp</dimen>
+    <dimen name="icon_xxl">48dp</dimen>
+
+    <!-- Corner radii -->
+    <dimen name="radius_sm">8dp</dimen>
+    <dimen name="radius_md">14dp</dimen>
+    <dimen name="radius_lg">20dp</dimen>
+    <dimen name="radius_xl">24dp</dimen>
+
+    <!-- Touch -->
+    <dimen name="touch_min">44dp</dimen>
+    <dimen name="touch_large">56dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="elevation_1">1dp</dimen>
+    <dimen name="elevation_2">4dp</dimen>
+    <dimen name="elevation_3">8dp</dimen>
+    <dimen name="elevation_4">12dp</dimen>
+</resources>

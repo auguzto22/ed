@@ -3,7 +3,22 @@ package com.termex.replay15.editor.animation
 import com.termex.replay15.editor.domain.*
 import kotlin.math.roundToLong
 
-enum class AnimationCategory(val label: String) { IN("Entrada"), OUT("Saida"), LOOP("Repeticao") }
+enum class AnimationCategory(val label: String) {
+    IN("Entrada"),
+    OUT("Saida"),
+    LOOP("Repeticao"),
+    ENTRANCE("Entrada"),
+    EXIT("Saida"),
+    EMPHASIS("Destaque"),
+    TEXT("Texto"),
+    IMAGE("Imagem"),
+    STICKER("Sticker"),
+    SOCIAL("Social"),
+    GAMING("Gaming"),
+    UI("Interface"),
+    CELEBRATION("Celebracao"),
+    MOTION("Movimento");
+}
 data class AnimationPoint(val time: Float, val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f,
     val rotation: Float = 0f, val opacity: Float = 1f, val easing: Easing = Easing.SMOOTH,
     val bezier: CubicBezier = CubicBezier()) {
@@ -28,14 +43,17 @@ data class AnimationPreset(val id: String, val version: Int, val name: String, v
         require(durationUs >= 50_000L) { "A duracao minima e 0.05 segundo" }
         require(clip.durationUs >= 50_000L) { "Clipe muito curto para esta animacao" }
         val duration = minOf(durationUs, clip.durationUs)
-        val start = if (category == AnimationCategory.OUT) clip.durationUs - duration else 0L
-        val end = if (category == AnimationCategory.IN) duration else clip.durationUs
-        val repeats = if (category == AnimationCategory.LOOP) (clip.durationUs + duration - 1) / duration else 1L
+        val isOut = category == AnimationCategory.OUT || category == AnimationCategory.EXIT
+        val isIn = category == AnimationCategory.IN || category == AnimationCategory.ENTRANCE
+        val isLoop = category == AnimationCategory.LOOP
+        val start = if (isOut) clip.durationUs - duration else 0L
+        val end = if (isIn) duration else clip.durationUs
+        val repeats = if (isLoop) (clip.durationUs + duration - 1) / duration else 1L
         require(repeats * (points.size - 1) + 3 <= 200) { "Aumente o periodo da repeticao para usar ate 200 keyframes" }
         val sourceStart = clip.timeMap.sourceAt(start); val sourceEnd = clip.timeMap.sourceAt(end)
         val base = TransformKeyframe(sourceStart, clip.zoom, clip.offsetX, clip.offsetY, clip.fineRotation, clip.opacity)
         val result = clip.keyframes.filterNot { it.sourceUs in sourceStart..sourceEnd }.toMutableList()
-        if (category == AnimationCategory.OUT && result.none { it.sourceUs == clip.inUs }) result += base.copy(sourceUs = clip.inUs, easing = Easing.HOLD)
+        if (isOut && result.none { it.sourceUs == clip.inUs }) result += base.copy(sourceUs = clip.inUs, easing = Easing.HOLD)
         for (cycle in 0 until repeats.toInt()) {
             val cycleStart = start + cycle * duration
             // A partial last cycle is stretched to finish at the original pose, not cut mid-motion.

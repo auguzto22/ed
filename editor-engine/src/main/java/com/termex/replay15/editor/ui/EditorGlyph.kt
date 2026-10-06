@@ -352,6 +352,7 @@ fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column()
     minimumWidth = dp(76)
     minimumHeight = dp(74)
     contentDescription = name
+    tooltipText = name
     isClickable = true
     isFocusable = true
     setPadding(dp(8), dp(8), dp(8), dp(6))

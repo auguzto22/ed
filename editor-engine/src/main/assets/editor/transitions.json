@@ -1,1891 +1,2509 @@
 [
-  {
-    "id": "cross_dissolve",
-    "version": 1,
-    "name": "Cross Dissolve",
-    "category": "Basic",
-    "engine": "BLEND",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 3000000,
-    "shaderFile": "recly_transition_blend.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 0.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.5
-      }
-    ]
-  },
-  {
-    "id": "fade",
-    "version": 1,
-    "name": "Fade",
-    "category": "Basic",
-    "engine": "BLEND",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 3000000,
-    "shaderFile": "recly_transition_blend.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 5.0
-      }
-    ]
-  },
-  {
-    "id": "dip_to_black",
-    "version": 1,
-    "name": "Dip to Black",
-    "category": "Basic",
-    "engine": "BLEND",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 3000000,
-    "shaderFile": "recly_transition_blend.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "dip_to_white",
-    "version": 1,
-    "name": "Dip to White",
-    "category": "Basic",
-    "engine": "BLEND",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 3000000,
-    "shaderFile": "recly_transition_blend.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 2.0
-      }
-    ]
-  },
-  {
-    "id": "fade_through_black",
-    "version": 1,
-    "name": "Fade Through Black",
-    "category": "Basic",
-    "engine": "BLEND",
-    "defaultDurationUs": 700000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 3000000,
-    "shaderFile": "recly_transition_blend.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 3.0
-      }
-    ]
-  },
-  {
-    "id": "fade_through_white",
-    "version": 1,
-    "name": "Fade Through White",
-    "category": "Basic",
-    "engine": "BLEND",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 3000000,
-    "shaderFile": "recly_transition_blend.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 4.0
-      }
-    ]
-  },
-  {
-    "id": "slide_left",
-    "version": 1,
-    "name": "Slide Left",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 0.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.0
-      }
-    ]
-  },
-  {
-    "id": "slide_right",
-    "version": 1,
-    "name": "Slide Right",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "slide_up",
-    "version": 1,
-    "name": "Slide Up",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 2.0
-      }
-    ]
-  },
-  {
-    "id": "slide_down",
-    "version": 1,
-    "name": "Slide Down",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 3.0
-      }
-    ]
-  },
-  {
-    "id": "push_left",
-    "version": 1,
-    "name": "Push Left",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 4.0
-      }
-    ]
-  },
-  {
-    "id": "push_right",
-    "version": 1,
-    "name": "Push Right",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 5.0
-      }
-    ]
-  },
-  {
-    "id": "push_up",
-    "version": 1,
-    "name": "Push Up",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 6.0
-      }
-    ]
-  },
-  {
-    "id": "push_down",
-    "version": 1,
-    "name": "Push Down",
-    "category": "Slide",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 7.0
-      }
-    ]
-  },
-  {
-    "id": "wipe_left",
-    "version": 1,
-    "name": "Wipe Left",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 0.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.06
-      }
-    ]
-  },
-  {
-    "id": "wipe_right",
-    "version": 1,
-    "name": "Wipe Right",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 1.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.06
-      }
-    ]
-  },
-  {
-    "id": "wipe_up",
-    "version": 1,
-    "name": "Wipe Up",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 2.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.06
-      }
-    ]
-  },
-  {
-    "id": "wipe_down",
-    "version": 1,
-    "name": "Wipe Down",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 3.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.06
-      }
-    ]
-  },
-  {
-    "id": "diagonal_wipe",
-    "version": 1,
-    "name": "Diagonal Wipe",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 4.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.08
-      }
-    ]
-  },
-  {
-    "id": "circle_wipe",
-    "version": 1,
-    "name": "Circle Wipe",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 5.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.05
-      }
-    ]
-  },
-  {
-    "id": "radial_wipe",
-    "version": 1,
-    "name": "Radial Wipe",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 700000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 6.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.001,
-        "max": 0.3,
-        "default": 0.04
-      }
-    ]
-  },
-  {
-    "id": "soft_wipe",
-    "version": 1,
-    "name": "Soft Wipe",
-    "category": "Wipe",
-    "engine": "MASK_WIPE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_wipe.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 7.0,
-        "default": 7.0
-      }
-    ]
-  },
-  {
-    "id": "zoom_in",
-    "version": 1,
-    "name": "Zoom In",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 8.0
-      }
-    ]
-  },
-  {
-    "id": "zoom_out",
-    "version": 1,
-    "name": "Zoom Out",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 9.0
-      }
-    ]
-  },
-  {
-    "id": "zoom_through",
-    "version": 1,
-    "name": "Zoom Through",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 10.0
-      }
-    ]
-  },
-  {
-    "id": "punch_zoom",
-    "version": 1,
-    "name": "Punch Zoom",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 11.0
-      }
-    ]
-  },
-  {
-    "id": "smooth_zoom",
-    "version": 1,
-    "name": "Smooth Zoom",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 12.0
-      }
-    ]
-  },
-  {
-    "id": "zoom_blur",
-    "version": 1,
-    "name": "Zoom Blur",
-    "category": "Zoom",
-    "engine": "BLUR",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_blur.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 4.0
-      },
-      {
-        "id": "radius",
-        "name": "Raio",
-        "type": "float",
-        "min": 1.0,
-        "max": 30.0,
-        "default": 16.0
-      }
-    ]
-  },
-  {
-    "id": "zoom_rotate",
-    "version": 1,
-    "name": "Zoom Rotate",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 13.0
-      }
-    ]
-  },
-  {
-    "id": "whip_left",
-    "version": 1,
-    "name": "Whip Left",
-    "category": "Motion",
-    "engine": "WHIP_MOTION",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_whip.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 0.0
-      },
-      {
-        "id": "blur",
-        "name": "Desfoque",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "whip_right",
-    "version": 1,
-    "name": "Whip Right",
-    "category": "Motion",
-    "engine": "WHIP_MOTION",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_whip.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 1.0
-      },
-      {
-        "id": "blur",
-        "name": "Desfoque",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "whip_up",
-    "version": 1,
-    "name": "Whip Up",
-    "category": "Motion",
-    "engine": "WHIP_MOTION",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_whip.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 2.0
-      },
-      {
-        "id": "blur",
-        "name": "Desfoque",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "whip_down",
-    "version": 1,
-    "name": "Whip Down",
-    "category": "Motion",
-    "engine": "WHIP_MOTION",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "supportsDirection": true,
-    "shaderFile": "recly_transition_whip.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 3.0
-      },
-      {
-        "id": "blur",
-        "name": "Desfoque",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "motion_swipe",
-    "version": 1,
-    "name": "Motion Swipe",
-    "category": "Motion",
-    "engine": "WHIP_MOTION",
-    "defaultDurationUs": 450000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_whip.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 4.0
-      },
-      {
-        "id": "blur",
-        "name": "Desfoque",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "fast_pan",
-    "version": 1,
-    "name": "Fast Pan",
-    "category": "Motion",
-    "engine": "WHIP_MOTION",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_whip.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 5.0
-      },
-      {
-        "id": "blur",
-        "name": "Desfoque",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.2
-      }
-    ]
-  },
-  {
-    "id": "blur_dissolve",
-    "version": 1,
-    "name": "Blur Dissolve",
-    "category": "Blur",
-    "engine": "BLUR",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2500000,
-    "shaderFile": "recly_transition_blur.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 0.0
-      },
-      {
-        "id": "radius",
-        "name": "Raio",
-        "type": "float",
-        "min": 1.0,
-        "max": 40.0,
-        "default": 18.0
-      }
-    ]
-  },
-  {
-    "id": "gaussian_blur_trans",
-    "version": 1,
-    "name": "Gaussian Blur",
-    "category": "Blur",
-    "engine": "BLUR",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2500000,
-    "shaderFile": "recly_transition_blur.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 1.0
-      },
-      {
-        "id": "radius",
-        "name": "Raio",
-        "type": "float",
-        "min": 1.0,
-        "max": 40.0,
-        "default": 16.0
-      }
-    ]
-  },
-  {
-    "id": "directional_blur_trans",
-    "version": 1,
-    "name": "Directional Blur",
-    "category": "Blur",
-    "engine": "BLUR",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_blur.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 2.0
-      },
-      {
-        "id": "radius",
-        "name": "Raio",
-        "type": "float",
-        "min": 1.0,
-        "max": 40.0,
-        "default": 20.0
-      },
-      {
-        "id": "angle",
-        "name": "Angulo (rad)",
-        "type": "float",
-        "min": 0.0,
-        "max": 6.283,
-        "default": 0.0
-      }
-    ]
-  },
-  {
-    "id": "radial_blur_trans",
-    "version": 1,
-    "name": "Radial Blur",
-    "category": "Blur",
-    "engine": "BLUR",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_blur.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 3.0
-      },
-      {
-        "id": "radius",
-        "name": "Raio",
-        "type": "float",
-        "min": 1.0,
-        "max": 40.0,
-        "default": 18.0
-      }
-    ]
-  },
-  {
-    "id": "white_flash",
-    "version": 1,
-    "name": "White Flash",
-    "category": "Light",
-    "engine": "LIGHT_FLASH",
-    "defaultDurationUs": 350000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_light.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 0.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 3.0,
-        "default": 1.2
-      }
-    ]
-  },
-  {
-    "id": "color_flash",
-    "version": 1,
-    "name": "Color Flash",
-    "category": "Light",
-    "engine": "LIGHT_FLASH",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_light.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 1.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 3.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "light_leak",
-    "version": 1,
-    "name": "Light Leak",
-    "category": "Light",
-    "engine": "LIGHT_FLASH",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_light.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 2.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.1
-      }
-    ]
-  },
-  {
-    "id": "film_burn",
-    "version": 1,
-    "name": "Film Burn",
-    "category": "Light",
-    "engine": "LIGHT_FLASH",
-    "defaultDurationUs": 650000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_light.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 3.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.2
-      }
-    ]
-  },
-  {
-    "id": "glow_flash",
-    "version": 1,
-    "name": "Glow Flash",
-    "category": "Light",
-    "engine": "LIGHT_FLASH",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_light.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 4.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "digital_glitch",
-    "version": 1,
-    "name": "Digital Glitch",
-    "category": "Glitch",
-    "engine": "RGB_GLITCH",
-    "defaultDurationUs": 400000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_glitch.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 3.0,
-        "default": 0.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "rgb_glitch",
-    "version": 1,
-    "name": "RGB Glitch",
-    "category": "Glitch",
-    "engine": "RGB_GLITCH",
-    "defaultDurationUs": 450000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_glitch.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 3.0,
-        "default": 1.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "signal_glitch",
-    "version": 1,
-    "name": "Signal Glitch",
-    "category": "Glitch",
-    "engine": "RGB_GLITCH",
-    "defaultDurationUs": 450000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_glitch.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 3.0,
-        "default": 2.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "vhs_glitch",
-    "version": 1,
-    "name": "VHS Glitch",
-    "category": "Glitch",
-    "engine": "RGB_GLITCH",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 1500000,
-    "shaderFile": "recly_transition_glitch.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 3.0,
-        "default": 3.0
-      },
-      {
-        "id": "intensity",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "luma_fade",
-    "version": 1,
-    "name": "Luma Fade",
-    "category": "Luma",
-    "engine": "LUMA",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2500000,
-    "shaderFile": "recly_transition_luma.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.01,
-        "max": 0.5,
-        "default": 0.1
-      },
-      {
-        "id": "invert",
-        "name": "Inverter",
-        "type": "float",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.0
-      }
-    ]
-  },
-  {
-    "id": "luma_wipe",
-    "version": 1,
-    "name": "Luma Wipe",
-    "category": "Luma",
-    "engine": "LUMA",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2500000,
-    "shaderFile": "recly_transition_luma.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 1.0
-      },
-      {
-        "id": "softness",
-        "name": "Suavidade",
-        "type": "float",
-        "min": 0.01,
-        "max": 0.5,
-        "default": 0.1
-      },
-      {
-        "id": "invert",
-        "name": "Inverter",
-        "type": "float",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.0
-      }
-    ]
-  },
-  {
-    "id": "ripple",
-    "version": 1,
-    "name": "Ripple",
-    "category": "Distortion",
-    "engine": "DISTORTION_UV",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_distortion.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 0.0
-      },
-      {
-        "id": "strength",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "wave",
-    "version": 1,
-    "name": "Wave",
-    "category": "Distortion",
-    "engine": "DISTORTION_UV",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_distortion.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 1.0
-      },
-      {
-        "id": "strength",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "fisheye_trans",
-    "version": 1,
-    "name": "Fisheye Transition",
-    "category": "Distortion",
-    "engine": "DISTORTION_UV",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_distortion.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 2.0
-      },
-      {
-        "id": "strength",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "warp_trans",
-    "version": 1,
-    "name": "Warp Transition",
-    "category": "Distortion",
-    "engine": "DISTORTION_UV",
-    "defaultDurationUs": 550000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_distortion.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 3.0
-      },
-      {
-        "id": "strength",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "lens_distortion_trans",
-    "version": 1,
-    "name": "Lens Distortion",
-    "category": "Distortion",
-    "engine": "DISTORTION_UV",
-    "defaultDurationUs": 500000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_distortion.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 4.0,
-        "default": 4.0
-      },
-      {
-        "id": "strength",
-        "name": "Intensidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.5,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "spin",
-    "version": 1,
-    "name": "Spin",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 14.0
-      }
-    ]
-  },
-  {
-    "id": "spin_zoom",
-    "version": 1,
-    "name": "Spin Zoom",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 15.0,
-        "default": 15.0
-      }
-    ]
-  },
-  {
-    "id": "rotate_push",
-    "version": 1,
-    "name": "Rotate Push",
-    "category": "Zoom",
-    "engine": "TRANSFORM",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_transform.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 16.0,
-        "default": 16.0
-      }
-    ]
-  },
-  {
-    "id": "flip_horizontal",
-    "version": 1,
-    "name": "Flip Horizontal",
-    "category": "3D",
-    "engine": "PERSPECTIVE_3D",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_3d.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 0.0
-      },
-      {
-        "id": "perspective",
-        "name": "Profundidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "flip_vertical",
-    "version": 1,
-    "name": "Flip Vertical",
-    "category": "3D",
-    "engine": "PERSPECTIVE_3D",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_3d.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 1.0
-      },
-      {
-        "id": "perspective",
-        "name": "Profundidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "cube_left",
-    "version": 1,
-    "name": "Cube Left",
-    "category": "3D",
-    "engine": "PERSPECTIVE_3D",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_3d.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 2.0
-      },
-      {
-        "id": "perspective",
-        "name": "Profundidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "cube_right",
-    "version": 1,
-    "name": "Cube Right",
-    "category": "3D",
-    "engine": "PERSPECTIVE_3D",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_3d.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 3.0
-      },
-      {
-        "id": "perspective",
-        "name": "Profundidade",
-        "type": "float",
-        "min": 0.1,
-        "max": 2.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "page_turn",
-    "version": 1,
-    "name": "Page Turn",
-    "category": "3D",
-    "engine": "PERSPECTIVE_3D",
-    "defaultDurationUs": 700000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_3d.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 4.0
-      }
-    ]
-  },
-  {
-    "id": "perspective_slide",
-    "version": 1,
-    "name": "Perspective Slide",
-    "category": "3D",
-    "engine": "PERSPECTIVE_3D",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_3d.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 5.0,
-        "default": 5.0
-      }
-    ]
-  },
-  {
-    "id": "split_reveal",
-    "version": 1,
-    "name": "Split Reveal",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 0.0
-      }
-    ]
-  },
-  {
-    "id": "split_horizontal",
-    "version": 1,
-    "name": "Split Horizontal",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 1.0
-      }
-    ]
-  },
-  {
-    "id": "split_vertical",
-    "version": 1,
-    "name": "Split Vertical",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 2.0
-      }
-    ]
-  },
-  {
-    "id": "mosaic_reveal",
-    "version": 1,
-    "name": "Mosaic Reveal",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 3.0
-      }
-    ]
-  },
-  {
-    "id": "pixel_dissolve",
-    "version": 1,
-    "name": "Pixel Dissolve",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 4.0
-      }
-    ]
-  },
-  {
-    "id": "prism_trans",
-    "version": 1,
-    "name": "Prism Transition",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 5.0
-      }
-    ]
-  },
-  {
-    "id": "mirror_trans",
-    "version": 1,
-    "name": "Mirror Transition",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 6.0
-      }
-    ]
-  },
-  {
-    "id": "kaleidoscope_trans",
-    "version": 1,
-    "name": "Kaleidoscope Transition",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 650000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 7.0
-      }
-    ]
-  },
-  {
-    "id": "glass_trans",
-    "version": 1,
-    "name": "Glass Transition",
-    "category": "Creative",
-    "engine": "CREATIVE",
-    "defaultDurationUs": 600000,
-    "minDurationUs": 100000,
-    "maxDurationUs": 2000000,
-    "shaderFile": "recly_transition_creative.frag",
-    "parameters": [
-      {
-        "id": "mode",
-        "name": "Modo",
-        "type": "float",
-        "min": 0.0,
-        "max": 8.0,
-        "default": 8.0
-      }
-    ]
-  }
+    {
+        "id":  "cross_dissolve",
+        "version":  1,
+        "name":  "Cross Dissolve",
+        "category":  "Basic",
+        "engine":  "BLEND",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  3000000,
+        "shaderFile":  "recly_transition_blend.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  1.0,
+                               "default":  0.5
+                           }
+                       ]
+    },
+    {
+        "id":  "fade",
+        "version":  1,
+        "name":  "Fade",
+        "category":  "Basic",
+        "engine":  "BLEND",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  3000000,
+        "shaderFile":  "recly_transition_blend.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  5.0
+                           }
+                       ]
+    },
+    {
+        "id":  "dip_to_black",
+        "version":  1,
+        "name":  "Dip to Black",
+        "category":  "Basic",
+        "engine":  "BLEND",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  3000000,
+        "shaderFile":  "recly_transition_blend.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "dip_to_white",
+        "version":  1,
+        "name":  "Dip to White",
+        "category":  "Basic",
+        "engine":  "BLEND",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  3000000,
+        "shaderFile":  "recly_transition_blend.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  2.0
+                           }
+                       ]
+    },
+    {
+        "id":  "fade_through_black",
+        "version":  1,
+        "name":  "Fade Through Black",
+        "category":  "Basic",
+        "engine":  "BLEND",
+        "defaultDurationUs":  700000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  3000000,
+        "shaderFile":  "recly_transition_blend.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  3.0
+                           }
+                       ]
+    },
+    {
+        "id":  "fade_through_white",
+        "version":  1,
+        "name":  "Fade Through White",
+        "category":  "Basic",
+        "engine":  "BLEND",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  3000000,
+        "shaderFile":  "recly_transition_blend.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  4.0
+                           }
+                       ]
+    },
+    {
+        "id":  "slide_left",
+        "version":  1,
+        "name":  "Slide Left",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  1.0,
+                               "default":  0.0
+                           }
+                       ]
+    },
+    {
+        "id":  "slide_right",
+        "version":  1,
+        "name":  "Slide Right",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "slide_up",
+        "version":  1,
+        "name":  "Slide Up",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  2.0
+                           }
+                       ]
+    },
+    {
+        "id":  "slide_down",
+        "version":  1,
+        "name":  "Slide Down",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  3.0
+                           }
+                       ]
+    },
+    {
+        "id":  "push_left",
+        "version":  1,
+        "name":  "Push Left",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  4.0
+                           }
+                       ]
+    },
+    {
+        "id":  "push_right",
+        "version":  1,
+        "name":  "Push Right",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  5.0
+                           }
+                       ]
+    },
+    {
+        "id":  "push_up",
+        "version":  1,
+        "name":  "Push Up",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  6.0
+                           }
+                       ]
+    },
+    {
+        "id":  "push_down",
+        "version":  1,
+        "name":  "Push Down",
+        "category":  "Slide",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  7.0
+                           }
+                       ]
+    },
+    {
+        "id":  "wipe_left",
+        "version":  1,
+        "name":  "Wipe Left",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.06
+                           }
+                       ]
+    },
+    {
+        "id":  "wipe_right",
+        "version":  1,
+        "name":  "Wipe Right",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.06
+                           }
+                       ]
+    },
+    {
+        "id":  "wipe_up",
+        "version":  1,
+        "name":  "Wipe Up",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.06
+                           }
+                       ]
+    },
+    {
+        "id":  "wipe_down",
+        "version":  1,
+        "name":  "Wipe Down",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.06
+                           }
+                       ]
+    },
+    {
+        "id":  "diagonal_wipe",
+        "version":  1,
+        "name":  "Diagonal Wipe",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  4.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.08
+                           }
+                       ]
+    },
+    {
+        "id":  "circle_wipe",
+        "version":  1,
+        "name":  "Circle Wipe",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  5.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.05
+                           }
+                       ]
+    },
+    {
+        "id":  "radial_wipe",
+        "version":  1,
+        "name":  "Radial Wipe",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  700000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  6.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.001,
+                               "max":  0.3,
+                               "default":  0.04
+                           }
+                       ]
+    },
+    {
+        "id":  "soft_wipe",
+        "version":  1,
+        "name":  "Soft Wipe",
+        "category":  "Wipe",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_wipe.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  7.0,
+                               "default":  7.0
+                           }
+                       ]
+    },
+    {
+        "id":  "zoom_in",
+        "version":  1,
+        "name":  "Zoom In",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  8.0
+                           }
+                       ]
+    },
+    {
+        "id":  "zoom_out",
+        "version":  1,
+        "name":  "Zoom Out",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  9.0
+                           }
+                       ]
+    },
+    {
+        "id":  "zoom_through",
+        "version":  1,
+        "name":  "Zoom Through",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  10.0
+                           }
+                       ]
+    },
+    {
+        "id":  "punch_zoom",
+        "version":  1,
+        "name":  "Punch Zoom",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  11.0
+                           }
+                       ]
+    },
+    {
+        "id":  "smooth_zoom",
+        "version":  1,
+        "name":  "Smooth Zoom",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  12.0
+                           }
+                       ]
+    },
+    {
+        "id":  "zoom_blur",
+        "version":  1,
+        "name":  "Zoom Blur",
+        "category":  "Zoom",
+        "engine":  "BLUR",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_blur.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  4.0
+                           },
+                           {
+                               "id":  "radius",
+                               "name":  "Raio",
+                               "type":  "float",
+                               "min":  1.0,
+                               "max":  30.0,
+                               "default":  16.0
+                           }
+                       ]
+    },
+    {
+        "id":  "zoom_rotate",
+        "version":  1,
+        "name":  "Zoom Rotate",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  13.0
+                           }
+                       ]
+    },
+    {
+        "id":  "whip_left",
+        "version":  1,
+        "name":  "Whip Left",
+        "category":  "Motion",
+        "engine":  "WHIP_MOTION",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_whip.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "blur",
+                               "name":  "Desfoque",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "whip_right",
+        "version":  1,
+        "name":  "Whip Right",
+        "category":  "Motion",
+        "engine":  "WHIP_MOTION",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_whip.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "blur",
+                               "name":  "Desfoque",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "whip_up",
+        "version":  1,
+        "name":  "Whip Up",
+        "category":  "Motion",
+        "engine":  "WHIP_MOTION",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_whip.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "blur",
+                               "name":  "Desfoque",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "whip_down",
+        "version":  1,
+        "name":  "Whip Down",
+        "category":  "Motion",
+        "engine":  "WHIP_MOTION",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "supportsDirection":  true,
+        "shaderFile":  "recly_transition_whip.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "blur",
+                               "name":  "Desfoque",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "motion_swipe",
+        "version":  1,
+        "name":  "Motion Swipe",
+        "category":  "Motion",
+        "engine":  "WHIP_MOTION",
+        "defaultDurationUs":  450000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_whip.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  4.0
+                           },
+                           {
+                               "id":  "blur",
+                               "name":  "Desfoque",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "fast_pan",
+        "version":  1,
+        "name":  "Fast Pan",
+        "category":  "Motion",
+        "engine":  "WHIP_MOTION",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_whip.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  5.0
+                           },
+                           {
+                               "id":  "blur",
+                               "name":  "Desfoque",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.2
+                           }
+                       ]
+    },
+    {
+        "id":  "blur_dissolve",
+        "version":  1,
+        "name":  "Blur Dissolve",
+        "category":  "Blur",
+        "engine":  "BLUR",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2500000,
+        "shaderFile":  "recly_transition_blur.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "radius",
+                               "name":  "Raio",
+                               "type":  "float",
+                               "min":  1.0,
+                               "max":  40.0,
+                               "default":  18.0
+                           }
+                       ]
+    },
+    {
+        "id":  "gaussian_blur_trans",
+        "version":  1,
+        "name":  "Gaussian Blur",
+        "category":  "Blur",
+        "engine":  "BLUR",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2500000,
+        "shaderFile":  "recly_transition_blur.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "radius",
+                               "name":  "Raio",
+                               "type":  "float",
+                               "min":  1.0,
+                               "max":  40.0,
+                               "default":  16.0
+                           }
+                       ]
+    },
+    {
+        "id":  "directional_blur_trans",
+        "version":  1,
+        "name":  "Directional Blur",
+        "category":  "Blur",
+        "engine":  "BLUR",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_blur.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "radius",
+                               "name":  "Raio",
+                               "type":  "float",
+                               "min":  1.0,
+                               "max":  40.0,
+                               "default":  20.0
+                           },
+                           {
+                               "id":  "angle",
+                               "name":  "Angulo (rad)",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  6.283,
+                               "default":  0.0
+                           }
+                       ]
+    },
+    {
+        "id":  "radial_blur_trans",
+        "version":  1,
+        "name":  "Radial Blur",
+        "category":  "Blur",
+        "engine":  "BLUR",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_blur.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "radius",
+                               "name":  "Raio",
+                               "type":  "float",
+                               "min":  1.0,
+                               "max":  40.0,
+                               "default":  18.0
+                           }
+                       ]
+    },
+    {
+        "id":  "white_flash",
+        "version":  1,
+        "name":  "White Flash",
+        "category":  "Light",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  350000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_light.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  3.0,
+                               "default":  1.2
+                           }
+                       ]
+    },
+    {
+        "id":  "color_flash",
+        "version":  1,
+        "name":  "Color Flash",
+        "category":  "Light",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_light.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  3.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "light_leak",
+        "version":  1,
+        "name":  "Light Leak",
+        "category":  "Light",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_light.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.1
+                           }
+                       ]
+    },
+    {
+        "id":  "film_burn",
+        "version":  1,
+        "name":  "Film Burn",
+        "category":  "Light",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  650000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_light.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.2
+                           }
+                       ]
+    },
+    {
+        "id":  "glow_flash",
+        "version":  1,
+        "name":  "Glow Flash",
+        "category":  "Light",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_light.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  4.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "digital_glitch",
+        "version":  1,
+        "name":  "Digital Glitch",
+        "category":  "Glitch",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  400000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_glitch.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  3.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "rgb_glitch",
+        "version":  1,
+        "name":  "RGB Glitch",
+        "category":  "Glitch",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  450000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_glitch.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  3.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "signal_glitch",
+        "version":  1,
+        "name":  "Signal Glitch",
+        "category":  "Glitch",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  450000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_glitch.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  3.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "vhs_glitch",
+        "version":  1,
+        "name":  "VHS Glitch",
+        "category":  "Glitch",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  1500000,
+        "shaderFile":  "recly_transition_glitch.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  3.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "luma_fade",
+        "version":  1,
+        "name":  "Luma Fade",
+        "category":  "Luma",
+        "engine":  "LUMA",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2500000,
+        "shaderFile":  "recly_transition_luma.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  1.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.01,
+                               "max":  0.5,
+                               "default":  0.1
+                           },
+                           {
+                               "id":  "invert",
+                               "name":  "Inverter",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  1.0,
+                               "default":  0.0
+                           }
+                       ]
+    },
+    {
+        "id":  "luma_wipe",
+        "version":  1,
+        "name":  "Luma Wipe",
+        "category":  "Luma",
+        "engine":  "LUMA",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2500000,
+        "shaderFile":  "recly_transition_luma.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  1.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "type":  "float",
+                               "min":  0.01,
+                               "max":  0.5,
+                               "default":  0.1
+                           },
+                           {
+                               "id":  "invert",
+                               "name":  "Inverter",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  1.0,
+                               "default":  0.0
+                           }
+                       ]
+    },
+    {
+        "id":  "ripple",
+        "version":  1,
+        "name":  "Ripple",
+        "category":  "Distortion",
+        "engine":  "DISTORTION_UV",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_distortion.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "strength",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "wave",
+        "version":  1,
+        "name":  "Wave",
+        "category":  "Distortion",
+        "engine":  "DISTORTION_UV",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_distortion.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "strength",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "fisheye_trans",
+        "version":  1,
+        "name":  "Fisheye Transition",
+        "category":  "Distortion",
+        "engine":  "DISTORTION_UV",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_distortion.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "strength",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "warp_trans",
+        "version":  1,
+        "name":  "Warp Transition",
+        "category":  "Distortion",
+        "engine":  "DISTORTION_UV",
+        "defaultDurationUs":  550000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_distortion.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "strength",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "lens_distortion_trans",
+        "version":  1,
+        "name":  "Lens Distortion",
+        "category":  "Distortion",
+        "engine":  "DISTORTION_UV",
+        "defaultDurationUs":  500000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_distortion.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  4.0,
+                               "default":  4.0
+                           },
+                           {
+                               "id":  "strength",
+                               "name":  "Intensidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.5,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "spin",
+        "version":  1,
+        "name":  "Spin",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  14.0
+                           }
+                       ]
+    },
+    {
+        "id":  "spin_zoom",
+        "version":  1,
+        "name":  "Spin Zoom",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  15.0,
+                               "default":  15.0
+                           }
+                       ]
+    },
+    {
+        "id":  "rotate_push",
+        "version":  1,
+        "name":  "Rotate Push",
+        "category":  "Zoom",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_transform.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  16.0,
+                               "default":  16.0
+                           }
+                       ]
+    },
+    {
+        "id":  "flip_horizontal",
+        "version":  1,
+        "name":  "Flip Horizontal",
+        "category":  "3D",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_3d.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  0.0
+                           },
+                           {
+                               "id":  "perspective",
+                               "name":  "Profundidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "flip_vertical",
+        "version":  1,
+        "name":  "Flip Vertical",
+        "category":  "3D",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_3d.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  1.0
+                           },
+                           {
+                               "id":  "perspective",
+                               "name":  "Profundidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "cube_left",
+        "version":  1,
+        "name":  "Cube Left",
+        "category":  "3D",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_3d.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  2.0
+                           },
+                           {
+                               "id":  "perspective",
+                               "name":  "Profundidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "cube_right",
+        "version":  1,
+        "name":  "Cube Right",
+        "category":  "3D",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_3d.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  3.0
+                           },
+                           {
+                               "id":  "perspective",
+                               "name":  "Profundidade",
+                               "type":  "float",
+                               "min":  0.1,
+                               "max":  2.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "page_turn",
+        "version":  1,
+        "name":  "Page Turn",
+        "category":  "3D",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  700000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_3d.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  4.0
+                           }
+                       ]
+    },
+    {
+        "id":  "perspective_slide",
+        "version":  1,
+        "name":  "Perspective Slide",
+        "category":  "3D",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_3d.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  5.0,
+                               "default":  5.0
+                           }
+                       ]
+    },
+    {
+        "id":  "split_reveal",
+        "version":  1,
+        "name":  "Split Reveal",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  0.0
+                           }
+                       ]
+    },
+    {
+        "id":  "split_horizontal",
+        "version":  1,
+        "name":  "Split Horizontal",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  1.0
+                           }
+                       ]
+    },
+    {
+        "id":  "split_vertical",
+        "version":  1,
+        "name":  "Split Vertical",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  2.0
+                           }
+                       ]
+    },
+    {
+        "id":  "mosaic_reveal",
+        "version":  1,
+        "name":  "Mosaic Reveal",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  3.0
+                           }
+                       ]
+    },
+    {
+        "id":  "pixel_dissolve",
+        "version":  1,
+        "name":  "Pixel Dissolve",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  4.0
+                           }
+                       ]
+    },
+    {
+        "id":  "prism_trans",
+        "version":  1,
+        "name":  "Prism Transition",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  5.0
+                           }
+                       ]
+    },
+    {
+        "id":  "mirror_trans",
+        "version":  1,
+        "name":  "Mirror Transition",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  6.0
+                           }
+                       ]
+    },
+    {
+        "id":  "kaleidoscope_trans",
+        "version":  1,
+        "name":  "Kaleidoscope Transition",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  650000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  7.0
+                           }
+                       ]
+    },
+    {
+        "id":  "glass_trans",
+        "version":  1,
+        "name":  "Glass Transition",
+        "category":  "Creative",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "minDurationUs":  100000,
+        "maxDurationUs":  2000000,
+        "shaderFile":  "recly_transition_creative.frag",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "type":  "float",
+                               "min":  0.0,
+                               "max":  8.0,
+                               "default":  8.0
+                           }
+                       ]
+    },
+    {
+        "shaderFile":  "recly_transition_blend.frag",
+        "id":  "smooth_fade",
+        "maxDurationUs":  3000000,
+        "version":  1,
+        "category":  "Fade",
+        "engine":  "BLEND",
+        "defaultDurationUs":  500000,
+        "name":  "Smooth Fade",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  6,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  8
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_blend.frag",
+        "id":  "color_fade_dip",
+        "maxDurationUs":  3000000,
+        "version":  1,
+        "category":  "Fade",
+        "engine":  "BLEND",
+        "defaultDurationUs":  600000,
+        "name":  "Color Dip Fade",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  7,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  8
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_blend.frag",
+        "id":  "cross_fade_soft",
+        "maxDurationUs":  3000000,
+        "version":  1,
+        "category":  "Fade",
+        "engine":  "BLEND",
+        "defaultDurationUs":  500000,
+        "name":  "Soft Cross Fade",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  8,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  8
+                           },
+                           {
+                               "id":  "softness",
+                               "name":  "Suavidade",
+                               "default":  0.8,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  1
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_rgb.frag",
+        "id":  "rgb_split",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "RGB",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  500000,
+        "name":  "RGB Split",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  0,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.1,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_rgb.frag",
+        "id":  "rgb_shift",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "RGB",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  500000,
+        "name":  "RGB Shift",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  1,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.1,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_rgb.frag",
+        "id":  "chromatic_drift",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "RGB",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  550000,
+        "name":  "Chromatic Drift",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  2,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1.2,
+                               "min":  0.1,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_rgb.frag",
+        "id":  "channel_shear",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "RGB",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  500000,
+        "name":  "Channel Shear",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  3,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.1,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_rgb.frag",
+        "id":  "prism_wipe",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "RGB",
+        "engine":  "RGB_GLITCH",
+        "defaultDurationUs":  600000,
+        "name":  "Prism Wipe",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  4,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.1,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_film.frag",
+        "id":  "film_roll",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Film",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "name":  "Film Roll",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  1,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_film.frag",
+        "id":  "leader_flash",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Film",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  500000,
+        "name":  "Leader Flash",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  2,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_film.frag",
+        "id":  "sprocket_slip",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Film",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  550000,
+        "name":  "Sprocket Slip",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  3,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_film.frag",
+        "id":  "burn_dissolve",
+        "maxDurationUs":  2500000,
+        "version":  1,
+        "category":  "Film",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  700000,
+        "name":  "Burn Dissolve",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  4,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_cinematic.frag",
+        "id":  "anamorphic_streak",
+        "maxDurationUs":  2500000,
+        "version":  1,
+        "category":  "Cinematic",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  600000,
+        "name":  "Anamorphic Streak",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  0,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  3
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.2,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_cinematic.frag",
+        "id":  "letterbox_reveal",
+        "maxDurationUs":  2500000,
+        "version":  1,
+        "category":  "Cinematic",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  650000,
+        "name":  "Letterbox Reveal",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  1,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_cinematic.frag",
+        "id":  "flare_sweep",
+        "maxDurationUs":  2500000,
+        "version":  1,
+        "category":  "Cinematic",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  600000,
+        "name":  "Lens Flare Sweep",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  2,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  3
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.2,
+                               "type":  "float",
+                               "max":  2.5
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_cinematic.frag",
+        "id":  "cine_shutter",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Cinematic",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  500000,
+        "name":  "Cinematic Shutter",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  3,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  3
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_social.frag",
+        "id":  "social_swipe_up",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Social",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "name":  "Stories Swipe Up",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  0,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_social.frag",
+        "id":  "stories_flip",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Social",
+        "engine":  "PERSPECTIVE_3D",
+        "defaultDurationUs":  550000,
+        "name":  "Stories Card Flip",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  1,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_social.frag",
+        "id":  "heart_iris",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Social",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  600000,
+        "name":  "Like Heart Reveal",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  2,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_social.frag",
+        "id":  "bubble_pop_wipe",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Social",
+        "engine":  "MASK_WIPE",
+        "defaultDurationUs":  500000,
+        "name":  "Bubble Pop Reveal",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  3,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_social.frag",
+        "id":  "notification_slide",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Social",
+        "engine":  "TRANSFORM",
+        "defaultDurationUs":  500000,
+        "name":  "Card Slide In",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  4,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_gaming.frag",
+        "id":  "pixel_dissolve_arcade",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Gaming",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "name":  "8-Bit Pixel Dissolve",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  0,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_gaming.frag",
+        "id":  "scanline_wipe",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Gaming",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  550000,
+        "name":  "Scanline Wipe",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  1,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_gaming.frag",
+        "id":  "energy_blast",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Gaming",
+        "engine":  "LIGHT_FLASH",
+        "defaultDurationUs":  550000,
+        "name":  "Energy Blast",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  2,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           },
+                           {
+                               "id":  "intensity",
+                               "name":  "Intensidade",
+                               "default":  1,
+                               "min":  0.2,
+                               "type":  "float",
+                               "max":  2.5
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_gaming.frag",
+        "id":  "level_clear_wipe",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Gaming",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  600000,
+        "name":  "Level Clear Sweep",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  3,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    },
+    {
+        "shaderFile":  "recly_transition_gaming.frag",
+        "id":  "cyber_grid_reveal",
+        "maxDurationUs":  2000000,
+        "version":  1,
+        "category":  "Gaming",
+        "engine":  "CREATIVE",
+        "defaultDurationUs":  650000,
+        "name":  "Cyber Grid Reveal",
+        "parameters":  [
+                           {
+                               "id":  "mode",
+                               "name":  "Modo",
+                               "default":  4,
+                               "min":  0,
+                               "type":  "float",
+                               "max":  4
+                           }
+                       ],
+        "minDurationUs":  100000
+    }
 ]

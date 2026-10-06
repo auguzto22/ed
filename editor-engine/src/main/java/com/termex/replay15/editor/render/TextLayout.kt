@@ -14,6 +14,7 @@ import android.text.style.StyleSpan
 import android.text.StaticLayout
 import com.termex.replay15.editor.domain.TextClip
 import com.termex.replay15.editor.domain.TextAlignment
+import com.termex.replay15.editor.domain.TextAnimation
 import kotlin.math.ceil
 
 object TextLayout {
@@ -84,6 +85,11 @@ object TextLayout {
     }
 
     private fun wordStyledText(text: TextClip, timeUs: Long?): CharSequence {
+        if (timeUs != null && (text.animation == TextAnimation.TYPEWRITER || text.enterAnimation == TextAnimation.TYPEWRITER)) {
+            val progress = ((timeUs - text.startUs).toFloat() / minOf(text.durationUs, 1_500_000L).coerceAtLeast(1L)).coerceIn(0f, 1f)
+            val charCount = (text.text.length * progress).toInt().coerceIn(1, text.text.length)
+            return text.text.substring(0, charCount)
+        }
         if (timeUs == null || text.wordCues.isEmpty()) return text.text
         val words = Regex("\\S+").findAll(text.text).toList()
         if (words.isEmpty()) return text.text

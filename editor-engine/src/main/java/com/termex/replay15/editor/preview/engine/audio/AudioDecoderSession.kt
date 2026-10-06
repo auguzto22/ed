@@ -5,6 +5,8 @@ import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
+import com.termex.replay15.editor.audio.AudioEnhance
+import com.termex.replay15.editor.audio.AudioEnhanceProcessor
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
@@ -37,6 +39,8 @@ class AudioDecoderSession(
 
     private val processorChain = AudioProcessorChain(targetSampleRate, 2)
     private val speedInput = FloatArray(1024 * 16 * 2 + 4)
+    private var enhancer: AudioEnhanceProcessor? = null
+    private var existingSettings: AudioEnhance? = null
 
     // Ring buffer of normalized stereo float samples (interleaved: L, R)
     private val ringCapacity = targetSampleRate * 2 * 2 // 2 seconds of stereo
@@ -88,6 +92,9 @@ class AudioDecoderSession(
             outputEnded = false
             seekTargetUs = sourceTimeUs.coerceAtLeast(0L)
             processorChain.flush()
+            // A seek jumps the stream, so the filter memory describes audio that is no longer
+            // playing. Carrying it forward would open the gate or the compressor on a phantom.
+            enhancer?.reset()
 
             val ext = extractor ?: return
             val dec = codec ?: return
@@ -135,12 +142,35 @@ class AudioDecoderSession(
         return samplesRead / 2
     }
 
-    fun readTimelineFrames(output: FloatArray, frameRequested: Int, speed: Float, preservePitch: Boolean, generation: Long): Int {
+    fun readTimelineFrames(
+        output: FloatArray,
+        frameRequested: Int,
+        speed: Float,
+        preservePitch: Boolean,
+        generation: Long,
+        enhance: AudioEnhance = AudioEnhance.NEUTRAL,
+    ): Int {
         val sourceFrames = (frameRequested * speed).toInt().coerceIn(1, frameRequested * 16)
         val read = readFrames(speedInput, 0, sourceFrames, generation)
         if (read <= 0) { output.fill(0f, 0, frameRequested * 2); return 0 }
         processorChain.updateParameters(speed, preservePitch)
-        return processorChain.processFloatPcm(speedInput, read, output, frameRequested)
+        val produced = processorChain.processFloatPcm(speedInput, read, output, frameRequested)
+        if (produced > 0 && !enhance.isNeutral) enhancerFor(enhance).process(output, produced)
+        return produced
+    }
+
+    /**
+     * One processor per session, so its filter memory spans the blocks of a continuous play.
+     * A settings change swaps in a fresh one instead of retuning live, which would make the
+     * filter state inconsistent with the new coefficients for as long as the smoothing takes.
+     */
+    private fun enhancerFor(settings: AudioEnhance): AudioEnhanceProcessor {
+        val existing = enhancer
+        if (existing != null && existingSettings == settings) return existing
+        val created = AudioEnhanceProcessor(settings, targetSampleRate, 2)
+        enhancer = created
+        existingSettings = settings
+        return created
     }
 
     private fun pumpDecoder(): Boolean {

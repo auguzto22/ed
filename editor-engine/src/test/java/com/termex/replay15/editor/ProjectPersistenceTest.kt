@@ -2,6 +2,7 @@ package com.termex.replay15.editor
 
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.assets.*
+import com.termex.replay15.editor.audio.AudioEnhance
 import com.termex.replay15.editor.project.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -16,6 +17,7 @@ class ProjectPersistenceTest {
         filterStrength = .65f, zoom = 1.4f, offsetX = -.2f, offsetY = .15f, fineRotation = 7f,
         opacity = .75f, blur = 3.5f, motion = ClipMotion.PAN_LEFT,
         transitionIn = ClipTransition.FADE_BLACK, transitionOut = ClipTransition.FADE_WHITE,
+        enhance = AudioEnhance(noiseReduction = .1f, voiceEnhance = .5f, compression = .75f, normalize = .25f),
         transitionDurationUs = 650_000, audioFadeInUs = 400_000, audioFadeOutUs = 900_000)),
         audio = listOf(AudioClip(uri = "content://audio/2", name = "Music", sourceUs = 30 * SECOND,
             startUs = SECOND, inUs = 2 * SECOND, outUs = 10 * SECOND, volume = .3f,
@@ -38,6 +40,37 @@ class ProjectPersistenceTest {
         ProjectCodec.write(project, bytes)
         assertEquals(project, ProjectCodec.read(ByteArrayInputStream(bytes.toByteArray())))
         assertTrue(bytes.size() < 2048)
+    }
+
+    @Test fun theAudioTreatmentsSurviveASaveAndReload() {
+        val treated = sample().let { base ->
+            base.copy(audio = base.audio.mapIndexed { index, clip ->
+                clip.copy(enhance = AudioEnhance(
+                    noiseReduction = .1f * (index + 1), voiceEnhance = .5f,
+                    compression = .75f, normalize = .25f))
+            })
+        }
+        val bytes = ByteArrayOutputStream(); ProjectCodec.write(treated, bytes)
+        val restored = ProjectCodec.read(ByteArrayInputStream(bytes.toByteArray()))
+        assertEquals(treated.audio.map { it.enhance }, restored.audio.map { it.enhance })
+    }
+
+    @Test fun aClipWithNoTreatmentComesBackNeutral() {
+        val bytes = ByteArrayOutputStream(); ProjectCodec.write(sample(), bytes)
+        val restored = ProjectCodec.read(ByteArrayInputStream(bytes.toByteArray()))
+        assertTrue(restored.audio.all { it.enhance.isNeutral })
+    }
+
+    @Test fun embeddedVideoAudioTreatmentsSurviveASaveAndReload() {
+        val base = sample()
+        val trackedClip = base.videos.single().copy(id = "upper-video",
+            enhance = AudioEnhance(noiseReduction = .3f, voiceEnhance = .6f, compression = .2f, normalize = .9f))
+        val project = base.copy(videoTracks = listOf(VideoTrack("upper", listOf(TimedVideoClip(2 * SECOND, trackedClip)))))
+        val bytes = ByteArrayOutputStream(); ProjectCodec.write(project, bytes)
+        val restored = ProjectCodec.read(ByteArrayInputStream(bytes.toByteArray()))
+        assertEquals(project.videos.map { it.enhance }, restored.videos.map { it.enhance })
+        assertEquals(project.videoTracks.flatMap { track -> track.clips.map { it.clip.enhance } },
+            restored.videoTracks.flatMap { track -> track.clips.map { it.clip.enhance } })
     }
     @Test fun stableFontIdRoundTripsWithoutPersistingAnAssetPath() {
         val project = sample().copy(texts = sample().texts.map { it.copy(fontId = "poppins_semibold") })

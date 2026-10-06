@@ -3,13 +3,14 @@ package com.termex.replay15.editor.preview.engine
 import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20
-import com.termex.replay15.editor.backgroundremoval.MlKitHumanSegmenter
 import com.termex.replay15.editor.backgroundremoval.SegmentationEngine
+import com.termex.replay15.editor.backgroundremoval.SegmentationEngineFactory
 import com.termex.replay15.editor.backgroundremoval.SegmentationFrame
 import com.termex.replay15.editor.backgroundremoval.SegmentationMaskCache
 import com.termex.replay15.editor.backgroundremoval.SegmentationMaskTexture
 import com.termex.replay15.editor.backgroundremoval.SegmentationScheduler
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
+import com.termex.replay15.editor.domain.BackgroundRemovalProvider
 import com.termex.replay15.editor.domain.BackgroundMode
 import com.termex.replay15.editor.domain.SegmentationQuality
 import java.nio.ByteBuffer
@@ -22,7 +23,7 @@ import kotlin.math.roundToInt
 /**
  * GPU-side background-removal pass used by the interactive preview.
  *
- * The GL thread only downsamples/captures and uploads masks. ML Kit runs in one bounded
+ * The GL thread only downsamples/captures and uploads masks. ML Kit / Gemini runs in one bounded
  * single-flight executor per source clip; a missing or stale mask falls back to the original
  * texture, so segmentation can never turn a decoder failure into a black frame.
  */
@@ -42,6 +43,7 @@ internal class BackgroundRemovalGpuPass(
         val captureHeight: Int,
         val image: Boolean,
         val quality: SegmentationQuality,
+        val provider: BackgroundRemovalProvider,
         val capture: Target,
         val output: Target,
         val mask: SegmentationMaskTexture,
@@ -76,7 +78,7 @@ internal class BackgroundRemovalGpuPass(
         // The first shipped mode is transparent removal. Other modes remain persisted in the
         // model so adding background compositing does not change the segmentation contract.
         if (effect.mode != BackgroundMode.REMOVE) return sourceTexture
-        val entry = entry(key, sourceWidth, sourceHeight, effect.quality, image)
+        val entry = entry(key, sourceWidth, sourceHeight, effect.quality, effect.provider, image)
         val cached = entry.cache.nearest(sourceTimestampUs)
         if (cached != null) {
             if (entry.uploadedTimestampUs != cached.timestampUs) {
@@ -90,13 +92,22 @@ internal class BackgroundRemovalGpuPass(
         return sourceTexture
     }
 
-    private fun entry(key: String, sourceWidth: Int, sourceHeight: Int, quality: SegmentationQuality, image: Boolean): Entry {
+    private fun entry(
+        key: String,
+        sourceWidth: Int,
+        sourceHeight: Int,
+        quality: SegmentationQuality,
+        provider: BackgroundRemovalProvider,
+        image: Boolean,
+    ): Entry {
         val existing = entries[key]
-        if (existing != null && existing.sourceWidth == sourceWidth && existing.sourceHeight == sourceHeight && existing.quality == quality) return existing
+        if (existing != null && existing.sourceWidth == sourceWidth && existing.sourceHeight == sourceHeight && existing.quality == quality && existing.provider == provider) return existing
         existing?.let(::releaseEntry)
         val (captureWidth, captureHeight) = inputSize(sourceWidth, sourceHeight, quality)
         val captureTexture = texture2d(captureWidth, captureHeight)
         val outputTexture = texture2d(sourceWidth.coerceAtLeast(2), sourceHeight.coerceAtLeast(2))
+        val engine = SegmentationEngineFactory.createEngine(context, streamMode = !image, provider = provider)
+        val maxHz = if (provider == BackgroundRemovalProvider.GEMINI) (if (image) 1 else 4) else (if (image) 1 else 12)
         val created = Entry(
             key = key,
             sourceWidth = sourceWidth,
@@ -105,12 +116,13 @@ internal class BackgroundRemovalGpuPass(
             captureHeight = captureHeight,
             image = image,
             quality = quality,
+            provider = provider,
             capture = Target(captureWidth, captureHeight, captureTexture, framebuffer(captureTexture, captureWidth, captureHeight)),
             output = Target(sourceWidth.coerceAtLeast(2), sourceHeight.coerceAtLeast(2), outputTexture,
                 framebuffer(outputTexture, sourceWidth.coerceAtLeast(2), sourceHeight.coerceAtLeast(2))),
             mask = SegmentationMaskTexture(),
             cache = SegmentationMaskCache(if (image) 2 else 24),
-            scheduler = SegmentationScheduler(MlKitHumanSegmenter(context, streamMode = !image), maxFrequencyHz = if (image) 1 else 12),
+            scheduler = SegmentationScheduler(engine, maxFrequencyHz = maxHz),
             buffers = List(3) { CaptureBuffer(Bitmap.createBitmap(captureWidth, captureHeight, Bitmap.Config.ARGB_8888)) },
             pixels = ByteBuffer.allocateDirect(captureWidth * captureHeight * 4).order(ByteOrder.nativeOrder()),
             argb = IntArray(captureWidth * captureHeight),

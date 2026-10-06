@@ -24,6 +24,15 @@ class GeminiResponseParserTest {
         assertEquals("one", corrections.single().first)
     }
 
+    @Test fun parsesTranslationsByStableCaptionId() {
+        val response = JSONObject().put("output_text", """[{"id":"caption-1","translatedText":"Hello world"}]""")
+
+        val translated = GeminiResponseParser.parseTranslations(response)
+
+        assertEquals("caption-1", translated.single().id)
+        assertEquals("Hello world", translated.single().translatedText)
+    }
+
     @Test fun rejectsNonJsonCorrectionResponse() {
         assertThrows(RuntimeException::class.java) {
             GeminiResponseParser.parseCorrections(JSONObject().put("output_text", "não sei"))

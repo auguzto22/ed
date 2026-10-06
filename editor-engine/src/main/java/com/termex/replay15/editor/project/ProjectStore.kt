@@ -84,6 +84,9 @@ object ProjectCodec {
             BackgroundRemovalCodec.write(project, o)
             LayerMaskCodec.write(project, o)
             TrackingCodec.write(project, o)
+            AudioEnhanceCodec.write(project, o)
+            VideoAudioEnhanceCodec.write(project, o)
+            CompoundCodec.write(project, o)
         }
     }
     fun read(stream: InputStream, nested: Boolean = false): Project = DataInputStream(BufferedInputStream(stream)).use { i ->
@@ -166,7 +169,10 @@ object ProjectCodec {
         val stickerTransformed = if (schema < 20) captioned else StickerTransformCodec.read(captioned, i, schema)
         val backgroundRemoved = if (schema < 22) stickerTransformed else BackgroundRemovalCodec.read(stickerTransformed, i)
         val masked = if (schema < 23) backgroundRemoved else LayerMaskCodec.read(backgroundRemoved, i, schema)
-        if (schema < 24) masked else TrackingCodec.read(masked, i)
+        val motionTracked = if (schema < 24) masked else TrackingCodec.read(masked, i)
+        val audioEnhanced = if (schema < 25) motionTracked else AudioEnhanceCodec.read(motionTracked, i)
+        val videoEnhanced = if (schema < 26) audioEnhanced else VideoAudioEnhanceCodec.read(audioEnhanced, i)
+        if (schema < 27) videoEnhanced else CompoundCodec.read(videoEnhanced, i)
     }
 }
 

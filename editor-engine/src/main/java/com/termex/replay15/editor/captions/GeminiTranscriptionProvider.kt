@@ -1,6 +1,7 @@
 package com.termex.replay15.editor.captions
 
 import com.recly.editor.engine.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -71,7 +72,7 @@ class GeminiTranscriptionProvider(
 class GeminiContextCorrector(
     private val apiKey: String,
     private val http: GeminiHttpClient = GeminiHttpClient(apiKey),
-) : CaptionContextCorrector {
+) : CaptionContextCorrector, CaptionTextCorrector {
     init { require(apiKey.isNotBlank()) }
 
     override suspend fun correct(
@@ -122,6 +123,138 @@ class GeminiContextCorrector(
         } catch (error: CaptionGenerationException) { throw error }
         catch (error: Throwable) { throw CorrectionFailed(cause = error) }
     }
+
+    override suspend fun correctCaptions(
+        segments: List<CaptionCorrectionContext>,
+        languageCode: String,
+        terms: Set<String>,
+        projectContext: String?,
+        checkCancelled: () -> Unit,
+    ): List<CaptionTextCorrection> = withContext(Dispatchers.IO) {
+        if (segments.isEmpty()) return@withContext emptyList()
+        checkCancelled()
+        val rows = JSONArray()
+        segments.forEach { segment ->
+            rows.put(JSONObject()
+                .put("id", segment.id)
+                .put("text", segment.text)
+                .put("previous", segment.previousText ?: JSONObject.NULL)
+                .put("next", segment.nextText ?: JSONObject.NULL))
+        }
+        val language = when (languageCode) {
+            "pt-BR" -> "Brazilian Portuguese"
+            "en-US" -> "English (United States)"
+            "auto" -> "the language spoken in each caption"
+            else -> languageCode
+        }
+        val prompt = """
+            Correct this $language video-caption transcript conservatively.
+            Fix only clear recognition, spelling, punctuation, proper-name, brand, slang, English-word,
+            and technical-term mistakes. Keep the speaker's original meaning, intent, informal tone,
+            profanity and phrasing. Do not translate, summarize, add facts, rewrite for style, or make
+            broad paraphrases. If uncertain, return the original text unchanged. Previous and next
+            captions are context only. Return only valid JSON with exactly the same IDs, one item per
+            input, in the form {"id":"...","text":"..."}. Do not return timestamps.
+
+            Custom vocabulary: ${terms.filter(String::isNotBlank).joinToString(", ").ifBlank { "none" }}
+            Project context: ${projectContext.orEmpty().take(1_000)}
+            Captions: $rows
+        """.trimIndent()
+        val payload = JSONObject()
+            .put("model", CORRECTION_MODEL)
+            .put("store", false)
+            .put("input", prompt)
+            .put("response_format", JSONObject()
+                .put("type", "text")
+                .put("mime_type", "application/json"))
+        try {
+            val response = http.withRetry(checkCancelled) { http.createInteraction(payload, checkCancelled) }
+            val corrections = GeminiResponseParser.parseCorrections(response)
+            val byId = corrections.associateBy { it.first }
+            val expectedIds = segments.map { it.id }.toSet()
+            require(corrections.size == segments.size && byId.size == corrections.size && byId.keys == expectedIds) {
+                "Resposta de correção incompleta"
+            }
+            segments.map { CaptionTextCorrection(it.id, requireNotNull(byId[it.id]).second) }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: CaptionGenerationException) {
+            throw error
+        } catch (error: Throwable) {
+            throw CorrectionFailed(cause = error)
+        }
+    }
+}
+
+/** Gemini translator for caption text only; timeline timing is never sent back as generated data. */
+class GeminiCaptionTranslator(
+    private val apiKey: String,
+    private val http: GeminiHttpClient = GeminiHttpClient(apiKey),
+) : CaptionTranslator {
+    init { require(apiKey.isNotBlank()) }
+
+    override suspend fun translate(
+        segments: List<CaptionTranslationInput>,
+        sourceLanguageCode: String,
+        targetLanguageCode: String,
+        checkCancelled: () -> Unit,
+    ): List<CaptionTranslationOutput> = withContext(Dispatchers.IO) {
+        if (segments.isEmpty()) return@withContext emptyList()
+        checkCancelled()
+        val rows = JSONArray()
+        segments.forEach { segment ->
+            rows.put(JSONObject()
+                .put("id", segment.id)
+                .put("text", segment.text)
+                .put("previous", segment.previousText ?: JSONObject.NULL)
+                .put("next", segment.nextText ?: JSONObject.NULL))
+        }
+        val source = captionLanguageName(sourceLanguageCode)
+        val target = captionLanguageName(targetLanguageCode)
+        val prompt = """
+            Translate these video captions from $source into $target.
+            Preserve the original meaning, intent, tone, names, brands, slang and natural speech.
+            Keep a one-to-one relationship between input captions and output captions: do not merge,
+            split, omit or add captions. Keep each caption close to its original word count when that
+            sounds natural. Neighboring captions are context only and must not be included in the result.
+            IDs are immutable. Return only valid JSON as an array with exactly the same IDs, using
+            {"id":"...","translatedText":"..."} for each item. Do not return timestamps.
+
+            Captions: $rows
+        """.trimIndent()
+        val payload = JSONObject()
+            .put("model", CORRECTION_MODEL)
+            .put("store", false)
+            .put("input", prompt)
+            .put("response_format", JSONObject()
+                .put("type", "text")
+                .put("mime_type", "application/json"))
+        try {
+            val response = http.withRetry(checkCancelled) { http.createInteraction(payload, checkCancelled) }
+            GeminiResponseParser.parseTranslations(response)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: CaptionGenerationException) {
+            throw error
+        } catch (error: Throwable) {
+            throw CaptionTranslationFailed(cause = error)
+        }
+    }
+}
+
+private fun captionLanguageName(code: String): String = when (code) {
+    "pt-BR" -> "Brazilian Portuguese (pt-BR)"
+    "en-US" -> "English (United States)"
+    "es-ES" -> "Spanish (Spain)"
+    "es-MX" -> "Spanish (Mexico)"
+    "fr-FR" -> "French"
+    "de-DE" -> "German"
+    "it-IT" -> "Italian"
+    "ja-JP" -> "Japanese"
+    "ko-KR" -> "Korean"
+    "zh-CN" -> "Simplified Chinese"
+    "auto" -> "the detected source language"
+    else -> code
 }
 
 data class UploadedGeminiFile(val name: String, val uri: String)
@@ -188,6 +321,15 @@ class GeminiHttpClient(private val apiKey: String) {
 
     fun createInteraction(payload: JSONObject, checkCancelled: () -> Unit): JSONObject {
         val connection = open("$GEMINI_BASE_URL/v1beta/interactions", "POST")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.doOutput = true
+        connection.outputStream.use { it.write(payload.toString().toByteArray()) }
+        return JSONObject(readChecked(connection, checkCancelled))
+    }
+
+    fun postJson(endpoint: String, payload: JSONObject, checkCancelled: () -> Unit = {}): JSONObject {
+        val url = if (endpoint.startsWith("http")) endpoint else "$GEMINI_BASE_URL$endpoint"
+        val connection = open(url, "POST")
         connection.setRequestProperty("Content-Type", "application/json")
         connection.doOutput = true
         connection.outputStream.use { it.write(payload.toString().toByteArray()) }
@@ -276,6 +418,33 @@ object GeminiResponseParser {
             val corrected = item.optString("text").trim()
             if (id.isBlank() || corrected.isBlank()) throw CorrectionFailed("Correção sem ID ou texto")
             id to corrected
+        }
+    }
+
+    fun parseTranslations(response: JSONObject): List<CaptionTranslationOutput> {
+        val directArray = response.optJSONArray("translations") ?: response.optJSONArray("segments")
+        val raw = if (directArray == null) outputText(response).trim() else null
+        val array = if (directArray != null) directArray else {
+            val json = raw.orEmpty().removePrefix("```").removePrefix("json").removeSuffix("```").trim()
+            when {
+                json.startsWith("[") -> JSONArray(json)
+                json.startsWith("{") -> {
+                    val root = JSONObject(json)
+                    root.optJSONArray("translations") ?: root.optJSONArray("segments")
+                    ?: throw CaptionTranslationFailed("Resposta da tradução sem legendas.")
+                }
+                else -> throw CaptionTranslationFailed("A resposta da tradução não é JSON válido.")
+            }
+        }
+        return (0 until array.length()).map { index ->
+            val item = array.optJSONObject(index)
+                ?: throw CaptionTranslationFailed("Item de tradução inválido.")
+            val id = item.optString("id")
+            val translated = item.optString("translatedText").ifBlank { item.optString("text") }.trim()
+            if (id.isBlank() || translated.isBlank()) {
+                throw CaptionTranslationFailed("Uma tradução veio sem ID ou texto.")
+            }
+            CaptionTranslationOutput(id, translated)
         }
     }
 

@@ -59,9 +59,13 @@ dependencies {
     implementation("androidx.media3:media3-effect:1.11.1")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
+    implementation("com.google.mlkit:face-detection:16.1.7")
+    // ML Kit has no stable pose-detection release; 18.0.0-beta5 is the newest published.
+    implementation("com.google.mlkit:pose-detection:18.0.0-beta5")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("com.alphacephei:vosk-android:0.3.75")
+    implementation("com.airbnb.android:lottie:6.4.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

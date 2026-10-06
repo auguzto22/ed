@@ -74,6 +74,8 @@ class TransitionCaptureEffect(
             TransitionBridge.retain(bridgeKey)
         }
 
+        private var hasCapturedAny = false
+
         override fun configure(inputWidth: Int, inputHeight: Int): Size {
             width = inputWidth
             height = inputHeight
@@ -84,8 +86,12 @@ class TransitionCaptureEffect(
             try {
                 // Media3 can supply composition or item presentation timestamps depending on
                 // the sequence path. Keep the latest available source frame for either clock.
-                if ((presentationTimeUs >= captureStartUs - 150_000L ||
-                        presentationTimeUs >= clipDurationUs - 150_000L) && width > 0 && height > 0) {
+                val shouldCapture = !hasCapturedAny ||
+                    presentationTimeUs >= captureStartUs - 1_500_000L ||
+                    presentationTimeUs >= clipDurationUs - 1_500_000L ||
+                    presentationTimeUs >= (clipDurationUs * 0.7f).toLong()
+
+                if (shouldCapture && width > 0 && height > 0) {
                     GLES20.glGetIntegerv(GLES20.GL_FRAMEBUFFER_BINDING, previousFramebuffer, 0)
                     GLES20.glGetIntegerv(GLES20.GL_VIEWPORT, previousViewport, 0)
 
@@ -101,6 +107,7 @@ class TransitionCaptureEffect(
                             GlUtil.checkGlError()
                             GLES20.glFlush()
                             TransitionBridge.markCaptured(bridgeKey)
+                            hasCapturedAny = true
                         } finally {
                             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, previousFramebuffer[0])
                             GLES20.glViewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3])
@@ -395,6 +402,7 @@ class TransitionRenderEffect(
         override fun release() {
             try {
                 TransitionBridge.setRendererReady(bridgeKey, false)
+                TransitionBridge.release(bridgeKey)
                 TransitionBridge.release(bridgeKey)
                 gl?.delete()
                 passThroughGl.delete()

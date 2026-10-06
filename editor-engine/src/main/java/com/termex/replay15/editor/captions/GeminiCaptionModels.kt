@@ -80,6 +80,19 @@ data class CaptionCorrectionContext(
     val nextText: String? = null,
 )
 
+data class CaptionTextCorrection(val id: String, val correctedText: String)
+
+/** Text-only correction boundary for captions already stored in the project timeline. */
+interface CaptionTextCorrector {
+    suspend fun correctCaptions(
+        segments: List<CaptionCorrectionContext>,
+        languageCode: String,
+        terms: Set<String>,
+        projectContext: String? = null,
+        checkCancelled: () -> Unit = {},
+    ): List<CaptionTextCorrection>
+}
+
 interface CaptionContextCorrector {
     suspend fun correct(
         segments: List<TimedCaptionSegment>,

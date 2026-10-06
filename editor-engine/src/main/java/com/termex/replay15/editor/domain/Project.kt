@@ -1,6 +1,7 @@
 package com.termex.replay15.editor.domain
 
 import com.termex.replay15.editor.assets.TransitionInstance
+import com.termex.replay15.editor.audio.AudioEnhance
 import java.util.UUID
 import kotlin.math.min
 import kotlin.math.roundToLong
@@ -95,6 +96,13 @@ data class VideoClip(
     val preservePitch: Boolean = false,
     val mimeType: String = "",
     val proxyUri: String? = null,
+    /**
+     * Frame-interpolated render of a slowed-down clip, produced in the background by
+     * [com.termex.replay15.editor.motion.SmoothSlowMoCache]. Like [proxyUri] this is a
+     * preview-only artifact: it is never persisted and export always reads [uri], so the
+     * original media is never replaced.
+     */
+    val derivedUri: String? = null,
     val is3D: Boolean = false,
     val transform3D: Transform3D = Transform3D(),
     val parentId: String? = null,
@@ -102,8 +110,9 @@ data class VideoClip(
     val backgroundRemoval: BackgroundRemovalEffect = BackgroundRemovalEffect(),
     val mask: MaskState? = null,
     val trackingTracks: List<TrackingTrack> = emptyList(),
+    val enhance: AudioEnhance = AudioEnhance.NEUTRAL,
 ) {
-    val effectivePreviewUri: String get() = proxyUri ?: uri
+    val effectivePreviewUri: String get() = derivedUri ?: proxyUri ?: uri
     init {
         require(parentId == null || (parentId != id && parentId.matches(Regex("[a-zA-Z0-9-]{1,80}"))))
         require(sourceUs > 0 && inUs >= 0 && outUs <= sourceUs && outUs > inUs)
@@ -144,6 +153,7 @@ data class AudioClip(
     val startUs: Long = 0, val inUs: Long = 0, val outUs: Long = sourceUs, val volume: Float = 1f,
     val fadeInUs: Long = 0L, val fadeOutUs: Long = 0L,
     val volumeKeyframes: List<VolumeKeyframe> = emptyList(),
+    val enhance: AudioEnhance = AudioEnhance.NEUTRAL,
 ) {
     init {
         require(sourceUs > 0 && startUs >= 0 && inUs >= 0 && outUs > inUs && outUs <= sourceUs && volume in 0f..2f)
@@ -210,6 +220,12 @@ enum class TextAnimation(val label: String) {
     FADE_OUT("Fade out"),
     ZOOM_OUT("Zoom out"),
     BLUR_OUT("Blur out"),
+    TYPEWRITER("Typewriter"),
+    SCALE("Scale"),
+    GLITCH("Glitch"),
+    ELASTIC("Elastic"),
+    WAVE("Wave"),
+    TRACKING("Tracking"),
 }
 
 /** A measured word boundary used by karaoke and word-level animation. */
@@ -397,6 +413,8 @@ data class Project(
     val captionGlobalFontId: String = TextFont.MODERNA.id,
     val captionLanguage: String = "pt-BR",
     val captionVocabulary: Set<String> = emptySet(),
+    /** Nested sequences over [videos]. Grouping is metadata only: the clips never leave this list. */
+    val compounds: List<CompoundClip> = emptyList(),
 ) {
     init {
         require(id.matches(Regex("[a-zA-Z0-9-]{1,80}")) && name.length <= 200)
@@ -412,6 +430,10 @@ data class Project(
         require(videoTracks.none { it.id == MAIN_TRACK || it.id == TEXT_TRACK || it.id == STICKER_TRACK })
         require(trackStates.size <= 64 && trackStates.keys.all { it.length in 1..100 })
         require(videos.sumOf { it.durationUs } <= MAX_PROJECT_US)
+        require(compounds.size <= MAX_COMPOUNDS && compounds.map { it.id }.distinct().size == compounds.size)
+        val owned = compounds.flatMap { it.childIds }
+        require(owned.distinct().size == owned.size) { "Um clipe nao pode pertencer a dois compounds" }
+        require(owned.all { child -> videos.any { it.id == child } }) { "Compound referencia um clipe inexistente" }
     }
 
     /** Transitions are render windows at cuts; they never shorten clip placement. */
@@ -506,7 +528,8 @@ data class Project(
                 keyframes = rightKeys,
             ),
         )
-        return copy(videos = result)
+        // Groups survive a split; a group that would lose a child is dropped by the sanitizer.
+        return CompoundEditing.sanitize(copy(videos = result, compounds = emptyList()))
     }
     fun splitAt(playheadUs: Long): Project = split(indexAt(playheadUs), playheadUs)
     fun changeVideo(index: Int, transform: (VideoClip) -> VideoClip): Project =
@@ -514,7 +537,7 @@ data class Project(
     fun moveVideo(from: Int, to: Int): Project {
         if (from !in videos.indices || to !in videos.indices || from == to) return this
         val list = videos.toMutableList(); list.add(to, list.removeAt(from))
-        return copy(videos = list, transitions = cleanTransitions(list))
+        return CompoundEditing.sanitize(copy(videos = list, compounds = emptyList(), transitions = cleanTransitions(list)))
     }
 }
 

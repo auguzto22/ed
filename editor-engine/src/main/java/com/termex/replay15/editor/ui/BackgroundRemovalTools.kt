@@ -6,6 +6,7 @@ import android.widget.CheckBox
 import android.widget.LinearLayout
 import com.termex.replay15.editor.domain.BackgroundMode
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
+import com.termex.replay15.editor.domain.BackgroundRemovalProvider
 import com.termex.replay15.editor.domain.Project
 import com.termex.replay15.editor.domain.SegmentationQuality
 import com.termex.replay15.editor.domain.allVideos
@@ -36,6 +37,15 @@ class BackgroundRemovalTools(
             fun updated() = project().mapVideo(clipId) { it.copy(backgroundRemoval = effect) }
             fun preview() = previewApply(updated())
             enabled.setOnCheckedChangeListener { _, checked -> effect = effect.copy(enabled = checked); preview() }
+
+            body.addView(label("Motor de IA", 13f, EditorStyle.MUTED))
+            val providers = row()
+            BackgroundRemovalProvider.entries.forEach { provider ->
+                providers.addView(action(providerLabel(provider), effect.provider == provider) {
+                    effect = effect.copy(provider = provider); preview()
+                }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            }
+            body.addView(providers)
 
             body.addView(label("Qualidade da máscara", 13f, EditorStyle.MUTED))
             val qualities = row()
@@ -92,6 +102,15 @@ class BackgroundRemovalTools(
             })
             fun preview() = previewApply(updated())
             enabled.setOnCheckedChangeListener { _, checked -> effect = effect.copy(enabled = checked); preview() }
+            body.addView(label("Motor de IA", 13f, EditorStyle.MUTED))
+            val providers = row()
+            BackgroundRemovalProvider.entries.forEach { provider ->
+                providers.addView(action(providerLabel(provider), effect.provider == provider) {
+                    effect = effect.copy(provider = provider); preview()
+                }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            }
+            body.addView(providers)
+
             body.addView(label("Qualidade da máscara", 13f, EditorStyle.MUTED))
             val qualities = row()
             SegmentationQuality.entries.forEach { quality ->
@@ -111,6 +130,12 @@ class BackgroundRemovalTools(
             dialog = sheet("Remover Fundo", body)
             dialog.setOnDismissListener { previewApply(project()) }
         }
+    }
+
+    private fun providerLabel(provider: BackgroundRemovalProvider): String = when (provider) {
+        BackgroundRemovalProvider.AUTO -> "Auto (Gemini/Local)"
+        BackgroundRemovalProvider.GEMINI -> "Gemini API"
+        BackgroundRemovalProvider.MLKIT -> "ML Kit (Local)"
     }
 
     private fun qualityLabel(quality: SegmentationQuality): String = when (quality) {

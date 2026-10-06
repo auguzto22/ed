@@ -47,9 +47,25 @@ vec4 reclyTransition(vec2 uv, float progress) {
         } else {
             return mix(white, cb, (t - 0.6) / 0.4);
         }
-    } else {
+    } else if (p_mode < 5.5) {
         // Fade: eased opacity blend
         float eased = t * t * (3.0 - 2.0 * t);
         return mix(ca, cb, eased);
+    } else if (p_mode < 6.5) {
+        // Smooth Fade
+        float eased = smoothstep(0.0, 1.0, t);
+        return mix(ca, cb, eased);
+    } else if (p_mode < 7.5) {
+        // Color Fade Dip (mid-gray dip)
+        vec4 gray = vec4(0.15, 0.15, 0.15, 1.0);
+        if (t < 0.5) {
+            return mix(ca, gray, t * 2.0);
+        } else {
+            return mix(gray, cb, (t - 0.5) * 2.0);
+        }
+    } else {
+        // Cross Fade Soft (cosine blend)
+        float blendT = 0.5 - 0.5 * cos(3.14159265 * t);
+        return mix(ca, cb, blendT);
     }
 }

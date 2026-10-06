@@ -5,3 +5,18 @@ local.properties
 *.iml
 .idea/
 
+
+# Local Android SDK
+android-sdk/
+
+tools/jdk/
+*.mp4
+android-sdk/
+*.log
+*.png
+
+tools/jdk/
+*.mp4
+android-sdk/
+*.log
+*.png

@@ -9,6 +9,7 @@ import android.widget.*
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.media.MediaImport
 import com.termex.replay15.editor.render.RenderPlan
+import java.io.File
 import java.util.concurrent.Executors
 
 /** Track panels and imports own no player; every committed operation goes through history. */
@@ -133,7 +134,16 @@ class VideoTrackTools(
         body.addView(action("Velocidade e curvas") { dialog.dismiss(); SpeedTools.show(this, clip) { next ->
             apply(TrackEditing.update(project(), trackId, clipId) { it.copy(clip = next) })
         } })
-        body.addView(action("Cor e LUT") { dialog.dismiss(); StudioPanels.grade(this, clip, { update(trackId, it) }, { pickLut(clipId) }) })
+        body.addView(action("Cor e LUT") {
+            dialog.dismiss()
+            StudioPanels.grade(
+                this, clip, { update(trackId, it) }, { pickLut(clipId) },
+                preview = { changed -> this@VideoTrackTools.preview(TrackEditing.update(project(), trackId, clipId) { it.copy(clip = changed) }) },
+                restore = { this@VideoTrackTools.preview(project()) },
+                lutDirectory = File(filesDir, "editor-luts"),
+                timestampUs = RenderPlan.sourceTime(clip, item.startUs, position()),
+            )
+        })
         body.addView(action("Mascara e chroma key") { dialog.dismiss(); StudioPanels.masks(this, clip, apply = { update(trackId, it) }) })
         body.addView(action("Mascara profissional") {
             dialog.dismiss()

@@ -51,7 +51,7 @@ class AudioMixer(
             val gain = source.gain
             if (gain <= 0.001f) continue
 
-            val readFrames = source.session.readTimelineFrames(scratchBuffer, blockFrames, source.speed, source.preservePitch, generation)
+            val readFrames = source.session.readTimelineFrames(scratchBuffer, blockFrames, source.speed, source.preservePitch, generation, source.resolved.enhance)
             if (readFrames <= 0) continue
             for (frame in 0 until readFrames) {
                 mixed[frame * 2] += scratchBuffer[frame * 2] * gain

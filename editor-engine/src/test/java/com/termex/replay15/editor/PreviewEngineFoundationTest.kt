@@ -1,6 +1,7 @@
 package com.termex.replay15.editor
 
 import com.termex.replay15.editor.assets.TransitionInstance
+import com.termex.replay15.editor.audio.AudioEnhance
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.preview.engine.*
 import org.junit.Assert.*
@@ -134,7 +135,9 @@ class PreviewEngineFoundationTest {
     }
 
     @Test fun embeddedAndExternalAudioHaveStableDistinctIdentities() {
-        val clip = video("spoken").copy(inUs = SECOND, outUs = 4 * SECOND, speed = 2f, preservePitch = true)
+        val treatment = AudioEnhance(noiseReduction = .2f, voiceEnhance = .4f, compression = .6f, normalize = .8f)
+        val clip = video("spoken").copy(inUs = SECOND, outUs = 4 * SECOND, speed = 2f,
+            preservePitch = true, enhance = treatment)
         val music = AudioClip("music", "content://music", "music", 10 * SECOND, startUs = 250_000L,
             inUs = 2 * SECOND, outUs = 6 * SECOND)
         val resolver = ActiveClipResolver(Project(videos = listOf(clip), audio = listOf(music)))
@@ -142,6 +145,7 @@ class PreviewEngineFoundationTest {
         assertEquals(setOf("video:spoken:audio", "audio:music"), sources.map { it.id }.toSet())
         assertEquals(7L, sources.single { it.embedded }.generation)
         assertEquals(2 * SECOND, sources.single { it.embedded }.sourceTimeUs)
+        assertEquals(treatment, sources.single { it.embedded }.enhance)
         assertEquals(2_250_000L, sources.single { !it.embedded }.sourceTimeUs)
     }
 

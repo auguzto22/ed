@@ -52,4 +52,14 @@
     <color name="recording_red">#EF4444</color>
     <color name="success">#D4D4D8</color>
     <color name="warning">#E4E4E7</color>
+
+    <!-- Design System Extensions -->
+    <color name="selection_overlay">#33FFFFFF</color>
+    <color name="scrim">#80000000</color>
+    <color name="scrim_light">#40000000</color>
+    <color name="accent_silver">#D4D4D8</color>
+    <color name="accent_light">#E4E4E7</color>
+    <color name="green_dim">#064E3B</color>
+    <color name="yellow_dim">#78350F</color>
+    <color name="blue_dim">#1E3A5F</color>
 </resources>

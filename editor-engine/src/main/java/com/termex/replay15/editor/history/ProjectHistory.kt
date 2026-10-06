@@ -89,6 +89,7 @@ internal fun Project.detachedSnapshot(): Project = copy(
     audio = audio.map { it.copy() },
     texts = texts.map { it.copy(mask = it.mask?.detachedSnapshot()) },
     captionVocabulary = captionVocabulary.toSet(),
+    compounds = compounds.map { it.copy(childIds = it.childIds.toList()) },
     export = export.copy(),
     stickers = stickers.map { it.copy(mask = it.mask?.detachedSnapshot()) },
     markers = markers.map { it.copy() },

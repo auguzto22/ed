@@ -77,14 +77,11 @@ class TransitionTools(
                 easing = currentEasing,
             )
             val updated = project().withTransition(trans)
-            if (preview) {
-                if (play) {
-                    triggerPreview(updated)
-                } else {
-                    previewApply(updated)
-                }
+            apply(updated)
+            if (play) {
+                triggerPreview(updated)
             } else {
-                apply(updated)
+                previewApply(updated)
             }
         }
 
@@ -362,7 +359,6 @@ class TransitionTools(
             android.util.Log.d("ReclyPerf", "TRANSITIONS_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
         }
         dialog.setOnDismissListener {
-            previewApply(project())
             activeDialog = null
         }
         activeDialog = dialog

@@ -20,7 +20,7 @@ import android.view.SurfaceView
 import com.termex.replay15.editor.assets.AssetRepository
 import com.termex.replay15.editor.assets.BuiltInTransitions
 import com.termex.replay15.editor.assets.TransitionCatalog
-import com.termex.replay15.editor.backgroundremoval.MlKitBitmapMaskApplier
+import com.termex.replay15.editor.backgroundremoval.GeminiBitmapMaskApplier
 import com.termex.replay15.editor.domain.CanvasFill
 import com.termex.replay15.editor.domain.TextAnimation
 import com.termex.replay15.editor.domain.chromaKeyState
@@ -97,7 +97,7 @@ class GpuPreviewRenderer(
     private var overlayWorkBitmap:Bitmap?=null
     private val overlayStickerBitmaps=HashMap<String,Bitmap>()
     private val overlayStickerSources=HashMap<String,Bitmap>()
-    private var overlayMaskApplier: MlKitBitmapMaskApplier? = null
+    private var overlayMaskApplier: GeminiBitmapMaskApplier? = null
     private val overlayTextLayouts=HashMap<Int,TextLayout.Block>()
     private var overlayTexture = 0
     private var overlaySignature = Long.MIN_VALUE
@@ -730,6 +730,34 @@ class GpuPreviewRenderer(
             val canvas = Canvas(bitmap); canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG); val rect = RectF()
             render.stickers.forEach { sticker ->
+                // Check if it's a Lottie animation sticker
+                if (com.termex.replay15.editor.lottie.LottieLayerRenderer.isLottieUri(sticker.uri)) {
+                    val composition = com.termex.replay15.editor.lottie.LottieLayerRenderer.loadComposition(context, sticker.uri)
+                        ?: return@forEach
+                    val transform = sticker.baseTransform
+                    val compBounds = composition.bounds
+                    val compW = compBounds.width().toFloat().coerceAtLeast(1f)
+                    val compH = compBounds.height().toFloat().coerceAtLeast(1f)
+                    val h = sticker.size * render.height * transform.scaleY
+                    val w = (sticker.size * render.height * compW / compH) * transform.scaleX
+                    val duration = sticker.durationUs.coerceAtLeast(1L)
+                    val rawProgress = (render.timeUs - sticker.startUs).toFloat() / duration.toFloat()
+                    val progress = (rawProgress % 1.0f).let { if (it < 0f) it + 1f else it }
+                    val motion = overlayMotion(sticker.animation, sticker.startUs, sticker.endUs, render.timeUs, render.width, render.height)
+                    canvas.save()
+                    canvas.translate(transform.x * render.width + motion[2], transform.y * render.height + motion[3])
+                    // Negate rotation to compensate for GL FBO_FLIP_Y matrix applied when rendering the overlay texture
+                    canvas.rotate(-transform.rotation)
+                    canvas.scale((if (sticker.flip) -1f else 1f) * motion[1], motion[1])
+                    val lottieRect = RectF(-w / 2f, -h / 2f, w / 2f, h / 2f)
+                    CanvasLayerMask.draw(canvas, lottieRect, sticker.maskAt(render.timeUs)) {
+                        com.termex.replay15.editor.lottie.LottieLayerRenderer.draw(
+                            canvas, composition, progress, lottieRect, transform.opacity * motion[0]
+                        )
+                    }
+                    canvas.restore()
+                    return@forEach
+                }
                 val source = overlayStickerSources[sticker.uri] ?: runCatching {
                     ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, Uri.parse(sticker.uri))) { decoder, _, _ ->
                         decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
@@ -737,7 +765,7 @@ class GpuPreviewRenderer(
                 }.getOrNull()?.also { overlayStickerSources[sticker.uri] = it } ?: return@forEach
                 val imageKey = "${sticker.uri}:${sticker.backgroundRemoval.hashCode()}"
                 val image = overlayStickerBitmaps[imageKey] ?: if (sticker.backgroundRemoval.enabled) {
-                    val processed = (overlayMaskApplier ?: MlKitBitmapMaskApplier(context).also { overlayMaskApplier = it })
+                    val processed = (overlayMaskApplier ?: GeminiBitmapMaskApplier(context).also { overlayMaskApplier = it })
                         .apply(source, sticker.backgroundRemoval)
                     processed?.also { overlayStickerBitmaps[imageKey] = it } ?: source
                 } else source
@@ -750,7 +778,8 @@ class GpuPreviewRenderer(
                 paint.alpha = (255 * transform.opacity * motion[0]).toInt().coerceIn(0, 255)
                 canvas.save()
                 canvas.translate(transform.x * render.width + motion[2], transform.y * render.height + motion[3])
-                canvas.rotate(transform.rotation)
+                // Negate rotation to compensate for GL FBO_FLIP_Y matrix applied when rendering the overlay texture
+                canvas.rotate(-transform.rotation)
                 canvas.scale((if (sticker.flip) -1f else 1f) * motion[1], motion[1])
                 rect.set(-w / 2, -h / 2, w / 2, h / 2)
                 CanvasLayerMask.draw(canvas, rect, sticker.maskAt(render.timeUs)) {
@@ -779,6 +808,7 @@ class GpuPreviewRenderer(
 
     private fun signature(s: PreviewRenderState): Long {
         val animated = s.stickers.any {
+            com.termex.replay15.editor.lottie.LottieLayerRenderer.isLottieUri(it.uri) ||
             it.animation != TextAnimation.NONE || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
         }
         val timeBucket = if (animated) s.timeUs / 33_333L else 0L

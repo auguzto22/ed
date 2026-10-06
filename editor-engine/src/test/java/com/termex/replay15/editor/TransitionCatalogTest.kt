@@ -14,7 +14,7 @@ class TransitionCatalogTest {
 
     private fun loadCatalog(): List<TransitionDefinition> {
         val relative = "src/main/assets/editor/transitions.json"
-        val file = sequenceOf(File(relative), File("app/$relative"))
+        val file = sequenceOf(File(relative), File("editor-engine/$relative"), File("app/$relative"))
             .firstOrNull(File::isFile)
             ?: error("transitions.json not found")
         val array = JSONArray(file.readText())
@@ -24,7 +24,7 @@ class TransitionCatalogTest {
     private fun loadShader(name: String): String {
         val clean = if (name.endsWith(".frag")) name else "$name.frag"
         val relative = "src/main/assets/editor/transitions/$clean"
-        return sequenceOf(File(relative), File("app/$relative"))
+        return sequenceOf(File(relative), File("editor-engine/$relative"), File("app/$relative"))
             .firstOrNull(File::isFile)
             ?.readText()
             ?: error("Shader not found: $name")
@@ -32,7 +32,7 @@ class TransitionCatalogTest {
 
     private fun loadHeader(): String {
         val relative = "src/main/res/raw/transition_header.glsl"
-        return sequenceOf(File(relative), File("app/$relative"))
+        return sequenceOf(File(relative), File("editor-engine/$relative"), File("app/$relative"))
             .firstOrNull(File::isFile)
             ?.readText()
             ?: error("transition_header.glsl not found")
@@ -40,7 +40,7 @@ class TransitionCatalogTest {
 
     private fun loadFooter(): String {
         val relative = "src/main/res/raw/transition_footer.glsl"
-        return sequenceOf(File(relative), File("app/$relative"))
+        return sequenceOf(File(relative), File("editor-engine/$relative"), File("app/$relative"))
             .firstOrNull(File::isFile)
             ?.readText()
             ?: error("transition_footer.glsl not found")

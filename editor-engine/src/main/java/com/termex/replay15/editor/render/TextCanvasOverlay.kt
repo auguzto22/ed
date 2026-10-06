@@ -10,8 +10,9 @@ import android.graphics.PorterDuff
 import android.graphics.RectF
 import android.net.Uri
 import androidx.media3.effect.BitmapOverlay
-import com.termex.replay15.editor.backgroundremoval.MlKitBitmapMaskApplier
+import com.termex.replay15.editor.backgroundremoval.GeminiBitmapMaskApplier
 import com.termex.replay15.editor.domain.*
+import com.termex.replay15.editor.lottie.LottieLayerRenderer
 import kotlin.math.min
 import java.util.LinkedHashMap
 
@@ -45,11 +46,11 @@ class TextCanvasOverlay(
         ): Boolean = size > MAX_TEXT_LAYOUTS
     }
     private val stickerPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    private val stickerBitmaps: Map<String, Bitmap> = initialStickers.mapNotNull { sticker ->
+    private val stickerBitmaps: Map<String, Bitmap> = initialStickers.filterNot { LottieLayerRenderer.isLottieUri(it.uri) }.mapNotNull { sticker ->
         runCatching { sticker.id to decode(context, sticker.uri) }.getOrNull()
     }.toMap()
     private val maskedStickerBitmaps = HashMap<String, Bitmap>()
-    private var maskApplier: MlKitBitmapMaskApplier? = null
+    private var maskApplier: GeminiBitmapMaskApplier? = null
 
     override fun getBitmap(presentationTimeUs: Long): Bitmap {
         val frame = bitmap ?: Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
@@ -68,7 +69,7 @@ class TextCanvasOverlay(
             }
         }
         stickers.forEach {
-            if (presentationTimeUs in it.startUs until it.endUs && stickerBitmaps.containsKey(it.id)) {
+            if (presentationTimeUs in it.startUs until it.endUs && (stickerBitmaps.containsKey(it.id) || LottieLayerRenderer.isLottieUri(it.uri))) {
                 activeStickers += it
                 stateSignature = stateSignature * 31 + it.hashCode()
             }
@@ -77,22 +78,28 @@ class TextCanvasOverlay(
             it.duringAnimation != TextAnimation.NONE || it.exitAnimation != TextAnimation.NONE ||
             it.wordCues.isNotEmpty() || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true } ||
             activeStickers.any {
-                it.animation != TextAnimation.NONE || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
+                LottieLayerRenderer.isLottieUri(it.uri) || it.animation != TextAnimation.NONE || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
             }
         if (lastStateSignature != stateSignature || animated) {
             val target = requireNotNull(canvas)
             target.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             activeTexts.forEach { drawText(target, it, presentationTimeUs) }
             activeStickers.forEach { sticker ->
-                val source = requireNotNull(stickerBitmaps[sticker.id])
-                val bitmap = if (sticker.backgroundRemoval.enabled) {
-                    maskedStickerBitmaps[sticker.id] ?: run {
-                        val processed = (maskApplier ?: MlKitBitmapMaskApplier(context).also { maskApplier = it })
-                            .apply(source, sticker.backgroundRemoval)
-                        processed?.also { maskedStickerBitmaps[sticker.id] = it } ?: source
+                if (LottieLayerRenderer.isLottieUri(sticker.uri)) {
+                    drawLottieSticker(target, sticker, presentationTimeUs)
+                } else {
+                    val source = stickerBitmaps[sticker.id]
+                    if (source != null) {
+                        val bitmap = if (sticker.backgroundRemoval.enabled) {
+                            maskedStickerBitmaps[sticker.id] ?: run {
+                                val processed = (maskApplier ?: GeminiBitmapMaskApplier(context).also { maskApplier = it })
+                                    .apply(source, sticker.backgroundRemoval)
+                                processed?.also { maskedStickerBitmaps[sticker.id] = it } ?: source
+                            }
+                        } else source
+                        drawSticker(target, sticker, bitmap, presentationTimeUs)
                     }
-                } else source
-                drawSticker(target, sticker, bitmap, presentationTimeUs)
+                }
             }
             lastStateSignature = stateSignature
         }
@@ -141,6 +148,30 @@ class TextCanvasOverlay(
         canvas.restore()
     }
 
+    private fun drawLottieSticker(canvas: Canvas, sticker: StickerClip, timeUs: Long) {
+        val composition = LottieLayerRenderer.loadComposition(context, sticker.uri) ?: return
+        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false).transform
+        updateMotion(sticker.animation, sticker.startUs, sticker.endUs, timeUs)
+        val compBounds = composition.bounds
+        val compW = compBounds.width().toFloat().coerceAtLeast(1f)
+        val compH = compBounds.height().toFloat().coerceAtLeast(1f)
+        val targetHeight = sticker.size * height * transform.scaleY
+        val targetWidth = (sticker.size * height * compW / compH) * transform.scaleX
+        val duration = sticker.durationUs.coerceAtLeast(1L)
+        val rawProgress = (timeUs - sticker.startUs).toFloat() / duration.toFloat()
+        val progress = (rawProgress % 1.0f).let { if (it < 0f) it + 1f else it }
+
+        canvas.save()
+        canvas.translate(transform.x * width + motion.offsetX, transform.y * height + motion.offsetY)
+        canvas.rotate(transform.rotation)
+        canvas.scale(if (sticker.flip) -motion.scale else motion.scale, motion.scale)
+        stickerRect.set(-targetWidth / 2f, -targetHeight / 2f, targetWidth / 2f, targetHeight / 2f)
+        CanvasLayerMask.draw(canvas, stickerRect, sticker.maskAt(timeUs)) {
+            LottieLayerRenderer.draw(canvas, composition, progress, stickerRect, transform.opacity * motion.alpha)
+        }
+        canvas.restore()
+    }
+
     private fun updateMotion(animation: TextAnimation, startUs: Long, endUs: Long, timeUs: Long) {
         val progressIn = ((timeUs - startUs) / 350_000f).coerceIn(0f, 1f)
         val progressOut = ((endUs - timeUs) / 250_000f).coerceIn(0f, 1f)
@@ -182,14 +213,22 @@ class TextCanvasOverlay(
         }
     }
 
-    private fun decode(context: Context, source: String): Bitmap = ImageDecoder.decodeBitmap(
-        ImageDecoder.createSource(context.contentResolver, Uri.parse(source)),
-    ) { decoder, info, _ ->
-        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-        val longest = maxOf(info.size.width, info.size.height)
-        if (longest > MAX_STICKER_PIXELS) {
-            val scale = MAX_STICKER_PIXELS / longest.toFloat()
-            decoder.setTargetSize((info.size.width * scale).toInt().coerceAtLeast(1), (info.size.height * scale).toInt().coerceAtLeast(1))
+    private fun decode(context: Context, source: String): Bitmap {
+        val isAsset = source.startsWith("asset:///") || source.startsWith("file:///android_asset/") ||
+            (source.startsWith("editor/") && !source.startsWith("/"))
+        val sourceRef = if (isAsset) {
+            val assetPath = source.removePrefix("file:///android_asset/").removePrefix("asset:///").removePrefix("/")
+            ImageDecoder.createSource(context.assets, assetPath)
+        } else {
+            ImageDecoder.createSource(context.contentResolver, Uri.parse(source))
+        }
+        return ImageDecoder.decodeBitmap(sourceRef) { decoder, info, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            val longest = maxOf(info.size.width, info.size.height)
+            if (longest > MAX_STICKER_PIXELS) {
+                val scale = MAX_STICKER_PIXELS / longest.toFloat()
+                decoder.setTargetSize((info.size.width * scale).toInt().coerceAtLeast(1), (info.size.height * scale).toInt().coerceAtLeast(1))
+            }
         }
     }
 

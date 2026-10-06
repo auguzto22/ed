@@ -2,6 +2,7 @@ package com.termex.replay15.editor.project
 
 import com.termex.replay15.editor.domain.BackgroundMode
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
+import com.termex.replay15.editor.domain.BackgroundRemovalProvider
 import com.termex.replay15.editor.domain.Project
 import com.termex.replay15.editor.domain.SegmentationQuality
 import java.io.DataInputStream
@@ -29,7 +30,8 @@ internal object BackgroundRemovalCodec {
 
     private fun writeEffect(effect: BackgroundRemovalEffect, out: DataOutputStream) {
         out.writeBoolean(effect.enabled)
-        out.writeInt(effect.mode.ordinal)
+        val encodedMode = effect.mode.ordinal or (effect.provider.ordinal shl 8)
+        out.writeInt(encodedMode)
         out.writeFloat(effect.threshold)
         out.writeFloat(effect.feather)
         out.writeFloat(effect.edgeSmoothing)
@@ -41,12 +43,21 @@ internal object BackgroundRemovalCodec {
 
     private fun readEffect(input: DataInputStream): BackgroundRemovalEffect {
         val enabled = input.readBoolean()
-        val mode = BackgroundMode.entries[input.readInt().also { require(it in BackgroundMode.entries.indices) }]
+        val rawMode = input.readInt()
+        val modeOrdinal = rawMode and 0xFF
+        require(modeOrdinal in BackgroundMode.entries.indices) { "Projeto incompativel" }
+        val mode = BackgroundMode.entries[modeOrdinal]
+        val providerOrdinal = (rawMode ushr 8) and 0xFF
+        val provider = if (providerOrdinal in BackgroundRemovalProvider.entries.indices) {
+            BackgroundRemovalProvider.entries[providerOrdinal]
+        } else {
+            BackgroundRemovalProvider.AUTO
+        }
         val threshold = input.readFloat()
         val feather = input.readFloat()
         val edgeSmoothing = input.readFloat()
         val quality = SegmentationQuality.entries[input.readInt().also { require(it in SegmentationQuality.entries.indices) }]
         val backgroundUri = if (input.readBoolean()) input.readUTF() else null
-        return BackgroundRemovalEffect(enabled, mode, threshold, feather, edgeSmoothing, quality, backgroundUri, input.readInt())
+        return BackgroundRemovalEffect(enabled, mode, threshold, feather, edgeSmoothing, quality, backgroundUri, input.readInt(), provider)
     }
 }

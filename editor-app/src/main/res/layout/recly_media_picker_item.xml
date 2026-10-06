@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Thumbnail -->
+    <ImageView
+        android:id="@+id/thumbImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:background="@color/recly_surface"/>
+
+    <!-- Selection overlay -->
+    <View
+        android:id="@+id/selectionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#33000000"
+        android:visibility="gone"/>
+
+    <!-- Checkmark -->
+    <ImageView
+        android:id="@+id/checkmark"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:src="@drawable/ic_check_circle"
+        android:visibility="gone"/>
+
+    <!-- Video icon (shown when video, not selected) -->
+    <ImageView
+        android:id="@+id/videoIcon"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:src="@drawable/ic_play_circle"
+        android:visibility="gone"/>
+
+    <!-- Duration label -->
+    <TextView
+        android:id="@+id/durationLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="4dp"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:background="#99000000"
+        android:textColor="@android:color/white"
+        android:textSize="10sp"
+        android:visibility="gone"/>
+
+</FrameLayout>

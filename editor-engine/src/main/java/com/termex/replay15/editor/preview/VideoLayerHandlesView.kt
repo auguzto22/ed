@@ -27,6 +27,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
     var onPreviewChange: (String?, Int, VideoClip) -> Unit = { _, _, _ -> }
     var onCancelPreview: () -> Unit = {}
     var onMainSelected: (Int) -> Unit = {}
+    var onTrackSelected: (String, String) -> Unit = { _, _ -> }
 
     private data class Target(val track: String?, val mainIndex: Int, val startUs: Long, val clip: VideoClip)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -55,6 +56,50 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         val clip = project.videos[index]
         return clip.takeIf { timeUs in start until start + it.durationUs && project.visualEnabled(MAIN_TRACK) }
             ?.let { Target(null, index, start, it) }
+    }
+
+    private fun hitTest(target: Target, x: Float, y: Float): Boolean {
+        val sourceUs = RenderPlan.sourceTime(target.clip, target.startUs, timeUs)
+        val value = key(target).copy(sourceUs = sourceUs)
+        val point = floatArrayOf(x, y)
+        val rect = bounds(value)
+        Matrix().apply { setRotate(-value.rotation, rect.centerX(), rect.centerY()); mapPoints(point) }
+
+        val cornerRadiusPx = 24f * resources.displayMetrics.density
+        val lx = point[0]; val ly = point[1]
+        val cornerDist = listOf(
+            hypot(lx - rect.right, ly - rect.bottom),
+            hypot(lx - rect.left, ly - rect.bottom),
+            hypot(lx - rect.right, ly - rect.top),
+            hypot(lx - rect.left, ly - rect.top),
+        ).minOrNull() ?: Float.MAX_VALUE
+
+        return rect.contains(lx, ly) || cornerDist <= cornerRadiusPx
+    }
+
+    private fun resolveTargetAt(x: Float, y: Float): Target? {
+        val active = current()
+        if (active != null && hitTest(active, x, y)) {
+            return active
+        }
+        for (track in project.videoTracks.asReversed()) {
+            if (!project.visualEnabled(track.id) || project.trackState(track.id).locked) continue
+            val item = track.activeAt(timeUs) ?: continue
+            val candidate = Target(track.id, -1, item.startUs, item.clip)
+            if (hitTest(candidate, x, y)) return candidate
+        }
+        if (project.visualEnabled(MAIN_TRACK) && !project.trackState(MAIN_TRACK).locked) {
+            val mainIndex = project.indexAt(timeUs)
+            if (mainIndex in project.videos.indices) {
+                val start = project.startOf(mainIndex)
+                val clip = project.videos[mainIndex]
+                if (timeUs in start until start + clip.durationUs) {
+                    val candidate = Target(null, mainIndex, start, clip)
+                    if (hitTest(candidate, x, y)) return candidate
+                }
+            }
+        }
+        return null
     }
 
     private fun key(target: Target) = target.clip.transformAt(RenderPlan.sourceTime(target.clip, target.startUs, timeUs))
@@ -216,7 +261,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         val density = resources.displayMetrics.density
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                val target = current() ?: return false
+                val target = resolveTargetAt(event.x, event.y) ?: return false
                 if (project.trackState(target.track ?: MAIN_TRACK).locked) return false
                 val sourceUs = RenderPlan.sourceTime(target.clip, target.startUs, timeUs)
                 val value = key(target).copy(sourceUs = sourceUs)
@@ -254,7 +299,11 @@ class VideoLayerHandlesView(context: Context) : View(context) {
                     touchMode = TouchMode.MOVE
                 }
 
-                if (target.mainIndex >= 0) onMainSelected(target.mainIndex)
+                if (target.mainIndex >= 0) {
+                    onMainSelected(target.mainIndex)
+                } else if (target.track != null) {
+                    onTrackSelected(target.track, target.clip.id)
+                }
                 parent.requestDisallowInterceptTouchEvent(true)
             }
             MotionEvent.ACTION_POINTER_DOWN -> if (pressed != null && event.pointerCount == 2) {

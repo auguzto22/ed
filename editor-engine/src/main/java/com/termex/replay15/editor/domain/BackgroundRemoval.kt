@@ -16,6 +16,13 @@ enum class SegmentationQuality {
     HIGH,
 }
 
+/** The segmentation AI provider used to isolate subjects and remove background. */
+enum class BackgroundRemovalProvider {
+    AUTO,
+    GEMINI,
+    MLKIT,
+}
+
 /**
  * Persisted, non-destructive background-removal settings.
  *
@@ -31,6 +38,7 @@ data class BackgroundRemovalEffect(
     val quality: SegmentationQuality = SegmentationQuality.BALANCED,
     val backgroundUri: String? = null,
     val backgroundColor: Int = 0x00000000,
+    val provider: BackgroundRemovalProvider = BackgroundRemovalProvider.AUTO,
 ) {
     init {
         require(threshold in 0f..1f)
@@ -39,3 +47,4 @@ data class BackgroundRemovalEffect(
         require(backgroundUri == null || backgroundUri.length <= 2048)
     }
 }
+

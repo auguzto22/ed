@@ -82,7 +82,9 @@ object ProjectComposition {
         val transitionSessionId = nextTransitionSessionId.incrementAndGet()
         TransitionBridge.clearStaleSessions(transitionSessionId)
         val transitionBridgeKeys = project.transitions.associate { transition ->
-            transition.id to "$transitionSessionId:${transition.id}"
+            val key = "$transitionSessionId:${transition.id}"
+            TransitionBridge.retain(key)
+            transition.id to key
         }
         val sequences = layers.map { layer ->
           val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
@@ -167,12 +169,13 @@ object ProjectComposition {
             }
             val audioFadeIn = maxOf(clip.audioFadeInUs, transIn?.durationUs ?: 0L)
             val audioFadeOut = maxOf(clip.audioFadeOutUs, transOut?.durationUs ?: 0L)
+            val audioEffects = gain(clip.volume, audioFadeIn, audioFadeOut, clip.durationUs) +
+                if (clip.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(clip.enhance))
             val item = EditedMediaItem.Builder(media.build())
                 .setDurationUs((if (clip.image) clip.outUs - clip.inUs else clip.sourceUs).coerceAtLeast(1000L))
                 .setRemoveAudio(!project.audioEnabled(layer.id))
                 .setFrameRate(project.export.fps)
-                .setEffects(Effects(gain(clip.volume, audioFadeIn,
-                    audioFadeOut, clip.durationUs), effects))
+                .setEffects(Effects(audioEffects, effects))
                 .setSpeed(androidx.media3.common.SpeedParameters(ClipSpeedProvider(clip), clip.preservePitch)).build()
             sequence.addItem(item); endUs = placed.endUs
           }
@@ -193,7 +196,10 @@ object ProjectComposition {
                 .setClippingConfiguration(MediaItem.ClippingConfiguration.Builder()
                     .setStartPositionUs(audio.inUs).setEndPositionUs(end).build()).build())
                 .setDurationUs(audio.sourceUs.coerceAtLeast(1000L)).setRemoveVideo(true)
-                .setEffects(Effects(gain(audio.volume, audio.fadeInUs, audio.fadeOutUs, end - audio.inUs), emptyList())).build()
+                .setEffects(Effects(
+                    gain(audio.volume, audio.fadeInUs, audio.fadeOutUs, end - audio.inUs) +
+                        if (audio.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(audio.enhance)),
+                    emptyList())).build()
             val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
             if (audio.startUs > 0) sequence.addGap(audio.startUs)
             sequence.addItem(item)

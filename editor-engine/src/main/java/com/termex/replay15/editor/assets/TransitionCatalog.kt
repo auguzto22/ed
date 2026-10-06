@@ -9,30 +9,42 @@ object TransitionCatalog {
     const val CATEGORY_FAVORITES = "Favoritos"
 
     const val CAT_BASIC = "Basic"
+    const val CAT_FADE = "Fade"
+    const val CAT_ZOOM = "Zoom"
     const val CAT_SLIDE = "Slide"
     const val CAT_WIPE = "Wipe"
-    const val CAT_ZOOM = "Zoom"
-    const val CAT_MOTION = "Motion"
     const val CAT_BLUR = "Blur"
-    const val CAT_LIGHT = "Light"
-    const val CAT_GLITCH = "Glitch"
-    const val CAT_LUMA = "Luma"
     const val CAT_DISTORTION = "Distortion"
-    const val CAT_3D = "3D"
+    const val CAT_GLITCH = "Glitch"
+    const val CAT_RGB = "RGB"
+    const val CAT_LIGHT = "Light"
+    const val CAT_FILM = "Film"
+    const val CAT_CINEMATIC = "Cinematic"
+    const val CAT_3D = "3D-like"
+    const val CAT_SOCIAL = "Social"
+    const val CAT_GAMING = "Gaming"
+    const val CAT_MOTION = "Motion"
+    const val CAT_LUMA = "Luma"
     const val CAT_CREATIVE = "Creative"
 
     val CANONICAL_CATEGORIES = listOf(
         CAT_BASIC,
+        CAT_FADE,
+        CAT_ZOOM,
         CAT_SLIDE,
         CAT_WIPE,
-        CAT_ZOOM,
-        CAT_MOTION,
         CAT_BLUR,
-        CAT_LIGHT,
-        CAT_GLITCH,
-        CAT_LUMA,
         CAT_DISTORTION,
+        CAT_GLITCH,
+        CAT_RGB,
+        CAT_LIGHT,
+        CAT_FILM,
+        CAT_CINEMATIC,
         CAT_3D,
+        CAT_SOCIAL,
+        CAT_GAMING,
+        CAT_MOTION,
+        CAT_LUMA,
         CAT_CREATIVE,
     )
 
@@ -44,6 +56,7 @@ object TransitionCatalog {
 
     fun canonicalCategory(category: String): String = when (category.trim().lowercase()) {
         "basic", "basico", "básico" -> CAT_BASIC
+        "fade", "dissolve", "desvanecer" -> CAT_FADE
         "slide", "push", "deslizar" -> CAT_SLIDE
         "wipe", "mascara", "cortina" -> CAT_WIPE
         "zoom", "escala" -> CAT_ZOOM
@@ -51,15 +64,29 @@ object TransitionCatalog {
         "blur", "desfoque" -> CAT_BLUR
         "light", "luz", "flash" -> CAT_LIGHT
         "glitch", "digital" -> CAT_GLITCH
+        "rgb", "chromatic", "cromatico", "cromático" -> CAT_RGB
+        "film", "filme", "burn", "vintage" -> CAT_FILM
+        "cinematic", "cinema", "anamorphic" -> CAT_CINEMATIC
+        "3d", "3d-like", "perspectiva", "perspective", "cube" -> CAT_3D
+        "social", "tiktok", "reels", "stories" -> CAT_SOCIAL
+        "gaming", "game", "arcade", "pixel", "8bit" -> CAT_GAMING
         "luma", "luminancia", "luminância" -> CAT_LUMA
         "distortion", "distorcao", "distorção" -> CAT_DISTORTION
-        "3d", "perspectiva", "perspective" -> CAT_3D
         "creative", "criativo" -> CAT_CREATIVE
         else -> category.replaceFirstChar { it.uppercase() }
     }
 
+    fun all(context: Context): List<TransitionDefinition> =
+        BuiltInTransitions.definitions(context)
+
     fun findById(context: Context, id: String): TransitionDefinition? =
         BuiltInTransitions.findById(context, id)
+
+    fun find(id: String): TransitionDefinition? =
+        BuiltInTransitions.findById(id)
+
+    fun search(context: Context, query: String): List<TransitionDefinition> =
+        filter(all(context), CATEGORY_ALL, query)
 
     fun filter(
         definitions: List<TransitionDefinition>,

@@ -1,5 +1,6 @@
 package com.termex.replay15.editor.preview.engine
 
+import com.termex.replay15.editor.audio.AudioEnhance
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.preview.engine.audio.AudioTimelineMapper
 
@@ -16,6 +17,8 @@ data class ResolvedAudioSource(
     val preservePitch: Boolean,
     val generation: Long,
     val embedded: Boolean,
+    /** Per-clip DSP (noise, voice, compression, normalize). Runs before the mix gain. */
+    val enhance: AudioEnhance = AudioEnhance.NEUTRAL,
 ) {
     /** Mixer-facing name retained for callers; the value is the evaluated volume/fade envelope. */
     val gain: Float get() = volume
@@ -55,6 +58,7 @@ class ActiveAudioSourceResolver(
                         maxOf(clip.audioFadeInUs, entering), maxOf(clip.audioFadeOutUs, leaving)),
                     speed = clip.timeMap.speedAtInput(sourceTime - clip.inUs),
                     preservePitch = clip.preservePitch, generation = generation, embedded = true,
+                    enhance = clip.enhance,
                 )
             }
         val external = project.audio.asSequence().filter {
@@ -65,7 +69,7 @@ class ActiveAudioSourceResolver(
                 projectStartUs = clip.startUs, projectEndUs = clip.startUs + clip.durationUs,
                 sourceStartUs = clip.inUs, sourceTimeUs = clip.inUs + time - clip.startUs,
                 volume = AudioTimelineMapper.calculateGain(clip, time - clip.startUs), speed = 1f, preservePitch = true,
-                generation = generation, embedded = false,
+                generation = generation, embedded = false, enhance = clip.enhance,
             )
         }
         return (videoAudio + external).toList()

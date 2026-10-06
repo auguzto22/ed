@@ -225,28 +225,34 @@ object SubtitleAnimationEvaluator {
         }
         val alpha = when (activeAnimation) {
             TextAnimation.NONE, TextAnimation.PULSE, TextAnimation.FLOAT, TextAnimation.SHAKE,
-            TextAnimation.WORD_POP, TextAnimation.KARAOKE, TextAnimation.CURRENT_WORD_HIGHLIGHT -> 1f
+            TextAnimation.WORD_POP, TextAnimation.KARAOKE, TextAnimation.CURRENT_WORD_HIGHLIGHT,
+            TextAnimation.TYPEWRITER -> 1f
             TextAnimation.FADE, TextAnimation.FADE_OUT, TextAnimation.BLUR_IN, TextAnimation.BLUR_OUT -> progress
             else -> 1f
         }
         val overshoot = overshoot(progress)
         val scale = when (activeAnimation) {
             TextAnimation.POP, TextAnimation.BOUNCE, TextAnimation.SOFT_BOUNCE -> .72f + .28f * overshoot
-            TextAnimation.ZOOM -> .82f + .18f * progress
+            TextAnimation.ZOOM, TextAnimation.SCALE -> .82f + .18f * progress
             TextAnimation.ZOOM_OUT -> .82f + .18f * progress
             TextAnimation.PULSE -> 1f + .04f * sin(progress * Math.PI * 2.0).toFloat()
+            TextAnimation.ELASTIC -> 1f + sin(progress * Math.PI * 4.0).toFloat() * (1f - progress) * 0.25f
+            TextAnimation.WAVE -> 1f + sin(progress * Math.PI * 2.0).toFloat() * 0.06f
             else -> 1f
         }
         val x = when (activeAnimation) {
             TextAnimation.SLIDE_LEFT -> (1f - progress) * width * .09f
             TextAnimation.SLIDE_RIGHT -> -(1f - progress) * width * .09f
             TextAnimation.SHAKE -> sin(progress * Math.PI * 12.0).toFloat() * width * .012f
+            TextAnimation.GLITCH -> if (sin(progress * 30.0) > 0.4) sin(progress * 70.0).toFloat() * width * 0.015f else 0f
+            TextAnimation.TRACKING -> (1f - progress) * width * 0.02f
             else -> 0f
         }
         val y = when (activeAnimation) {
             TextAnimation.SLIDE_UP -> (1f - progress) * height * .07f
             TextAnimation.SLIDE_DOWN -> -(1f - progress) * height * .07f
             TextAnimation.FLOAT -> sin(progress * Math.PI * 2.0).toFloat() * height * .012f
+            TextAnimation.WAVE -> sin(progress * Math.PI * 3.0).toFloat() * height * .014f
             else -> 0f
         }
         return floatArrayOf((alpha * text.opacity).coerceIn(0f, 1f), scale, x, y)

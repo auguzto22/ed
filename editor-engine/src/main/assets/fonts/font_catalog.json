@@ -1,542 +1,4330 @@
 [
-  {
-    "id": "inter",
-    "family": "Inter",
-    "displayName": "Inter",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno", "Minimal", "Em alta"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://github.com/rsms/inter/blob/master/LICENSE.txt",
-    "remoteUrl": "https://github.com/rsms/inter/releases/download/v4.1/Inter-Regular.ttf",
-    "version": "v4.1",
-    "sha256": "",
-    "fileSize": 316000
-  },
-  {
-    "id": "roboto",
-    "family": "Roboto",
-    "displayName": "Roboto",
-    "weights": [100, 300, 400, 500, 700, 900],
-    "styles": ["normal", "italic"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno", "Em alta"],
-    "source": "google-fonts",
-    "license": "Apache-2.0",
-    "licenseUrl": "https://github.com/googlefonts/roboto/blob/main/LICENSE",
-    "remoteUrl": "https://fonts.gstatic.com/s/roboto/v47/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuaaBmms.ttf",
-    "version": "v47",
-    "sha256": "",
-    "fileSize": 168000
-  },
-  {
-    "id": "lato",
-    "family": "Lato",
-    "displayName": "Lato",
-    "weights": [100, 300, 400, 700, 900],
-    "styles": ["normal", "italic"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext"],
-    "category": "SANS",
-    "tags": ["Moderno", "Minimal"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.ttf",
-    "version": "v24",
-    "sha256": "",
-    "fileSize": 75000
-  },
-  {
-    "id": "open_sans",
-    "family": "Open Sans",
-    "displayName": "Open Sans",
-    "weights": [300, 400, 500, 600, 700, 800],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/opensans/v40/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.ttf",
-    "version": "v40",
-    "sha256": "",
-    "fileSize": 62000
-  },
-  {
-    "id": "nunito",
-    "family": "Nunito",
-    "displayName": "Nunito",
-    "weights": [200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno", "Minimal"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/nunito/v26/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTY9jo7eTWk.ttf",
-    "version": "v26",
-    "sha256": "",
-    "fileSize": 120000
-  },
-  {
-    "id": "source_sans_3",
-    "family": "Source Sans 3",
-    "displayName": "Source Sans 3",
-    "weights": [200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/sourcesans3/v15/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky462EM.ttf",
-    "version": "v15",
-    "sha256": "",
-    "fileSize": 105000
-  },
-  {
-    "id": "work_sans",
-    "family": "Work Sans",
-    "displayName": "Work Sans",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno", "Minimal"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/worksans/v19/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXBi8Jpg.ttf",
-    "version": "v19",
-    "sha256": "",
-    "fileSize": 108000
-  },
-  {
-    "id": "dm_sans",
-    "family": "DM Sans",
-    "displayName": "DM Sans",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext"],
-    "category": "SANS",
-    "tags": ["Moderno", "Minimal", "Em alta"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/dmsans/v15/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAkpFhR38.ttf",
-    "version": "v15",
-    "sha256": "",
-    "fileSize": 148000
-  },
-  {
-    "id": "rubik",
-    "family": "Rubik",
-    "displayName": "Rubik",
-    "weights": [300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "hebrew"],
-    "category": "SANS",
-    "tags": ["Moderno", "Bold"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4iFV0U1dYPFkZVO.ttf",
-    "version": "v28",
-    "sha256": "",
-    "fileSize": 195000
-  },
-  {
-    "id": "fira_code",
-    "family": "Fira Code",
-    "displayName": "Fira Code",
-    "weights": [300, 400, 500, 600, 700],
-    "styles": ["normal"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek"],
-    "category": "MONO",
-    "tags": ["Gaming", "Retro"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/firacode/v22/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sJVD7MOzlojwUKQ.ttf",
-    "version": "v22",
-    "sha256": "",
-    "fileSize": 262000
-  },
-  {
-    "id": "jetbrains_mono",
-    "family": "JetBrains Mono",
-    "displayName": "JetBrains Mono",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic"],
-    "category": "MONO",
-    "tags": ["Gaming", "Retro", "Moderno"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOlOTk6OThhvA.ttf",
-    "version": "v18",
-    "sha256": "",
-    "fileSize": 225000
-  },
-  {
-    "id": "merriweather",
-    "family": "Merriweather",
-    "displayName": "Merriweather",
-    "weights": [300, 400, 700, 900],
-    "styles": ["normal", "italic"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "cyrillic"],
-    "category": "SERIF",
-    "tags": ["Elegante"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/merriweather/v30/u-440qyriQwlOrhSvowK_l5-fCZM.ttf",
-    "version": "v30",
-    "sha256": "",
-    "fileSize": 95000
-  },
-  {
-    "id": "lora",
-    "family": "Lora",
-    "displayName": "Lora",
-    "weights": [400, 500, 600, 700],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "vietnamese"],
-    "category": "SERIF",
-    "tags": ["Elegante"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/lora/v35/0QI6MX1D_JOuGQbT0gvTJPa787weuyJGmKxemMeZ.ttf",
-    "version": "v35",
-    "sha256": "",
-    "fileSize": 130000
-  },
-  {
-    "id": "noto_serif",
-    "family": "Noto Serif",
-    "displayName": "Noto Serif",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek", "vietnamese"],
-    "category": "SERIF",
-    "tags": ["Elegante", "Moderno"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/notoserif/v23/ga6iaw1J5X9T9RW6j9bNVls-hfgvz8JcMofYTa32J7GIRAo.ttf",
-    "version": "v23",
-    "sha256": "",
-    "fileSize": 225000
-  },
-  {
-    "id": "crimson_text",
-    "family": "Crimson Text",
-    "displayName": "Crimson Text",
-    "weights": [400, 600, 700],
-    "styles": ["normal", "italic"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SERIF",
-    "tags": ["Elegante", "Retro"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/crimsontext/v19/wlp2gwHKFkZgtmSR3NB0oRJvaAJSA_JN3Q.ttf",
-    "version": "v19",
-    "sha256": "",
-    "fileSize": 76000
-  },
-  {
-    "id": "abril_fatface",
-    "family": "Abril Fatface",
-    "displayName": "Abril Fatface",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext"],
-    "category": "DISPLAY",
-    "tags": ["Elegante", "Bold", "Em alta"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/abrilfatface/v23/zOL64pLDlL1D99S8HAFadkwfBuDo_io4.ttf",
-    "version": "v23",
-    "sha256": "",
-    "fileSize": 52000
-  },
-  {
-    "id": "righteous",
-    "family": "Righteous",
-    "displayName": "Righteous",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext"],
-    "category": "DISPLAY",
-    "tags": ["Bold", "Gaming"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/righteous/v17/1cXxaUPXBpj2rGoU7C9mj3uEicG01A.ttf",
-    "version": "v17",
-    "sha256": "",
-    "fileSize": 48000
-  },
-  {
-    "id": "permanent_marker",
-    "family": "Permanent Marker",
-    "displayName": "Permanent Marker",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin"],
-    "category": "DISPLAY",
-    "tags": ["Bold", "Gaming", "Escrita"],
-    "source": "google-fonts",
-    "license": "Apache-2.0",
-    "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
-    "remoteUrl": "https://fonts.gstatic.com/s/permanentmarker/v16/Fh4uPib9Iyv2ucM6pGQMWimMp004HaqIfrT5nlk.ttf",
-    "version": "v16",
-    "sha256": "",
-    "fileSize": 75000
-  },
-  {
-    "id": "fredoka",
-    "family": "Fredoka",
-    "displayName": "Fredoka",
-    "weights": [300, 400, 500, 600, 700],
-    "styles": ["normal"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "hebrew"],
-    "category": "DISPLAY",
-    "tags": ["Bold", "Moderno"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/fredoka/v14/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367xB-i2yQag0-mac3K8SWZpv8.ttf",
-    "version": "v14",
-    "sha256": "",
-    "fileSize": 215000
-  },
-  {
-    "id": "pacifico",
-    "family": "Pacifico",
-    "displayName": "Pacifico",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "cyrillic", "vietnamese"],
-    "category": "SCRIPT",
-    "tags": ["Escrita", "Em alta"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/pacifico/v22/FwZY7-Qmy14u9lezJ-6H6MmBp0u-.ttf",
-    "version": "v22",
-    "sha256": "",
-    "fileSize": 165000
-  },
-  {
-    "id": "dancing_script",
-    "family": "Dancing Script",
-    "displayName": "Dancing Script",
-    "weights": [400, 500, 600, 700],
-    "styles": ["normal"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SCRIPT",
-    "tags": ["Escrita", "Elegante"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/dancingscript/v25/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Sup6hNX6plRP.ttf",
-    "version": "v25",
-    "sha256": "",
-    "fileSize": 145000
-  },
-  {
-    "id": "great_vibes",
-    "family": "Great Vibes",
-    "displayName": "Great Vibes",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SCRIPT",
-    "tags": ["Escrita", "Elegante"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/greatvibes/v19/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf",
-    "version": "v19",
-    "sha256": "",
-    "fileSize": 142000
-  },
-  {
-    "id": "shadows_into_light",
-    "family": "Shadows Into Light",
-    "displayName": "Shadows Into Light",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin"],
-    "category": "SCRIPT",
-    "tags": ["Escrita"],
-    "source": "google-fonts",
-    "license": "Apache-2.0",
-    "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
-    "remoteUrl": "https://fonts.gstatic.com/s/shadowsintolight/v19/UqyNK9UOIntux_czAvDQx_ZcHqZXBNQDcsr4xzSMYA.ttf",
-    "version": "v19",
-    "sha256": "",
-    "fileSize": 40000
-  },
-  {
-    "id": "press_start_2p",
-    "family": "Press Start 2P",
-    "displayName": "Press Start 2P",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek"],
-    "category": "DISPLAY",
-    "tags": ["Gaming", "Retro"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/pressstart2p/v15/e3t4euO8T-267oIAQAu6jDQyK3nVivNm4I81.ttf",
-    "version": "v15",
-    "sha256": "",
-    "fileSize": 160000
-  },
-  {
-    "id": "silkscreen",
-    "family": "Silkscreen",
-    "displayName": "Silkscreen",
-    "weights": [400, 700],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext"],
-    "category": "DISPLAY",
-    "tags": ["Gaming", "Retro"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/silkscreen/v4/m8JXjfVPf62XiF7kO-i9ULRvamODxdI.ttf",
-    "version": "v4",
-    "sha256": "",
-    "fileSize": 20000
-  },
-  {
-    "id": "vt323",
-    "family": "VT323",
-    "displayName": "VT323",
-    "weights": [400],
-    "styles": ["normal"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "MONO",
-    "tags": ["Gaming", "Retro"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJXUdVNF.ttf",
-    "version": "v17",
-    "sha256": "",
-    "fileSize": 55000
-  },
-  {
-    "id": "josefin_sans",
-    "family": "Josefin Sans",
-    "displayName": "Josefin Sans",
-    "weights": [100, 200, 300, 400, 500, 600, 700],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Minimal", "Elegante"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/josefinsans/v32/Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_DjQXMFrLgTsQV0.ttf",
-    "version": "v32",
-    "sha256": "",
-    "fileSize": 82000
-  },
-  {
-    "id": "barlow",
-    "family": "Barlow",
-    "displayName": "Barlow",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/barlow/v12/7cHpv4kjgoGqM7E_DMs5ynghnQci.ttf",
-    "version": "v12",
-    "sha256": "",
-    "fileSize": 71000
-  },
-  {
-    "id": "ubuntu",
-    "family": "Ubuntu",
-    "displayName": "Ubuntu",
-    "weights": [300, 400, 500, 700],
-    "styles": ["normal", "italic"],
-    "variable": false,
-    "subsets": ["latin", "latin-ext", "cyrillic", "greek"],
-    "category": "SANS",
-    "tags": ["Moderno"],
-    "source": "google-fonts",
-    "license": "UFL-1.0",
-    "licenseUrl": "https://ubuntu.com/legal/font-licence",
-    "remoteUrl": "https://fonts.gstatic.com/s/ubuntu/v20/4iCs6KVjbNBYlgo6eAT3v02QFg.ttf",
-    "version": "v20",
-    "sha256": "",
-    "fileSize": 166000
-  },
-  {
-    "id": "archivo",
-    "family": "Archivo",
-    "displayName": "Archivo",
-    "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    "styles": ["normal", "italic"],
-    "variable": true,
-    "subsets": ["latin", "latin-ext", "vietnamese"],
-    "category": "SANS",
-    "tags": ["Moderno", "Bold"],
-    "source": "google-fonts",
-    "license": "OFL-1.1",
-    "licenseUrl": "https://scripts.sil.org/OFL",
-    "remoteUrl": "https://fonts.gstatic.com/s/archivo/v19/k3kPo8UDI-1M0wlSV9XAw6lQkqWY8Q82sJaRE-NWIDdgffTTBDNQ95_ckV0yBQ.ttf",
-    "version": "v19",
-    "sha256": "",
-    "fileSize": 108000
-  }
+    {
+        "displayName":  "Inter",
+        "fileSize":  320000,
+        "family":  "Inter",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Rasmus Andersson",
+        "tags":  [
+                     "Moderno",
+                     "Minimal",
+                     "Em alta"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "inter"
+    },
+    {
+        "displayName":  "Roboto",
+        "fileSize":  170000,
+        "family":  "Roboto",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        300,
+                        400,
+                        500,
+                        700,
+                        900
+                    ],
+        "version":  "v32",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Christian Robertson",
+        "tags":  [
+                     "Moderno",
+                     "Em alta"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "roboto"
+    },
+    {
+        "displayName":  "Lato",
+        "fileSize":  75000,
+        "family":  "Lato",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        300,
+                        400,
+                        700,
+                        900
+                    ],
+        "version":  "v24",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Åukasz Dziedzic",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "lato"
+    },
+    {
+        "displayName":  "Open Sans",
+        "fileSize":  280000,
+        "family":  "Open Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/opensans/v40/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVQUwaEQbjA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v40",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Steve Matteson",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "open_sans"
+    },
+    {
+        "displayName":  "Nunito",
+        "fileSize":  180000,
+        "family":  "Nunito",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/nunito/v26/XRXV3I6Li01BKofINeaBTMnFcQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v26",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "nunito"
+    },
+    {
+        "displayName":  "Source Sans 3",
+        "fileSize":  210000,
+        "family":  "Source Sans 3",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/sourcesans3/v15/nwpStKqkzkQDrcct-F21PevaPVA6_74r665b.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Paul D. Hunt",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "source_sans_3"
+    },
+    {
+        "displayName":  "Work Sans",
+        "fileSize":  190000,
+        "family":  "Work Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/worksans/v19/QEi_zDXbgpnG63QiPBvPJ5ragoDA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Wei Huang",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "work_sans"
+    },
+    {
+        "displayName":  "DM Sans",
+        "fileSize":  200000,
+        "family":  "DM Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/dmsans/v15/rP2Fp2ywxg089UriCZX4H-8.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Colophon Foundry",
+        "tags":  [
+                     "Moderno",
+                     "Em alta",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "dm_sans"
+    },
+    {
+        "displayName":  "Rubik",
+        "fileSize":  160000,
+        "family":  "Rubik",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-4I-F.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v28",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Hubert and Fischer",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "rubik"
+    },
+    {
+        "displayName":  "Barlow",
+        "fileSize":  110000,
+        "family":  "Barlow",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/barlow/v12/7cHpv4kjgoGqM7E_Ass57Hs.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v12",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jeremy Tribby",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "barlow"
+    },
+    {
+        "displayName":  "Ubuntu",
+        "fileSize":  85000,
+        "family":  "Ubuntu",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ubuntu/v20/4iCs6KVjbNGnj15V81WED6mt.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "UFL-1.0",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        700
+                    ],
+        "version":  "v20",
+        "licenseUrl":  "https://ubuntu.com/legal/font-licence",
+        "author":  "Dalton Maag",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "ubuntu"
+    },
+    {
+        "displayName":  "Archivo",
+        "fileSize":  240000,
+        "family":  "Archivo",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/archivo/v19/k3kVo8QEumIO6Hs0b42-GTo6X4qn.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Omnibus-Type",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "archivo"
+    },
+    {
+        "displayName":  "Space Grotesk",
+        "fileSize":  120000,
+        "family":  "Space Grotesk",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-g.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Florian Karsten",
+        "tags":  [
+                     "Moderno",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "space_grotesk"
+    },
+    {
+        "displayName":  "Plus Jakarta Sans",
+        "fileSize":  180000,
+        "family":  "Plus Jakarta Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/plusjakartasans/v8/LGRPz-IvqbkbTW13SpQp7GVjh9-O.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v8",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Tokotype",
+        "tags":  [
+                     "Moderno",
+                     "Em alta"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "plus_jakarta_sans"
+    },
+    {
+        "displayName":  "Urbanist",
+        "fileSize":  210000,
+        "family":  "Urbanist",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/urbanist/v15/L0xjDF02iFML4hGCyOCnRdyk.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Corey Hu",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "urbanist"
+    },
+    {
+        "displayName":  "Sora",
+        "fileSize":  150000,
+        "family":  "Sora",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/sora/v12/xMQbuFFYT72XzQUp82u7.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v12",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Barnbrook",
+        "tags":  [
+                     "Moderno",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "sora"
+    },
+    {
+        "displayName":  "Lexend",
+        "fileSize":  140000,
+        "family":  "Lexend",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/lexend/v19/wlptgwjaV_23-NxOWCJP668.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Bonnie Shaver-Troup",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "lexend"
+    },
+    {
+        "displayName":  "Manrope",
+        "fileSize":  130000,
+        "family":  "Manrope",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/manrope/v15/xn7gOHwg3XPJ9sgCT85n7es.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Mikhail Sharanda",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "manrope"
+    },
+    {
+        "displayName":  "Josefin Sans",
+        "fileSize":  170000,
+        "family":  "Josefin Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/josefinsans/v26/Qw3aZQNVED7rKGKGRqXDBS_x.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v26",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Santiago Orozco",
+        "tags":  [
+                     "Minimal",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "josefin_sans"
+    },
+    {
+        "displayName":  "Quicksand",
+        "fileSize":  95000,
+        "family":  "Quicksand",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/quicksand/v31/6xKtdSZaM9iE8KbpRA_hK1QN.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v31",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Andrew Paglinawan",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "quicksand"
+    },
+    {
+        "displayName":  "Exo 2",
+        "fileSize":  220000,
+        "family":  "Exo 2",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/exo2/v21/7cH1v4okm5zmbvwkAx_sfcE.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v21",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Natanael Gama",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "exo_2"
+    },
+    {
+        "displayName":  "Chivo",
+        "fileSize":  230000,
+        "family":  "Chivo",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/chivo/v18/va9b4kzIxd1KFppkaRKvDRPJ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Omnibus-Type",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "chivo"
+    },
+    {
+        "displayName":  "Cabin",
+        "fileSize":  180000,
+        "family":  "Cabin",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/cabin/v27/u-4X0qWljRw-PfU81xCKCpdpbgZjl6nFqpev.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v27",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Pablo Impallari",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "cabin"
+    },
+    {
+        "displayName":  "Karla",
+        "fileSize":  150000,
+        "family":  "Karla",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/karla/v31/qkLQLvLQYXgn4162lD12uTk.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v31",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jonny Pinhorn",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "karla"
+    },
+    {
+        "displayName":  "Titillium Web",
+        "fileSize":  105000,
+        "family":  "Titillium Web",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/titilliumweb/v17/NaPecZTIAOhVxoIxZZIz3644Mm8Omg.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        600,
+                        700,
+                        900
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Accademia di Belle Arti di Urbino",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "titillium_web"
+    },
+    {
+        "displayName":  "PT Sans",
+        "fileSize":  72000,
+        "family":  "PT Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ptsans/v17/jizaRExUiTo99u79D0KEwA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400,
+                        700
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "ParaType",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "pt_sans"
+    },
+    {
+        "displayName":  "Telex",
+        "fileSize":  60000,
+        "family":  "Telex",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/telex/v17/0QI6MXxPFpWp826fD8Y.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "AndrÃ©s Torresi",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "telex"
+    },
+    {
+        "displayName":  "Secular One",
+        "fileSize":  58000,
+        "family":  "Secular One",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/secularone/v14/8UAcFYsZAdioBtu_HQvU44uF9g.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v14",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Michal Sahar",
+        "tags":  [
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "secular_one"
+    },
+    {
+        "displayName":  "Antonio",
+        "fileSize":  92000,
+        "family":  "Antonio",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/antonio/v16/gNMbW2t0QyVP8GEUfF4q.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Bold",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "antonio"
+    },
+    {
+        "displayName":  "League Spartan",
+        "fileSize":  160000,
+        "family":  "League Spartan",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/leaguespartan/v11/kJEnBuEW6A0JbC3IOwl56NW71fkt8A.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v11",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "The League of Moveable Type",
+        "tags":  [
+                     "Bold",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "league_spartan"
+    },
+    {
+        "displayName":  "Play",
+        "fileSize":  78000,
+        "family":  "Play",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/play/v17/6NuEXL-P6GH97Xg.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        400,
+                        700
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jonas Hecksher",
+        "tags":  [
+                     "Moderno",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "play"
+    },
+    {
+        "displayName":  "Red Hat Text",
+        "fileSize":  160000,
+        "family":  "Red Hat Text",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/redhattext/v16/bx6Z-ISg23062P-k.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "MCKL",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "red_hat_text"
+    },
+    {
+        "displayName":  "Overpass",
+        "fileSize":  195000,
+        "family":  "Overpass",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/overpass/v16/rnCr-xNNtcFquQ1spSvhWQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Delve Fonts",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "overpass"
+    },
+    {
+        "displayName":  "IBM Plex Sans",
+        "fileSize":  125000,
+        "family":  "IBM Plex Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ibmplexsans/v19/zYXgKVElMYYaJe8bp8hs3FWxhw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Mike Abbink",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "ibm_plex_sans"
+    },
+    {
+        "displayName":  "Roboto Condensed",
+        "fileSize":  165000,
+        "family":  "Roboto Condensed",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/robotocondensed/v27/ieVi2ZhZI2eCN5jzbjEETS9weq8-.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        700
+                    ],
+        "version":  "v27",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Christian Robertson",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "roboto_condensed"
+    },
+    {
+        "displayName":  "Poppins Light",
+        "fileSize":  155000,
+        "family":  "Poppins Light",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/poppins/v21/pxiByp8kv8JHgFVrLDz8Z11lFc-u.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "devanagari"
+                    ],
+        "weights":  [
+                        300
+                    ],
+        "version":  "v21",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Indian Type Foundry",
+        "tags":  [
+                     "Minimal",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "poppins_light"
+    },
+    {
+        "displayName":  "Changa",
+        "fileSize":  140000,
+        "family":  "Changa",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/changa/v27/2-cu9JnjK40PJqu4.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "arabic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v27",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Eduardo Tunni",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "changa"
+    },
+    {
+        "displayName":  "Cairo",
+        "fileSize":  180000,
+        "family":  "Cairo",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/cairo/v28/SLXVc1nY6Hkvangt.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "arabic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v28",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Mohamed Gaber",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "cairo"
+    },
+    {
+        "displayName":  "Almarai",
+        "fileSize":  85000,
+        "family":  "Almarai",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/almarai/v13/tsstApxBaKebvWCE35B6.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "arabic"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        700,
+                        800
+                    ],
+        "version":  "v13",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Almarai Team",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "almarai"
+    },
+    {
+        "displayName":  "Tajawal",
+        "fileSize":  95000,
+        "family":  "Tajawal",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/tajawal/v9/Iura6Yx_msS42kce.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "arabic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v9",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Boutros Fonts",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "tajawal"
+    },
+    {
+        "displayName":  "Noto Sans",
+        "fileSize":  350000,
+        "family":  "Noto Sans",
+        "category":  "SANS",
+        "remoteUrl":  "https://fonts.gstatic.com/s/notosans/v36/o-0IIpQlx3QUlC5A4PNr6zRF.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v36",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Google",
+        "tags":  [
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "noto_sans"
+    },
+    {
+        "displayName":  "Merriweather",
+        "fileSize":  120000,
+        "family":  "Merriweather",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/merriweather/v30/u-440qyriQwlOrhSvowK_l5-fCZM.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        700,
+                        900
+                    ],
+        "version":  "v30",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Eben Sorkin",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "merriweather"
+    },
+    {
+        "displayName":  "Lora",
+        "fileSize":  160000,
+        "family":  "Lora",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/lora/v35/0QI6MX1D_JOuGQbT0BOV.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v35",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Cyreal",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "lora"
+    },
+    {
+        "displayName":  "Noto Serif",
+        "fileSize":  280000,
+        "family":  "Noto Serif",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/notoserif/v23/ga6iaw1J5X9T9RW6j9bNfFneADc.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v23",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Google",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "noto_serif"
+    },
+    {
+        "displayName":  "Crimson Text",
+        "fileSize":  80000,
+        "family":  "Crimson Text",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/crimsontext/v19/wmgQ5035Gji1vvqxw797nCA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400,
+                        600,
+                        700
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Sebastian Kosch",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "crimson_text"
+    },
+    {
+        "displayName":  "Cinzel",
+        "fileSize":  125000,
+        "family":  "Cinzel",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/cinzel/v23/8vIQ776mE3tTp5fKvvpm.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v23",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Natanael Gama",
+        "tags":  [
+                     "Elegante",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "cinzel"
+    },
+    {
+        "displayName":  "Cormorant Garamond",
+        "fileSize":  140000,
+        "family":  "Cormorant Garamond",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjYpHtK.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Christian Thalmann",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "cormorant_garamond"
+    },
+    {
+        "displayName":  "EB Garamond",
+        "fileSize":  310000,
+        "family":  "EB Garamond",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ebgaramond/v27/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUC782WSp1.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v27",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Georg Duffner",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "eb_garamond"
+    },
+    {
+        "displayName":  "Bodoni Moda",
+        "fileSize":  260000,
+        "family":  "Bodoni Moda",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bodonimoda/v20/aFTH7PB1z3v1WzkGZOSF3Sww3A.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v20",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Indestructible Type",
+        "tags":  [
+                     "Elegante",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "bodoni_moda"
+    },
+    {
+        "displayName":  "Spectral",
+        "fileSize":  95000,
+        "family":  "Spectral",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/spectral/v13/rnCr-xNNtcFquQ1spSvhWQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v13",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Production Type",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "spectral"
+    },
+    {
+        "displayName":  "Bitter",
+        "fileSize":  210000,
+        "family":  "Bitter",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bitter/v33/rax-HiqOu8IVPmn7-Yw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v33",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Sol Matas",
+        "tags":  [
+                     "Elegante",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "bitter"
+    },
+    {
+        "displayName":  "Crimson Pro",
+        "fileSize":  220000,
+        "family":  "Crimson Pro",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/crimsonpro/v23/q5uDsoa5M_tv7IihmnkabC5X.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v23",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jacques Le Bailly",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "crimson_pro"
+    },
+    {
+        "displayName":  "Frank Ruhl Libre",
+        "fileSize":  145000,
+        "family":  "Frank Ruhl Libre",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/frankruhllibre/v19/j8xb6-Z2Wj24k4r9T1F5sUeMv1eD.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        700,
+                        900
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Yanek Iontef",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "frank_ruhl_libre"
+    },
+    {
+        "displayName":  "Libre Baskerville",
+        "fileSize":  98000,
+        "family":  "Libre Baskerville",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/librebaskerville/v14/kmKnZrc3Hgbbcjq75U4uslyuy4kn0qNZaxM.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        700
+                    ],
+        "version":  "v14",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Impallari Type",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "libre_baskerville"
+    },
+    {
+        "displayName":  "PT Serif",
+        "fileSize":  82000,
+        "family":  "PT Serif",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ptserif/v18/EJRVQgYoZZY2vCFuvDFRxL6dddb8.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400,
+                        700
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "ParaType",
+        "tags":  [
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "pt_serif"
+    },
+    {
+        "displayName":  "Roboto Slab",
+        "fileSize":  190000,
+        "family":  "Roboto Slab",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/robotoslab/v34/BngbUXZYTXPIvIBgJJSb6s3BzlRRfKOFbvjojISmb2Rj.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v34",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Christian Robertson",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "roboto_slab"
+    },
+    {
+        "displayName":  "IBM Plex Serif",
+        "fileSize":  115000,
+        "family":  "IBM Plex Serif",
+        "category":  "SERIF",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ibmplexserif/v19/J7ZfnpFvhUUMlsIO3Wqai20kZVE.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Mike Abbink",
+        "tags":  [
+                     "Elegante",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "ibm_plex_serif"
+    },
+    {
+        "displayName":  "Abril Fatface",
+        "fileSize":  85000,
+        "family":  "Abril Fatface",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/abrilfatface/v23/zOL64pLDlL1PnS997962Vx5-WKM.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v23",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "TypeTogether",
+        "tags":  [
+                     "Bold",
+                     "Em alta",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "abril_fatface"
+    },
+    {
+        "displayName":  "Righteous",
+        "fileSize":  45000,
+        "family":  "Righteous",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/righteous/v17/1cX3aULSpEgqYny35dKZKnMw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Astigmatic",
+        "tags":  [
+                     "Bold",
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "righteous"
+    },
+    {
+        "displayName":  "Fredoka",
+        "fileSize":  140000,
+        "family":  "Fredoka",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/fredoka/v14/X7nP4b87WB5XFe-SFnCV9broBlpmmPOBjw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v14",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Milena Brandao",
+        "tags":  [
+                     "Bold",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "fredoka"
+    },
+    {
+        "displayName":  "Syne",
+        "fileSize":  130000,
+        "family":  "Syne",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/syne/v22/8vIQ776mE3tTp5fKvvpm.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v22",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Bonjour Monde",
+        "tags":  [
+                     "Moderno",
+                     "Bold",
+                     "Em alta"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "syne"
+    },
+    {
+        "displayName":  "Bangers",
+        "fileSize":  52000,
+        "family":  "Bangers",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bangers/v24/FeVQS0BTqACV6KU5.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v24",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Bold",
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "bangers"
+    },
+    {
+        "displayName":  "Bungee",
+        "fileSize":  65000,
+        "family":  "Bungee",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bungee/v16/N0bU2SZBIuF2PU_ECQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "David Jonathan Ross",
+        "tags":  [
+                     "Bold",
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "bungee"
+    },
+    {
+        "displayName":  "Cinzel Decorative",
+        "fileSize":  88000,
+        "family":  "Cinzel Decorative",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/cinzeldecorative/v17/iFgZNoOZZVAZyJKh357rt5PFMwRS4kQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400,
+                        700,
+                        900
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Natanael Gama",
+        "tags":  [
+                     "Elegante",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "cinzel_decorative"
+    },
+    {
+        "displayName":  "Comfortaa",
+        "fileSize":  150000,
+        "family":  "Comfortaa",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/comfortaa/v45/1Pt_g8LJRfWJmhDAuUsSQamb1W0lwk4S4WjMDrMfIA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v45",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Johan Aakerlund",
+        "tags":  [
+                     "Moderno",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "comfortaa"
+    },
+    {
+        "displayName":  "Lobster",
+        "fileSize":  75000,
+        "family":  "Lobster",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/lobster/v30/neILzCirqoswsqX9zo-mM5Ez.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v30",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Impallari Type",
+        "tags":  [
+                     "Retro",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "lobster"
+    },
+    {
+        "displayName":  "Alfa Slab One",
+        "fileSize":  62000,
+        "family":  "Alfa Slab One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/alfaslabone/v18/6NUQ8LuPPQadMg58nPoAuC2WpA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "JM SolÃ©",
+        "tags":  [
+                     "Bold",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "alfa_slab_one"
+    },
+    {
+        "displayName":  "Russo One",
+        "fileSize":  58000,
+        "family":  "Russo One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/russoone/v16/ZuhTqjRflGnv4LNEdKEhEA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jovanny Lemonad",
+        "tags":  [
+                     "Bold",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "russo_one"
+    },
+    {
+        "displayName":  "Faster One",
+        "fileSize":  48000,
+        "family":  "Faster One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/fasterone/v21/H4clBX63xM-xO1p7Wq48A60.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v21",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Eduardo Tunni",
+        "tags":  [
+                     "Gaming",
+                     "Bold",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "faster_one"
+    },
+    {
+        "displayName":  "Monoton",
+        "fileSize":  42000,
+        "family":  "Monoton",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/monoton/v19/5h1aiZUrOngK6ppsTZ4.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Retro",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "monoton"
+    },
+    {
+        "displayName":  "Creepster",
+        "fileSize":  45000,
+        "family":  "Creepster",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/creepster/v20/AlZy_zVUqJz4yMrniH4R.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v20",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Sideshow",
+        "tags":  [
+                     "Retro",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "creepster"
+    },
+    {
+        "displayName":  "Special Elite",
+        "fileSize":  68000,
+        "family":  "Special Elite",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/specialelite/v19/XLYgIZbkc4ddZMQ32Rw80RQhfg.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Astigmatic",
+        "tags":  [
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "special_elite"
+    },
+    {
+        "displayName":  "Graduate",
+        "fileSize":  45000,
+        "family":  "Graduate",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/graduate/v19/rnCr-xNNtcFquQ1spSvhWQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Eduardo Tunni",
+        "tags":  [
+                     "Bold",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "graduate"
+    },
+    {
+        "displayName":  "Shrikhand",
+        "fileSize":  64000,
+        "family":  "Shrikhand",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/shrikhand/v17/a8Ibsp-lsGMrrTz8-DY7.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "gujarati"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jonny Pinhorn",
+        "tags":  [
+                     "Bold",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "shrikhand"
+    },
+    {
+        "displayName":  "Staatliches",
+        "fileSize":  54000,
+        "family":  "Staatliches",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/staatliches/v12/6NUO8LuPPQadMg58nPoAuC2WpA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v12",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Brian LaRossa",
+        "tags":  [
+                     "Bold",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "staatliches"
+    },
+    {
+        "displayName":  "Passion One",
+        "fileSize":  49000,
+        "family":  "Passion One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/passionone/v18/RAioNmtHsm3nwUANkrhDAYU.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        700,
+                        900
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Fontstage",
+        "tags":  [
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "passion_one"
+    },
+    {
+        "displayName":  "Rowdies",
+        "fileSize":  65000,
+        "family":  "Rowdies",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rowdies/v17/ptRMTiqZQG93iA9z5A.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "devanagari"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        700
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jaikishan Patel",
+        "tags":  [
+                     "Bold",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "rowdies"
+    },
+    {
+        "displayName":  "Titan One",
+        "fileSize":  53000,
+        "family":  "Titan One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/titanone/v14/mFTtWbsBxGwq2V8mHYk.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v14",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Rodrigo Fuenzalida",
+        "tags":  [
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "titan_one"
+    },
+    {
+        "displayName":  "Carter One",
+        "fileSize":  47000,
+        "family":  "Carter One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/carterone/v18/q5uCsoa5M_tv7Iihmkk.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Bold",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "carter_one"
+    },
+    {
+        "displayName":  "Fugaz One",
+        "fileSize":  56000,
+        "family":  "Fugaz One",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/fugazone/v17/rax-HiqOu8IVPmn7-Yw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "LatinoType",
+        "tags":  [
+                     "Bold",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "fugaz_one"
+    },
+    {
+        "displayName":  "Red Hat Display",
+        "fileSize":  170000,
+        "family":  "Red Hat Display",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/redhatdisplay/v16/bx6Z-ISg23062P-k.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "MCKL",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "red_hat_display"
+    },
+    {
+        "displayName":  "Unbounded",
+        "fileSize":  185000,
+        "family":  "Unbounded",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/unbounded/v7/ALZ2_zVUqJz4yMrn.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v7",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "NaN",
+        "tags":  [
+                     "Moderno",
+                     "Gaming",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "unbounded"
+    },
+    {
+        "displayName":  "Big Shoulders Display",
+        "fileSize":  140000,
+        "family":  "Big Shoulders Display",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bigshouldersdisplay/v20/fk2Y-ISg23062P-k.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        100,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v20",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Patric King",
+        "tags":  [
+                     "Bold",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "big_shoulders_display"
+    },
+    {
+        "displayName":  "Teko",
+        "fileSize":  75000,
+        "family":  "Teko",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/teko/v18/LYjNdG7kmE0gfaN9.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "devanagari"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Indian Type Foundry",
+        "tags":  [
+                     "Bold",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "teko"
+    },
+    {
+        "displayName":  "Bungee Inline",
+        "fileSize":  68000,
+        "family":  "Bungee Inline",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bungeeinline/v15/Gg8zN51Tj4BgvU3P4.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "David Jonathan Ross",
+        "tags":  [
+                     "Retro",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "bungee_inline"
+    },
+    {
+        "displayName":  "Bungee Shade",
+        "fileSize":  72000,
+        "family":  "Bungee Shade",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bungeeshade/v15/Gg8zN51Tj4BgvU3P4.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "David Jonathan Ross",
+        "tags":  [
+                     "Retro",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "bungee_shade"
+    },
+    {
+        "displayName":  "Rubik Vinyl",
+        "fileSize":  60000,
+        "family":  "Rubik Vinyl",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rubikvinyl/v4/iJWZBXyIfDnIV5PNhY1KTN7Z.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v4",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Hubert and Fischer",
+        "tags":  [
+                     "Retro",
+                     "Gaming"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "rubik_vinyl"
+    },
+    {
+        "displayName":  "Bungee Hairline",
+        "fileSize":  50000,
+        "family":  "Bungee Hairline",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/bungeehairline/v15/snfss02k.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "David Jonathan Ross",
+        "tags":  [
+                     "Retro",
+                     "Minimal"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "bungee_hairline"
+    },
+    {
+        "displayName":  "Honk",
+        "fileSize":  65000,
+        "family":  "Honk",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/honk/v3/4iCs6K.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v3",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Ek Type",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "honk"
+    },
+    {
+        "displayName":  "Nabla",
+        "fileSize":  70000,
+        "family":  "Nabla",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/nabla/v3/s489k.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v3",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Arthur Reinders",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "nabla"
+    },
+    {
+        "displayName":  "Noto Sans Display",
+        "fileSize":  220000,
+        "family":  "Noto Sans Display",
+        "category":  "DISPLAY",
+        "remoteUrl":  "https://fonts.gstatic.com/s/notosansdisplay/v25/sh38k.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v25",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Google",
+        "tags":  [
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "noto_sans_display"
+    },
+    {
+        "displayName":  "Permanent Marker",
+        "fileSize":  58000,
+        "family":  "Permanent Marker",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/permanentmarker/v16/Fh4uP450EnAndgEExg32hiA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Font Diner",
+        "tags":  [
+                     "Bold",
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "permanent_marker"
+    },
+    {
+        "displayName":  "Pacifico",
+        "fileSize":  72000,
+        "family":  "Pacifico",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/pacifico/v22/FwZY7-Qhg10bg8g3hK2o.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v22",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Escrita",
+                     "Em alta"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "pacifico"
+    },
+    {
+        "displayName":  "Dancing Script",
+        "fileSize":  140000,
+        "family":  "Dancing Script",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/dancingscript/v25/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Rep8ltA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "vietnamese"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v25",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Impallari Type",
+        "tags":  [
+                     "Escrita",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "dancing_script"
+    },
+    {
+        "displayName":  "Great Vibes",
+        "fileSize":  65000,
+        "family":  "Great Vibes",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/greatvibes/v18/RWmMoKWR9v4ksMfaWd_JN-XC.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "TypeSETit",
+        "tags":  [
+                     "Escrita",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "great_vibes"
+    },
+    {
+        "displayName":  "Shadows Into Light",
+        "fileSize":  45000,
+        "family":  "Shadows Into Light",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/shadowsintolight/v19/UqyNO80GQIdfR35HSnCFTpvuSd64.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Kimberly Geswein",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "shadows_into_light"
+    },
+    {
+        "displayName":  "Sacramento",
+        "fileSize":  42000,
+        "family":  "Sacramento",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/sacramento/v15/buEzpo6gcdjy0Ei3y426QI4.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Astigmatic",
+        "tags":  [
+                     "Escrita",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "sacramento"
+    },
+    {
+        "displayName":  "Yellowtail",
+        "fileSize":  44000,
+        "family":  "Yellowtail",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/yellowtail/v19/OZpHflGI_IOwe16p6iN0.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Astigmatic",
+        "tags":  [
+                     "Escrita",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "yellowtail"
+    },
+    {
+        "displayName":  "Satisfy",
+        "fileSize":  56000,
+        "family":  "Satisfy",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/satisfy/v17/rP2Hp2ywxg089UriCZX4H-8.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Sideshow",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "satisfy"
+    },
+    {
+        "displayName":  "Kalam",
+        "fileSize":  68000,
+        "family":  "Kalam",
+        "category":  "HANDWRITING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/kalam/v16/YA9dr0W44St3pox07hK.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "devanagari"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        700
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Indian Type Foundry",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "kalam"
+    },
+    {
+        "displayName":  "Indie Flower",
+        "fileSize":  54000,
+        "family":  "Indie Flower",
+        "category":  "HANDWRITING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/indieflower/v17/m8jvJfNVDtimfgquXWNz.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Kimberly Geswein",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "indie_flower"
+    },
+    {
+        "displayName":  "Amatic SC",
+        "fileSize":  48000,
+        "family":  "Amatic SC",
+        "category":  "HANDWRITING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/amaticsc/v26/TUZy_8yO2Zq65u8f.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        400,
+                        700
+                    ],
+        "version":  "v26",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Vernon Adams",
+        "tags":  [
+                     "Escrita",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "amatic_sc"
+    },
+    {
+        "displayName":  "Alex Brush",
+        "fileSize":  62000,
+        "family":  "Alex Brush",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/alexbrush/v22/SZc53FHvIH6QG51P5.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v22",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "TypeSETit",
+        "tags":  [
+                     "Escrita",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "alex_brush"
+    },
+    {
+        "displayName":  "Allura",
+        "fileSize":  58000,
+        "family":  "Allura",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/allura/v21/9qo5CAZx_HLgah87.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v21",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "TypeSETit",
+        "tags":  [
+                     "Escrita",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "allura"
+    },
+    {
+        "displayName":  "Bad Script",
+        "fileSize":  46000,
+        "family":  "Bad Script",
+        "category":  "HANDWRITING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/badscript/v16/6NUT8F6PJmEpG4kU.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Gaslight",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "bad_script"
+    },
+    {
+        "displayName":  "Courgette",
+        "fileSize":  52000,
+        "family":  "Courgette",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/courgette/v18/wEO_E1GmrPx5.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Karolina Lach",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "courgette"
+    },
+    {
+        "displayName":  "Marck Script",
+        "fileSize":  51000,
+        "family":  "Marck Script",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/marckscript/v17/nwpStKqkzkQDrc.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Marck Fogel",
+        "tags":  [
+                     "Escrita"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "marck_script"
+    },
+    {
+        "displayName":  "Parisienne",
+        "fileSize":  49000,
+        "family":  "Parisienne",
+        "category":  "SCRIPT",
+        "remoteUrl":  "https://fonts.gstatic.com/s/parisienne/v14/E21V_dn3.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v14",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Astigmatic",
+        "tags":  [
+                     "Escrita",
+                     "Elegante"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "parisienne"
+    },
+    {
+        "displayName":  "Fira Code",
+        "fileSize":  210000,
+        "family":  "Fira Code",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/firacode/v22/uU9NCBsR6Z2vfE9aq3bh3dSD.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v22",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Nikita Prokopov",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "fira_code"
+    },
+    {
+        "displayName":  "JetBrains Mono",
+        "fileSize":  340000,
+        "family":  "JetBrains Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5VU437-m4LM.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800
+                    ],
+        "version":  "v18",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "JetBrains",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "jetbrains_mono"
+    },
+    {
+        "displayName":  "Inconsolata",
+        "fileSize":  180000,
+        "family":  "Inconsolata",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/inconsolata/v32/QldXNThLqO781FW9sm74Gw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v32",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Raph Levien",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "inconsolata"
+    },
+    {
+        "displayName":  "Source Code Pro",
+        "fileSize":  250000,
+        "family":  "Source Code Pro",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/sourcecodepro/v23/HI_SiYsKILxRpg3hIP6sJ7f6PQPq.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v23",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Paul D. Hunt",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "source_code_pro"
+    },
+    {
+        "displayName":  "IBM Plex Mono",
+        "fileSize":  110000,
+        "family":  "IBM Plex Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/ibmplexmono/v19/-F63fjptA6dpLN-LYUCrPBqr.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v19",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Mike Abbink",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "ibm_plex_mono"
+    },
+    {
+        "displayName":  "Share Tech Mono",
+        "fileSize":  48000,
+        "family":  "Share Tech Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/sharetechmono/v15/J7aHnp1uD1EPRo3ezna86aQfc.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Carrois Apostrophe",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "share_tech_mono"
+    },
+    {
+        "displayName":  "Major Mono Display",
+        "fileSize":  42000,
+        "family":  "Major Mono Display",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/majormonodisplay/v13/kJEuBvYX5W7r3.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v13",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Emilis Dambauskas",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "major_mono_display"
+    },
+    {
+        "displayName":  "Roboto Mono",
+        "fileSize":  190000,
+        "family":  "Roboto Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/robotomono/v23/L0xuDF4xlVMF-BfR8bX_8Vfq.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "Apache-2.0",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v23",
+        "licenseUrl":  "https://www.apache.org/licenses/LICENSE-2.0",
+        "author":  "Christian Robertson",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "roboto_mono"
+    },
+    {
+        "displayName":  "Overpass Mono",
+        "fileSize":  135000,
+        "family":  "Overpass Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/overpassmono/v16/rnCr-xNNtcFquQ1spSvhWQ.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        300,
+                        400,
+                        500,
+                        600,
+                        700
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Delve Fonts",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "overpass_mono"
+    },
+    {
+        "displayName":  "Rubik Mono One",
+        "fileSize":  58000,
+        "family":  "Rubik Mono One",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rubikmonoone/v16/kJEuBvYX5W7r3.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Hubert and Fischer",
+        "tags":  [
+                     "Gaming",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "rubik_mono_one"
+    },
+    {
+        "displayName":  "Syne Mono",
+        "fileSize":  52000,
+        "family":  "Syne Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/synemono/v17/m8jvJf.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Bonjour Monde",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "syne_mono"
+    },
+    {
+        "displayName":  "Noto Sans Mono",
+        "fileSize":  210000,
+        "family":  "Noto Sans Mono",
+        "category":  "MONO",
+        "remoteUrl":  "https://fonts.gstatic.com/s/notosansmono/v28/k3kVo8QE.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v28",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Google",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "noto_sans_mono"
+    },
+    {
+        "displayName":  "Press Start 2P",
+        "fileSize":  45000,
+        "family":  "Press Start 2P",
+        "category":  "PIXEL",
+        "remoteUrl":  "https://fonts.gstatic.com/s/pressstart2p/v15/e3t4euO8T-26G45J.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "greek"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v15",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "CodeMan38",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "press_start_2p"
+    },
+    {
+        "displayName":  "Silkscreen",
+        "fileSize":  38000,
+        "family":  "Silkscreen",
+        "category":  "PIXEL",
+        "remoteUrl":  "https://fonts.gstatic.com/s/silkscreen/v4/m8jvJfNVDtimfgquXWNz.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400,
+                        700
+                    ],
+        "version":  "v4",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Jason Kottke",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "silkscreen"
+    },
+    {
+        "displayName":  "VT323",
+        "fileSize":  42000,
+        "family":  "VT323",
+        "category":  "PIXEL",
+        "remoteUrl":  "https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isF.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "vietnamese"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v17",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Peter Hull",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "vt323"
+    },
+    {
+        "displayName":  "Audiowide",
+        "fileSize":  52000,
+        "family":  "Audiowide",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/audiowide/v16/l7gdbjpo0cum0ckerWCdlg_O.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Astigmatic",
+        "tags":  [
+                     "Gaming",
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "audiowide"
+    },
+    {
+        "displayName":  "Orbitron",
+        "fileSize":  130000,
+        "family":  "Orbitron",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/orbitron/v31/yMJMMIlzdpvBhQQL_SCW696a.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin"
+                    ],
+        "weights":  [
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v31",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Matt McInerney",
+        "tags":  [
+                     "Gaming",
+                     "Moderno",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "orbitron"
+    },
+    {
+        "displayName":  "Black Ops One",
+        "fileSize":  58000,
+        "family":  "Black Ops One",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/blackopsone/v20/qWcsB6-ypo7xC-BaP8QnCA.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v20",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "James Grieshaber",
+        "tags":  [
+                     "Gaming",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "black_ops_one"
+    },
+    {
+        "displayName":  "Tourney",
+        "fileSize":  210000,
+        "family":  "Tourney",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/tourney/v16/KFOkCnqEu92Fr1Me5WZLCzYlKw.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "vietnamese"
+                    ],
+        "weights":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        600,
+                        700,
+                        800,
+                        900
+                    ],
+        "version":  "v16",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Tyler Finck",
+        "tags":  [
+                     "Gaming",
+                     "Bold"
+                 ],
+        "previewText":  "Aa",
+        "variable":  true,
+        "id":  "tourney"
+    },
+    {
+        "displayName":  "Rubik Glitch",
+        "fileSize":  62000,
+        "family":  "Rubik Glitch",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rubikglitch/v4/iJWZBXyIfDnIV5PNhY1KTN7Z.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v4",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Hubert and Fischer",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "rubik_glitch"
+    },
+    {
+        "displayName":  "Rubik Iso",
+        "fileSize":  64000,
+        "family":  "Rubik Iso",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rubikiso/v4/iJWZBXyIfDnIV5PNhY1KTN7Z.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v4",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Hubert and Fischer",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "rubik_iso"
+    },
+    {
+        "displayName":  "Rubik Pixels",
+        "fileSize":  58000,
+        "family":  "Rubik Pixels",
+        "category":  "PIXEL",
+        "remoteUrl":  "https://fonts.gstatic.com/s/rubikpixels/v4/iJWZBXyIfDnIV5PNhY1KTN7Z.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "cyrillic",
+                        "hebrew"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v4",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Hubert and Fischer",
+        "tags":  [
+                     "Gaming",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "rubik_pixels"
+    },
+    {
+        "displayName":  "Zen Dots",
+        "fileSize":  75000,
+        "family":  "Zen Dots",
+        "category":  "GAMING",
+        "remoteUrl":  "https://fonts.gstatic.com/s/zendots/v14/xn7gOHwg.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext",
+                        "japanese"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v14",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "Yoshimichi Ohira",
+        "tags":  [
+                     "Gaming",
+                     "Moderno"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "zen_dots"
+    },
+    {
+        "displayName":  "League Gothic",
+        "fileSize":  82000,
+        "family":  "League Gothic",
+        "category":  "GOTHIC",
+        "remoteUrl":  "https://fonts.gstatic.com/s/leaguegothic/v11/kJEnBuEW6A0JbC3IOwl56NW71fkt8A.ttf",
+        "source":  "google-fonts",
+        "styles":  [
+                       "normal",
+                       "italic"
+                   ],
+        "license":  "OFL-1.1",
+        "subsets":  [
+                        "latin",
+                        "latin-ext"
+                    ],
+        "weights":  [
+                        400
+                    ],
+        "version":  "v11",
+        "licenseUrl":  "https://scripts.sil.org/OFL",
+        "author":  "The League of Moveable Type",
+        "tags":  [
+                     "Bold",
+                     "Retro"
+                 ],
+        "previewText":  "Aa",
+        "variable":  false,
+        "id":  "league_gothic"
+    }
 ]

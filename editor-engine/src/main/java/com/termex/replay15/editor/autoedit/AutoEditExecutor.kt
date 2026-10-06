@@ -31,7 +31,7 @@ object AutoEditExecutor {
             }
         }
 
-        val autoKeys = autoKeyframes(source, plan)
+        val autoKeys = autoKeyframes(source,plan)
         val pieces = keep.mapIndexed { pieceIndex, range ->
             val sourceIn = source.timeMap.sourceAt(range.first)
             val sourceOut = source.timeMap.sourceAt(range.last + 1).coerceAtMost(source.outUs)

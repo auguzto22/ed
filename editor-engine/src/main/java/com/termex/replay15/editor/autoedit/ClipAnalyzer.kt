@@ -7,6 +7,7 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import com.termex.replay15.editor.domain.AudioClip
 import com.termex.replay15.editor.domain.SECOND
 import com.termex.replay15.editor.domain.TextClip
 import com.termex.replay15.editor.domain.VideoClip
@@ -77,11 +78,27 @@ object ClipAnalyzer {
             }.toList()
     }
 
-    private fun analyzeAudio(context: Context, clip: VideoClip, cancellation: AutoEditCancellation): List<AudioSample> {
+    fun analyzeAudio(context: Context, clip: AudioClip, cancellation: AutoEditCancellation): List<AudioSample> =
+        decodeAudio(context, clip.uri, clip.inUs, clip.outUs, clip.durationUs, cancellation) { sourceUs ->
+            (sourceUs - clip.inUs).coerceAtLeast(0L)
+        }
+
+    fun analyzeAudio(context: Context, clip: VideoClip, cancellation: AutoEditCancellation): List<AudioSample> =
+        decodeAudio(context, clip.uri, clip.inUs, clip.outUs, clip.durationUs, cancellation, clip.timeMap::timelineAt)
+
+    private fun decodeAudio(
+        context: Context,
+        uri: String,
+        inUs: Long,
+        outUs: Long,
+        durationUs: Long,
+        cancellation: AutoEditCancellation,
+        sourceToTimeline: (Long) -> Long,
+    ): List<AudioSample> {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         try {
-            extractor.setDataSource(context, Uri.parse(clip.uri), null)
+            extractor.setDataSource(context, Uri.parse(uri), null)
             val track = (0 until extractor.trackCount).firstOrNull {
                 extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
             } ?: return emptyList()
@@ -91,7 +108,7 @@ object ClipAnalyzer {
             codec = MediaCodec.createDecoderByType(mime)
             codec.configure(format, null, null, 0)
             codec.start()
-            extractor.seekTo(clip.inUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+            extractor.seekTo(inUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
             val info = MediaCodec.BufferInfo()
             val bins = linkedMapOf<Long, AudioAccumulator>()
             var inputDone = false
@@ -104,7 +121,7 @@ object ClipAnalyzer {
                     if (index >= 0) {
                         val buffer = codec.getInputBuffer(index) ?: continue
                         val sampleTime = extractor.sampleTime
-                        if (sampleTime < 0 || sampleTime > clip.outUs) {
+                        if (sampleTime < 0 || sampleTime > outUs) {
                             codec.queueInputBuffer(index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                             inputDone = true
                         } else {
@@ -123,11 +140,11 @@ object ClipAnalyzer {
                     MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> outputFormat = codec.outputFormat
                     MediaCodec.INFO_TRY_AGAIN_LATER -> if (inputDone) Unit
                     else -> if (index >= 0) {
-                        if (info.size > 0 && info.presentationTimeUs in clip.inUs..clip.outUs) {
+                        if (info.size > 0 && info.presentationTimeUs in inUs..outUs) {
                             val buffer = codec.getOutputBuffer(index)
                             if (buffer != null) {
                                 buffer.position(info.offset); buffer.limit(info.offset + info.size)
-                                val localUs = clip.timeMap.timelineAt(info.presentationTimeUs.coerceIn(clip.inUs, clip.outUs))
+                                val localUs = sourceToTimeline(info.presentationTimeUs.coerceIn(inUs, outUs))
                                 val bin = (localUs / AUDIO_BIN_US) * AUDIO_BIN_US
                                 val encoding = if (outputFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) outputFormat.getInteger(MediaFormat.KEY_PCM_ENCODING) else 2
                                 val accumulator = bins.getOrPut(bin) { AudioAccumulator() }
@@ -144,7 +161,7 @@ object ClipAnalyzer {
                     }
                 }
             }
-            return bins.map { (start, value) -> AudioSample(start, minOf(clip.durationUs, start + AUDIO_BIN_US), value.rms(), value.peak) }
+            return bins.map { (start, value) -> AudioSample(start, minOf(durationUs, start + AUDIO_BIN_US), value.rms(), value.peak) }
                 .filter { it.endUs > it.startUs }
         } finally {
             runCatching { codec?.stop() }; runCatching { codec?.release() }; extractor.release()
