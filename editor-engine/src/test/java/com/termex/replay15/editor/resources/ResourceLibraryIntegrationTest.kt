@@ -175,9 +175,24 @@ class ResourceLibraryIntegrationTest {
         assertTrue("Expected curated lottie files, found ${files?.size}", (files?.size ?: 0) >= 6)
 
         for (file in files!!) {
-            val json = JSONObject(file.readText())
-            assertTrue("Lottie file ${file.name} missing 'v' or 'layers'", json.has("v") || json.has("layers"))
+            // A zero-byte or truncated asset parses into nothing and the sticker silently
+            // renders blank at runtime, so report it as a broken asset rather than a JSON error.
+            val text = file.readText()
+            assertTrue("Lottie file ${file.name} is empty", text.isNotBlank())
+            val json = JSONObject(text)
+            assertTrue(
+                "Lottie file ${file.name} missing 'v', 'layers' or asset bounds",
+                json.has("v") && json.has("layers") && json.has("w") && json.has("h"),
+            )
         }
+        // Every sticker the catalog advertises must actually resolve to a shipped file, so a
+        // curated entry can never point at a missing or empty animation.
+        val shipped = files!!.map { it.name }.toSet()
+        val advertised = StickerCatalog.all()
+            .filter { it.uri.startsWith("asset:///editor/lottie/") }
+            .map { it.uri.substringAfterLast('/') }
+        assertTrue("Lottie stickers advertised", advertised.isNotEmpty())
+        assertEquals("Lottie stickers without a shipped file", emptySet<String>(), advertised.filterNot { it in shipped }.toSet())
     }
 
     @Test

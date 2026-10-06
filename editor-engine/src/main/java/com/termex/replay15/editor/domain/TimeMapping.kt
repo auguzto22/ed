@@ -11,7 +11,10 @@ interface ClipTimeMapper {
 /** Preview and export share [VideoClip.timeMap], including trims and speed ramps. */
 object ProjectClipTimeMapper : ClipTimeMapper {
     override fun projectToSource(clip: VideoClip, clipStartUs: Long, projectTimeUs: Long): Long =
-        clip.timeMap.sourceAt(projectTimeUs - clipStartUs).coerceIn(clip.inUs, (clip.outUs - 1L).coerceAtLeast(clip.inUs))
+        // sourceAt already clamps into the trimmed window; clamping again would be redundant,
+        // and for a reversed clip the endpoints are swapped, so the window is normalised.
+        clip.timeMap.sourceAt(projectTimeUs - clipStartUs)
+            .coerceIn(minOf(clip.inUs, clip.outUs), maxOf(clip.inUs, clip.outUs))
 
     override fun sourceToProject(clip: VideoClip, clipStartUs: Long, sourceTimeUs: Long): Long =
         clipStartUs + clip.timeMap.timelineAt(sourceTimeUs)
@@ -65,18 +68,32 @@ class ClipTimeMap(private val clip: VideoClip) {
     }
 
     fun sourceAt(timelineUs: Long): Long {
-        if (timelineUs <= 0) return clip.inUs
-        if (timelineUs >= durationUs) return clip.outUs
+        if (timelineUs <= 0) return if (clip.reverse) clip.outUs else clip.inUs
+        if (timelineUs >= durationUs) return if (clip.reverse) clip.inUs else clip.outUs
         val index = segments.binarySearch { it.timelineUs.compareTo(timelineUs) }.let { if (it >= 0) it else -it - 2 }
         val item = segments[index.coerceAtLeast(0)]
-        return (item.sourceUs + ((timelineUs - item.timelineUs) * item.speed.toDouble()).roundToLong()).coerceIn(item.sourceUs, item.endUs)
+        val forward = (item.sourceUs + ((timelineUs - item.timelineUs) * item.speed.toDouble()).roundToLong())
+            .coerceIn(item.sourceUs, item.endUs)
+        // Reversal mirrors the walk through the same segment table, so trims and speed ramps
+        // keep their shape and the clip's duration is unchanged. Only the direction differs,
+        // which is why every downstream placement, transition and audio offset stays valid.
+        return if (clip.reverse) mirror(item, forward) else forward
     }
+
+    /** Maps a forward source position inside [item] to its reversed counterpart. */
+    private fun mirror(item: Segment, sourceUs: Long): Long =
+        (item.sourceUs + item.endUs - sourceUs).coerceIn(item.sourceUs, item.endUs)
 
     fun timelineAt(sourceUs: Long): Long {
         val source = sourceUs.coerceIn(clip.inUs, clip.outUs)
         val index = segments.binarySearch { it.sourceUs.compareTo(source) }.let { if (it >= 0) it else -it - 2 }
         val item = segments[index.coerceAtLeast(0)]
-        return (item.timelineUs + ((source - item.sourceUs) / item.speed.toDouble()).roundToLong()).coerceIn(0, durationUs)
+        val forward = (item.timelineUs + ((source - item.sourceUs) / item.speed.toDouble()).roundToLong())
+            .coerceIn(0, durationUs)
+        if (!clip.reverse) return forward
+        val mirrored = mirror(item, source)
+        return (item.timelineUs + ((mirrored - item.sourceUs) / item.speed.toDouble()).roundToLong())
+            .coerceIn(0, durationUs)
     }
 
     /** Trim handles may recover media outside the currently visible source window. */

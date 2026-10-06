@@ -8,7 +8,11 @@ import java.nio.ByteOrder
 
 /**
  * Handles real-time speed adjustments and pitch preservation using Sonic.
+ *
+ * Sonic is still marked unstable by Media3, so the opt-in is declared here once rather than at
+ * every call site that touches the processor chain.
  */
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class AudioProcessorChain(
     private val sampleRate: Int = 48000,
     private val channelCount: Int = 2

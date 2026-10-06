@@ -50,7 +50,8 @@ class CompoundClipTest {
         assertEquals(0L, CompoundEditing.startUs(grouped, compound))
         assertEquals(4 * SECOND, CompoundEditing.endUs(grouped, compound))
         assertEquals(4 * SECOND, CompoundEditing.durationUs(grouped, compound))
-        assertEquals(listOf("a", "b"), compound.childIds)
+        // childIds holds clip ids, not display names; the order is timeline order.
+        assertEquals(grouped.videos.slice(0..1).map(VideoClip::id), compound.childIds)
         assertEquals(2, compound.childCount)
     }
 
@@ -97,11 +98,37 @@ class CompoundClipTest {
     fun deletingAChildKeepsACompoundThatStillHasTwoClips() {
         val grouped = CompoundEditing.group(project("a", "b", "c", "d"), 0, 2)
         val victim = grouped.videos[0]
-        val next = CompoundEditing.sanitize(
-            grouped.copy(videos = grouped.videos.filterNot { it.id == victim.id }, compounds = emptyList()),
-        )
+        // A structural edit keeps the groups that still describe the new sequence: sanitize drops
+        // a compound only when it is left with fewer than two children, or when one of its ids
+        // no longer exists.
+        val next = grouped.delete(victim.id)
         assertEquals(1, next.compounds.size)
-        assertEquals(listOf("b", "c"), next.compounds.single().childIds)
+        assertEquals(grouped.videos.drop(1).take(2).map(VideoClip::id), next.compounds.single().childIds)
+    }
+
+    @Test
+    fun deletingASecondChildDropsTheNowUndersizedCompound() {
+        val grouped = CompoundEditing.group(project("a", "b", "c", "d"), 0, 2)
+        // Removing two of the three grouped children leaves a one-child group, which is no
+        // longer a compound and must be dropped rather than left dangling.
+        val dropped = grouped.videos.take(2).map(VideoClip::id).toSet()
+        val next = CompoundEditing.survivingCompounds(
+            grouped.videos.filterNot { it.id in dropped }, grouped.compounds)
+        assertTrue(next.isEmpty())
+    }
+
+    @Test
+    fun splittingAndMovingKeepUnaffectedGroups() {
+        val grouped = CompoundEditing.group(project("a", "b", "c"), 0, 1)
+        val compound = grouped.compounds.single()
+        // A split cuts inside the first grouped child; both halves stay grouped.
+        val split = grouped.splitAt(SECOND)
+        assertEquals(1, split.compounds.size)
+        assertTrue(split.compounds.single().childIds.all { id -> split.videos.any { it.id == id } })
+        // Reordering the main sequence must not silently discard the group either.
+        val moved = CompoundEditing.withVideos(grouped, grouped.videos.let { l -> l.reversed() })
+        assertEquals(1, moved.compounds.size)
+        assertEquals(compound.childIds.toSet(), moved.compounds.single().childIds.toSet())
     }
 
     @Test
@@ -177,7 +204,16 @@ class CompoundClipTest {
         assertTrue(CompoundEditing.isGrouped(grouped, grouped.videos[0].id))
         assertFalse(CompoundEditing.isGrouped(grouped, grouped.videos[2].id))
         assertNull(CompoundEditing.at(grouped, clipId = grouped.videos[2].id))
-        assertEquals(compound, CompoundEditing.groupSelection(project("a", "b", "c", "d"), listOf(2, 3, 1)).compounds.single())
+        // A multi-selection is grouped contiguously from its first to last member, so the
+        // out-of-order input 2,3,1 must yield the same group as selecting 1..3.
+        val selectionBase = project("a", "b", "c", "d")
+        val bySelection = CompoundEditing.groupSelection(selectionBase, listOf(2, 3, 1))
+        assertEquals(
+            CompoundEditing.group(selectionBase, 1, 3).compounds.single().childIds,
+            bySelection.compounds.single().childIds,
+        )
+        // A selection that is not contiguous is still one contiguous run from first to last.
+        assertEquals(3, bySelection.compounds.single().childCount)
     }
 
     @Test

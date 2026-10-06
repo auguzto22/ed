@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ids for views that are built in code and looked up later with findViewById.
+
+  These used to be raw integers assigned at construction (1001 for the transport icon,
+  0x5245434C, the ASCII bytes of "RECL", for the compound bar). Nothing stops two call
+  sites from picking the same number, and lint cannot tell a view id from a resource id,
+  so the lookups were silently unchecked. Real resources make the coupling explicit.
+-->
+<resources>
+    <item name="recly_transport_icon" type="id" />
+    <item name="recly_compound_bar" type="id" />
+    <item name="recly_compound_label" type="id" />
+</resources>

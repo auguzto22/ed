@@ -84,15 +84,17 @@ class VideoScopesTest {
     @Test
     fun `a clipped frame is reported as blown, a crushed one as burnt, a flat one as low contrast`() {
         assertTrue(ScopeReadout.headline(frame(64, 64) { argb(255, 255, 255) }).contains("Estourado"))
-        assertTrue(ScopeReadout.headline(frame(64, 64) { argb(20, 20, 20) }).contains("queimado"))
+        // "Crushed" means pixels at or under the shadow clip point, not merely a dark frame:
+        // a uniform 20 is dark but perfectly exposed within its own narrow band.
+        assertTrue(ScopeReadout.headline(frame(64, 64) { argb(2, 2, 2) }).contains("queimado"))
         assertTrue(ScopeReadout.headline(frame(64, 64) { argb(100, 100, 100) }).contains("Contraste baixo"))
     }
 
     @Test
     fun `a well-exposed frame is called healthy`() {
-        // Black through white side by side: full spread, and neither extreme is a large
-        // share of the frame, so nothing should be flagged.
-        val scopes = frame(64, 64) { argb(if (it % 2 == 0) 4 else 251, if (it % 2 == 0) 4 else 251, if (it % 2 == 0) 4 else 251) }
+        // Near-black through near-white side by side: full spread, and both extremes stay inside
+        // the clip points, so no burn should be reported.
+        val scopes = frame(64, 64) { argb(if (it % 2 == 0) 24 else 231, if (it % 2 == 0) 24 else 231, if (it % 2 == 0) 24 else 231) }
         assertTrue(ScopeReadout.headline(scopes).contains("saudavel"))
     }
 

@@ -15,10 +15,24 @@ data class SegmentationResult(
     val height: Int,
     val timestampUs: Long,
     val mask: FloatArray,
+    /**
+     * How the mask was obtained. [MEASURED] means a segmentation model evaluated the frame;
+     * [APPROXIMATED_FROM_BOX] means only a bounding box was available and the mask is a
+     * geometric approximation of it. Callers that must not invent subject geometry (auto
+     * reframe, tracking, style transfer) can refuse the approximated form explicitly.
+     */
+    val origin: SegmentationOrigin = SegmentationOrigin.MEASURED,
 ) {
     init {
         require(width > 0 && height > 0 && mask.size == width * height)
     }
+
+    val isMeasured: Boolean get() = origin == SegmentationOrigin.MEASURED
+}
+
+enum class SegmentationOrigin {
+    MEASURED,
+    APPROXIMATED_FROM_BOX,
 }
 
 interface SegmentationEngine : AutoCloseable {

@@ -174,7 +174,7 @@ class EditorActivity : Activity() {
             stickerHandles.visibility = controlVisibility
             videoHandles.visibility = controlVisibility
             val iconRes = if (isPlaying) R.drawable.ic_recly_pause else R.drawable.ic_recly_play
-            (play as? ViewGroup)?.findViewById<ImageView>(1001)?.setImageResource(iconRes)
+            (play as? ViewGroup)?.findViewById<ImageView>(R.id.recly_transport_icon)?.setImageResource(iconRes)
             play.contentDescription = if (isPlaying) "Pausar" else "Reproduzir"
             val export = EditorExportService.state
             if (export != lastExportState) {
@@ -400,7 +400,7 @@ class EditorActivity : Activity() {
                 null,
             )
             val icon = ImageView(context).apply {
-                id = 1001
+                id = R.id.recly_transport_icon
                 setImageResource(iconRes)
                 imageTintList = ColorStateList.valueOf(if (accent) Color.BLACK else Color.WHITE)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
@@ -641,7 +641,7 @@ class EditorActivity : Activity() {
 
     /** Shown only while a compound is open: name, child count and the way back to the main project. */
     private fun compoundBar(): LinearLayout = row().apply {
-        id = 0x5245434C
+        id = R.id.recly_compound_bar
         visibility = View.GONE
         setPadding(dp(12), 0, dp(12), 0)
         gravity = Gravity.CENTER_VERTICAL
@@ -661,7 +661,7 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFB8AEF5.toInt()).apply { id = 0x5245434E; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, 0xFFB8AEF5.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"
@@ -1283,6 +1283,9 @@ class EditorActivity : Activity() {
         }
     }
 
+    // AdaptiveProxyManager drives Media3 Transformer, which is still marked unstable. The
+    // opt-in is scoped to this file rather than left to an unguarded call site.
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun checkAndRequestProxies(currentProject: Project) {
         val simultaneousLayers = RenderPlan.layers(currentProject).count { it.clips.isNotEmpty() }
         val allVideos = currentProject.allVideos
@@ -1326,16 +1329,16 @@ class EditorActivity : Activity() {
         redo.isEnabled = history.canRedo; redo.alpha = if (history.canRedo) 1.0f else 0.35f
         play.isEnabled = project.allVideos.isNotEmpty() && !EditorExportService.state.active
         val playIconRes = if (preview.isPlaying) R.drawable.ic_recly_pause else R.drawable.ic_recly_play
-        (play as? ViewGroup)?.findViewById<ImageView>(1001)?.setImageResource(playIconRes)
+        (play as? ViewGroup)?.findViewById<ImageView>(R.id.recly_transport_icon)?.setImageResource(playIconRes)
         empty.visibility = if (project.allVideos.isEmpty()) View.VISIBLE else View.GONE
         val compound = openCompound()
         if (openCompoundId != null && compound == null) openCompoundId = null
-        val bar = timelinePane.findViewById<LinearLayout>(0x5245434C)
+        val bar = timelinePane.findViewById<LinearLayout>(R.id.recly_compound_bar)
         if (bar != null) {
             val active = openCompound()
             bar.visibility = if (active == null) View.GONE else View.VISIBLE
             if (active != null) {
-                bar.findViewById<TextView>(0x5245434E).text =
+                bar.findViewById<TextView>(R.id.recly_compound_label).text =
                     "${active.name}  •  ${active.childCount} clipes  •  ${timeLabel(CompoundEditing.durationUs(project, active))}"
             }
         }
@@ -1390,9 +1393,10 @@ class EditorActivity : Activity() {
         val dialog = AlertDialog.Builder(this).setTitle("Mídia do projeto").setMessage(message).setNegativeButton("Fechar", null)
         if (index >= 0) {
             dialog.setNeutralButton("Remover") { _, _ ->
-                val videos = project.videos.filterIndexed { position, _ -> position != index }
                 selected = -1
-                edit(CompoundEditing.sanitize(project.copy(videos = videos, transitions = project.cleanTransitions(videos), compounds = emptyList())))
+                // delete() keeps the groups that still describe the new sequence; passing
+                // compounds = emptyList() and sanitizing afterwards silently deleted them all.
+                edit(project.delete(project.videos[index].id))
             }
             dialog.setPositiveButton("Substituir") { _, _ -> pick(false, index) }
         }
@@ -2460,8 +2464,7 @@ class EditorActivity : Activity() {
         AlertDialog.Builder(this).setTitle("Excluir clipe?").setMessage(message)
             .setPositiveButton("Excluir") { _, _ ->
                 if (openCompoundId == group?.id) openCompoundId = null
-                val remaining = project.videos.filterIndexed { i, _ -> i != selected }
-                edit(CompoundEditing.sanitize(project.copy(videos = remaining, transitions = project.cleanTransitions(remaining), compounds = emptyList())))
+                edit(project.delete(clip.id))
             }
             .setNegativeButton("Cancelar", null).show()
     }

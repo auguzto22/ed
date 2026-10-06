@@ -95,7 +95,10 @@ class GeminiAudioExtractor(private val context: Context) {
                 if (sampleTime >= fromUs) {
                     buffer.position(0)
                     buffer.limit(size)
-                    info.set(0, size, sampleTime - fromUs, extractor.sampleFlags)
+                    // Muxer output takes MediaCodec flags, and these samples come straight from an extractor.
+                    // Passing extractor.sampleFlags across leaked SAMPLE_FLAG_ENCRYPTED / SAMPLE_FLAG_SYNC bit
+                    // values into the MP4 track header; a copy carries no codec config and must not be flagged.
+                    info.set(0, size, sampleTime - fromUs, 0)
                     muxer.writeSampleData(muxerTrack, buffer, info)
                     wrote = true
                 }

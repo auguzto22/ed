@@ -121,18 +121,45 @@ object CompoundEditing {
      * project can never hold a dangling compound.
      */
     fun sanitize(project: Project): Project {
-        val known = project.videos.mapTo(HashSet(project.videos.size), VideoClip::id)
-        val used = HashSet<String>(project.compounds.size * 2)
-        val kept = project.compounds.filter { compound ->
+        val kept = survivingCompounds(project.videos, project.compounds)
+        if (kept.size == project.compounds.size && kept.indices.all { kept[it] == project.compounds[it] }) return project
+        return project.copy(compounds = kept)
+    }
+
+    /**
+     * The compounds that still describe [videos]. A group whose clip was deleted or split away is
+     * re-scoped to its surviving children when at least two of them remain; a group left with
+     * fewer than two is no longer a compound and is dropped. No child may be claimed twice.
+     *
+     * Exposed separately because [Project.init] rejects a compound whose child id is missing, so
+     * a structural edit must filter *before* rebuilding the project. Passing `compounds =
+     * emptyList()` into a copy and sanitizing afterwards cannot work: sanitize would see no
+     * compounds to preserve and drop every group in the project.
+     */
+    fun survivingCompounds(videos: List<VideoClip>, compounds: List<CompoundClip>): List<CompoundClip> {
+        val known = videos.mapTo(HashSet(videos.size), VideoClip::id)
+        val used = HashSet<String>(compounds.size * 2)
+        return compounds.mapNotNull { compound ->
             val alive = compound.childIds.filter { it in known }
-            if (alive.size < 2) return@filter false
-            if (compound.childIds.size != alive.size) return@filter false
-            true
-        }
-        val deduped = kept.filter { compound ->
-            compound.childIds.all { used.add(it) }
-        }
-        if (deduped.size == project.compounds.size && deduped.indices.all { deduped[it] == project.compounds[it] }) return project
-        return project.copy(compounds = deduped)
+            when {
+                // Fewer than two children left: this is not a compound any more.
+                alive.size < 2 -> null
+                // Re-scope rather than discard, so deleting one clip from a four-clip group
+                // does not silently destroy the grouping the user built.
+                alive.size != compound.childIds.size -> compound.copy(childIds = alive)
+                else -> compound
+            }
+        }.filter { compound -> compound.childIds.all { used.add(it) } }
+    }
+
+    /**
+     * Rebuilds [project] around a new main sequence, keeping the groups that still describe it.
+     * Must be used instead of copying with `compounds = emptyList()` and sanitizing afterwards.
+     */
+    fun withVideos(project: Project, videos: List<VideoClip>): Project {
+        // Filter first: copying with the stale compounds would fail Project.init before the
+        // cleanup below could ever happen.
+        val compounds = survivingCompounds(videos, project.compounds)
+        return project.copy(videos = videos, compounds = compounds, transitions = project.cleanTransitions(videos))
     }
 }

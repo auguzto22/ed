@@ -72,6 +72,30 @@ class ProjectPersistenceTest {
         assertEquals(project.videoTracks.flatMap { track -> track.clips.map { it.clip.enhance } },
             restored.videoTracks.flatMap { track -> track.clips.map { it.clip.enhance } })
     }
+    @Test fun audioVolumeAutomationAndClipMimeTypeSurviveASaveAndReload() {
+        // Both fields were fully modelled and editable but reached no codec, so saving
+        // silently reverted volume automation and blanked the MIME type.
+        val base = sample()
+        val project = base.copy(
+            videos = base.videos.map { it.copy(mimeType = "video/mp4") },
+            audio = base.audio.mapIndexed { index, clip -> clip.copy(volumeKeyframes = listOf(
+                VolumeKeyframe(0L, .2f),
+                VolumeKeyframe(2 * SECOND, 1.4f),
+                VolumeKeyframe(4 * SECOND, .05f + index),
+            )) },
+        )
+        val bytes = ByteArrayOutputStream(); ProjectCodec.write(project, bytes)
+        val restored = ProjectCodec.read(bytes.toByteArray().inputStream())
+        assertEquals(project.videos.map { it.mimeType }, restored.videos.map { it.mimeType })
+        assertEquals(project.audio.map { it.volumeKeyframes }, restored.audio.map { it.volumeKeyframes })
+    }
+
+    @Test fun aProjectWithoutVolumeAutomationStillLoads() {
+        val bytes = ByteArrayOutputStream(); ProjectCodec.write(sample(), bytes)
+        val restored = ProjectCodec.read(bytes.toByteArray().inputStream())
+        assertTrue(restored.audio.all { it.volumeKeyframes.isEmpty() })
+    }
+
     @Test fun stableFontIdRoundTripsWithoutPersistingAnAssetPath() {
         val project = sample().copy(texts = sample().texts.map { it.copy(fontId = "poppins_semibold") })
         val bytes = ByteArrayOutputStream(); ProjectCodec.write(project, bytes)
@@ -110,11 +134,39 @@ class ProjectPersistenceTest {
         val original = sample()
         val output = ByteArrayOutputStream(); ProjectCodec.write(original, output)
         val motion = ByteArrayOutputStream().also { MotionCodec.write(original, DataOutputStream(it)) }
-        // Remove each versioned extension to reproduce the original schema-6 envelope.
-        val legacy = output.toByteArray().copyOf(output.size() - 24 - 4 * original.videos.size - motion.size())
+        // Every section written after MotionCodec is a later schema and must be removed to
+        // reproduce the original schema-6 envelope. Measure them by actually encoding them
+        // rather than hardcoding a byte count, which silently rots each time a codec is added.
+        val laterSections = ByteArrayOutputStream()
+        DataOutputStream(laterSections).run {
+            EffectAnimationCodec.write(original, this)
+            AdjustmentCodec.write(original, this)
+            FontCodec.write(original, this)
+            TransitionCodec.write(original, this)
+            Motion3DCodec.write(original, this)
+            TextTransformCodec.write(original, this)
+            CaptionSettingsCodec.write(original, this)
+            StickerTransformCodec.write(original, this)
+            BackgroundRemovalCodec.write(original, this)
+            LayerMaskCodec.write(original, this)
+            TrackingCodec.write(original, this)
+            AudioEnhanceCodec.write(original, this)
+            VideoAudioEnhanceCodec.write(original, this)
+            CompoundCodec.write(original, this)
+            MediaSourceCodec.write(original, this)
+            flush()
+        }
+        // The schema-6 base ends after the marker/background/canvas tail and the MotionCodec section.
+        val legacyTail = 4 /* backgroundColor + canvasFill */ + 4 /* markers count */ +
+            laterSections.size() + motion.size()
+        val legacy = output.toByteArray().copyOf(output.size() - legacyTail)
         java.nio.ByteBuffer.wrap(legacy).putInt(4, 6)
         val migrated = ProjectCodec.read(legacy.inputStream())
-        assertEquals(original, migrated)
+        // Schema 6 predates per-video audio treatment (added in 26), so that field migrates
+        // to neutral rather than being preserved. Every field the format did know about must
+        // come back byte-identical.
+        val expected = original.copy(videos = original.videos.map { it.copy(enhance = AudioEnhance.NEUTRAL) })
+        assertEquals(expected, migrated)
         val saved = ByteArrayOutputStream(); ProjectCodec.write(migrated, saved)
         assertEquals(PROJECT_SCHEMA, java.nio.ByteBuffer.wrap(saved.toByteArray()).getInt(4))
         assertEquals(migrated, ProjectCodec.read(saved.toByteArray().inputStream()))

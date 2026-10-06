@@ -73,6 +73,18 @@ enum class ClipMotion(val label: String) {
     PAN_RIGHT("Panoramica direita"),
 }
 
+/**
+ * What happens to a reversed clip's audio.
+ *
+ * Reversed speech is unintelligible, so the choice is always explicit. Muting silently is
+ * never the default: a user who reverses a clip with sound must not lose it by accident.
+ */
+enum class ReverseAudio(val label: String) {
+    KEEP_FORWARD("Manter (som original)"),
+    MUTE("Silenciar"),
+    REVERSE("Inverter (reversed)"),
+}
+
 data class VideoClip(
     val id: String = newId(), val uri: String, val name: String,
     val sourceUs: Long, val width: Int, val height: Int, val fps: Float = 30f,
@@ -94,6 +106,13 @@ data class VideoClip(
     val effects: List<com.termex.replay15.editor.assets.EffectInstance> = emptyList(),
     val speedCurve: List<SpeedPoint> = emptyList(),
     val preservePitch: Boolean = false,
+    /**
+     * Plays the trimmed window backwards. Duration is unchanged, so every other time mapping,
+     * transition and audio placement stays valid; only the direction of [timeMap.sourceAt]
+     * is mirrored. See [ReverseAudio] for what happens to the sound.
+     */
+    val reverse: Boolean = false,
+    val reverseAudio: ReverseAudio = ReverseAudio.KEEP_FORWARD,
     val mimeType: String = "",
     val proxyUri: String? = null,
     /**
@@ -529,15 +548,23 @@ data class Project(
             ),
         )
         // Groups survive a split; a group that would lose a child is dropped by the sanitizer.
-        return CompoundEditing.sanitize(copy(videos = result, compounds = emptyList()))
+        return CompoundEditing.withVideos(this, result)
     }
     fun splitAt(playheadUs: Long): Project = split(indexAt(playheadUs), playheadUs)
+    /**
+     * Removes one clip from the main sequence. Groups that still describe the remaining clips
+     * survive; the transitions that referenced the removed clip are dropped with it.
+     */
+    fun delete(clipId: String): Project {
+        if (videos.none { it.id == clipId }) return this
+        return CompoundEditing.withVideos(this, videos.filterNot { it.id == clipId })
+    }
     fun changeVideo(index: Int, transform: (VideoClip) -> VideoClip): Project =
         copy(videos = videos.mapIndexed { i, v -> if (i == index) transform(v) else v })
     fun moveVideo(from: Int, to: Int): Project {
         if (from !in videos.indices || to !in videos.indices || from == to) return this
         val list = videos.toMutableList(); list.add(to, list.removeAt(from))
-        return CompoundEditing.sanitize(copy(videos = list, compounds = emptyList(), transitions = cleanTransitions(list)))
+        return CompoundEditing.withVideos(this, list)
     }
 }
 

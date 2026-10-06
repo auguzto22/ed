@@ -20,7 +20,7 @@ internal object CompoundCodec {
     fun read(project: Project, input: DataInputStream): Project {
         if (input.available() <= 0) return project
         val count = input.readInt().also { require(it in 0..MAX_COMPOUNDS) { "Projeto incompativel" } }
-        val compounds = List(count) {
+        val decoded = List(count) {
             val id = input.readUTF()
             val name = input.readUTF()
             val color = input.readInt()
@@ -29,8 +29,8 @@ internal object CompoundCodec {
             CompoundClip(id, name, children, color)
         }
         // A project saved by an older build may hold a group whose clip was removed since; drop
-        // those instead of refusing to open the file.
-        val staged = project.copy(compounds = emptyList())
-        return staged.copy(compounds = CompoundEditing.sanitize(staged.copy(compounds = compounds)).compounds)
+        // those instead of refusing to open the file. Filter before rebuilding, because
+        // Project.init rejects a compound referencing a missing clip.
+        return project.copy(compounds = CompoundEditing.survivingCompounds(project.videos, decoded))
     }
 }

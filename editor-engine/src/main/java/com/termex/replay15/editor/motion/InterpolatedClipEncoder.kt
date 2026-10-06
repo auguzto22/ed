@@ -85,19 +85,30 @@ class InterpolatedClipEncoder(
         while (sourceTimeUs < request.outUs) {
             if (cancelled.get()) return false
             val current = retriever.getFrameAtTime(sourceTimeUs, MediaMetadataRetriever.OPTION_CLOSEST) ?: break
-            if (current.width != width || current.height != height) break
+            // Rotated or non-integer-dimension media decodes to a different size than the clip
+            // recorded. Scaling to the encoder's size keeps the artifact usable; aborting the
+            // whole render here silently produced a zero-frame file.
+            val scaled = if (current.width == width && current.height == height) current else {
+                Bitmap.createScaledBitmap(current, width, height, true).also { if (it !== current) current.recycle() }
+            }
 
-            val currentLuma = FrameInterpolator.luminanceOf(pixelsOf(current), current.width, current.height)
+            val currentLuma = FrameInterpolator.luminanceOf(pixelsOf(scaled), scaled.width, scaled.height)
             val velocity = FrameInterpolator.measureVelocity(previousLuma, currentLuma)
             val held = previous
             val heldPixels = held?.let { pixelsOf(it) }
 
             if (held != null && heldPixels != null) {
-                val (velocityX, velocityY) = velocity ?: (0f to 0f)
+                // measureVelocity works on the 64px luma reduction, so its result is in that
+                // grid's pixels. The warp below samples the full-resolution frame, so the shift
+                // must be scaled up or motion is applied at the wrong magnitude.
+                val (velocityX, velocityY) = velocity?.let { (vx, vy) ->
+                    vx * (held.width.toFloat() / previousLuma.width.toFloat()) to
+                        vy * (held.height.toFloat() / previousLuma.height.toFloat())
+                } ?: (0f to 0f)
                 val steps = stepsBetweenFrames(velocity)
                 for (step in 1 until steps) {
                     val pixels = FrameInterpolator.interpolateArgb(
-                        heldPixels, pixelsOf(current), held.width, held.height,
+                        heldPixels, pixelsOf(scaled), held.width, held.height,
                         velocityX, velocityY, step.toFloat() / steps,
                     )
                     if (!queueFrame(pixels, held.width, held.height)) return false
@@ -105,11 +116,11 @@ class InterpolatedClipEncoder(
                 }
             }
 
-            if (!queueFrame(pixelsOf(current), current.width, current.height)) return false
+            if (!queueFrame(pixelsOf(scaled), scaled.width, scaled.height)) return false
             emitted++
 
             held?.recycle()
-            previous = current
+            previous = scaled
             previousLuma = currentLuma
             sourceTimeUs += sourceIntervalUs
         }
@@ -123,11 +134,8 @@ class InterpolatedClipEncoder(
      * A shot with nothing moving has no gap worth filling, and a frame the estimator could
      * not measure is safer duplicated than warped by a guess.
      */
-    private fun stepsBetweenFrames(velocity: Pair<Float, Float>?): Int {
-        if (velocity == null) return 1
-        if (kotlin.math.abs(velocity.first) < MIN_MOTION_PX && kotlin.math.abs(velocity.second) < MIN_MOTION_PX) return 1
-        return (1f / request.slowestSpeed).toInt().coerceIn(1, request.outputFps)
-    }
+    private fun stepsBetweenFrames(velocity: Pair<Float, Float>?): Int =
+        SmoothSlowMoPlanner.interpolatedFrameCount(velocity, request.slowestSpeed, request.outputFps, MIN_MOTION_PX)
 
     /** Converts and queues one frame, then makes room in the encoder if it is running behind. */
     private fun queueFrame(pixels: IntArray, frameWidth: Int, frameHeight: Int): Boolean {

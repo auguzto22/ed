@@ -402,7 +402,8 @@ class TransitionRenderEffect(
         override fun release() {
             try {
                 TransitionBridge.setRendererReady(bridgeKey, false)
-                TransitionBridge.release(bridgeKey)
+                // Exactly one release: the effect retained the key once, so a second decrement
+                // freed the capture texture while TrackCompositor could still be reading it.
                 TransitionBridge.release(bridgeKey)
                 gl?.delete()
                 passThroughGl.delete()

@@ -10,8 +10,12 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
     data class Video(val key: ClipKey, val startUs: Long, val clip: VideoClip, private val mapper: ClipTimeMapper = ProjectClipTimeMapper,
                      val transitionEndUs: Long = startUs + clip.durationUs) {
         val endUs = startUs + clip.durationUs
-        fun sourceTimeUs(projectTimeUs: Long): Long = mapper.projectToSource(clip, startUs,
-            projectTimeUs.coerceAtMost((endUs - 1L).coerceAtLeast(startUs))).coerceIn(clip.inUs, clip.outUs - 1L)
+        fun sourceTimeUs(projectTimeUs: Long): Long {
+            val bounded = projectTimeUs.coerceIn(startUs, (endUs - 1L).coerceAtLeast(startUs))
+            // A reversed clip reaches outUs first, so the bound must span both endpoints.
+            return mapper.projectToSource(clip, startUs, bounded)
+                .coerceIn(minOf(clip.inUs, clip.outUs), maxOf(clip.inUs, clip.outUs))
+        }
         fun projectTimeUs(sourceTimeUs: Long): Long = mapper.sourceToProject(clip, startUs, sourceTimeUs)
         fun contains(timeUs: Long) = timeUs >= startUs && timeUs < transitionEndUs
     }

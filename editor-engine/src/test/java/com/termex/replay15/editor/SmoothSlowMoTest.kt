@@ -139,6 +139,28 @@ class SmoothSlowMoTest {
     }
 
     @Test
+    fun `frame count is rounded so a mild slowdown still interpolates`() {
+        val moving = 6f to 4f
+        // Truncating 1/0.9 gave 1 and silently reduced the feature to frame duplication for any
+        // speed above 0.5x, which is most of the range the profile accepts.
+        assertEquals(1, SmoothSlowMoPlanner.interpolatedFrameCount(null, .9f, 60))
+        assertEquals(2, SmoothSlowMoPlanner.interpolatedFrameCount(moving, .5f, 60))
+        assertEquals(4, SmoothSlowMoPlanner.interpolatedFrameCount(moving, .25f, 60))
+        // 1/0.9 = 1.11 rounds to 1... and 1/0.6 = 1.67 rounds to 2.
+        assertEquals(1, SmoothSlowMoPlanner.interpolatedFrameCount(moving, .9f, 60))
+        assertEquals(2, SmoothSlowMoPlanner.interpolatedFrameCount(moving, .6f, 60))
+    }
+
+    @Test
+    fun `a still shot or an unmeasurable frame is never interpolated`() {
+        val still = .4f to -.3f
+        assertEquals(1, SmoothSlowMoPlanner.interpolatedFrameCount(still, .25f, 90))
+        assertEquals(1, SmoothSlowMoPlanner.interpolatedFrameCount(null, .25f, 90))
+        // Never more frames than the output rate can carry.
+        assertEquals(90, SmoothSlowMoPlanner.interpolatedFrameCount(20f to 20f, .01f, 90))
+    }
+
+    @Test
     fun `luminance reduction keeps the aspect ratio`() {
         val frame = FrameInterpolator.luminanceOf(pattern(), width, height, size = 16)
         assertEquals(16, frame.width)

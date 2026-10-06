@@ -295,7 +295,12 @@ class GpuPreviewRenderer(
             val slot = slots.remove(fromKey)
             if (slot != null) {
                 slot.pending.getAndSet(null)?.acknowledge()
-                val transferred = slot.copy(key = toKey)
+                // The FBO still holds the outgoing clip's last pixels until a new frame lands,
+                // so the transferred slot must not advertise itself as holding a valid frame for
+                // the incoming clip: doing so presented the previous clip under the new clip's
+                // transform, and could satisfy a transition's generation check with foreign
+                // content. The layer is simply skipped until the decoder delivers a real frame.
+                val transferred = slot.copy(key = toKey, hasFrame = false, frameGeneration = -1)
                 slot.surfaceTexture.setOnFrameAvailableListener({ source -> consume(toKey, source) }, handler)
                 slots[toKey] = transferred
                 effectTargets.remove(fromKey)?.let { effectTargets[toKey] = it }
@@ -418,7 +423,11 @@ class GpuPreviewRenderer(
                     imageTextures[layer.uri]
                 } else {
                     slots[layer.key]
-                        ?.takeIf { it.hasFrame }
+                        // Generation must be checked here too, not only on the transition path:
+                        // after a seek the FBO still holds the previous generation's pixels, and
+                        // drawing them put stale content on screen instead of holding the last
+                        // good frame.
+                        ?.takeIf { it.hasFrame && it.frameGeneration == render.generation }
                         ?.texture
                 }
 

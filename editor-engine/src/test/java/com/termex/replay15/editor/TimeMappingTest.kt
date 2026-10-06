@@ -112,4 +112,76 @@ class TimeMappingTest {
         java.nio.ByteBuffer.wrap(old).putInt(4, 8)
         assertEquals(p, ProjectCodec.read(old.inputStream()))
     }
+
+    // ---- Reverse playback -------------------------------------------------------------
+    // Reversal must mirror the same segment table, so duration, trims and speed ramps keep
+    // their exact shape and only the direction of the walk changes.
+
+    private fun constant(speed: Float = 1f, inUs: Long = SECOND, outUs: Long = 9 * SECOND, reverse: Boolean = false) =
+        clip().copy(speedCurve = emptyList(), speed = speed, inUs = inUs, outUs = outUs, reverse = reverse)
+
+    @Test fun aReversedClipStartsAtTheEndOfItsTrimmedWindow() {
+        val forward = constant()
+        val reversed = forward.copy(reverse = true)
+        assertEquals(forward.durationUs, reversed.durationUs)
+        assertEquals(reversed.outUs, reversed.timeMap.sourceAt(0))
+        assertEquals(reversed.inUs, reversed.timeMap.sourceAt(reversed.durationUs))
+    }
+
+    @Test fun reversalIsExactlyTheMirrorOfForwardPlayback() {
+        val forward = constant(speed = .75f)
+        val reversed = forward.copy(reverse = true)
+        for (time in 0..reversed.durationUs step 50_000) {
+            val expected = forward.timeMap.sourceAt(reversed.durationUs - time)
+            assertTrue(
+                "at $time expected $expected got ${reversed.timeMap.sourceAt(time)}",
+                abs(expected - reversed.timeMap.sourceAt(time)) <= 1,
+            )
+        }
+    }
+
+    @Test fun reversedSourceTimeDecreasesMonotonically() {
+        val reversed = constant(speed = .5f, reverse = true)
+        var previous = Long.MAX_VALUE
+        for (time in 0..reversed.durationUs step 1000) {
+            val source = reversed.timeMap.sourceAt(time)
+            assertTrue("source went forward at $time", source <= previous)
+            assertTrue(source in reversed.inUs..reversed.outUs)
+            previous = source
+        }
+    }
+
+    @Test fun reversalRoundTripsThroughTimelineTime() {
+        val reversed = clip().copy(speedCurve = emptyList(), speed = .8f, inUs = 400_000, outUs = 8_000_000, reverse = true)
+        for (time in 0..reversed.durationUs step 1000) {
+            val source = reversed.timeMap.sourceAt(time)
+            assertTrue(
+                "timelineAt(sourceAt($time)) != $time",
+                abs(time - reversed.timeMap.timelineAt(source)) <= 3,
+            )
+        }
+    }
+
+    @Test fun reversalKeepsASpeedRampIntact() {
+        val reversed = clip().copy(reverse = true)
+        assertEquals(clip().timeMap.durationUs, reversed.timeMap.durationUs)
+        assertEquals(reversed.outUs, reversed.timeMap.sourceAt(0))
+    }
+
+    @Test fun splitPreservesReversalOnBothHalves() {
+        val c = constant(speed = 1f, inUs = 0, outUs = 8 * SECOND).copy(reverse = true)
+        val p = Project(videos = listOf(c))
+        val split = p.splitAt(4 * SECOND)
+        assertEquals(2, split.videos.size)
+        assertTrue(split.videos.all { it.reverse })
+        // Together they still cover the original window, just walked backwards.
+        assertEquals(c.timeMap.sourceAt(0), split.videos[1].timeMap.sourceAt(0))
+    }
+
+    @Test fun reversedProjectSurvivesSaveAndReopen() {
+        val c = constant().copy(reverse = true, reverseAudio = ReverseAudio.MUTE)
+        val p = Project(videos = listOf(c))
+        val bytes = ByteArrayOutputStream(); ProjectCodec.write(p, bytes)
+        assertEquals(p, ProjectCodec.read(bytes.toByteArray().inputStream()))
+    }
 }

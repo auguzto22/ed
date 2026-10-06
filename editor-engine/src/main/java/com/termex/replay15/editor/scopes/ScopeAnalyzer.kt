@@ -161,6 +161,18 @@ object ScopeAnalyzer {
                 waveform[column] = columnLuma[column].toFloat() / samples / 255f
             }
         }
+        // A frame narrower than the column grid leaves columns unmeasured. Leaving them at zero
+        // drew a comb of false black spikes through an otherwise flat trace, so each empty column
+        // carries its nearest measured neighbour instead.
+        var lastMeasured = -1
+        for (column in 0 until WAVEFORM_COLUMNS) {
+            if (columnCount[column] > 0) lastMeasured = column
+            else if (lastMeasured >= 0) waveform[column] = waveform[lastMeasured]
+        }
+        for (column in WAVEFORM_COLUMNS - 2 downTo 0) {
+            if (columnCount[column] > 0) break
+            waveform[column] = waveform[column + 1]
+        }
         histogram.indices.forEach { histogram[it] /= count }
         red.indices.forEach { red[it] /= count; green[it] /= count; blue[it] /= count }
         for (slot in 0 until VECTOR_BINS * VECTOR_BINS) {

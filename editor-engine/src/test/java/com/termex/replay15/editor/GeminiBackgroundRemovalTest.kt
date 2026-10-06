@@ -1,5 +1,6 @@
 package com.termex.replay15.editor
 
+import com.recly.editor.engine.BuildConfig
 import com.termex.replay15.editor.ai.GeminiApiKeyConfig
 import com.termex.replay15.editor.backgroundremoval.GeminiSegmentationParser
 import com.termex.replay15.editor.domain.BackgroundMode
@@ -11,7 +12,9 @@ import com.termex.replay15.editor.domain.SegmentationQuality
 import com.termex.replay15.editor.domain.StickerClip
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.project.ProjectCodec
+import com.termex.replay15.editor.backgroundremoval.SegmentationOrigin
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -75,6 +78,26 @@ class GeminiBackgroundRemovalTest {
         // Center pixel (50, 50) should be foreground
         val centerIdx = 50 * 100 + 50
         assertTrue("Center should be foreground", result.mask[centerIdx] > 0.5f)
+
+        // A box-derived ellipse is a geometric guess, not a measured silhouette. It must say so
+        // so callers that must not invent subject geometry can refuse it.
+        assertEquals(SegmentationOrigin.APPROXIMATED_FROM_BOX, result.origin)
+        assertFalse(result.isMeasured)
+    }
+
+    @Test
+    fun polygonContoursAreReportedAsMeasured() {
+        val json = """
+            {
+                "box_2d": [100, 100, 900, 900],
+                "polygons": [[[100, 100], [100, 900], [900, 900], [900, 100]]]
+            }
+        """.trimIndent()
+
+        val result = GeminiSegmentationParser.parseSegmentation(json, 100, 100, 1L)
+        assertNotNull(result)
+        assertEquals(SegmentationOrigin.MEASURED, result!!.origin)
+        assertTrue(result.isMeasured)
     }
 
     @Test

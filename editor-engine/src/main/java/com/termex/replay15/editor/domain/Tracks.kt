@@ -43,7 +43,7 @@ const val MAIN_TRACK_B = "main_b"
 const val TEXT_TRACK = "texts"
 const val STICKER_TRACK = "stickers"
 const val MAX_PROJECT_US = 24 * 60 * 60 * SECOND
-const val PROJECT_SCHEMA = 27
+const val PROJECT_SCHEMA = 28
 
 fun Project.trackState(id: String) = trackStates[id] ?: TrackState()
 fun Project.visualEnabled(id: String): Boolean {

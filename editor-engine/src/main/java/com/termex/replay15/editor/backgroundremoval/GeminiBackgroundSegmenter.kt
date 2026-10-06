@@ -110,8 +110,10 @@ class GeminiBackgroundSegmenter(
                         }
                     }
                     rawResponse = extractText(resp)
-                } catch (_: Throwable) {
-                    // Handled below via fallback
+                } catch (failure: Throwable) {
+                    // A persistent Gemini failure used to be invisible: the ML Kit fallback
+                    // mask was delivered with no indication that the preferred path never ran.
+                    android.util.Log.w("GeminiSegmenter", "Gemini segmentation failed; falling back", failure)
                 }
 
                 val result = rawResponse?.let {
@@ -239,6 +241,9 @@ object GeminiSegmentationParser {
                     }
                 }
             } else if (parsedBox != null) {
+                // The model returned only a bounding box, not contours. An ellipse inscribed
+                // in that box is a geometric guess at the subject, not a measured silhouette,
+                // so the result is tagged APPROXIMATED_FROM_BOX and callers can refuse it.
                 val xmin = parsedBox[0]
                 val ymin = parsedBox[1]
                 val xmax = parsedBox[2]
@@ -267,6 +272,8 @@ object GeminiSegmentationParser {
                 height = targetHeight,
                 timestampUs = timestampUs,
                 mask = floatMask,
+                origin = if (parsedPolys.isNotEmpty()) SegmentationOrigin.MEASURED
+                else SegmentationOrigin.APPROXIMATED_FROM_BOX,
             )
         }.getOrNull()
     }

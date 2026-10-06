@@ -267,7 +267,8 @@ class TimelineView(context: Context) : View(context) {
         finally { PreviewPacingProbe.end("Recly.TimelineView.draw", started) }
     }
     private fun drawMeasured(c: Canvas) {
-        super.onDraw(c)
+        // No super.onDraw: TimelineView extends View, whose onDraw is empty, so the call did
+        // nothing. Only ViewGroup, whose onDraw skips children unless told otherwise, needs it.
         val gutter = dp(40f)
         c.save(); c.clipRect(gutter, 0f, width.toFloat(), height.toFloat())
         val step = when { pixelsPerSecond >= dp(150f) -> SECOND / 2; pixelsPerSecond >= dp(40f) -> SECOND; pixelsPerSecond >= dp(15f) -> 5 * SECOND; else -> 10 * SECOND }

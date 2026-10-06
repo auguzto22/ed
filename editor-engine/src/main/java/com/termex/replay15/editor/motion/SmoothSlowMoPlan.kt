@@ -5,6 +5,7 @@ import com.termex.replay15.editor.domain.MIN_CLIP_SPEED
 import com.termex.replay15.editor.domain.VideoClip
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import kotlin.math.abs
 
 /**
  * How much extra frame rate to generate for a slowed clip.
@@ -90,6 +91,24 @@ object SmoothSlowMoPlanner {
      */
     fun plannedFor(clips: List<VideoClip>, profile: SmoothSlowMoProfile): List<SmoothSlowMoRequest> =
         clips.mapNotNull { plan(it, profile) }
+
+    /**
+     * How many output frames each source frame is expanded into, including itself.
+     *
+     * Rounded rather than truncated: `(1f / 0.9f).toInt()` is 1, which silently turned the
+     * whole feature into frame duplication for any speed above 0.5x. A frame the estimator
+     * could not measure, or a shot with nothing moving, stays at 1.
+     */
+    fun interpolatedFrameCount(
+        velocity: Pair<Float, Float>?,
+        slowestSpeed: Float,
+        outputFps: Int,
+        minMotionPx: Float = 1.5f,
+    ): Int {
+        if (velocity == null) return 1
+        if (abs(velocity.first) < minMotionPx && abs(velocity.second) < minMotionPx) return 1
+        return (1f / slowestSpeed).roundToInt().coerceIn(1, outputFps)
+    }
 
     private const val MIN_INTERPOLATED_US = 500_000L
 }

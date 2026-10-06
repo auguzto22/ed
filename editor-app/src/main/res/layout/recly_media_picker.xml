@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/pickerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -30,7 +31,7 @@
                 android:src="@drawable/ic_arrow_back"
                 android:contentDescription="Voltar"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/recly_text_primary"/>
+                app:tint="@color/recly_text_primary"/>
 
             <TextView
                 android:layout_width="0dp"
@@ -73,7 +74,7 @@
                 android:layout_width="@dimen/icon_md"
                 android:layout_height="@dimen/icon_md"
                 android:src="@drawable/ic_search"
-                android:tint="@color/recly_text_disabled"/>
+                app:tint="@color/recly_text_disabled"/>
 
             <EditText
                 android:id="@+id/searchInput"
@@ -131,7 +132,7 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:src="@drawable/ic_pro_video"
-                android:tint="@color/recly_text_disabled"
+                app:tint="@color/recly_text_disabled"
                 android:alpha="0.5"/>
 
             <TextView
@@ -168,7 +169,7 @@
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:src="@drawable/ic_pro_video"
-                android:tint="@color/recly_text_secondary"
+                app:tint="@color/recly_text_secondary"
                 android:alpha="0.5"/>
 
             <TextView
