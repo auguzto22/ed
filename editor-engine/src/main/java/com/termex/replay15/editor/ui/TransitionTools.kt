@@ -3,16 +3,28 @@ package com.termex.replay15.editor.ui
 import android.app.Activity
 import android.app.Dialog
 import android.graphics.Color
+import android.graphics.Outline
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.view.Gravity
 import android.view.View
+import android.view.ViewOutlineProvider
+import android.view.WindowManager
 import android.widget.*
 import com.recly.editor.engine.R
 import com.termex.replay15.editor.assets.*
 import com.termex.replay15.editor.core.isEditorDebuggable
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.preview.AtlasPreviewManager
+import kotlin.math.roundToInt
 
+/**
+ * Transition panel for one cut, in the editor's canvas style.
+ *
+ * Everything the user touches only updates the preview (no history entries, no undo spam). The
+ * project changes once, on "Aplicar", "Aplicar em todos os cortes" or "Remover"; closing the panel
+ * any other way puts the preview back exactly as it was.
+ */
 class TransitionTools(
     private val activity: Activity,
     private val project: () -> Project,
@@ -27,345 +39,312 @@ class TransitionTools(
 
     fun open(leftClipId: String, rightClipId: String) = with(activity) {
         val openStartMs = System.currentTimeMillis()
-        val currentProject = project()
-        val leftClip = currentProject.videos.firstOrNull { it.id == leftClipId } ?: return@with
-        val rightClip = currentProject.videos.firstOrNull { it.id == rightClipId } ?: return@with
-
+        val original = project()
+        val leftIndex = original.videos.indexOfFirst { it.id == leftClipId }
+        if (leftIndex < 0 || original.videos.getOrNull(leftIndex + 1)?.id != rightClipId) return@with
         val definitions = BuiltInTransitions.definitions(this)
-        val existing = currentProject.transitionBetween(leftClipId, rightClipId)
-
-        val transEnteringLeft = currentProject.transitions.firstOrNull { it.rightClipId == leftClipId }?.durationUs ?: 0L
-        val transLeavingRight = currentProject.transitions.firstOrNull { it.leftClipId == rightClipId }?.durationUs ?: 0L
-        val availableLeftHandleUs = (leftClip.durationUs - transEnteringLeft).coerceAtLeast(100_000L)
-        val availableRightHandleUs = (rightClip.durationUs - transLeavingRight).coerceAtLeast(100_000L)
-        val maxAllowedUs = minOf(availableLeftHandleUs, availableRightHandleUs, 3_000_000L).coerceAtLeast(100_000L)
-        var selectedDef = existing?.let { trans -> definitions.firstOrNull { it.id == trans.transitionId } }
-            ?: definitions.firstOrNull { it.id == "cross_dissolve" }
-            ?: definitions.first()
-
-        var currentDurationUs = (existing?.durationUs ?: selectedDef.defaultDurationUs).coerceIn(100_000L, maxAllowedUs)
-        val currentParams = existing?.parameters?.toMutableMap() ?: mutableMapOf()
-        var currentEasing = existing?.easing ?: Easing.SMOOTH
-
-        var activeCategory = TransitionCatalog.CATEGORY_ALL
-        var searchQuery = ""
+        val state = TransitionDraft(original, leftClipId, rightClipId, definitions)
+        var committed = false
+        var group = TransitionGroups.GROUPS.firstOrNull { g ->
+            state.definition?.let { d -> TransitionGroups.items(g, definitions).any { it.id == d.id } } == true
+        } ?: TransitionGroups.GROUPS.first()
+        var groupLabel = group.label
 
         val body = column()
         lateinit var dialog: Dialog
 
-        // Trigger preview region
-        fun triggerPreview(newProject: Project) {
-            previewApply(newProject)
-            val rightIdx = newProject.videos.indexOfFirst { it.id == rightClipId }
-            if (rightIdx >= 0) {
-                val cutUs = newProject.startOf(rightIdx)
-                val region = TransitionPreviewHelper.calculatePreviewRegion(cutUs, newProject.durationUs)
+        fun previewRegion(draft: Project): TransitionPreviewRegion =
+            state.window(draft)?.let { TransitionPreviewHelper.calculatePreviewRegion(it, draft.durationUs) }
+                ?: TransitionPreviewHelper.calculatePreviewRegion(state.cutUs(), draft.durationUs)
+
+        /** Shows the current choice; [play] runs it once, otherwise parks on its middle frame. */
+        fun preview(play: Boolean) {
+            val draft = state.draftProject()
+            previewApply(draft)
+            if (play) {
+                val region = previewRegion(draft)
                 seek(region.startUs)
                 playPreviewRegion(region.startUs, region.endUs)
-            }
-        }
-
-        // Apply change helper
-        fun applyCurrent(preview: Boolean, play: Boolean = false) {
-            val trans = TransitionInstance(
-                id = existing?.id ?: newId(),
-                transitionId = selectedDef.id,
-                leftClipId = leftClipId,
-                rightClipId = rightClipId,
-                durationUs = currentDurationUs,
-                parameters = currentParams.toMap(),
-                easing = currentEasing,
-            )
-            val updated = project().withTransition(trans)
-            apply(updated)
-            if (play) {
-                triggerPreview(updated)
             } else {
-                previewApply(updated)
+                seek(state.window(draft)?.midpointUs ?: state.cutUs())
             }
         }
 
-        // Search and category tabs container
-        val searchBox = EditText(this).apply {
-            hint = "Buscar transições..."
-            textSize = 13f
-            setTextColor(Color.WHITE)
-            setHintTextColor(EditorStyle.MUTED)
-            background = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                cornerRadius = dp(8).toFloat()
-                setStroke(dp(1), EditorStyle.BORDER)
-            }
-            setPadding(dp(12), dp(8), dp(12), dp(8))
-        }
-        body.addView(searchBox, LinearLayout.LayoutParams(-1, dp(40)).apply { bottomMargin = dp(8) })
-
-        val tabsScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
-        val tabsRow = row()
-        tabsScroll.addView(tabsRow)
-        body.addView(tabsScroll, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
-
-        val catalogContainer = column()
-        body.addView(catalogContainer)
-
-        val configContainer = column()
-        body.addView(configContainer)
-
-        fun renderConfig() {
-            configContainer.removeAllViews()
-
-            configContainer.addView(label("Configuração", 14f, EditorStyle.ACCENT).apply {
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-                setPadding(0, dp(8), 0, dp(4))
-            })
-
-            // Duration slider
-            slider(
-                configContainer,
-                "Duração",
-                (currentDurationUs / 10_000L).toInt(),
-                (maxAllowedUs / 10_000L).toInt(),
-                minimum = 10,
-                format = { String.format(java.util.Locale.US, "%.2f s", it * 0.01f) },
-                onStop = { progressVal ->
-                    currentDurationUs = progressVal * 10_000L
-                    applyCurrent(preview = true, play = false)
-                },
-            ) { progressVal ->
-                currentDurationUs = progressVal * 10_000L
-                applyCurrent(preview = true, play = false)
-            }
-
-            // Easing selector
-            if (selectedDef.supportsEasing) {
-                val easingRow = row()
-                easingRow.addView(label("Curva:", 12f, EditorStyle.MUTED), LinearLayout.LayoutParams(-2, -2))
-                val easings = listOf(
-                    "Smooth" to Easing.SMOOTH,
-                    "Linear" to Easing.LINEAR,
-                    "In" to Easing.EASE_IN,
-                    "Out" to Easing.EASE_OUT,
-                )
-                easings.forEach { (name, easing) ->
-                    val isSelected = currentEasing == easing
-                    val btn = action(name, accent = isSelected) {
-                        currentEasing = easing
-                        applyCurrent(preview = true, play = false)
-                        renderConfig()
-                    }
-                    easingRow.addView(btn, LinearLayout.LayoutParams(0, dp(36), 1f).apply { marginStart = dp(4) })
-                }
-                configContainer.addView(easingRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4); bottomMargin = dp(6) })
-            }
-
-            // Custom Parameters for selected definition
-            selectedDef.parameters.forEach { param ->
-                val currentVal = currentParams[param.id] ?: param.default
-                val steps = 100
-                val min = param.min
-                val max = param.max
-                val stepVal = ((currentVal - min) / (max - min) * steps).toInt().coerceIn(0, steps)
-
-                slider(
-                    configContainer,
-                    param.name,
-                    stepVal,
-                    steps,
-                    minimum = 0,
-                    format = { step ->
-                        val real = min + (step.toFloat() / steps) * (max - min)
-                        if (param.id == "direction") {
-                            when (real.toInt()) {
-                                0 -> "Esquerda"
-                                1 -> "Direita"
-                                2 -> "Cima"
-                                else -> "Baixo"
-                            }
-                        } else {
-                            String.format(java.util.Locale.US, "%.2f", real)
-                        }
-                    },
-                    onStop = { step ->
-                        val real = min + (step.toFloat() / steps) * (max - min)
-                        currentParams[param.id] = real
-                        applyCurrent(preview = true, play = false)
-                    },
-                ) { step ->
-                    val real = min + (step.toFloat() / steps) * (max - min)
-                    currentParams[param.id] = real
-                    applyCurrent(preview = true, play = false)
-                }
-            }
-
-            // Action row: Preview, Remove & Apply
-            val actions = row()
-            actions.addView(action("Testar transição") {
-                applyCurrent(preview = true, play = true)
-            }, LinearLayout.LayoutParams(0, dp(44), 1f))
-
-            if (project().transitionBetween(leftClipId, rightClipId) != null) {
-                actions.addView(action("Remover") {
-                    val updatedProject = project().withoutTransition(leftClipId, rightClipId)
-                    apply(updatedProject)
-                    previewApply(updatedProject)
-                    dialog.dismiss()
-                }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginStart = dp(6) })
-            }
-
-            actions.addView(action("Aplicar", accent = true) {
-                applyCurrent(preview = false)
-                dialog.dismiss()
-            }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginStart = dp(6) })
-
-            configContainer.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        }
-
-        fun renderCatalog() {
-            catalogContainer.removeAllViews()
-
-            val recentIds = TransitionCatalog.getRecents(this)
-            val favIds = TransitionCatalog.getFavorites(this)
-            val filtered = TransitionCatalog.filter(definitions, activeCategory, searchQuery, recentIds, favIds)
-
-            if (filtered.isEmpty()) {
-                catalogContainer.addView(label("Nenhuma transição encontrada.", 12f, EditorStyle.MUTED))
-                return
-            }
-
-            // Grid: 2 columns
-            for (i in filtered.indices step 2) {
-                val rowLayout = row()
-                val itemA = filtered[i]
-                val itemB = filtered.getOrNull(i + 1)
-
-                fun buildCard(item: TransitionDefinition): View {
-                    val card = column().apply {
-                        setPadding(dp(10), dp(8), dp(10), dp(8))
-                        val isChosen = item.id == selectedDef.id
-                        background = GradientDrawable().apply {
-                            setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                            cornerRadius = dp(12).toFloat()
-                            setStroke(dp(1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
-                        }
-                    }
-
-                    val header = row()
-                    val isFav = TransitionCatalog.isFavorite(this, item.id)
-                    val star = ImageView(this).apply {
-                        setImageResource(if (isFav) R.drawable.ic_recly_star_filled else R.drawable.ic_recly_star_outline)
-                        val pad = dp(3)
-                        setPadding(pad, pad, pad, pad)
-                        setOnClickListener {
-                            TransitionCatalog.toggleFavorite(this@with, item.id)
-                            renderCatalog()
-                        }
-                    }
-                    header.addView(star, LinearLayout.LayoutParams(dp(22), dp(22)))
-                    header.addView(label(item.category, 10.5f, EditorStyle.MUTED).apply { setPadding(dp(4), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
-                    card.addView(header)
-
-                    val imageFrame = FrameLayout(this).apply {
-                        outlineProvider = object : android.view.ViewOutlineProvider() {
-                            override fun getOutline(view: View, outline: android.graphics.Outline) {
-                                outline.setRoundRect(0, 0, view.width, view.height, dp(8).toFloat())
-                            }
-                        }
-                        clipToOutline = true
-                    }
-                    val placeholder = View(this).apply {
-                        background = GradientDrawable().apply {
-                            setColor(0xFF26262A.toInt())
-                            cornerRadius = dp(8).toFloat()
-                        }
-                    }
-                    imageFrame.addView(placeholder, FrameLayout.LayoutParams(-1, dp(64)))
-                    val imageView = ImageView(this).apply {
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                    }
-                    imageFrame.addView(imageView, FrameLayout.LayoutParams(-1, dp(64)))
-                    card.addView(imageFrame, LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(4); bottomMargin = dp(6) })
-
-                    AtlasPreviewManager.getTransitionPreview(this@with, item.id) { drawable ->
-                        imageView.setImageDrawable(drawable)
-                        placeholder.visibility = View.GONE
-                    }
-
-                    card.addView(label(item.name, 13f, Color.WHITE).apply {
-                        setTypeface(typeface, android.graphics.Typeface.BOLD)
-                        maxLines = 1
-                    })
-
-                    card.setOnClickListener {
-                        selectedDef = item
-                        TransitionCatalog.recordUsed(this, item.id)
-                        applyCurrent(preview = true, play = true)
-                        renderCatalog()
-                        renderConfig()
-                    }
-
-                    return card
-                }
-
-                rowLayout.addView(buildCard(itemA), LinearLayout.LayoutParams(0, -2, 1f))
-                if (itemB != null) {
-                    rowLayout.addView(buildCard(itemB), LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(6) })
-                } else {
-                    rowLayout.addView(View(this), LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(6) })
-                }
-                catalogContainer.addView(rowLayout, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
-            }
-        }
-
-        fun renderTabs() {
-            tabsRow.removeAllViews()
-            TransitionCatalog.UI_CATEGORIES.forEach { cat ->
-                val active = cat == activeCategory
-                val btn = Button(this).apply {
-                    text = cat
-                    textSize = 12f
-                    isAllCaps = false
-                    setTextColor(if (active) Color.WHITE else EditorStyle.MUTED)
-                    background = GradientDrawable().apply {
-                        setColor(if (active) EditorStyle.CARD else Color.TRANSPARENT)
-                        cornerRadius = dp(14).toFloat()
-                        if (active) setStroke(dp(1), EditorStyle.ACCENT)
-                    }
-                    setPadding(dp(12), dp(4), dp(12), dp(4))
-                    setOnClickListener {
-                        activeCategory = cat
-                        renderTabs()
-                        renderCatalog()
-                    }
-                }
-                tabsRow.addView(btn, LinearLayout.LayoutParams(-2, dp(32)).apply { marginEnd = dp(4) })
-            }
-        }
-
-        searchBox.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchQuery = s?.toString().orEmpty()
-                renderCatalog()
-            }
-            override fun afterTextChanged(s: android.text.Editable?) {}
+        body.addView(label(cutDescription(original, leftIndex), 12f, EditorStyle.MUTED).apply {
+            setPadding(0, 0, 0, dp(10))
         })
 
-        renderTabs()
-        renderCatalog()
-        renderConfig()
+        val chipsRow = row()
+        body.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(chipsRow)
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
 
-        dialog = sheet("Transições", body)
-        if (isEditorDebuggable()) {
-            android.util.Log.d("ReclyPerf", "TRANSITIONS_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
+        val tilesRow = row().apply { gravity = Gravity.TOP }
+        val tilesScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(tilesRow)
         }
+        body.addView(tilesScroll, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+
+        val settings = column()
+        body.addView(settings)
+        val actions = row()
+        body.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+
+        lateinit var renderTiles: () -> Unit
+        lateinit var renderSettings: () -> Unit
+        lateinit var renderActions: () -> Unit
+
+        fun groupsToShow(): List<TransitionGroups.Group> {
+            val extra = mutableListOf<TransitionGroups.Group>()
+            val favorites = TransitionCatalog.getFavorites(this)
+            if (favorites.isNotEmpty()) extra += TransitionGroups.Group(FAVORITES, ids = definitions.map { it.id }.filter { it in favorites })
+            val recents = TransitionCatalog.getRecents(this)
+            if (recents.isNotEmpty()) extra += TransitionGroups.Group(RECENTS, ids = recents)
+            return extra + TransitionGroups.GROUPS
+        }
+
+        fun renderChips() {
+            chipsRow.removeAllViews()
+            val groups = groupsToShow()
+            group = groups.firstOrNull { it.label == groupLabel } ?: groups.first { it.label == TransitionGroups.GROUPS.first().label }
+            groups.forEach { g ->
+                chipsRow.addView(pillButton(g.label, g.label == groupLabel) {
+                    groupLabel = g.label
+                    renderChips()
+                    renderTiles()
+                    tilesScroll.scrollTo(0, 0)
+                }, LinearLayout.LayoutParams(-2, dp(36)).apply { marginEnd = dp(6) })
+            }
+        }
+
+        fun tile(name: String, chosen: Boolean, favorite: Boolean, fill: (ImageView, View) -> Unit,
+                 longClick: (() -> Unit)?, click: () -> Unit): View = column().apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            isClickable = true
+            isFocusable = true
+            contentDescription = name
+            setPadding(dp(4), dp(4), dp(4), dp(6))
+            background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x22FFFFFF), GradientDrawable().apply {
+                setColor(if (chosen) EditorStyle.CARD_ELEVATED else Color.TRANSPARENT)
+                cornerRadius = dp(14).toFloat()
+            }, null)
+            val frame = FrameLayout(context).apply {
+                outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: Outline) {
+                        outline.setRoundRect(0, 0, view.width, view.height, dp(10).toFloat())
+                    }
+                }
+                clipToOutline = true
+                background = GradientDrawable().apply {
+                    setColor(0xFF26262A.toInt())
+                    cornerRadius = dp(10).toFloat()
+                }
+            }
+            val image = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+            val overlay = View(context)
+            frame.addView(image, FrameLayout.LayoutParams(-1, -1))
+            frame.addView(overlay, FrameLayout.LayoutParams(-1, -1))
+            if (favorite) {
+                frame.addView(ImageView(context).apply {
+                    setImageResource(R.drawable.ic_recly_star_filled)
+                    imageTintList = android.content.res.ColorStateList.valueOf(EditorStyle.CAPTION)
+                }, FrameLayout.LayoutParams(dp(14), dp(14), Gravity.TOP or Gravity.END).apply { setMargins(0, dp(4), dp(4), 0) })
+            }
+            // Selected: red frame, the editor's colour for the chosen item.
+            frame.foreground = GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = dp(10).toFloat()
+                setStroke(dp(if (chosen) 2.5f else 1f), if (chosen) EditorStyle.ACTION else EditorStyle.BORDER)
+            }
+            fill(image, overlay)
+            addView(frame, LinearLayout.LayoutParams(dp(64), dp(64)))
+            addView(label(name, 11f, if (chosen) EditorStyle.TEXT else EditorStyle.MUTED).apply {
+                gravity = Gravity.CENTER
+                maxLines = 2
+                setPadding(0, dp(5), 0, 0)
+                if (chosen) setTypeface(typeface, android.graphics.Typeface.BOLD)
+            }, LinearLayout.LayoutParams(dp(72), -2))
+            setOnClickListener { click() }
+            if (longClick != null) setOnLongClickListener { longClick(); true }
+        }
+
+        renderTiles = {
+            tilesRow.removeAllViews()
+            val favorites = TransitionCatalog.getFavorites(this)
+            tilesRow.addView(tile("Nenhuma", state.definition == null, false, { image, _ ->
+                image.setImageDrawable(EditorGlyph("Fechar", EditorStyle.MUTED, this))
+                image.scaleType = ImageView.ScaleType.CENTER
+            }, null) {
+                state.select(null)
+                renderTiles(); renderSettings(); renderActions()
+                preview(play = true)
+            }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(2) })
+            TransitionGroups.items(group, definitions).forEach { item ->
+                tilesRow.addView(tile(item.name, item.id == state.definition?.id, item.id in favorites, { image, overlay ->
+                    AtlasPreviewManager.getTransitionPreview(this, item.id) { drawable ->
+                        image.setImageDrawable(drawable)
+                        overlay.visibility = View.GONE
+                    }
+                }, longClick = {
+                    TransitionCatalog.toggleFavorite(this, item.id)
+                    renderChips(); renderTiles()
+                }) {
+                    state.select(item)
+                    TransitionCatalog.recordUsed(this, item.id)
+                    renderTiles(); renderSettings(); renderActions()
+                    preview(play = true)
+                }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(2) })
+            }
+            installEditorMotion(tilesRow)
+        }
+
+        fun segmented(parent: LinearLayout, title: String, options: List<String>, selected: Int, choose: (Int) -> Unit) {
+            parent.addView(label(title, 13f, EditorStyle.MUTED).apply { setPadding(0, dp(10), 0, dp(6)) })
+            val bar = row()
+            options.forEachIndexed { index, option ->
+                bar.addView(pillButton(option, index == selected) { choose(index) },
+                    LinearLayout.LayoutParams(0, dp(40), 1f).apply { if (index > 0) marginStart = dp(6) })
+            }
+            parent.addView(bar)
+        }
+
+        renderSettings = {
+            settings.removeAllViews()
+            val definition = state.definition
+            if (definition == null) {
+                settings.addView(label(
+                    if (state.hadTransition) "Sem transição: o corte volta a ser seco." else "Escolha uma transição para ver na prévia.",
+                    12f, EditorStyle.MUTED).apply { setPadding(0, 0, 0, 0) })
+            } else {
+                // Duration, stepped in frames of the project.
+                val durationSlider = slider(settings, "Duração", state.frames(), state.maxFrames(), state.minFrames(),
+                    format = { frames -> state.durationLabel((frames * 1_000_000L / state.fps)) },
+                    onStop = { frames -> state.setFrames(frames); preview(play = true) },
+                ) { frames -> state.setFrames(frames); preview(play = false) }
+                val presets = row()
+                TransitionDraft.DURATION_PRESETS_US.forEachIndexed { index, us ->
+                    val fits = us <= state.maxDurationUs()
+                    val text = String.format(java.util.Locale("pt", "BR"), if (us % 1_000_000L == 0L) "%.0f s" else "%.2f s", us / 1e6)
+                        .replace(",50 s", ",5 s")
+                    presets.addView(pillButton(text, fits && kotlin.math.abs(state.durationUs - us) < 1_000_000L / state.fps) {
+                        if (!fits) return@pillButton
+                        state.setDurationUs(us)
+                        durationSlider.progress = state.frames()
+                        renderSettings()
+                        preview(play = true)
+                    }.apply { alpha = if (fits) 1f else 0.35f; isEnabled = fits },
+                        LinearLayout.LayoutParams(0, dp(36), 1f).apply { if (index > 0) marginStart = dp(6) })
+                }
+                settings.addView(presets, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(2) })
+
+                segmented(settings, "Posição em relação ao corte",
+                    listOf("Antes", "No corte", "Depois"),
+                    TransitionDraft.ALIGNMENTS.indexOf(state.alignment)) { index ->
+                    state.setAlignment(TransitionDraft.ALIGNMENTS[index])
+                    renderSettings()
+                    preview(play = true)
+                }
+
+                if (definition.supportsEasing) {
+                    segmented(settings, "Curva", TransitionDraft.EASING_PRESETS.map { it.label },
+                        TransitionDraft.EASING_PRESETS.indexOf(state.easing)) { index ->
+                        state.easing = TransitionDraft.EASING_PRESETS[index]
+                        renderSettings()
+                        preview(play = true)
+                    }
+                }
+
+                state.editableParameters.forEach { parameter ->
+                    if (parameter.id == "invert") {
+                        segmented(settings, parameter.name, listOf("Normal", "Invertido"),
+                            if (state.valueOf(parameter.id) > 0.5f) 1 else 0) { index ->
+                            state.setValue(parameter.id, index.toFloat())
+                            renderSettings()
+                            preview(play = true)
+                        }
+                        return@forEach
+                    }
+                    val steps = 100
+                    fun real(step: Int) = parameter.min + step / steps.toFloat() * (parameter.max - parameter.min)
+                    val initial = ((state.valueOf(parameter.id) - parameter.min) / (parameter.max - parameter.min) * steps)
+                        .roundToInt().coerceIn(0, steps)
+                    slider(settings, parameter.name, initial, steps, 0,
+                        format = { step ->
+                            if (parameter.id == "angle") "${Math.toDegrees(real(step).toDouble()).roundToInt()}°"
+                            else String.format(java.util.Locale("pt", "BR"), "%.2f", real(step))
+                        },
+                        onStop = { step -> state.setValue(parameter.id, real(step)); preview(play = true) },
+                    ) { step -> state.setValue(parameter.id, real(step)); preview(play = false) }
+                }
+            }
+            installEditorMotion(settings)
+        }
+
+        renderActions = {
+            actions.removeAllViews()
+            val cuts = original.videos.size - 1
+            if (state.hadTransition) {
+                actions.addView(action("Remover") {
+                    committed = true
+                    apply(original.withoutTransition(leftClipId, rightClipId))
+                    dialog.dismiss()
+                }, LinearLayout.LayoutParams(0, dp(48), 0.8f).apply { marginEnd = dp(6) })
+            }
+            if (cuts > 1) {
+                actions.addView(action(if (state.definition == null) "Remover de todos" else "Aplicar em todos") {
+                    committed = true
+                    apply(state.applyToAllCuts())
+                    dialog.dismiss()
+                }, LinearLayout.LayoutParams(0, dp(48), 1.2f).apply { marginEnd = dp(6) })
+            }
+            actions.addView(action("Aplicar", accent = true) {
+                committed = true
+                apply(state.draftProject())
+                dialog.dismiss()
+            }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            installEditorMotion(actions)
+        }
+
+        renderChips()
+        renderTiles()
+        renderSettings()
+        renderActions()
+
+        dialog = sheet("Transição", body)
+        // Keep the preview fully visible above the panel: nothing is dimmed behind it.
+        dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         dialog.setOnDismissListener {
+            if (!committed) previewApply(project())
             activeDialog = null
         }
         activeDialog = dialog
+        // Scroll the strip to the current transition.
+        state.definition?.let { chosen ->
+            val index = TransitionGroups.items(group, definitions).indexOfFirst { it.id == chosen.id }
+            if (index > 2) tilesScroll.post { tilesScroll.scrollTo((index - 1) * dp(76), 0) }
+        }
+        if (state.hadTransition) preview(play = false)
+        if (isEditorDebuggable()) {
+            android.util.Log.d("ReclyPerf", "TRANSITIONS_PANEL_OPENED timeMs=${System.currentTimeMillis() - openStartMs} ${AtlasPreviewManager.dumpMetrics()}")
+        }
+    }
+
+    private fun cutDescription(project: Project, leftIndex: Int): String {
+        val left = project.videos[leftIndex]
+        val right = project.videos[leftIndex + 1]
+        fun short(name: String) = if (name.length > 18) name.take(17) + "…" else name
+        return "Corte ${leftIndex + 1} de ${project.videos.size - 1} · ${short(left.name)} → ${short(right.name)} · ${timeLabel(project.startOf(leftIndex + 1))}"
     }
 
     override fun close() {
         activeDialog?.dismiss()
         activeDialog = null
+    }
+
+    private companion object {
+        const val FAVORITES = "★ Favoritas"
+        const val RECENTS = "Recentes"
     }
 }
