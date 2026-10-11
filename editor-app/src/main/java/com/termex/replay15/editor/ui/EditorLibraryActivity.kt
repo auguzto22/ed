@@ -103,7 +103,7 @@ class EditorLibraryActivity : Activity() {
             val full = "O que vamos editar hoje?"
             val start = full.indexOf("editar")
             text = android.text.SpannableString(full).apply {
-                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#FFD23F")), start, start + "editar".length, 0)
+                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#FAFAF6")), start, start + "editar".length, 0)
             }
         }
 
@@ -295,12 +295,12 @@ class EditorLibraryActivity : Activity() {
      */
     private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore): View {
         val tones = intArrayOf(0xFF2A2D35.toInt(), 0xFF332D28.toInt(), 0xFF2A2F2B.toInt(), 0xFF2E2B34.toInt())
-        val chipFill = Color.parseColor("#D9121214")
+        val chipFill = Color.parseColor("#D9000000")
         val line = Color.parseColor("#2C2C30")
 
         fun chip(text: String, mono: Boolean) = TextView(this).apply {
             this.text = text
-            setTextColor(Color.parseColor("#EDEBE6"))
+            setTextColor(Color.parseColor("#FAFAF6"))
             textSize = 11f
             typeface = if (mono) android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD)
             else android.graphics.Typeface.DEFAULT_BOLD
@@ -323,12 +323,12 @@ class EditorLibraryActivity : Activity() {
         thumb.addView(android.widget.FrameLayout(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(Color.parseColor("#CC121214"))
+                setColor(Color.parseColor("#CC000000"))
                 setStroke(dp(1.5f), Color.parseColor("#4A4A50"))
             }
             addView(ImageView(this@EditorLibraryActivity).apply {
                 setImageResource(R.drawable.ic_recly_play)
-                imageTintList = ColorStateList.valueOf(Color.parseColor("#EDEBE6"))
+                imageTintList = ColorStateList.valueOf(Color.parseColor("#FAFAF6"))
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }, android.widget.FrameLayout.LayoutParams(dp(14), dp(14), Gravity.CENTER))
         }, android.widget.FrameLayout.LayoutParams(dp(36), dp(36), Gravity.CENTER))
@@ -339,7 +339,7 @@ class EditorLibraryActivity : Activity() {
 
         val name = TextView(this).apply {
             text = project.name
-            setTextColor(Color.parseColor("#EDEBE6"))
+            setTextColor(Color.parseColor("#FAFAF6"))
             textSize = 14f
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
             maxLines = 1
@@ -479,7 +479,7 @@ class EditorLibraryActivity : Activity() {
         val icon = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(14) }
             setImageResource(iconRes)
-            imageTintList = ColorStateList.valueOf(Color.parseColor("#7F92B8"))
+            imageTintList = ColorStateList.valueOf(Color.parseColor("#D9D6CC"))
         }
         root.addView(icon)
 
@@ -489,7 +489,7 @@ class EditorLibraryActivity : Activity() {
         }
         val titleView = TextView(this).apply {
             text = title
-            setTextColor(Color.parseColor("#EDEBE6"))
+            setTextColor(Color.parseColor("#FAFAF6"))
             textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             maxLines = 1

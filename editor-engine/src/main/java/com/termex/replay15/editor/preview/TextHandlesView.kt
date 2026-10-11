@@ -14,7 +14,7 @@ import com.termex.replay15.editor.transform.TransformKeyframe
 import com.termex.replay15.editor.transform.TransformState
 import kotlin.math.*
 
-private const val CAPTION_FRAME = 0xFFFFD23F.toInt()
+private const val CAPTION_FRAME = 0xFFFAFAF6.toInt()
 
 /**
  * Professional direct manipulation overlay for text layers on preview.
@@ -192,7 +192,7 @@ class TextHandlesView(context: Context) : View(context) {
         // Draw Snapping Guide Lines
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
-        paint.color = 0xFFFF5A36.toInt()
+        paint.color = 0xFFC50022.toInt()
 
         if (snappedX != null) {
             val sx = width * snappedX!!
@@ -208,7 +208,7 @@ class TextHandlesView(context: Context) : View(context) {
         canvas.rotate(transform.rotation, centerX, centerY)
 
         // Bounding Rectangle — legendas usam a moldura amarela tracejada do canvas; textos mantêm o roxo.
-        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else 0xFFC9D3E8.toInt()
+        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else 0xFFFAFAF6.toInt()
         paint.color = frameColor
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE
@@ -271,7 +271,7 @@ class TextHandlesView(context: Context) : View(context) {
         val top = 12f * density
 
         paint.style = Paint.Style.FILL
-        paint.color = 0xD91C1C1F.toInt()
+        paint.color = 0xD9121213.toInt()
         canvas.drawRoundRect(RectF(left, top, left + hudWidth, top + hudHeight), 16f * density, 16f * density, paint)
 
         textPaint.color = Color.WHITE

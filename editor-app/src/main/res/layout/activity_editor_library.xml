@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121214"
+    android:background="#000000"
     tools:ignore="UseAppTint">
 
     <ScrollView
@@ -58,7 +58,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:text="M"
-                    android:textColor="#EDEBE6"
+                    android:textColor="#FAFAF6"
                     android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -73,7 +73,7 @@
                 android:letterSpacing="-0.03"
                 android:lineSpacingMultiplier="0.95"
                 android:text="O que vamos editar hoje?"
-                android:textColor="#EDEBE6"
+                android:textColor="#FAFAF6"
                 android:textSize="34sp" />
 
             <!-- Dois blocos: Novo projeto e Auto Edit -->
@@ -120,7 +120,7 @@
                         android:fontFamily="sans-serif-black"
                         android:lineSpacingMultiplier="0.95"
                         android:text="Novo\nprojeto"
-                        android:textColor="#141414"
+                        android:textColor="#FFFFFF"
                         android:textSize="19sp" />
                 </LinearLayout>
 
@@ -161,7 +161,7 @@
                         android:fontFamily="sans-serif-black"
                         android:lineSpacingMultiplier="0.95"
                         android:text="Auto\nEdit"
-                        android:textColor="#FFFFFF"
+                        android:textColor="#141414"
                         android:textSize="19sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -204,7 +204,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="Analisar vídeo que vende"
-                        android:textColor="#EDEBE6"
+                        android:textColor="#FAFAF6"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
@@ -260,7 +260,7 @@
                     android:fontFamily="sans-serif-black"
                     android:letterSpacing="-0.02"
                     android:text="Recentes"
-                    android:textColor="#EDEBE6"
+                    android:textColor="#FAFAF6"
                     android:textSize="20sp" />
 
                 <!-- Empty State Card -->
@@ -294,7 +294,7 @@
                         android:fontFamily="sans-serif-bold"
                         android:gravity="center"
                         android:text="Seu próximo projeto&#10;começa aqui."
-                        android:textColor="#EDEBE6"
+                        android:textColor="#FAFAF6"
                         android:textSize="18sp" />
 
                     <TextView
@@ -331,7 +331,7 @@
                             android:layout_marginStart="8dp"
                             android:fontFamily="sans-serif-medium"
                             android:text="Importar vídeo"
-                            android:textColor="#EDEBE6"
+                            android:textColor="#FAFAF6"
                             android:textSize="14sp" />
                     </LinearLayout>
 
@@ -399,7 +399,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhuma gravação ainda"
-                        android:textColor="#EDEBE6"
+                        android:textColor="#FAFAF6"
                         android:textSize="16sp" />
 
                     <TextView
@@ -450,7 +450,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhum replay salvo"
-                        android:textColor="#EDEBE6"
+                        android:textColor="#FAFAF6"
                         android:textSize="16sp" />
 
                     <TextView

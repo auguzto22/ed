@@ -118,7 +118,7 @@ object EffectPresetGallery {
 
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF26262A.toInt())
+                        setColor(0xFF1C1C1E.toInt())
                         cornerRadius = dp(8).toFloat()
                     }
                 }

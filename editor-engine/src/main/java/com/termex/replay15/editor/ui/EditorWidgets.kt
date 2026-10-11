@@ -13,27 +13,31 @@ import com.termex.replay15.editor.render.EditorFonts
 
 object EditorStyle {
     // Paleta do canvas "Recly — Editor de vídeo mobile": fundo preto + 3 cores de função.
-    const val BG = 0xFF121214.toInt()
-    const val PANEL = 0xFF1C1C1F.toInt()
-    const val CARD = 0xFF1C1C1F.toInt()
-    const val CARD_ELEVATED = 0xFF26262A.toInt()
-    const val TIMELINE_BG = 0xFF1A1A1D.toInt()
+    const val BG = 0xFF000000.toInt()
+    const val PANEL = 0xFF121213.toInt()
+    const val CARD = 0xFF121213.toInt()
+    const val CARD_ELEVATED = 0xFF1C1C1E.toInt()
+    const val TIMELINE_BG = 0xFF0A0A0B.toInt()
     const val BORDER = 0xFF2C2C30.toInt()
     const val BORDER_LIGHT = 0x22FFFFFF.toInt()
-    const val TEXT = 0xFFEDEBE6.toInt()
+    const val TEXT = 0xFFFAFAF6.toInt()
     const val MUTED = 0xFF9A968C.toInt()
     const val ACCENT = 0xFFFFFFFF.toInt()
     const val WHITE = 0xFFFFFFFF.toInt()
     const val INK = 0xFF141414.toInt()
+    /** Texto e ícones sobre o vermelho de ação. */
+    const val ON_ACTION = 0xFFFFFFFF.toInt()
+    /** Vermelho mais claro, para texto pequeno sobre o preto. */
+    const val ACTION_TEXT = 0xFFE5304F.toInt()
 
     /** Vermelho: ações principais (Exportar, aplicar, agulha da timeline, item selecionado). */
-    const val ACTION = 0xFFFF5A36.toInt()
+    const val ACTION = 0xFFC50022.toInt()
     /** Amarelo: tudo que é legenda. */
-    const val CAPTION = 0xFFFFD23F.toInt()
+    const val CAPTION = 0xFFFAFAF6.toInt()
     /** Azul-acinzentado: trechos de vídeo e análise. */
-    const val VIDEO = 0xFF7F92B8.toInt()
+    const val VIDEO = 0xFFD9D6CC.toInt()
     /** Azul mais fundo para botões com texto branco. */
-    const val VIDEO_DEEP = 0xFF4F6290.toInt()
+    const val VIDEO_DEEP = 0xFFC50022.toInt()
     const val DANGER = 0xFFEF4444.toInt()
     const val GREEN = 0xFF10B981.toInt()
     const val RADIUS_PANEL = 20
@@ -71,7 +75,7 @@ fun Context.action(value: String, accent: Boolean = false, onClick: () -> Unit) 
         bg,
         null,
     )
-    setTextColor(if (accent) EditorStyle.INK else EditorStyle.TEXT)
+    setTextColor(if (accent) EditorStyle.ON_ACTION else EditorStyle.TEXT)
     setOnClickListener { onClick() }
 }
 fun Context.column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -198,7 +202,7 @@ fun Context.editorToolCard(name: String, subtitle: String, accent: Boolean = fal
             null,
         )
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> 0xFFEDEBE6.toInt() }, context))
+            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> 0xFFFAFAF6.toInt() }, context))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }, LinearLayout.LayoutParams(dp(25), dp(25)))
         addView(label(name, 13f, when { danger -> EditorStyle.DANGER; else -> Color.WHITE }).apply {
@@ -235,7 +239,7 @@ fun Context.editorIconButton(
     )
     val icon = ImageView(context).apply {
         setImageResource(iconRes)
-        imageTintList = android.content.res.ColorStateList.valueOf(if (accent) EditorStyle.INK else EditorStyle.TEXT)
+        imageTintList = android.content.res.ColorStateList.valueOf(if (accent) EditorStyle.ON_ACTION else EditorStyle.TEXT)
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
     addView(icon, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
@@ -306,6 +310,6 @@ fun Context.exportPill(onClick: () -> Unit) = Button(this).apply {
         cornerRadius = dp(10).toFloat()
     }
     background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x44000000), bg, null)
-    setTextColor(EditorStyle.INK)
+    setTextColor(EditorStyle.ON_ACTION)
     setOnClickListener { onClick() }
 }

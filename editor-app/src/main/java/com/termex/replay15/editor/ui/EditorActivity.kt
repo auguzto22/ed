@@ -379,7 +379,7 @@ class EditorActivity : Activity() {
             minWidth = dp(74); minimumWidth = dp(74)
             minHeight = dp(36); minimumHeight = dp(36)
             setPadding(dp(10), dp(2), dp(10), dp(2))
-            setTextColor(0xFFC9D3E8.toInt())
+            setTextColor(0xFFFAFAF6.toInt())
             background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
                 setStroke(dp(1.5f), EditorStyle.VIDEO)
@@ -819,7 +819,7 @@ class EditorActivity : Activity() {
         setPadding(dp(12), 0, dp(12), 0)
         gravity = Gravity.CENTER_VERTICAL
         val bg = GradientDrawable().apply {
-            setColor(0x2E7F92B8)
+            setColor(0x2ED9D6CC)
             cornerRadius = dp(10).toFloat()
         }
         background = bg
@@ -834,7 +834,7 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFC9D3E8.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, 0xFFFAFAF6.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"

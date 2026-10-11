@@ -15,7 +15,7 @@ class CurveEditorView(context: Context, initial: List<Float>) : View(context) {
     init { minimumHeight = context.dp(180); contentDescription = "Curva de luminosidade. Arraste um dos cinco pontos para alterar o contraste."; isFocusable = true }
     fun reset(points: List<Float> = listOf(0f, .25f, .5f, .75f, 1f)) { values = points; onChange(points); invalidate() }
     override fun onDraw(canvas: Canvas) {
-        paint.color = 0xFF1A1A1D.toInt(); canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), pad, pad, paint)
+        paint.color = 0xFF0A0A0B.toInt(); canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), pad, pad, paint)
         val w = width - 2 * pad; val h = height - 2 * pad
         paint.color = 0xFF2C2C30.toInt(); paint.strokeWidth = 1f
         for (i in 0..4) { val t = i / 4f; canvas.drawLine(pad + w * t, pad, pad + w * t, pad + h, paint); canvas.drawLine(pad, pad + h * t, pad + w, pad + h * t, paint) }
@@ -30,7 +30,7 @@ class CurveEditorView(context: Context, initial: List<Float>) : View(context) {
             val py = pad + h * (1 - y)
             canvas.drawCircle(px, py, context.dp(if (isSelected) 6.5f else 5f).toFloat(), paint)
             if (isSelected) {
-                paint.color = 0x44FF5A36.toInt()
+                paint.color = 0x44C50022.toInt()
                 canvas.drawCircle(px, py, context.dp(12f).toFloat(), paint)
             }
         }

@@ -396,7 +396,7 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
     // Auto Edit = quadradinho vermelho (ação); Legendas = borda amarela (legenda); Excluir = vermelho de perigo.
     val hot = name == "Auto Edit" || name == "Analisar"
     val tint = when {
-        hot -> EditorStyle.INK
+        hot -> EditorStyle.ON_ACTION
         name == "Legendas" -> EditorStyle.CAPTION
         name == "Excluir" -> EditorStyle.DANGER
         else -> EditorStyle.TEXT
@@ -421,7 +421,7 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
     addView(box, LinearLayout.LayoutParams(dp(44), dp(44)))
 
     val labelTint = when {
-        hot -> EditorStyle.ACTION
+        hot -> EditorStyle.ACTION_TEXT
         name == "Legendas" -> EditorStyle.CAPTION
         name == "Excluir" -> EditorStyle.DANGER
         else -> 0xFFC9C5BA.toInt()

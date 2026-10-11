@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Identidade Visual Oficial Recly (Minimalista / Escura / Premium) -->
-    <color name="recly_bg_main">#121214</color>
-    <color name="recly_bg_secondary">#121214</color>
-    <color name="recly_surface">#1C1C1F</color>
-    <color name="recly_card_base">#1C1C1F</color>
-    <color name="recly_card_elevated">#26262A</color>
+    <color name="recly_bg_main">#000000</color>
+    <color name="recly_bg_secondary">#000000</color>
+    <color name="recly_surface">#121213</color>
+    <color name="recly_card_base">#121213</color>
+    <color name="recly_card_elevated">#1C1C1E</color>
     <color name="recly_card_highlight">#2C2C30</color>
 
     <!-- Bordas Translúcidas (8% a 18% Branco) -->
@@ -14,7 +14,7 @@
     <color name="recly_border_bright">#2EFFFFFF</color>   <!-- ~18% -->
 
     <!-- Tipografia Oficial -->
-    <color name="recly_text_primary">#EDEBE6</color>
+    <color name="recly_text_primary">#FAFAF6</color>
     <color name="recly_text_secondary">#9A968C</color>
     <color name="recly_text_disabled">#6E6B64</color>
 
@@ -24,38 +24,38 @@
     <color name="recly_accent_gray_light">#E4E4E7</color>
 
     <!-- Estado de Gravação Ativa / Erro (Único detalhe vermelho) -->
-    <color name="recly_accent_red">#FF5A36</color>
+    <color name="recly_accent_red">#C50022</color>
     <color name="recly_accent_red_dark">#DC2626</color>
 
     <!-- Cores de função do canvas (Recly — Editor de vídeo mobile) -->
-    <color name="recly_action">#FF5A36</color>   <!-- ações principais -->
-    <color name="recly_caption">#FFD23F</color>  <!-- legendas -->
-    <color name="recly_video">#7F92B8</color>    <!-- vídeo / análise -->
-    <color name="recly_video_deep">#4F6290</color>
+    <color name="recly_action">#C50022</color>   <!-- ações principais -->
+    <color name="recly_caption">#FAFAF6</color>  <!-- legendas -->
+    <color name="recly_video">#D9D6CC</color>    <!-- vídeo / análise -->
+    <color name="recly_video_deep">#C50022</color>
 
     <!-- Aliases para compatibilidade total com código existente -->
-    <color name="primary">#1C1C1F</color>
-    <color name="primary_dark">#121214</color>
-    <color name="accent">#FF5A36</color>
-    <color name="surface">#121214</color>
-    <color name="surface_elevated">#1C1C1F</color>
-    <color name="surface_soft">#1A1A1D</color>
-    <color name="glass_card_bg">#1C1C1F</color>
-    <color name="glass_card_elevated">#26262A</color>
-    <color name="glass_card_subtle">#1A1A1D</color>
-    <color name="card_gradient_start">#1C1C1F</color>
-    <color name="card_gradient_end">#1C1C1F</color>
+    <color name="primary">#121213</color>
+    <color name="primary_dark">#000000</color>
+    <color name="accent">#C50022</color>
+    <color name="surface">#000000</color>
+    <color name="surface_elevated">#121213</color>
+    <color name="surface_soft">#0A0A0B</color>
+    <color name="glass_card_bg">#121213</color>
+    <color name="glass_card_elevated">#1C1C1E</color>
+    <color name="glass_card_subtle">#0A0A0B</color>
+    <color name="card_gradient_start">#121213</color>
+    <color name="card_gradient_end">#121213</color>
     <color name="card_border">#1FFFFFFF</color>
     <color name="card_border_highlight">#2EFFFFFF</color>
     <color name="border">#1FFFFFFF</color>
     <color name="border_subtle">#14FFFFFF</color>
     <color name="divider">#1FFFFFFF</color>
-    <color name="icon_background">#1C1C1F</color>
-    <color name="text_primary">#EDEBE6</color>
+    <color name="icon_background">#121213</color>
+    <color name="text_primary">#FAFAF6</color>
     <color name="text_secondary">#9A968C</color>
     <color name="text_muted">#6E6B64</color>
-    <color name="text_on_dark">#EDEBE6</color>
-    <color name="recording_red">#FF5A36</color>
+    <color name="text_on_dark">#FAFAF6</color>
+    <color name="recording_red">#C50022</color>
     <color name="success">#D4D4D8</color>
     <color name="warning">#E4E4E7</color>
 </resources>
