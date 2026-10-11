@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Identidade Visual Oficial Recly (Minimalista / Escura / Premium) -->
-    <color name="recly_bg_main">#080808</color>
+    <color name="recly_bg_main">#121214</color>
     <color name="recly_bg_secondary">#0D0D0F</color>
     <color name="recly_surface">#141416</color>
-    <color name="recly_card_base">#18181B</color>
+    <color name="recly_card_base">#1C1C1F</color>
     <color name="recly_card_elevated">#222226</color>
     <color name="recly_card_highlight">#28282C</color>
 
@@ -14,8 +14,8 @@
     <color name="recly_border_bright">#2EFFFFFF</color>   <!-- ~18% -->
 
     <!-- Tipografia Oficial -->
-    <color name="recly_text_primary">#F5F5F5</color>
-    <color name="recly_text_secondary">#A5A5AA</color>
+    <color name="recly_text_primary">#EDEBE6</color>
+    <color name="recly_text_secondary">#9A968C</color>
     <color name="recly_text_disabled">#66666C</color>
 
     <!-- Destaques Monocromáticos -->
@@ -26,6 +26,12 @@
     <!-- Estado de Gravação Ativa / Erro (Único detalhe vermelho) -->
     <color name="recly_accent_red">#EF4444</color>
     <color name="recly_accent_red_dark">#DC2626</color>
+
+    <!-- Cores de função do canvas (Recly — Editor de vídeo mobile) -->
+    <color name="recly_action">#FF5A36</color>   <!-- ações principais -->
+    <color name="recly_caption">#FFD23F</color>  <!-- legendas -->
+    <color name="recly_video">#7F92B8</color>    <!-- vídeo / análise -->
+    <color name="recly_video_deep">#4F6290</color>
 
     <!-- Aliases para compatibilidade total com código existente -->
     <color name="primary">#18181B</color>

@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#080808"
+    android:background="#121214"
     tools:ignore="UseAppTint">
 
     <!-- Fundo de seda preta com ondas Bézier abstratas e suaves gerado inteiramente via código -->
@@ -53,8 +53,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:fontFamily="sans-serif-black"
-                android:text="Seu estúdio"
-                android:textColor="#F5F5F5"
+                android:text="O que vamos editar hoje?"
+                android:textColor="#EDEBE6"
                 android:textSize="26sp" />
 
             <TextView
@@ -62,7 +62,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="Projetos, gravações e replays."
-                android:textColor="#A5A5AA"
+                android:textColor="#9A968C"
                 android:textSize="14sp" />
 
             <!-- Primary Action Button: + Novo projeto -->
@@ -71,14 +71,50 @@
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="18dp"
-                android:background="@drawable/recly_pill_white"
-                android:elevation="8dp"
+                android:background="@drawable/recly_pill_action"
+                android:elevation="0dp"
                 android:fontFamily="sans-serif-bold"
                 android:stateListAnimator="@null"
                 android:text="+ Novo projeto"
                 android:textAllCaps="false"
-                android:textColor="#080808"
+                android:textColor="#141414"
                 android:textSize="16sp" />
+
+            <!-- Atalhos do canvas: Auto Edit (azul) e Analisar (cartão escuro). Ambos pedem um vídeo e abrem a ferramenta no editor. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnHomeAutoEdit"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/recly_pill_video"
+                    android:fontFamily="sans-serif-bold"
+                    android:stateListAnimator="@null"
+                    android:text="Auto Edit"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp" />
+
+                <Button
+                    android:id="@+id/btnHomeAnalyze"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/recly_card_outline"
+                    android:fontFamily="sans-serif-bold"
+                    android:stateListAnimator="@null"
+                    android:text="Analisar vídeo"
+                    android:textAllCaps="false"
+                    android:textColor="#EDEBE6"
+                    android:textSize="15sp" />
+            </LinearLayout>
 
             <!-- Segmented Tabs Bar: Projetos | Gravações | Replays -->
             <LinearLayout

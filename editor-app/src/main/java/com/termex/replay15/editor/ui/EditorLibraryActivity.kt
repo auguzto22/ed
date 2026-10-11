@@ -40,6 +40,8 @@ class EditorLibraryActivity : Activity() {
 
     private val io = Executors.newSingleThreadExecutor()
     private var currentTab = LibraryTab.PROJECTS
+    /** Ferramenta a abrir no editor depois de escolher o vídeo ("auto_edit" ou "analyze"); null = só abrir. */
+    private var pendingOpenTool: String? = null
 
     private lateinit var tabProjects: TextView
     private lateinit var tabRecordings: TextView
@@ -90,9 +92,11 @@ class EditorLibraryActivity : Activity() {
         cardEmptyReplays = findViewById(R.id.cardEmptyReplays)
         listReplays = findViewById(R.id.listReplays)
 
-        val pickVideoAction = View.OnClickListener { openVideoPicker() }
+        val pickVideoAction = View.OnClickListener { pendingOpenTool = null; openVideoPicker() }
         findViewById<Button>(R.id.btnNewProject).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnImportVideo).setOnClickListener(pickVideoAction)
+        findViewById<Button>(R.id.btnHomeAutoEdit).setOnClickListener { pendingOpenTool = "auto_edit"; openVideoPicker() }
+        findViewById<Button>(R.id.btnHomeAnalyze).setOnClickListener { pendingOpenTool = "analyze"; openVideoPicker() }
 
         tabProjects.setOnClickListener { switchTab(LibraryTab.PROJECTS) }
         tabRecordings.setOnClickListener { switchTab(LibraryTab.RECORDINGS) }
@@ -170,7 +174,10 @@ class EditorLibraryActivity : Activity() {
                 Toast.makeText(this, "Não foi possível manter acesso a este vídeo", Toast.LENGTH_LONG).show()
                 return
             }
-            startActivity(Intent(this, EditorActivity::class.java).putExtra("uri", uri.toString()))
+            val editor = Intent(this, EditorActivity::class.java).putExtra("uri", uri.toString())
+            pendingOpenTool?.let { editor.putExtra("open_tool", it) }
+            pendingOpenTool = null
+            startActivity(editor)
         }
     }
 
@@ -181,12 +188,12 @@ class EditorLibraryActivity : Activity() {
             if (active) {
                 view.setBackgroundResource(R.drawable.recly_tab_active)
                 com.termex.replay15.ui.GlassEffectHelper.applyGlassCard(view, cornerRadiusDp = 22f, elevationDp = 4f)
-                view.setTextColor(Color.parseColor("#F5F5F5"))
+                view.setTextColor(Color.parseColor("#EDEBE6"))
             } else {
                 view.background = null
                 view.elevation = 0f
                 view.outlineProvider = null
-                view.setTextColor(Color.parseColor("#A5A5AA"))
+                view.setTextColor(Color.parseColor("#9A968C"))
             }
         }
 

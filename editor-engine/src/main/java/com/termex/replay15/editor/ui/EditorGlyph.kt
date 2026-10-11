@@ -360,13 +360,20 @@ fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column()
     theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
     setBackgroundResource(value.resourceId)
 
+    // Cores de função do canvas: Auto Edit em vermelho (ação), Legendas em amarelo (legenda).
+    val tint = when (name) {
+        "Auto Edit", "Analisar" -> EditorStyle.ACTION
+        "Legendas" -> EditorStyle.CAPTION
+        "+ Midia" -> EditorStyle.WHITE
+        else -> EditorStyle.TEXT
+    }
     val iconView = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, if (name == "+ Midia") EditorStyle.WHITE else 0xFFE4E4E7.toInt(), context))
+        setImageDrawable(EditorGlyph(name, tint, context))
         importantForAccessibility = 2
     }
     addView(iconView, LinearLayout.LayoutParams(dp(26), dp(26)))
 
-    val labelView = label(name, 11.5f, 0xFFD4D4D8.toInt()).apply {
+    val labelView = label(name, 11.5f, if (tint == EditorStyle.TEXT) 0xFFC9C5BA.toInt() else tint).apply {
         gravity = Gravity.CENTER
         importantForAccessibility = 2
         setPadding(0, dp(4), 0, 0)

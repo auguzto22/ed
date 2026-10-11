@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cartão escuro com borda fina do canvas (Analisar). -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#26FFFFFF">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FF1C1C1F" />
+            <stroke android:width="1.5dp" android:color="#FF2C2C30" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+</ripple>

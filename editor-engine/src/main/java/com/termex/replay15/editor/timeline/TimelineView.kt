@@ -138,7 +138,7 @@ class TimelineView(context: Context) : View(context) {
         }
     })
     init {
-        setBackgroundColor(Color.BLACK); isFocusable = true
+        setBackgroundColor(0xFF1A1A1D.toInt()); isFocusable = true
         contentDescription = "Linha do tempo. Arraste para buscar ou ver faixas. Pince para ampliar."
     }
     fun zoom(factor: Float) { zoomAround(factor, width / 2f) }
@@ -172,12 +172,12 @@ class TimelineView(context: Context) : View(context) {
         }
         pack(project.adjustmentClips.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "FX", 0xFFC39BFF.toInt(), 4)
         project.videoTracks.withIndex().toList().asReversed().forEach { (index, track) ->
-            result += Lane("V${index + 2}", 0xFF89BCFF.toInt(), 3,
+            result += Lane("V${index + 2}", 0xFF7F92B8.toInt(), 3,
                 track.clips.map { Segment(it.clip.id, it.clip.name, it.startUs, it.endUs, it.clip.speedBadge) }.toMutableList(), track.id)
         }
         project.audio.forEachIndexed { n, a -> result += Lane("A${n + 1}", 0xFF5BC7BC.toInt(), 0,
             mutableListOf(Segment(a.id, a.name, a.startUs, min(project.durationUs, a.startUs + a.durationUs))), "audio:${a.id}") }
-        pack(project.texts.map { Segment(it.id, it.text.replace('\n', ' '), it.startUs, it.endUs) }, "T", 0xFFE6B965.toInt(), 1)
+        pack(project.texts.map { Segment(it.id, it.text.replace('\n', ' '), it.startUs, it.endUs) }, "T", 0xFFFFD23F.toInt(), 1)
         pack(project.stickers.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "L", 0xFF93A8F8.toInt(), 2)
         lanes = result; vertical = vertical.coerceIn(0f, maxScroll())
     }
@@ -339,11 +339,11 @@ class TimelineView(context: Context) : View(context) {
                 c.restore()
                 if (index == selected) {
                     val left = l + if (trimSide == -1) delta else 0f; val right = r + if (trimSide == 1) delta else 0f
-                    paint.color = Color.WHITE; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f)
+                    paint.color = 0xFFFF5A36.toInt(); paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f)
                     c.drawRoundRect(left, dp(48f), right, dp(118f), dp(8f), dp(8f), paint); paint.style = Paint.Style.FILL
-                    paint.color = Color.WHITE
+                    paint.color = 0xFFFF5A36.toInt()
                     c.drawRoundRect(left - dp(3.5f), dp(68f), left + dp(4.5f), dp(98f), dp(3.5f), dp(3.5f), paint)
-                    paint.color = Color.WHITE
+                    paint.color = 0xFFFF5A36.toInt()
                     c.drawRoundRect(right - dp(4.5f), dp(68f), right + dp(3.5f), dp(98f), dp(3.5f), dp(3.5f), paint)
 
                     // Professional Trim Preview HUD
@@ -806,17 +806,17 @@ class TimelineView(context: Context) : View(context) {
         }
         if (lanes.isEmpty()) text(c, "Adicione audio, texto ou uma camada", width / 2f - dp(88f), dp(166f), 0xFF8E8E93.toInt())
         c.restore(); c.restore()
-        paint.color = 0xFF121212.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
-        text(c, "V1", dp(9f), dp(90f), Color.WHITE)
+        paint.color = 0xFF121214.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
+        text(c, "V1", dp(9f), dp(90f), 0xFF7F92B8.toInt())
         c.save(); c.clipRect(0f, dp(130f), gutter, height.toFloat())
         lanes.forEachIndexed { i, lane -> text(c, lane.label, dp(9f), dp(154f) + i * dp(39f) - vertical, lane.color) }; c.restore()
-        paint.color = Color.WHITE
+        paint.color = 0xFFFF5A36.toInt()
         paint.strokeWidth = dp(if (isPlayheadGrabbed) 2.5f else 1.8f)
         c.drawLine(width / 2f, dp(43f), width / 2f, height.toFloat(), paint)
         if (isPlayheadGrabbed) {
-            paint.color = 0x33FFFFFF.toInt()
+            paint.color = 0x33FF5A36
             c.drawCircle(width / 2f, dp(43f), dp(10f), paint)
-            paint.color = Color.WHITE
+            paint.color = 0xFFFF5A36.toInt()
             c.drawCircle(width / 2f, dp(43f), dp(5.5f), paint)
         } else {
             c.drawCircle(width / 2f, dp(43f), dp(3.5f), paint)

@@ -12,15 +12,28 @@ import com.termex.replay15.editor.domain.TextFont
 import com.termex.replay15.editor.render.EditorFonts
 
 object EditorStyle {
-    const val BG = 0xFF0C0F12.toInt()
-    const val PANEL = 0xFF15191D.toInt()
-    const val CARD = 0xFF15191D.toInt()
-    const val CARD_ELEVATED = 0xFF1E2328.toInt()
-    const val BORDER = 0xFF242A30.toInt()
+    // Paleta do canvas "Recly — Editor de vídeo mobile": fundo preto + 3 cores de função.
+    const val BG = 0xFF121214.toInt()
+    const val PANEL = 0xFF1C1C1F.toInt()
+    const val CARD = 0xFF1C1C1F.toInt()
+    const val CARD_ELEVATED = 0xFF26262A.toInt()
+    const val TIMELINE_BG = 0xFF1A1A1D.toInt()
+    const val BORDER = 0xFF2C2C30.toInt()
     const val BORDER_LIGHT = 0x22FFFFFF.toInt()
-    const val MUTED = 0xFFA7A7A7.toInt()
+    const val TEXT = 0xFFEDEBE6.toInt()
+    const val MUTED = 0xFF9A968C.toInt()
     const val ACCENT = 0xFFFFFFFF.toInt()
     const val WHITE = 0xFFFFFFFF.toInt()
+    const val INK = 0xFF141414.toInt()
+
+    /** Vermelho: ações principais (Exportar, aplicar, agulha da timeline, item selecionado). */
+    const val ACTION = 0xFFFF5A36.toInt()
+    /** Amarelo: tudo que é legenda. */
+    const val CAPTION = 0xFFFFD23F.toInt()
+    /** Azul-acinzentado: trechos de vídeo e análise. */
+    const val VIDEO = 0xFF7F92B8.toInt()
+    /** Azul mais fundo para botões com texto branco. */
+    const val VIDEO_DEEP = 0xFF4F6290.toInt()
     const val DANGER = 0xFFEF4444.toInt()
     const val GREEN = 0xFF10B981.toInt()
     const val RADIUS_PANEL = 20
@@ -45,11 +58,11 @@ fun Context.action(value: String, accent: Boolean = false, onClick: () -> Unit) 
     maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
     val bg = GradientDrawable().apply {
         if (accent) {
-            setColor(Color.WHITE)
-            cornerRadius = dp(20).toFloat()
+            setColor(EditorStyle.ACTION)
+            cornerRadius = dp(12).toFloat()
         } else {
             setColor(EditorStyle.CARD)
-            setStroke(dp(1), EditorStyle.BORDER)
+            setStroke(dp(1.5f), EditorStyle.BORDER)
             cornerRadius = dp(12).toFloat()
         }
     }
@@ -58,7 +71,7 @@ fun Context.action(value: String, accent: Boolean = false, onClick: () -> Unit) 
         bg,
         null,
     )
-    setTextColor(if (accent) Color.BLACK else Color.WHITE)
+    setTextColor(if (accent) EditorStyle.INK else EditorStyle.TEXT)
     setOnClickListener { onClick() }
 }
 fun Context.column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -110,9 +123,9 @@ fun Context.slider(parent: LinearLayout, title: String, initial: Int, maximum: I
     heading.addView(value, LinearLayout.LayoutParams(dp(62), -2)); parent.addView(heading)
     val slider = SeekBar(this).apply {
         min = minimum; max = maximum; progress = initial; minimumHeight = dp(48)
-        progressTintList = android.content.res.ColorStateList.valueOf(EditorStyle.WHITE)
+        progressTintList = android.content.res.ColorStateList.valueOf(EditorStyle.ACTION)
         progressBackgroundTintList = android.content.res.ColorStateList.valueOf(EditorStyle.BORDER)
-        thumbTintList = android.content.res.ColorStateList.valueOf(EditorStyle.WHITE)
+        thumbTintList = android.content.res.ColorStateList.valueOf(EditorStyle.TEXT)
     }
     slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
         override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
@@ -207,12 +220,12 @@ fun Context.editorIconButton(
     isFocusable = true
     val bg = GradientDrawable().apply {
         if (accent) {
-            setColor(Color.WHITE)
-            cornerRadius = dp(14).toFloat()
+            setColor(EditorStyle.ACTION)
+            cornerRadius = dp(12).toFloat()
         } else {
             setColor(EditorStyle.CARD)
-            setStroke(dp(1), EditorStyle.BORDER)
-            cornerRadius = dp(14).toFloat()
+            setStroke(dp(1.5f), EditorStyle.BORDER)
+            cornerRadius = dp(12).toFloat()
         }
     }
     background = RippleDrawable(
@@ -222,7 +235,7 @@ fun Context.editorIconButton(
     )
     val icon = ImageView(context).apply {
         setImageResource(iconRes)
-        imageTintList = android.content.res.ColorStateList.valueOf(if (accent) Color.BLACK else Color.WHITE)
+        imageTintList = android.content.res.ColorStateList.valueOf(if (accent) EditorStyle.INK else EditorStyle.TEXT)
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
     addView(icon, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
@@ -266,13 +279,13 @@ fun Context.pillButton(value: String, active: Boolean = false, onClick: () -> Un
     setPadding(dp(12), dp(6), dp(12), dp(6))
     val bg = GradientDrawable().apply {
         if (active) {
-            setColor(EditorStyle.PANEL)
-            setStroke(dp(1.5f), Color.WHITE)
+            setColor(EditorStyle.VIDEO_DEEP)
+            setStroke(dp(1.5f), EditorStyle.VIDEO)
         } else {
             setColor(EditorStyle.CARD)
-            setStroke(dp(1), EditorStyle.BORDER)
+            setStroke(dp(1.5f), EditorStyle.BORDER)
         }
-        cornerRadius = dp(16).toFloat()
+        cornerRadius = dp(10).toFloat()
     }
     background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x22FFFFFF), bg, null)
     setTextColor(if (active) Color.WHITE else EditorStyle.MUTED)
@@ -289,10 +302,10 @@ fun Context.exportPill(onClick: () -> Unit) = Button(this).apply {
     minHeight = dp(38)
     setPadding(dp(16), dp(6), dp(16), dp(6))
     val bg = GradientDrawable().apply {
-        setColor(Color.WHITE)
-        cornerRadius = dp(18).toFloat()
+        setColor(EditorStyle.ACTION)
+        cornerRadius = dp(10).toFloat()
     }
     background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x44000000), bg, null)
-    setTextColor(Color.BLACK)
+    setTextColor(EditorStyle.INK)
     setOnClickListener { onClick() }
 }

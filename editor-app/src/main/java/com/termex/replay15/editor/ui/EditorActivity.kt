@@ -242,6 +242,8 @@ class EditorActivity : Activity() {
             getSystemService(PowerManager::class.java)?.addThermalStatusListener(thermalListener)
         }
         val retained = lastNonConfigurationInstance as? Session
+        // Atalhos da tela Início (Auto Edit / Analisar): abrem a ferramenta depois que o vídeo é importado.
+        if (retained == null && savedInstanceState == null) pendingOpenTool = intent.getStringExtra("open_tool")
         replaceIndex = retained?.replace ?: savedInstanceState?.getInt("replace", -1) ?: -1
         replaceStickerId = retained?.stickerReplace ?: savedInstanceState?.getString("stickerReplace")
         pendingLutClipId = savedInstanceState?.getString("lutClip")
@@ -363,7 +365,23 @@ class EditorActivity : Activity() {
         }
         addView(quality, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(4), 0) })
 
-        // Export button (White pill, black text)
+        // Analisar (canvas): contorno azul-acinzentado, abre as análises que já existem no editor.
+        val analyzeBtn = action("Analisar") { analyzeMenu() }.apply {
+            contentDescription = "Analisar vídeo"
+            tooltipText = "Analisar vídeo"
+            minWidth = dp(74); minimumWidth = dp(74)
+            minHeight = dp(36); minimumHeight = dp(36)
+            setPadding(dp(10), dp(2), dp(10), dp(2))
+            setTextColor(0xFFC9D3E8.toInt())
+            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                setColor(EditorStyle.CARD)
+                setStroke(dp(1.5f), EditorStyle.VIDEO)
+                cornerRadius = dp(10).toFloat()
+            }, null)
+        }
+        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(6), 0) })
+
+        // Export button (vermelho de ação, texto escuro)
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
             contentDescription = "Exportar vídeo"
             tooltipText = "Exportar vídeo"
@@ -372,6 +390,122 @@ class EditorActivity : Activity() {
             setPadding(dp(10), dp(2), dp(10), dp(2))
         }
         addView(exportBtn, LinearLayout.LayoutParams(-2, dp(36)))
+    }
+
+    /**
+     * Barra de legenda do canvas: fica logo abaixo da prévia.
+     * Só chama funções que já existem (subtitleContentPanel, SubtitleApplyRangeResolver,
+     * automaticCaptionsDialog, subtitleMenu) — nenhuma lógica nova de legenda.
+     */
+    private fun buildCaptionBar(): HorizontalScrollView = HorizontalScrollView(this).apply {
+        isHorizontalScrollBarEnabled = false
+        val bar = row().apply {
+            setPadding(dp(5), dp(4), dp(5), dp(4))
+            background = GradientDrawable().apply {
+                setColor(EditorStyle.CARD)
+                setStroke(dp(1.5f), EditorStyle.BORDER)
+                cornerRadius = dp(12).toFloat()
+            }
+        }
+
+        fun chip(text: String, description: String, textColor: Int, fill: Int, stroke: Int, click: () -> Unit): Button =
+            action(text) { click() }.apply {
+                contentDescription = description
+                tooltipText = description
+                textSize = 12f
+                minWidth = dp(44); minimumWidth = dp(44)
+                minHeight = dp(36); minimumHeight = dp(36)
+                setPadding(dp(10), 0, dp(10), 0)
+                setTextColor(textColor)
+                background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                    setColor(fill)
+                    if (stroke != Color.TRANSPARENT) setStroke(dp(1.5f), stroke)
+                    cornerRadius = dp(8).toFloat()
+                }, null)
+            }
+
+        fun separator() = View(this@EditorActivity).apply { setBackgroundColor(EditorStyle.BORDER) }
+
+        bar.addView(chip("Texto", "Editar texto da legenda", EditorStyle.TEXT, Color.TRANSPARENT, Color.TRANSPARENT) {
+            val id = captionAtCursor()?.id
+            if (id == null) automaticCaptionsDialog() else subtitleContentPanel(id)
+        }, LinearLayout.LayoutParams(-2, dp(36)))
+        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(4), 0, dp(4), 0) })
+
+        captionQuickStyles().forEach { (name, patch, look) ->
+            bar.addView(chip(name, "Estilo de legenda $name", look.first, look.second, EditorStyle.BORDER) {
+                applyCaptionQuickStyle(patch)
+            }, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(dp(2), 0, dp(2), 0) })
+        }
+        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(4), 0, dp(4), 0) })
+
+        bar.addView(chip("Auto", "Gerar legendas automáticas", EditorStyle.CAPTION, Color.TRANSPARENT, Color.TRANSPARENT) {
+            automaticCaptionsDialog()
+        }, LinearLayout.LayoutParams(-2, dp(36)))
+        bar.addView(chip("Mais", "Mais opções de legenda", EditorStyle.MUTED, Color.TRANSPARENT, Color.TRANSPARENT) {
+            subtitleMenu()
+        }, LinearLayout.LayoutParams(-2, dp(36)))
+
+        addView(bar, FrameLayout.LayoutParams(-2, -1))
+    }
+
+    /** Legenda sob a agulha; se não houver, a primeira legenda do projeto. */
+    private fun captionAtCursor(): TextClip? {
+        val captions = project.texts.filter { it.isCaption }
+        return captions.firstOrNull { position >= it.startUs && position < it.endUs } ?: captions.minByOrNull { it.startUs }
+    }
+
+    /** Três estilos rápidos do canvas: Destaque (fundo amarelo), Contorno (texto amarelo), Caixa (fundo preto). */
+    private fun captionQuickStyles(): List<Triple<String, SubtitleStylePatch, Pair<Int, Int>>> = listOf(
+        Triple("Destaque", SubtitleStylePatch(fontWeight = 800, color = EditorStyle.INK, backgroundColor = EditorStyle.CAPTION,
+            outlineWidth = 0f, shadow = false), EditorStyle.INK to EditorStyle.CAPTION),
+        Triple("Contorno", SubtitleStylePatch(fontWeight = 800, color = EditorStyle.CAPTION, backgroundColor = Color.TRANSPARENT,
+            outlineColor = Color.BLACK, outlineWidth = .012f, shadow = true), EditorStyle.CAPTION to EditorStyle.BG),
+        Triple("Caixa", SubtitleStylePatch(fontWeight = 700, color = Color.WHITE, backgroundColor = 0xE6141414.toInt(),
+            outlineWidth = 0f, shadow = false), EditorStyle.INK to EditorStyle.TEXT),
+    )
+
+    private fun applyCaptionQuickStyle(patch: SubtitleStylePatch) {
+        val anchor = captionAtCursor()
+        if (anchor == null) { automaticCaptionsDialog(); return }
+        val changed = SubtitleApplyRangeResolver.apply(project, anchor.id, ApplyRange.all(), patch)
+        if (changed != project) {
+            edit(changed)
+            info.text = "Estilo aplicado em todas as legendas"
+        }
+    }
+
+    private var pendingOpenTool: String? = null
+
+    private fun consumePendingOpenTool() {
+        val tool = pendingOpenTool ?: return
+        pendingOpenTool = null
+        main.post {
+            if (isDestroyed) return@post
+            when (tool) {
+                "auto_edit" -> if (selectedClip() != null) autoEditPanel.open()
+                "analyze" -> analyzeMenu()
+            }
+        }
+    }
+
+    /** Botão "Analisar" do canvas: reúne as análises que o editor já tem. */
+    private fun analyzeMenu() {
+        val body = column()
+        body.addView(sectionTitle("Analisar", "Escolha o que analisar. Nada é renderizado: o resultado continua editável."))
+        lateinit var dialog: Dialog
+        body.addView(editorToolCard("Auto Edit", "Analisa o clipe e monta uma edição editável", accent = true) {
+            dialog.dismiss(); if (selectedClip() != null) autoEditPanel.open()
+        })
+        body.addView(editorToolCard("Referência", "Lê cortes, ritmo e estilo de um vídeo que vende") {
+            dialog.dismiss(); if (selectedClip() != null) referenceStylePanel.open()
+        })
+        if (project.texts.any { it.isCaption }) {
+            body.addView(editorToolCard("Melhores momentos", "Encontra os trechos mais fortes pela fala") {
+                dialog.dismiss(); detectHighlights()
+            })
+        }
+        dialog = sheet("Analisar", body)
     }
 
     private fun buildPlaybackControls(): LinearLayout = row().apply {
@@ -1028,6 +1162,9 @@ class EditorActivity : Activity() {
             { track, clip -> videoHandles.trackId = track; videoHandles.clipId = clip; timeline.selectedLayerId = clip }, ::pickLut,
             { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
 
+        // Barra de legenda dentro da área da prévia (substitui a tela separada de legendas do canvas).
+        monitor.addView(buildCaptionBar(), LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(dp(8), dp(2), dp(8), dp(2)) })
+
         val playbackControls = buildPlaybackControls()
         monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(52)))
 
@@ -1143,12 +1280,13 @@ class EditorActivity : Activity() {
                 list
             }
             else -> listOf(
-                "Áudio" to { audioPanel() },
+                // Ordem do canvas: Auto Edit e Legendas primeiro, depois as ferramentas de sempre.
+                "Auto Edit" to { autoEditPanel.open() },
+                "Legendas" to { subtitleMenu() },
                 "Texto" to { textMenu() },
+                "Áudio" to { audioPanel() },
                 "Stickers" to { stickerMenu() },
                 "Voz" to { voiceoverPanel() },
-                "Legendas" to { subtitleMenu() },
-                "Auto Edit" to { autoEditPanel.open() },
                 "Ajustar" to { adjustmentsPanel() },
                 "Filtros" to { selectedClipAtCursor(); filters() },
                 "Efeitos" to { effectTools.adjustments() },
@@ -1649,7 +1787,7 @@ class EditorActivity : Activity() {
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 busy = false; importing = null
-                result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next) },
+                result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next); consumePendingOpenTool() },
                     { refresh(); error("Nao foi possivel importar: ${it.message}") })
             }
         }

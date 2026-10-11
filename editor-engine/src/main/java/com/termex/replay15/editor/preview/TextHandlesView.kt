@@ -14,6 +14,8 @@ import com.termex.replay15.editor.transform.TransformKeyframe
 import com.termex.replay15.editor.transform.TransformState
 import kotlin.math.*
 
+private const val CAPTION_FRAME = 0xFFFFD23F.toInt()
+
 /**
  * Professional direct manipulation overlay for text layers on preview.
  *
@@ -205,14 +207,17 @@ class TextHandlesView(context: Context) : View(context) {
         canvas.save()
         canvas.rotate(transform.rotation, centerX, centerY)
 
-        // Bounding Rectangle
-        paint.color = 0xFFB77AFF.toInt()
+        // Bounding Rectangle — legendas usam a moldura amarela tracejada do canvas; textos mantêm o roxo.
+        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else 0xFFB77AFF.toInt()
+        paint.color = frameColor
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE
+        if (activeClip.isCaption) paint.pathEffect = DashPathEffect(floatArrayOf(6f * density, 4f * density), 0f)
         canvas.drawRoundRect(rect, 4f * density, 4f * density, paint)
+        paint.pathEffect = null
 
         // Rotation Stem & Knob
-        paint.color = 0xFFB77AFF.toInt()
+        paint.color = frameColor
         paint.strokeWidth = 1.5f * density
         canvas.drawLine(centerX, rect.top, centerX, rect.top - stemLength, paint)
 
@@ -221,7 +226,7 @@ class TextHandlesView(context: Context) : View(context) {
         paint.color = Color.WHITE
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
         paint.style = Paint.Style.STROKE
-        paint.color = 0xFFB77AFF.toInt()
+        paint.color = frameColor
         paint.strokeWidth = 2f * density
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
 
@@ -237,7 +242,7 @@ class TextHandlesView(context: Context) : View(context) {
             paint.color = Color.WHITE
             canvas.drawCircle(cx, cy, cornerRadius, paint)
             paint.style = Paint.Style.STROKE
-            paint.color = 0xFFB77AFF.toInt()
+            paint.color = frameColor
             paint.strokeWidth = 2f * density
             canvas.drawCircle(cx, cy, cornerRadius, paint)
         }
