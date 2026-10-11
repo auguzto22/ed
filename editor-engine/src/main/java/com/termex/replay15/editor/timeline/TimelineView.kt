@@ -172,7 +172,7 @@ class TimelineView(context: Context) : View(context) {
         }
         pack(project.adjustmentClips.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "FX", 0xFFC9C5BA.toInt(), 4)
         project.videoTracks.withIndex().toList().asReversed().forEach { (index, track) ->
-            result += Lane("V${index + 2}", 0xFFD9D6CC.toInt(), 3,
+            result += Lane("V${index + 2}", 0xFF8C8880.toInt(), 3,
                 track.clips.map { Segment(it.clip.id, it.clip.name, it.startUs, it.endUs, it.clip.speedBadge) }.toMutableList(), track.id)
         }
         project.audio.forEachIndexed { n, a -> result += Lane("A${n + 1}", 0xFF6FBF96.toInt(), 0,
@@ -807,7 +807,7 @@ class TimelineView(context: Context) : View(context) {
         if (lanes.isEmpty()) text(c, "Adicione audio, texto ou uma camada", width / 2f - dp(88f), dp(166f), 0xFF9A968C.toInt())
         c.restore(); c.restore()
         paint.color = 0xFF000000.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
-        text(c, "V1", dp(9f), dp(90f), 0xFFD9D6CC.toInt())
+        text(c, "V1", dp(9f), dp(90f), 0xFF8C8880.toInt())
         c.save(); c.clipRect(0f, dp(130f), gutter, height.toFloat())
         lanes.forEachIndexed { i, lane -> text(c, lane.label, dp(9f), dp(154f) + i * dp(39f) - vertical, lane.color) }; c.restore()
         paint.color = 0xFFC50022.toInt()

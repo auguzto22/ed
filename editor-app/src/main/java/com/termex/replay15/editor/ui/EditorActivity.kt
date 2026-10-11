@@ -819,7 +819,7 @@ class EditorActivity : Activity() {
         setPadding(dp(12), 0, dp(12), 0)
         gravity = Gravity.CENTER_VERTICAL
         val bg = GradientDrawable().apply {
-            setColor(0x2ED9D6CC)
+            setColor(0x2E8C8880)
             cornerRadius = dp(10).toFloat()
         }
         background = bg

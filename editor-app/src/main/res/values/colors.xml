@@ -30,7 +30,7 @@
     <!-- Cores de função do canvas (Recly — Editor de vídeo mobile) -->
     <color name="recly_action">#C50022</color>   <!-- ações principais -->
     <color name="recly_caption">#FAFAF6</color>  <!-- legendas -->
-    <color name="recly_video">#D9D6CC</color>    <!-- vídeo / análise -->
+    <color name="recly_video">#8C8880</color>    <!-- vídeo / análise -->
     <color name="recly_video_deep">#C50022</color>
 
     <!-- Aliases para compatibilidade total com código existente -->

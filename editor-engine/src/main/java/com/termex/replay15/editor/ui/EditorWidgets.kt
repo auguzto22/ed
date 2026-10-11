@@ -35,7 +35,7 @@ object EditorStyle {
     /** Amarelo: tudo que é legenda. */
     const val CAPTION = 0xFFFAFAF6.toInt()
     /** Azul-acinzentado: trechos de vídeo e análise. */
-    const val VIDEO = 0xFFD9D6CC.toInt()
+    const val VIDEO = 0xFF8C8880.toInt()
     /** Azul mais fundo para botões com texto branco. */
     const val VIDEO_DEEP = 0xFFC50022.toInt()
     const val DANGER = 0xFFEF4444.toInt()

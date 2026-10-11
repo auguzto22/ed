@@ -479,7 +479,7 @@ class EditorLibraryActivity : Activity() {
         val icon = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(14) }
             setImageResource(iconRes)
-            imageTintList = ColorStateList.valueOf(Color.parseColor("#D9D6CC"))
+            imageTintList = ColorStateList.valueOf(Color.parseColor("#8C8880"))
         }
         root.addView(icon)
 
