@@ -1,61 +1,122 @@
-vec4 reclyTransition(vec2 uv, float progress) {
-    vec4 ca = texture2D(uTexA, uv);
-    vec4 cb = texture2D(uTexB, uv);
-    if (progress <= 0.0) return ca;
-    if (progress >= 1.0) return cb;
+// Film transitions: the strip slips in the gate, the projector flashes, sprockets show and the
+// emulsion burns. Grain and gate weave rise towards the cut, so the clean shots on either side
+// stay untouched.
 
-    float t = clamp(progress, 0.0, 1.0);
-    float amount = sin(t * 3.14159265);
+const float PI = 3.14159265;
 
-    if (p_mode < 0.5) {
-        // Film Burn: warm overexposure burn dissolve
-        vec4 burnColor = vec4(1.0, 0.72, 0.35, 1.0);
-        float burnIntensity = amount * 1.5 * p_intensity;
-        vec4 blended = mix(ca, cb, t);
-        blended.rgb += burnColor.rgb * burnIntensity * (0.8 + 0.2 * sin(uv.x * 20.0 + uv.y * 30.0 + t * 10.0));
-        return clamp(blended, 0.0, 1.0);
-    } else if (p_mode < 1.5) {
-        // Film Roll: vertical frame roll with jitter
-        float jitter = (fract(sin(dot(uv + t, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.02 * amount;
-        float y = fract(uv.y + t + jitter);
-        vec2 rolledUv = vec2(uv.x, y);
-        if (t < 0.5) {
-            vec4 col = texture2D(uTexA, rolledUv);
-            return mix(col, vec4(0.05, 0.05, 0.05, 1.0), smoothstep(0.48, 0.5, t));
-        } else {
-            vec4 col = texture2D(uTexB, rolledUv);
-            return mix(vec4(0.05, 0.05, 0.05, 1.0), col, smoothstep(0.5, 0.52, t));
-        }
-    } else if (p_mode < 2.5) {
-        // Leader Flash: vintage projector countdown flash
-        float flash = amount * 2.0;
-        vec4 base = mix(ca, cb, smoothstep(0.45, 0.55, t));
-        vec3 sepia = vec3(
-            dot(base.rgb, vec3(0.393, 0.769, 0.189)),
-            dot(base.rgb, vec3(0.349, 0.686, 0.168)),
-            dot(base.rgb, vec3(0.272, 0.534, 0.131))
-        );
-        vec3 res = mix(base.rgb, sepia, amount * 0.5);
-        res += vec3(flash * 0.3);
-        return vec4(clamp(res, 0.0, 1.0), base.a);
-    } else if (p_mode < 3.5) {
-        // Sprocket Slip: horizontal frame displacement
-        float slip = (1.0 - abs(t - 0.5) * 2.0) * 0.15;
-        vec2 uvA = vec2(uv.x + slip, uv.y);
-        vec2 uvB = vec2(uv.x - (0.15 - slip), uv.y);
-        return mix(texture2D(uTexA, uvA), texture2D(uTexB, uvB), t);
-    } else {
-        // Burn Dissolve: organic burn hole reveal
-        float noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
-        float threshold = t * 1.2 - 0.1;
-        float dist = distance(uv, vec2(0.5, 0.5)) + (noise - 0.5) * 0.2;
-        if (dist < threshold) {
-            float edge = smoothstep(threshold - 0.05, threshold, dist);
-            vec4 glow = vec4(1.0, 0.4, 0.1, 1.0);
-            return mix(cb, glow, (1.0 - edge) * amount);
-        } else {
-            return ca;
-        }
-    }
+// exp(-x^2) without pow(): pow() is undefined for negative bases on many mobile GPUs.
+float gauss(float x) { return exp(-x * x); }
+
+float aspectRatio() { return uResolution.x / max(uResolution.y, 1.0); }
+
+float hash12(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
+float valueNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x),
+               mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+float fbm(vec2 p) {
+    float v = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 4; i++) {
+        v += valueNoise(p) * amp;
+        p = p * 2.1 + vec2(13.7, 3.1);
+        amp *= 0.5;
+    }
+    return v;
+}
+
+vec3 grain(vec2 uv, float t, float amount) {
+    float frame = floor(t * 24.0);
+    float g = hash12(floor(uv * uResolution / max(min(uResolution.x, uResolution.y) / 540.0, 1.0)) + frame * 17.0) - 0.5;
+    return vec3(g * 0.16 * amount);
+}
+
+// The strip in the gate: A, a black frame line, then B, offset by [roll] frames.
+vec4 strip(vec2 uv, float roll, float line) {
+    float y = uv.y - roll * (1.0 + line);
+    if (y >= 0.0) return texture2D(uTexA, vec2(uv.x, min(y, 1.0)));
+    float yb = y + 1.0 + line;
+    if (yb <= 1.0 && yb >= 0.0) return texture2D(uTexB, vec2(uv.x, yb));
+    return vec4(0.02, 0.018, 0.016, 1.0);
+}
+
+vec4 reclyTransition(vec2 uv, float progress) {
+    float t = clamp(progress, 0.0, 1.0);
+    float mode = floor(p_mode + 0.5);
+    float env = sin(PI * t);
+    float asp = aspectRatio();
+    vec4 a = texture2D(uTexA, uv);
+    vec4 b = texture2D(uTexB, uv);
+
+    if (mode < 1.5) {
+        // Film roll: the frame slips up through the gate with a frame line, motion blur and weave.
+        float e = t * t * (3.0 - 2.0 * t);
+        float weave = (valueNoise(vec2(t * 30.0, 1.0)) - 0.5) * 0.01 * env;
+        float blur = 0.09 * env * env;
+        vec4 col = vec4(0.0);
+        for (int i = 0; i < 10; i++) {
+            float k = (float(i) + 0.5) / 10.0 - 0.5;
+            col += strip(vec2(uv.x + weave, uv.y + k * blur), e, 0.08);
+        }
+        col /= 10.0;
+        float flicker = 1.0 + (hash12(vec2(floor(t * 24.0), 3.0)) - 0.5) * 0.18 * env;
+        return vec4(col.rgb * flicker + grain(uv, t, env), col.a);
+    }
+    if (mode < 2.5) {
+        // Leader flash: the projector flares, a countdown sweep passes over a warm, grainy image.
+        float flash = gauss((t - 0.5) / 0.09);
+        vec4 base = mix(a, b, smoothstep(0.47, 0.53, t));
+        float lum = dot(base.rgb, vec3(0.299, 0.587, 0.114));
+        vec3 warm = mix(base.rgb, vec3(lum) * vec3(1.08, 0.98, 0.82), 0.55 * env);
+        vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+        float r = length(p);
+        float ang = fract(atan(p.x, p.y) / (2.0 * PI) + 1.0);
+        float sweep = fract(t * 2.0);
+        float sweepShade = step(ang, sweep) * 0.12;
+        float rings = ((1.0 - smoothstep(0.0, 0.006, abs(r - 0.28))) + (1.0 - smoothstep(0.0, 0.006, abs(r - 0.36)))) * 0.5;
+        float crossLines = (1.0 - smoothstep(0.0, 0.004, abs(p.x))) + (1.0 - smoothstep(0.0, 0.004, abs(p.y)));
+        float overlay = smoothstep(0.35, 0.85, env);
+        vec3 col = warm * (1.0 - sweepShade * overlay) + vec3(rings + crossLines * 0.4) * 0.35 * overlay;
+        col = col + vec3(1.0, 0.95, 0.85) * flash * 0.9;
+        float flicker = 1.0 + (hash12(vec2(floor(t * 24.0), 9.0)) - 0.5) * 0.2 * env;
+        return vec4(min(col * flicker, vec3(1.0)) + grain(uv, t, env), base.a);
+    }
+    if (mode < 3.5) {
+        // Sprocket slip: the frame loses its loop, slips a full frame with the perforations in view.
+        float e = t < 0.5 ? 0.5 * (8.0 * t * t * t) : 1.0 - 0.5 * ((2.0 - 2.0 * t) * (2.0 - 2.0 * t) * (2.0 - 2.0 * t));
+        float jitterX = (hash12(vec2(floor(t * 30.0), 5.0)) - 0.5) * 0.03 * env;
+        // Scale the frame down a touch so the film edge and its holes become visible.
+        float edgeW = 0.07 * smoothstep(0.0, 0.25, env);
+        vec2 q = vec2((uv.x - edgeW) / (1.0 - edgeW) + jitterX, uv.y);
+        vec4 col = strip(q, e, 0.06);
+        if (uv.x < edgeW) {
+            // Film base with rounded perforations scrolling with the strip.
+            float y = (uv.y - e * 1.06) * 8.0;
+            vec2 hole = vec2((uv.x / max(edgeW, 0.001) - 0.5) * 1.4, fract(y) - 0.5);
+            float holeMask = (1.0 - smoothstep(0.26, 0.32, length(max(abs(hole) - vec2(0.12, 0.1), 0.0)) + 0.18));
+            col = vec4(mix(vec3(0.09, 0.07, 0.05), vec3(0.85, 0.82, 0.75), holeMask), 1.0);
+        }
+        return vec4(col.rgb + grain(uv, t, env), col.a);
+    }
+    // Burn dissolve (and the legacy film burn): the emulsion chars and melts away from a few
+    // spots, a glowing rim leads the burn and the next shot shows through the holes.
+    vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+    float field = fbm(p * 3.3 + vec2(1.3, 7.1)) * 0.7
+        + 0.3 * max(1.0 - length(p - vec2(-0.35, 0.18)) * 0.9, 1.0 - length(p - vec2(0.4, -0.22)) * 1.1);
+    float front = mix(1.1, -0.2, t);
+    float hole = smoothstep(front - 0.015, front + 0.015, field);
+    float rim = gauss((field - front) / 0.025);
+    float charred = gauss((field - front + 0.05) / 0.06) * (1.0 - hole);
+    vec3 col = mix(a.rgb * (1.0 - 0.85 * charred), b.rgb, hole);
+    col += vec3(1.0, 0.45, 0.08) * rim * 1.4 + vec3(1.0, 0.85, 0.5) * rim * rim * 0.6;
+    return vec4(min(col, vec3(1.0)) + grain(uv, t, env * 0.6), mix(a.a, b.a, hole));
+}
