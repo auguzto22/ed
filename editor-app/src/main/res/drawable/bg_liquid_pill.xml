@@ -2,5 +2,5 @@
 <!-- Canvas: indicador ativo da barra inferior em pílula clara. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="#FFFAFAF6" />
-    <corners android:radius="22dp" />
+    <corners android:radius="0dp" />
 </shape>

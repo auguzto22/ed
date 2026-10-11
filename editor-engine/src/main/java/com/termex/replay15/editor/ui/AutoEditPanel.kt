@@ -53,15 +53,9 @@ class AutoEditPanel(
         val intensity = chips(body, "Intensidade", AutoEditIntensity.entries.map { it.label }, AutoEditIntensity.BALANCED.ordinal)
         val cleanup = chips(body, "Limpeza de pausas", SpeechCleanup.entries.map { it.label }, SpeechCleanup.BALANCED.ordinal)
 
-        // Opções (canvas): cartão com uma linha por opção e um interruptor.
-        val card = activity.column().apply {
-            background = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(activity.dp(1.5f), EditorStyle.BORDER)
-                cornerRadius = activity.dp(12).toFloat()
-            }
-            clipToOutline = true
-        }
+        // Opções: uma linha por opção, separadas por fios, com interruptor.
+        sectionHeader(body, "Opções")
+        val card = activity.column()
         val captions = optionRow(card, "Legendas automáticas",
             if (words.isEmpty()) "Importe um SRT temporizado para usar" else "Usa o estilo de legenda do editor",
             words.isNotEmpty(), words.isNotEmpty())
@@ -69,9 +63,9 @@ class AutoEditPanel(
         val zoom = optionRow(card, "Zoom nos destaques", "Keyframes de zoom nas falas-chave", true)
         val reframe = optionRow(card, "Auto Reframe para 9:16", "Enquadra o sujeito na vertical", true)
         val audio = optionRow(card, "Equilibrar áudio", "Nivela o volume da fala", true, last = true)
-        body.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(16) })
+        body.addView(card, LinearLayout.LayoutParams(-1, -2))
 
-        body.addView(activity.action("Montar minha edição", true) {
+        body.addView(activity.action("Montar minha edição  ››", true) {
             dialog.dismiss()
             generate(snapshot, index, words, AutoEditOptions(
                 style = AutoEditStyle.entries[style.index],
@@ -84,69 +78,67 @@ class AutoEditPanel(
                 audioEnhancement = audio.isChecked,
             ))
         }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(16) })
-        body.addView(activity.label("Sai como projeto editável — nada é renderizado até exportar.", 12f, EditorStyle.MUTED).apply {
-            gravity = Gravity.CENTER
+        body.addView(activity.label("SAI COMO PROJETO EDITÁVEL · NADA É RENDERIZADO ATÉ EXPORTAR", 9.5f, EditorStyle.MUTED).apply {
+            gravity = Gravity.CENTER; letterSpacing = 0.04f
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(8) })
         dialog = activity.sheet("Auto Edit", body)
     }
 
     private class Choice(var index: Int)
 
-    /** Cartão "Referência" do canvas: etiqueta azul, título, linha de apoio e o botão para trocar. */
+    /** Referência: bloco vermelho com o título e bloco branco "Trocar", como as colunas da referência visual. */
     private fun referenceCard(onChoose: () -> Unit): LinearLayout = LinearLayout(activity).apply {
         orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(activity.dp(10), activity.dp(10), activity.dp(10), activity.dp(10))
-        background = GradientDrawable().apply {
-            setColor(EditorStyle.CARD)
-            setStroke(activity.dp(1.5f), EditorStyle.BORDER)
-            cornerRadius = activity.dp(14).toFloat()
-        }
-        addView(View(activity).apply {
-            background = GradientDrawable().apply {
-                setColor(0xFF2E2B34.toInt())
-                setStroke(activity.dp(1.5f), EditorStyle.BORDER)
-                cornerRadius = activity.dp(8).toFloat()
-            }
-        }, LinearLayout.LayoutParams(activity.dp(56), activity.dp(96)))
-        val texts = LinearLayout(activity).apply {
+        val red = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(activity.dp(12), 0, activity.dp(8), 0)
+            setBackgroundColor(EditorStyle.ACTION)
+            setPadding(activity.dp(14), activity.dp(14), activity.dp(14), activity.dp(14))
         }
-        texts.addView(activity.label("REFERÊNCIA", 11f, EditorStyle.VIDEO).apply {
-            typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f
+        red.addView(activity.label("REFERÊNCIA", 10f, EditorStyle.ON_ACTION).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL); letterSpacing = 0.14f; alpha = 0.85f
         })
-        texts.addView(activity.label("Vídeo de referência", 15f, EditorStyle.TEXT).apply {
-            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = activity.dp(4) })
-        texts.addView(activity.label("Opcional: leia cortes, legendas e ritmo de um vídeo que vende.", 12f, EditorStyle.MUTED),
-            LinearLayout.LayoutParams(-2, -2).apply { topMargin = activity.dp(4) })
-        addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
-        addView(TextView(activity).apply {
-            text = "Escolher"
-            textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(EditorStyle.TEXT)
-            gravity = Gravity.CENTER
-            setPadding(activity.dp(12), 0, activity.dp(12), 0)
-            background = GradientDrawable().apply {
-                setColor(EditorStyle.BG)
-                setStroke(activity.dp(1.5f), EditorStyle.BORDER)
-                cornerRadius = activity.dp(10).toFloat()
-            }
+        red.addView(View(activity), LinearLayout.LayoutParams(1, 0, 1f))
+        red.addView(activity.label("VÍDEO DE\nREFERÊNCIA", 19f, EditorStyle.ON_ACTION).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL); setLineSpacing(0f, 0.92f)
+        })
+        red.addView(activity.label("OPCIONAL · CORTES, LEGENDAS E RITMO", 9.5f, EditorStyle.ON_ACTION).apply {
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL); letterSpacing = 0.04f
+        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = activity.dp(8) })
+        addView(red, LinearLayout.LayoutParams(0, activity.dp(132), 2f))
+
+        val white = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(EditorStyle.TEXT)
+            setPadding(activity.dp(14), activity.dp(14), activity.dp(14), activity.dp(14))
             isClickable = true
             isFocusable = true
+            contentDescription = "Trocar vídeo de referência"
             setOnClickListener { onChoose() }
-        }, LinearLayout.LayoutParams(-2, activity.dp(38)))
+        }
+        white.addView(activity.label("→", 12f, EditorStyle.INK).apply { alpha = 0.6f })
+        white.addView(View(activity), LinearLayout.LayoutParams(1, 0, 1f))
+        white.addView(activity.label("TRO\nCAR", 15f, EditorStyle.INK).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL); setLineSpacing(0f, 0.92f)
+        })
+        addView(white, LinearLayout.LayoutParams(0, activity.dp(132), 1f))
+    }
+
+    /** Legenda de seção em caixa alta com um fio que preenche a linha. */
+    private fun sectionHeader(parent: LinearLayout, title: String, top: Int = 18, bottom: Int = 10) {
+        val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        row.addView(activity.label(title.uppercase(), 10f, EditorStyle.TEXT).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL); letterSpacing = 0.14f
+        })
+        row.addView(View(activity).apply { setBackgroundColor(EditorStyle.BORDER) },
+            LinearLayout.LayoutParams(0, activity.dp(1), 1f).apply { marginStart = activity.dp(10) })
+        parent.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(top); bottomMargin = activity.dp(bottom) })
     }
 
     /** Título + botões de escolha única (o selecionado em azul), quebrando de linha como no canvas. */
     private fun chips(parent: LinearLayout, title: String, values: List<String>, initial: Int): Choice {
         val state = Choice(initial)
-        parent.addView(activity.label(title, 18f, EditorStyle.TEXT).apply {
-            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(16); bottomMargin = activity.dp(8) })
-        val wrap = WrapLayout(activity, activity.dp(8))
+        sectionHeader(parent, title)
+        val wrap = WrapLayout(activity, activity.dp(6))
         val views = mutableListOf<TextView>()
         fun paint() = views.forEachIndexed { i, view ->
             val on = i == state.index
@@ -155,14 +147,16 @@ class AutoEditPanel(
             view.background = GradientDrawable().apply {
                 setColor(if (on) EditorStyle.VIDEO_DEEP else EditorStyle.CARD)
                 setStroke(activity.dp(1.5f), if (on) EditorStyle.VIDEO else EditorStyle.BORDER)
-                cornerRadius = activity.dp(10).toFloat()
+                cornerRadius = activity.dp(0).toFloat()
             }
         }
         values.forEachIndexed { i, value ->
             val chip = TextView(activity).apply {
                 text = value
-                textSize = 13f
-                typeface = Typeface.DEFAULT_BOLD
+                textSize = 11f
+                typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
+                isAllCaps = true
+                letterSpacing = 0.08f
                 gravity = Gravity.CENTER
                 setPadding(activity.dp(14), 0, activity.dp(14), 0)
                 isClickable = true
@@ -187,10 +181,10 @@ class AutoEditPanel(
             setPadding(activity.dp(12), activity.dp(6), activity.dp(12), activity.dp(6))
         }
         val texts = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-        texts.addView(activity.label(name, 15f, EditorStyle.TEXT).apply {
-            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+        texts.addView(activity.label(name, 13f, EditorStyle.TEXT).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
         })
-        texts.addView(activity.label(hint, 12f, EditorStyle.MUTED))
+        texts.addView(activity.label(hint.uppercase(), 9.5f, EditorStyle.MUTED).apply { letterSpacing = 0.04f })
         row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
         val toggle = Switch(activity).apply {
             isChecked = checked

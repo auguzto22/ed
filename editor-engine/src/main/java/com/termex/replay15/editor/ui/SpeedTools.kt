@@ -39,7 +39,7 @@ object SpeedTools {
             button.background = GradientDrawable().apply {
                 setColor(if (selected) Color.WHITE else EditorStyle.CARD)
                 setStroke(dp(1), if (selected) Color.WHITE else EditorStyle.BORDER)
-                cornerRadius = dp(12).toFloat()
+                cornerRadius = dp(0).toFloat()
             }
             button.setTextColor(if (selected) Color.BLACK else Color.WHITE)
         }

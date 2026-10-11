@@ -98,15 +98,6 @@ class EditorLibraryActivity : Activity() {
         // Perfil (canvas): leva para os ajustes, o mesmo destino do último item da barra de baixo.
         findViewById<View>(R.id.btnProfile).setOnClickListener { findViewById<View>(R.id.navSettings)?.performClick() }
 
-        // "editar" em amarelo, como no título do canvas.
-        findViewById<TextView>(R.id.homeTitle).apply {
-            val full = "O que vamos editar hoje?"
-            val start = full.indexOf("editar")
-            text = android.text.SpannableString(full).apply {
-                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#FAFAF6")), start, start + "editar".length, 0)
-            }
-        }
-
         tabProjects.setOnClickListener { switchTab(LibraryTab.PROJECTS) }
         tabRecordings.setOnClickListener { switchTab(LibraryTab.RECORDINGS) }
         tabReplays.setOnClickListener { switchTab(LibraryTab.REPLAYS) }
@@ -294,7 +285,7 @@ class EditorLibraryActivity : Activity() {
      * Toque abre o projeto; toque longo pergunta se quer excluir (sem botões em cada cartão).
      */
     private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore): View {
-        val tones = intArrayOf(0xFF2A2D35.toInt(), 0xFF332D28.toInt(), 0xFF2A2F2B.toInt(), 0xFF2E2B34.toInt())
+        val tones = intArrayOf(0xFF3A000C.toInt(), 0xFFD8D8D4.toInt(), 0xFF1A1A1B.toInt(), 0xFF9A9A96.toInt())
         val chipFill = Color.parseColor("#D9000000")
         val line = Color.parseColor("#2C2C30")
 
@@ -307,7 +298,7 @@ class EditorLibraryActivity : Activity() {
             setPadding(dp(6), dp(2), dp(6), dp(2))
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(chipFill)
-                cornerRadius = dp(5).toFloat()
+                cornerRadius = dp(0).toFloat()
             }
         }
 
@@ -315,7 +306,7 @@ class EditorLibraryActivity : Activity() {
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(tones[index % tones.size])
                 setStroke(dp(1.5f), line)
-                cornerRadius = dp(12).toFloat()
+                cornerRadius = dp(0).toFloat()
             }
             clipToOutline = true
             outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
@@ -340,15 +331,19 @@ class EditorLibraryActivity : Activity() {
         val name = TextView(this).apply {
             text = project.name
             setTextColor(Color.parseColor("#FAFAF6"))
-            textSize = 14f
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
+            textSize = 11f
+            typeface = android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL)
+            isAllCaps = true
+            letterSpacing = 0.04f
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
         val whenText = TextView(this).apply {
             text = editedLabel(project.modifiedAt)
             setTextColor(Color.parseColor("#9A968C"))
-            textSize = 12f
+            textSize = 9.5f
+            isAllCaps = true
+            letterSpacing = 0.04f
         }
 
         return LinearLayout(this).apply {

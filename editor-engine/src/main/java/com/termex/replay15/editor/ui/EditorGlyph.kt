@@ -411,7 +411,7 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
                 name == "Legendas" -> EditorStyle.CAPTION
                 else -> EditorStyle.BORDER
             })
-            cornerRadius = dp(12).toFloat()
+            cornerRadius = dp(0).toFloat()
         }, null)
         addView(ImageView(context).apply {
             setImageDrawable(EditorGlyph(glyph, tint, context))
@@ -426,7 +426,9 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
         name == "Excluir" -> EditorStyle.DANGER
         else -> 0xFFC9C5BA.toInt()
     }
-    val labelView = label(name, 11f, labelTint).apply {
+    val labelView = label(name.uppercase(), 9.5f, labelTint).apply {
+        typeface = android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL)
+        letterSpacing = 0.1f
         gravity = Gravity.CENTER
         importantForAccessibility = 2
         setPadding(0, dp(4), 0, 0)
@@ -444,7 +446,7 @@ fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).appl
     val bg = GradientDrawable().apply {
         setColor(EditorStyle.CARD)
         setStroke(dp(1), EditorStyle.BORDER)
-        cornerRadius = dp(14).toFloat()
+        cornerRadius = dp(0).toFloat()
     }
     background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
     val icon = ImageView(context).apply {
