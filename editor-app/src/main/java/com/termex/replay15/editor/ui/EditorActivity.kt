@@ -131,8 +131,9 @@ class EditorActivity : Activity() {
     private lateinit var contextualTools: LinearLayout
     private lateinit var info: TextView
     private lateinit var projectTitleView: TextView
+    private lateinit var projectMetaView: TextView
+    private lateinit var captionAutoChip: Button
     private lateinit var clock: TextView
-    private lateinit var quality: Button
     private lateinit var play: View
     private lateinit var undo: View
     private lateinit var redo: View
@@ -344,26 +345,32 @@ class EditorActivity : Activity() {
         }
         addView(closeBtn, LinearLayout.LayoutParams(dp(36), dp(36)))
 
-        // Spacer to push quality + export to the right
+        // Título e meta do projeto (canvas): tocar abre o menu do projeto.
         projectTitleView = TextView(this@EditorActivity).apply {
-            text = ""
-            isClickable = false
-            isFocusable = false
+            text = project.name
+            textSize = 16f
+            setTextColor(EditorStyle.TEXT)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
-        addView(projectTitleView, LinearLayout.LayoutParams(0, -2, 1f))
-
-        // Export quality – plain text, no button frame
-        quality = action("${project.export.shortSide}p") { exportPanel(false) }.apply {
-            contentDescription = "Qualidade de exportação"
-            tooltipText = "Qualidade de exportação"
-            setBackgroundColor(Color.TRANSPARENT)
+        projectMetaView = TextView(this@EditorActivity).apply {
+            text = projectMeta()
+            textSize = 11f
             setTextColor(EditorStyle.MUTED)
-            textSize = 13f
-            minWidth = dp(44); minimumWidth = dp(44)
-            minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(4), dp(2), dp(8), dp(2))
+            maxLines = 1
         }
-        addView(quality, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(4), 0) })
+        val titleBox = LinearLayout(this@EditorActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            contentDescription = "Menu do projeto"
+            isClickable = true
+            isFocusable = true
+            setPadding(dp(8), 0, dp(8), 0)
+            addView(projectTitleView, LinearLayout.LayoutParams(-1, -2))
+            addView(projectMetaView, LinearLayout.LayoutParams(-1, -2))
+            setOnClickListener { projectMenu() }
+        }
+        addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
 
         // Analisar (canvas): contorno azul-acinzentado, abre as análises que já existem no editor.
         val analyzeBtn = action("Analisar") { analyzeMenu() }.apply {
@@ -397,10 +404,14 @@ class EditorActivity : Activity() {
      * Só chama funções que já existem (subtitleContentPanel, SubtitleApplyRangeResolver,
      * automaticCaptionsDialog, subtitleMenu) — nenhuma lógica nova de legenda.
      */
+    private val captionStyleChips = mutableListOf<Button>()
+    private var captionStyleSelected = 0
+
     private fun buildCaptionBar(): HorizontalScrollView = HorizontalScrollView(this).apply {
         isHorizontalScrollBarEnabled = false
         val bar = row().apply {
-            setPadding(dp(5), dp(4), dp(5), dp(4))
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(5), dp(5), dp(5), dp(5))
             background = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
                 setStroke(dp(1.5f), EditorStyle.BORDER)
@@ -408,45 +419,82 @@ class EditorActivity : Activity() {
             }
         }
 
-        fun chip(text: String, description: String, textColor: Int, fill: Int, stroke: Int, click: () -> Unit): Button =
-            action(text) { click() }.apply {
-                contentDescription = description
-                tooltipText = description
-                textSize = 12f
-                minWidth = dp(44); minimumWidth = dp(44)
-                minHeight = dp(36); minimumHeight = dp(36)
-                setPadding(dp(10), 0, dp(10), 0)
-                setTextColor(textColor)
-                background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                    setColor(fill)
-                    if (stroke != Color.TRANSPARENT) setStroke(dp(1.5f), stroke)
-                    cornerRadius = dp(8).toFloat()
-                }, null)
-            }
+        fun chipBackground(fill: Int, stroke: Int) = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+            setColor(fill)
+            if (stroke != Color.TRANSPARENT) setStroke(dp(1.5f), stroke)
+            cornerRadius = dp(8).toFloat()
+        }, null)
 
         fun separator() = View(this@EditorActivity).apply { setBackgroundColor(EditorStyle.BORDER) }
 
-        bar.addView(chip("Texto", "Editar texto da legenda", EditorStyle.TEXT, Color.TRANSPARENT, Color.TRANSPARENT) {
+        // Texto: edita o texto da legenda sob a agulha.
+        bar.addView(action("Texto") {
             val id = captionAtCursor()?.id
             if (id == null) automaticCaptionsDialog() else subtitleContentPanel(id)
-        }, LinearLayout.LayoutParams(-2, dp(36)))
-        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(4), 0, dp(4), 0) })
+        }.apply {
+            contentDescription = "Editar texto da legenda"
+            tooltipText = "Editar texto da legenda"
+            textSize = 12f
+            minWidth = dp(44); minimumWidth = dp(44)
+            setPadding(dp(10), 0, dp(10), 0)
+            setTextColor(EditorStyle.TEXT)
+            background = chipBackground(Color.TRANSPARENT, Color.TRANSPARENT)
+        }, LinearLayout.LayoutParams(-2, dp(34)))
+        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(6), 0, dp(6), 0) })
 
-        captionQuickStyles().forEach { (name, patch, look) ->
-            bar.addView(chip(name, "Estilo de legenda $name", look.first, look.second, EditorStyle.BORDER) {
+        // Três estilos rápidos, mostrados como "Aa" no próprio estilo (Destaque, Contorno, Caixa).
+        captionStyleChips.clear()
+        captionQuickStyles().forEachIndexed { index, (name, patch, look) ->
+            val sample = android.text.SpannableString("Aa").apply {
+                setSpan(android.text.style.ForegroundColorSpan(look.first), 0, length, 0)
+                if (look.second != EditorStyle.BG) setSpan(android.text.style.BackgroundColorSpan(look.second), 0, length, 0)
+                setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)
+            }
+            val chip = action("") {
+                captionStyleSelected = index
+                paintCaptionStyleChips()
                 applyCaptionQuickStyle(patch)
-            }, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(dp(2), 0, dp(2), 0) })
+            }.apply {
+                text = sample
+                contentDescription = "Estilo $name"
+                tooltipText = "Estilo $name"
+                textSize = 13f
+                minWidth = dp(38); minimumWidth = dp(38)
+                setPadding(0, 0, 0, 0)
+            }
+            captionStyleChips.add(chip)
+            bar.addView(chip, LinearLayout.LayoutParams(dp(38), dp(34)).apply { setMargins(dp(3), 0, dp(3), 0) })
         }
-        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(4), 0, dp(4), 0) })
+        paintCaptionStyleChips()
+        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(6), 0, dp(6), 0) })
 
-        bar.addView(chip("Auto", "Gerar legendas automáticas", EditorStyle.CAPTION, Color.TRANSPARENT, Color.TRANSPARENT) {
-            automaticCaptionsDialog()
-        }, LinearLayout.LayoutParams(-2, dp(36)))
-        bar.addView(chip("Mais", "Mais opções de legenda", EditorStyle.MUTED, Color.TRANSPARENT, Color.TRANSPARENT) {
-            subtitleMenu()
-        }, LinearLayout.LayoutParams(-2, dp(36)))
+        // Auto: gera as legendas automáticas.
+        captionAutoChip = action(if (project.texts.any { it.isCaption }) "Auto ✓" else "Auto") {
+            // Já com legendas: abre o gerenciador (idioma, SRT, traduzir, fonte global); sem legendas: gera.
+            if (project.texts.any { it.isCaption }) subtitleMenu() else automaticCaptionsDialog()
+        }.apply {
+            contentDescription = "Gerar legendas automáticas"
+            tooltipText = "Gerar legendas automáticas"
+            textSize = 12f
+            minWidth = dp(44); minimumWidth = dp(44)
+            setPadding(dp(10), 0, dp(10), 0)
+            setTextColor(EditorStyle.CAPTION)
+            background = chipBackground(Color.TRANSPARENT, Color.TRANSPARENT)
+        }
+        bar.addView(captionAutoChip, LinearLayout.LayoutParams(-2, dp(34)))
 
-        addView(bar, FrameLayout.LayoutParams(-2, -1))
+        addView(bar, FrameLayout.LayoutParams(-2, -1, Gravity.CENTER_HORIZONTAL))
+    }
+
+    /** Moldura do estilo escolhido em amarelo, as outras em cinza, como no canvas. */
+    private fun paintCaptionStyleChips() {
+        captionStyleChips.forEachIndexed { index, chip ->
+            chip.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                setColor(EditorStyle.BG)
+                setStroke(dp(1.5f), if (index == captionStyleSelected) EditorStyle.CAPTION else EditorStyle.BORDER)
+                cornerRadius = dp(8).toFloat()
+            }, null)
+        }
     }
 
     /** Legenda sob a agulha; se não houver, a primeira legenda do projeto. */
@@ -489,23 +537,12 @@ class EditorActivity : Activity() {
         }
     }
 
-    /** Botão "Analisar" do canvas: reúne as análises que o editor já tem. */
+    /**
+     * Botão "Analisar" do canvas: abre a tela do Auto Edit, onde ficam o cartão de referência,
+     * os presets e as opções. "Melhores momentos" fica no menu das legendas.
+     */
     private fun analyzeMenu() {
-        val body = column()
-        body.addView(sectionTitle("Analisar", "Escolha o que analisar. Nada é renderizado: o resultado continua editável."))
-        lateinit var dialog: Dialog
-        body.addView(editorToolCard("Auto Edit", "Analisa o clipe e monta uma edição editável", accent = true) {
-            dialog.dismiss(); if (selectedClip() != null) autoEditPanel.open()
-        })
-        body.addView(editorToolCard("Referência", "Lê cortes, ritmo e estilo de um vídeo que vende") {
-            dialog.dismiss(); if (selectedClip() != null) referenceStylePanel.open()
-        })
-        if (project.texts.any { it.isCaption }) {
-            body.addView(editorToolCard("Melhores momentos", "Encontra os trechos mais fortes pela fala") {
-                dialog.dismiss(); detectHighlights()
-            })
-        }
-        dialog = sheet("Analisar", body)
+        if (selectedClip() != null) autoEditPanel.open()
     }
 
     private fun buildPlaybackControls(): LinearLayout = row().apply {
@@ -1147,6 +1184,7 @@ class EditorActivity : Activity() {
                 if (active) { preview.pause(); info.text = "Analisando clipe..." }
                 else refresh(reload = false)
             },
+            { if (selectedClip() != null) referenceStylePanel.open() },
         )
         autoReframePanel = AutoReframePanel(
             this,
@@ -1180,6 +1218,7 @@ class EditorActivity : Activity() {
         // Barra de ferramentas do canvas: fundo preto com linha fina em cima, ícones em quadradinhos.
         bottom = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
+            isFillViewport = true
             background = android.graphics.drawable.LayerDrawable(arrayOf(
                 android.graphics.drawable.ColorDrawable(EditorStyle.BORDER),
                 android.graphics.drawable.ColorDrawable(EditorStyle.BG),
@@ -1194,119 +1233,135 @@ class EditorActivity : Activity() {
         installEditorMotion(root)
     }
 
+    /**
+     * Barra de ferramentas do canvas: sempre as mesmas cinco (Dividir, Aparar, Texto, Áudio, Auto Edit).
+     * As demais funções continuam todas no editor, agrupadas dentro destas ferramentas
+     * e no menu do projeto (toque no título), sem um botão para cada uma.
+     */
     private fun updateContextualTools() {
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
-        val items: List<Pair<String, () -> Unit>> = when {
-            handles.selected != null -> listOf(
-                "Editar" to { handles.selected?.let(::openSubtitleOrTextTools) },
-                "Máscara" to { handles.selected?.let(::textMaskPanel) },
-                "Estilo" to { handles.selected?.let(::subtitleStylePanel) },
-                "Fonte" to { handles.selected?.let(::subtitleFontPanel) },
-                "Animacao" to { handles.selected?.let(::subtitleAnimationPanel) },
-                "Palavra" to { handles.selected?.let(::subtitleWordPanel) },
-                "Posicao" to { handles.selected?.let(::subtitlePositionPanel) },
-                "Keyframe" to { addOrToggleKeyframeAtPlayhead() },
-                "-1f" to { seek(position - SECOND / project.export.fps.coerceAtLeast(1)) },
-                "+1f" to { seek(position + SECOND / project.export.fps.coerceAtLeast(1)) },
-                "Excluir" to {
-                    handles.selected?.let { id ->
-                        edit(project.copy(texts = project.texts.filterNot { it.id == id }))
-                        clearSelection()
-                    }
-                },
-                "Mais" to { searchTools() },
-            )
-            stickerHandles.selected != null -> listOf(
-                "Editar" to { stickerHandles.selected?.let(::stickerPanel) },
-                "Máscara" to { stickerHandles.selected?.let(::stickerMaskPanel) },
-                "Remover Fundo" to { stickerHandles.selected?.let(backgroundRemovalTools::openSticker) },
-                "Keyframe" to { addOrToggleKeyframeAtPlayhead() },
-                "-1f" to { seek(position - SECOND / project.export.fps.coerceAtLeast(1)) },
-                "+1f" to { seek(position + SECOND / project.export.fps.coerceAtLeast(1)) },
-                "Camada" to { stickerMenu() },
-                "Excluir" to {
-                    stickerHandles.selected?.let { id ->
-                        edit(project.copy(stickers = project.stickers.filterNot { it.id == id }))
-                        clearSelection()
-                    }
-                },
-                "Mais" to { searchTools() },
-            )
-            timeline.selectedLayerId != null && project.audio.any { it.id == timeline.selectedLayerId } -> listOf(
-                "Editar" to { timeline.selectedLayerId?.let(::audioPanel) },
-                "Keyframe" to { addOrToggleKeyframeAtPlayhead() },
-                "-1f" to { seek(position - SECOND / project.export.fps.coerceAtLeast(1)) },
-                "+1f" to { seek(position + SECOND / project.export.fps.coerceAtLeast(1)) },
-                "Volume" to { timeline.selectedLayerId?.let(::audioPanel) },
-                "Excluir" to {
-                    val id = timeline.selectedLayerId
-                    if (id != null) {
-                        edit(project.copy(audio = project.audio.filterNot { it.id == id }))
-                        clearSelection()
-                    }
-                },
-                "Mais" to { searchTools() },
-            )
-            selected in project.videos.indices -> {
-                val currentClip = project.videos[selected]
-                val nextClip = project.videos.getOrNull(selected + 1)
-                val group = CompoundEditing.at(project, clipId = currentClip.id)
-                val list = mutableListOf(
-                    "Dividir" to { splitAtCursor() },
-                    "Auto Cor" to { autoColor() },
-                    "Auto Reframe" to { autoReframePanel.open() },
-                    "Keyframe" to { addOrToggleKeyframeAtPlayhead() },
-                    "Velocidade" to { speedPanel() },
-                    "Volume" to { volumePanel() },
-                    "Transformar" to { transformPanel() },
-                    "Estabilizar" to { stabilizeVideoPanel() },
-                    "Presets" to { presetsPanel() },
-                    "LUTs" to { openLutBrowser() },
-                    "Scopes" to { scopesPanel() },
-                    "Máscara" to { videoMaskPanel(currentClip) },
-                    "Rastreamento" to { trackingPanel() },
-                    "Filtros" to { filters() },
-                    "Efeitos" to { effectTools.open(currentClip.id) },
-                    "Remover Fundo" to { backgroundRemovalTools.open(currentClip.id) },
-                )
-                if (group != null) {
-                    list.add("Abrir" to { openCompound(group) })
-                    list.add("Fechar" to { closeCompound() })
-                } else {
-                    list.add("Compound" to { createCompoundPanel() })
-                }
-                if (nextClip != null) {
-                    list.add("Transição" to { transitionTools.open(currentClip.id, nextClip.id) })
-                }
-                list.addAll(listOf(
-                    "Legendas" to { subtitleMenu() },
-                    "Ajustar" to { adjustmentsPanel() },
-                    "Cortar" to { trimPanel() },
-                    "Excluir" to { confirmDeleteSelected() },
-                    "Mais" to { editTools() },
-                ))
-                list
-            }
-            else -> listOf(
-                // Ordem do canvas: Auto Edit e Legendas primeiro, depois as ferramentas de sempre.
-                "Auto Edit" to { autoEditPanel.open() },
-                "Legendas" to { subtitleMenu() },
-                "Texto" to { textMenu() },
-                "Áudio" to { audioPanel() },
-                "Stickers" to { stickerMenu() },
-                "Voz" to { voiceoverPanel() },
-                "Ajustar" to { adjustmentsPanel() },
-                "Filtros" to { selectedClipAtCursor(); filters() },
-                "Efeitos" to { effectTools.adjustments() },
-                "+ Midia" to { addMediaMenu() },
-                "Câmera 3D" to { cameraPanel() },
-            )
+        val items: List<Triple<String, String, () -> Unit>> = listOf(
+            Triple("Dividir", "canvas:dividir", { splitAtCursor() }),
+            Triple("Aparar", "canvas:aparar", { openTrimTool() }),
+            Triple("Texto", "canvas:texto", { openTextTool() }),
+            Triple("Áudio", "canvas:audio", { openAudioTool() }),
+            Triple("Auto Edit", "canvas:autoedit", { autoEditPanel.open() }),
+        )
+        items.forEach { (name, glyph, click) ->
+            contextualTools.addView(toolAction(name, click, glyph), LinearLayout.LayoutParams(0, -2, 1f))
         }
-        items.forEach { (name, click) -> contextualTools.addView(toolAction(name, click)) }
         contextualTools.alpha = 0f
         contextualTools.animate().cancel()
         contextualTools.animate().alpha(1f).setDuration(EditorStyle.MOTION_TOOLBAR).start()
+    }
+
+    private class ToolEntry(val name: String, val subtitle: String, val danger: Boolean = false, val action: () -> Unit)
+
+    /** Folha com as funções de um grupo, em cartões do canvas (a mesma grade do "Editar clipe"). */
+    private fun toolSheet(title: String, headline: String, entries: List<ToolEntry>) {
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(4)) }
+        body.addView(label(headline, 15f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        lateinit var dialog: Dialog
+        val grid = GridLayout(this).apply { columnCount = 3; alignmentMode = GridLayout.ALIGN_BOUNDS }
+        entries.forEach { entry ->
+            grid.addView(editorToolCard(entry.name, entry.subtitle, danger = entry.danger) {
+                dialog.dismiss(); entry.action()
+            }, GridLayout.LayoutParams().apply {
+                width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            })
+        }
+        body.addView(grid)
+        dialog = sheet(title, body)
+    }
+
+    /** Aparar: com um clipe, abre todas as funções de clipe; com uma camada de imagem, as dela. */
+    private fun openTrimTool() {
+        stickerHandles.selected?.let { stickerTools(it); return }
+        val clip = if (selected in project.videos.indices) selectedClip() else selectedClipAtCursor()
+        if (clip != null) editTools()
+    }
+
+    /** Texto: com um texto ou legenda selecionado, as funções dele; senão, a lista de textos. */
+    private fun openTextTool() {
+        handles.selected?.let { textLayerTools(it); return }
+        textMenu()
+    }
+
+    /** Áudio: com uma faixa de áudio selecionada, as funções dela; senão, o painel de áudio. */
+    private fun openAudioTool() {
+        val id = timeline.selectedLayerId?.takeIf { selectedId -> project.audio.any { it.id == selectedId } }
+        if (id != null) audioLayerTools(id) else audioPanel()
+    }
+
+    private fun textLayerTools(id: String) {
+        val clip = project.texts.firstOrNull { it.id == id } ?: return
+        toolSheet(if (clip.isCaption) "Legenda" else "Texto", clip.text.replace('\n', ' ').take(40), listOf(
+            ToolEntry("Editar", "Texto e estilo") { openSubtitleOrTextTools(id) },
+            ToolEntry("Estilo", "Cores e contorno") { subtitleStylePanel(id) },
+            ToolEntry("Fonte", "Tipografia") { subtitleFontPanel(id) },
+            ToolEntry("Animação", "Entrada e saída") { subtitleAnimationPanel(id) },
+            ToolEntry("Palavra", "Destaque por palavra") { subtitleWordPanel(id) },
+            ToolEntry("Posição", "Onde aparece") { subtitlePositionPanel(id) },
+            ToolEntry("Máscara", "Recorte do texto") { textMaskPanel(id) },
+            ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
+            ToolEntry("Excluir", "Remover este texto", danger = true) {
+                edit(project.copy(texts = project.texts.filterNot { it.id == id }))
+                clearSelection()
+            },
+        ))
+    }
+
+    private fun stickerTools(id: String) {
+        val sticker = project.stickers.firstOrNull { it.id == id } ?: return
+        toolSheet("Camada", sticker.name.take(40), listOf(
+            ToolEntry("Editar", "Tamanho e posição") { stickerPanel(id) },
+            ToolEntry("Máscara", "Forma e recorte") { stickerMaskPanel(id) },
+            ToolEntry("Remover fundo", "Recorte automático") { backgroundRemovalTools.openSticker(id) },
+            ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
+            ToolEntry("Camadas", "Todas as imagens") { stickerMenu() },
+            ToolEntry("Excluir", "Remover esta camada", danger = true) {
+                edit(project.copy(stickers = project.stickers.filterNot { it.id == id }))
+                clearSelection()
+            },
+        ))
+    }
+
+    private fun audioLayerTools(id: String) {
+        val audio = project.audio.firstOrNull { it.id == id } ?: return
+        toolSheet("Áudio", audio.name.take(40), listOf(
+            ToolEntry("Editar", "Volume e ajustes") { audioPanel(id) },
+            ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
+            ToolEntry("Faixas", "Música e narração") { audioPanel() },
+            ToolEntry("Excluir", "Remover esta faixa", danger = true) {
+                edit(project.copy(audio = project.audio.filterNot { it.id == id }))
+                clearSelection()
+            },
+        ))
+    }
+
+    /** "9:16 · 1080p · 30 fps", a linha de baixo do título (canvas). */
+    private fun projectMeta(): String {
+        val (w, h) = project.dimensions()
+        fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
+        val g = gcd(w.coerceAtLeast(1), h.coerceAtLeast(1)).coerceAtLeast(1)
+        val ratio = "${w / g}:${h / g}".takeIf { w / g <= 32 && h / g <= 32 } ?: "%.2f:1".format(w.toFloat() / h.coerceAtLeast(1))
+        return "$ratio · ${project.export.shortSide}p · ${project.export.fps} fps"
+    }
+
+    /** Toque no título: o que é do projeto como um todo (mídia, proporção, qualidade, salvar, busca). */
+    private fun projectMenu() {
+        toolSheet("Projeto", project.name, listOf(
+            ToolEntry("Adicionar", "Vídeo, foto, música, texto") { addMediaMenu() },
+            ToolEntry("Proporção", "Formato do vídeo") { aspectPanel() },
+            ToolEntry("Qualidade", "Resolução da exportação") { exportPanel(false) },
+            ToolEntry("Prévia", "Qualidade da prévia") { previewQuality() },
+            ToolEntry("Marcadores", "Pontos na timeline") { markerPanel() },
+            ToolEntry("Ajustar timeline", "Caber na tela") { timeline.fit() },
+            ToolEntry("Salvar", "Salvar o projeto") { saveAsync(false) },
+            ToolEntry("Buscar", "Achar uma ferramenta") { searchTools() },
+        ))
     }
 
     private fun selectMainClip(index: Int) {
@@ -1470,8 +1525,6 @@ class EditorActivity : Activity() {
         if (stickerHandles.selected !in project.stickers.map { it.id }) stickerHandles.selected = null
         handles.texts = project.texts.takeIf { project.visualEnabled(TEXT_TRACK) && !project.trackState(TEXT_TRACK).locked } ?: emptyList(); handles.invalidate()
         stickerHandles.stickers = project.stickers.takeIf { project.visualEnabled(STICKER_TRACK) && !project.trackState(STICKER_TRACK).locked } ?: emptyList(); stickerHandles.invalidate()
-        quality.text = "${project.export.shortSide}p"
-        quality.contentDescription = "Qualidade de exportação: ${project.export.shortSide}p"
         undo.isEnabled = history.canUndo; undo.alpha = if (history.canUndo) 1.0f else 0.35f
         redo.isEnabled = history.canRedo; redo.alpha = if (history.canRedo) 1.0f else 0.35f
         play.isEnabled = project.allVideos.isNotEmpty() && !EditorExportService.state.active
@@ -1493,7 +1546,11 @@ class EditorActivity : Activity() {
             (if (project.compounds.isEmpty()) "" else "  •  ${project.compounds.size} compound${if (project.compounds.size > 1) "s" else ""}") +
             "  •  ${project.audio.size} audios  •  ${project.texts.size + project.stickers.size} camadas"
         if (::projectTitleView.isInitialized) {
-            projectTitleView.text = ""
+            projectTitleView.text = project.name
+            projectMetaView.text = projectMeta()
+        }
+        if (::captionAutoChip.isInitialized) {
+            captionAutoChip.text = if (project.texts.any { it.isCaption }) "Auto ✓" else "Auto"
         }
         updateContextualTools()
         updatePosition(); fitPreview()

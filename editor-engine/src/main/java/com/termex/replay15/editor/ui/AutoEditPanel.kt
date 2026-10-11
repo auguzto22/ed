@@ -3,11 +3,16 @@ package com.termex.replay15.editor.ui
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Typeface
-import android.widget.ArrayAdapter
-import android.widget.CheckBox
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.Spinner
+import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
 import com.termex.replay15.editor.autoedit.*
 import com.termex.replay15.editor.domain.Project
@@ -21,6 +26,8 @@ class AutoEditPanel(
     private val preview: (Project) -> Unit,
     private val apply: (Project) -> Unit,
     private val processing: (Boolean) -> Unit,
+    /** Abre a análise de um vídeo de referência (cartão "Referência" do canvas). */
+    private val openReference: (() -> Unit)? = null,
 ) {
     private val worker: ExecutorService = Executors.newSingleThreadExecutor()
     private var cancellation: AutoEditCancellation? = null
@@ -36,48 +43,203 @@ class AutoEditPanel(
         }
         val words = ClipAnalyzer.wordsFromCaptions(snapshot.texts, snapshot.startOf(index), clip.durationUs)
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(10)) }
-        body.addView(activity.sectionTitle("Edicao automatica inteligente", "Analisa somente este clipe e gera cortes, keyframes, enquadramento e efeitos editaveis."))
-        val style = spinner(body, "Estilo", AutoEditStyle.entries.map { it.label }, AutoEditStyle.DYNAMIC.ordinal)
-        val intensity = spinner(body, "Intensidade", AutoEditIntensity.entries.map { it.label }, AutoEditIntensity.BALANCED.ordinal)
-        val cleanup = spinner(body, "Limpeza de pausas", SpeechCleanup.entries.map { it.label }, SpeechCleanup.BALANCED.ordinal)
-        val captions = check(body, "Legendas", words.isNotEmpty(), words.isNotEmpty())
-        if (words.isEmpty()) body.addView(activity.label("Importe um SRT temporizado para o Auto Edit reorganizar legendas. O Recly ainda nao possui transcricao local e nao inventara texto.", 11f, EditorStyle.MUTED))
-        val clean = check(body, "Limpar pausas longas", true)
-        val zoom = check(body, "Smart Zoom", true)
-        val reframe = check(body, "Auto Reframe para 9:16", true)
-        val audio = check(body, "Equilibrar audio", true)
         lateinit var dialog: Dialog
-        body.addView(activity.action("Analisar clipe", true) {
+
+        // Referência (canvas): de onde vem o ritmo da edição.
+        body.addView(referenceCard { dialog.dismiss(); openReference?.invoke() }, LinearLayout.LayoutParams(-1, -2))
+
+        // Preset (canvas): o estilo da edição, em botões que quebram de linha.
+        val style = chips(body, "Preset", AutoEditStyle.entries.map { it.label }, AutoEditStyle.DYNAMIC.ordinal)
+        val intensity = chips(body, "Intensidade", AutoEditIntensity.entries.map { it.label }, AutoEditIntensity.BALANCED.ordinal)
+        val cleanup = chips(body, "Limpeza de pausas", SpeechCleanup.entries.map { it.label }, SpeechCleanup.BALANCED.ordinal)
+
+        // Opções (canvas): cartão com uma linha por opção e um interruptor.
+        val card = activity.column().apply {
+            background = GradientDrawable().apply {
+                setColor(EditorStyle.CARD)
+                setStroke(activity.dp(1.5f), EditorStyle.BORDER)
+                cornerRadius = activity.dp(12).toFloat()
+            }
+            clipToOutline = true
+        }
+        val captions = optionRow(card, "Legendas automáticas",
+            if (words.isEmpty()) "Importe um SRT temporizado para usar" else "Usa o estilo de legenda do editor",
+            words.isNotEmpty(), words.isNotEmpty())
+        val clean = optionRow(card, "Cortar silêncios", "Tira pausas e respirações longas", true)
+        val zoom = optionRow(card, "Zoom nos destaques", "Keyframes de zoom nas falas-chave", true)
+        val reframe = optionRow(card, "Auto Reframe para 9:16", "Enquadra o sujeito na vertical", true)
+        val audio = optionRow(card, "Equilibrar áudio", "Nivela o volume da fala", true, last = true)
+        body.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(16) })
+
+        body.addView(activity.action("Montar minha edição", true) {
             dialog.dismiss()
             generate(snapshot, index, words, AutoEditOptions(
-                style = AutoEditStyle.entries[style.selectedItemPosition],
-                intensity = AutoEditIntensity.entries[intensity.selectedItemPosition],
-                cleanup = SpeechCleanup.entries[cleanup.selectedItemPosition],
+                style = AutoEditStyle.entries[style.index],
+                intensity = AutoEditIntensity.entries[intensity.index],
+                cleanup = SpeechCleanup.entries[cleanup.index],
                 captions = captions.isChecked,
                 cleanPauses = clean.isChecked,
                 smartZoom = zoom.isChecked,
                 autoReframe = reframe.isChecked,
                 audioEnhancement = audio.isChecked,
             ))
-        }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(12) })
+        }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(16) })
+        body.addView(activity.label("Sai como projeto editável — nada é renderizado até exportar.", 12f, EditorStyle.MUTED).apply {
+            gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(8) })
         dialog = activity.sheet("Auto Edit", body)
     }
 
-    private fun spinner(parent: LinearLayout, title: String, values: List<String>, selected: Int): Spinner {
-        parent.addView(activity.label(title, 12f, EditorStyle.MUTED))
-        return Spinner(activity).apply {
-            adapter = ArrayAdapter(activity, android.R.layout.simple_spinner_dropdown_item, values)
-            setSelection(selected)
-            parent.addView(this, LinearLayout.LayoutParams(-1, activity.dp(48)))
+    private class Choice(var index: Int)
+
+    /** Cartão "Referência" do canvas: etiqueta azul, título, linha de apoio e o botão para trocar. */
+    private fun referenceCard(onChoose: () -> Unit): LinearLayout = LinearLayout(activity).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(activity.dp(10), activity.dp(10), activity.dp(10), activity.dp(10))
+        background = GradientDrawable().apply {
+            setColor(EditorStyle.CARD)
+            setStroke(activity.dp(1.5f), EditorStyle.BORDER)
+            cornerRadius = activity.dp(14).toFloat()
         }
+        addView(View(activity).apply {
+            background = GradientDrawable().apply {
+                setColor(0xFF2E2B34.toInt())
+                setStroke(activity.dp(1.5f), EditorStyle.BORDER)
+                cornerRadius = activity.dp(8).toFloat()
+            }
+        }, LinearLayout.LayoutParams(activity.dp(56), activity.dp(96)))
+        val texts = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(activity.dp(12), 0, activity.dp(8), 0)
+        }
+        texts.addView(activity.label("REFERÊNCIA", 11f, EditorStyle.VIDEO).apply {
+            typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f
+        })
+        texts.addView(activity.label("Vídeo de referência", 15f, EditorStyle.TEXT).apply {
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = activity.dp(4) })
+        texts.addView(activity.label("Opcional: leia cortes, legendas e ritmo de um vídeo que vende.", 12f, EditorStyle.MUTED),
+            LinearLayout.LayoutParams(-2, -2).apply { topMargin = activity.dp(4) })
+        addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+        addView(TextView(activity).apply {
+            text = "Escolher"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(EditorStyle.TEXT)
+            gravity = Gravity.CENTER
+            setPadding(activity.dp(12), 0, activity.dp(12), 0)
+            background = GradientDrawable().apply {
+                setColor(EditorStyle.BG)
+                setStroke(activity.dp(1.5f), EditorStyle.BORDER)
+                cornerRadius = activity.dp(10).toFloat()
+            }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onChoose() }
+        }, LinearLayout.LayoutParams(-2, activity.dp(38)))
     }
 
-    private fun check(parent: LinearLayout, title: String, checked: Boolean, enabled: Boolean = true): CheckBox =
-        CheckBox(activity).apply {
-            text = title; isChecked = checked; isEnabled = enabled; setTextColor(EditorStyle.WHITE)
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-            minHeight = activity.dp(44); parent.addView(this)
+    /** Título + botões de escolha única (o selecionado em azul), quebrando de linha como no canvas. */
+    private fun chips(parent: LinearLayout, title: String, values: List<String>, initial: Int): Choice {
+        val state = Choice(initial)
+        parent.addView(activity.label(title, 18f, EditorStyle.TEXT).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(16); bottomMargin = activity.dp(8) })
+        val wrap = WrapLayout(activity, activity.dp(8))
+        val views = mutableListOf<TextView>()
+        fun paint() = views.forEachIndexed { i, view ->
+            val on = i == state.index
+            view.isSelected = on
+            view.setTextColor(if (on) EditorStyle.WHITE else EditorStyle.TEXT)
+            view.background = GradientDrawable().apply {
+                setColor(if (on) EditorStyle.VIDEO_DEEP else EditorStyle.CARD)
+                setStroke(activity.dp(1.5f), if (on) EditorStyle.VIDEO else EditorStyle.BORDER)
+                cornerRadius = activity.dp(10).toFloat()
+            }
         }
+        values.forEachIndexed { i, value ->
+            val chip = TextView(activity).apply {
+                text = value
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setPadding(activity.dp(14), 0, activity.dp(14), 0)
+                isClickable = true
+                isFocusable = true
+                contentDescription = "$title: $value"
+                setOnClickListener { state.index = i; paint() }
+            }
+            views.add(chip)
+            wrap.addView(chip, ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, activity.dp(40)))
+        }
+        paint()
+        parent.addView(wrap, LinearLayout.LayoutParams(-1, -2))
+        return state
+    }
+
+    /** Linha do cartão de opções: nome, apoio e interruptor (vermelho quando ligado). */
+    private fun optionRow(card: LinearLayout, name: String, hint: String, checked: Boolean, enabled: Boolean = true, last: Boolean = false): Switch {
+        val row = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = activity.dp(54)
+            setPadding(activity.dp(12), activity.dp(6), activity.dp(12), activity.dp(6))
+        }
+        val texts = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+        texts.addView(activity.label(name, 15f, EditorStyle.TEXT).apply {
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+        })
+        texts.addView(activity.label(hint, 12f, EditorStyle.MUTED))
+        row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+        val toggle = Switch(activity).apply {
+            isChecked = checked
+            isEnabled = enabled
+            contentDescription = name
+            val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+            trackTintList = ColorStateList(states, intArrayOf(EditorStyle.ACTION, EditorStyle.BORDER))
+            thumbTintList = ColorStateList(states, intArrayOf(EditorStyle.INK, EditorStyle.TEXT))
+        }
+        row.addView(toggle, LinearLayout.LayoutParams(-2, -2))
+        row.setOnClickListener { if (toggle.isEnabled) toggle.toggle() }
+        card.addView(row, LinearLayout.LayoutParams(-1, -2))
+        if (!last) card.addView(View(activity).apply { setBackgroundColor(EditorStyle.BORDER) }, LinearLayout.LayoutParams(-1, activity.dp(1.5f)))
+        return toggle
+    }
+
+    /** Distribui os filhos em linhas, quebrando quando não cabe (botões de preset). */
+    private class WrapLayout(context: Context, private val gap: Int) : ViewGroup(context) {
+        override fun onMeasure(widthSpec: Int, heightSpec: Int) {
+            val maxWidth = MeasureSpec.getSize(widthSpec)
+            var x = 0
+            var y = 0
+            var rowHeight = 0
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
+                if (child.visibility == GONE) continue
+                measureChild(child, MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST), heightSpec)
+                if (x > 0 && x + child.measuredWidth > maxWidth) { x = 0; y += rowHeight + gap; rowHeight = 0 }
+                x += child.measuredWidth + gap
+                rowHeight = maxOf(rowHeight, child.measuredHeight)
+            }
+            setMeasuredDimension(maxWidth, y + rowHeight)
+        }
+
+        override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+            val maxWidth = r - l
+            var x = 0
+            var y = 0
+            var rowHeight = 0
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
+                if (child.visibility == GONE) continue
+                if (x > 0 && x + child.measuredWidth > maxWidth) { x = 0; y += rowHeight + gap; rowHeight = 0 }
+                child.layout(x, y, x + child.measuredWidth, y + child.measuredHeight)
+                x += child.measuredWidth + gap
+                rowHeight = maxOf(rowHeight, child.measuredHeight)
+            }
+        }
+    }
 
     private fun generate(snapshot: Project, index: Int, words: List<TimedWord>, options: AutoEditOptions) {
         cancellation?.cancel()

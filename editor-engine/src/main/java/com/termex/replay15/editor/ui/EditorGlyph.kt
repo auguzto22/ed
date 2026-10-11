@@ -79,7 +79,29 @@ class EditorGlyph(
         style = Paint.Style.FILL
     }
 
+    /**
+     * Ícones das cinco ferramentas do canvas, desenhados com os mesmos traçados do design
+     * (viewBox 24x24, traço 2.1). O nome começa com "canvas:".
+     */
+    private val canvasPaths: List<Path>? = CANVAS_ICONS[kind]?.mapNotNull { androidx.core.graphics.PathParser.createPathFromPathData(it) }
+
+    private fun drawCanvasIcon(canvas: Canvas, paths: List<Path>) {
+        canvas.save()
+        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+        canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
+        val stroke = Paint(paint).apply {
+            strokeWidth = 2.1f
+            style = if (kind == "canvas:autoedit") Paint.Style.FILL_AND_STROKE else Paint.Style.STROKE
+        }
+        paths.forEach { canvas.drawPath(it, stroke) }
+        canvas.restore()
+    }
+
     override fun draw(canvas: Canvas) {
+        if (canvasPaths != null) {
+            drawCanvasIcon(canvas, canvasPaths)
+            return
+        }
         if (delegate != null) {
             delegate.bounds = bounds
             delegate.draw(canvas)
@@ -347,7 +369,20 @@ class EditorGlyph(
     override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
-fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column().apply {
+
+private val CANVAS_ICONS: Map<String, List<String>> = mapOf(
+    "canvas:dividir" to listOf("M6 3v18M18 3v18M6 12h12"),
+    "canvas:aparar" to listOf("M12 3v18M5 8l-3 4 3 4M19 8l3 4-3 4"),
+    "canvas:texto" to listOf("M4 7V5h16v2M12 5v14M9 19h6"),
+    "canvas:audio" to listOf(
+        "M9 18V5l12-2v13",
+        "M3 18a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
+        "M15 16a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
+    ),
+    "canvas:autoedit" to listOf("M13 2L4 14h7l-1 8 9-12h-7z"),
+)
+
+fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): LinearLayout = column().apply {
     gravity = Gravity.CENTER
     minimumWidth = dp(66)
     minimumHeight = dp(74)
@@ -379,7 +414,7 @@ fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column()
             cornerRadius = dp(12).toFloat()
         }, null)
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(name, tint, context))
+            setImageDrawable(EditorGlyph(glyph, tint, context))
             importantForAccessibility = 2
         }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
     }

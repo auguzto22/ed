@@ -6,12 +6,6 @@
     android:background="#121214"
     tools:ignore="UseAppTint">
 
-    <!-- Fundo de seda preta com ondas Bézier abstratas e suaves gerado inteiramente via código -->
-    <com.termex.replay15.ui.BlackSilkBackground
-        android:id="@+id/libraryBgSilk"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
     <ScrollView
         android:id="@+id/libraryScroll"
         android:layout_width="match_parent"
@@ -24,148 +18,230 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="18dp"
-            android:paddingTop="18dp"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="22dp"
             android:paddingBottom="108dp">
 
-            <!-- Back Button -->
-            <FrameLayout
-                android:id="@+id/btnBack"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/recly_circle_dark_btn"
-                android:elevation="0dp"
-                android:clickable="true"
-                android:contentDescription="Voltar"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_pro_back"
-                    android:tint="#EDEBE6" />
-            </FrameLayout>
-
-            <!-- Title & Subtitle -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:fontFamily="sans-serif-black"
-                android:text="O que vamos editar hoje?"
-                android:textColor="#EDEBE6"
-                android:textSize="26sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Projetos, gravações e replays."
-                android:textColor="#9A968C"
-                android:textSize="14sp" />
-
-            <!-- Primary Action Button: + Novo projeto -->
-            <Button
-                android:id="@+id/btnNewProject"
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/recly_pill_action"
-                android:elevation="0dp"
-                android:fontFamily="sans-serif-bold"
-                android:stateListAnimator="@null"
-                android:text="+ Novo projeto"
-                android:textAllCaps="false"
-                android:textColor="#141414"
-                android:textSize="16sp" />
-
-            <!-- Atalhos do canvas: Auto Edit (azul) e Analisar (cartão escuro). Ambos pedem um vídeo e abrem a ferramenta no editor. -->
+            <!-- Cabeçalho do canvas: marca à esquerda, perfil à direita -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="10dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <Button
+                <FrameLayout
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/canvas_logo_tile">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_canvas_logo" />
+                </FrameLayout>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/btnProfile"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/canvas_circle_line"
+                    android:clickable="true"
+                    android:contentDescription="Perfil"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:text="M"
+                    android:textColor="#EDEBE6"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Título (a palavra "editar" fica amarela, definida no código) -->
+            <TextView
+                android:id="@+id/homeTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="-0.03"
+                android:lineSpacingMultiplier="0.95"
+                android:text="O que vamos editar hoje?"
+                android:textColor="#EDEBE6"
+                android:textSize="34sp" />
+
+            <!-- Dois blocos: Novo projeto e Auto Edit -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="118dp"
+                android:layout_marginTop="18dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/btnNewProject"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/canvas_tile_action"
+                    android:clickable="true"
+                    android:contentDescription="Novo projeto"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/canvas_circle_ink">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_canvas_plus" />
+                    </FrameLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:lineSpacingMultiplier="0.95"
+                        android:text="Novo\nprojeto"
+                        android:textColor="#141414"
+                        android:textSize="19sp" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/btnHomeAutoEdit"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginEnd="5dp"
+                    android:layout_marginStart="6dp"
                     android:layout_weight="1"
-                    android:background="@drawable/recly_pill_video"
-                    android:fontFamily="sans-serif-bold"
-                    android:stateListAnimator="@null"
-                    android:text="Auto Edit"
-                    android:textAllCaps="false"
-                    android:textColor="#EDEBE6"
-                    android:textSize="15sp" />
+                    android:background="@drawable/canvas_tile_video"
+                    android:clickable="true"
+                    android:contentDescription="Auto Edit"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:padding="14dp">
 
-                <Button
-                    android:id="@+id/btnHomeAnalyze"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/recly_card_outline"
-                    android:fontFamily="sans-serif-bold"
-                    android:stateListAnimator="@null"
-                    android:text="Analisar vídeo"
-                    android:textAllCaps="false"
-                    android:textColor="#EDEBE6"
-                    android:textSize="15sp" />
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/canvas_circle_ink">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_canvas_bolt" />
+                    </FrameLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:lineSpacingMultiplier="0.95"
+                        android:text="Auto\nEdit"
+                        android:textColor="#FFFFFF"
+                        android:textSize="19sp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Segmented Tabs Bar: Projetos | Gravações | Replays -->
+            <!-- Cartão "Analisar vídeo que vende" -->
             <LinearLayout
+                android:id="@+id/btnHomeAnalyze"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/recly_segmented_bar"
-                android:elevation="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/recly_card_dark"
+                android:clickable="true"
+                android:contentDescription="Analisar vídeo que vende"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="4dp">
+                android:padding="14dp">
 
-                <TextView
-                    android:id="@+id/tabProjects"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@drawable/recly_tab_active"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:text="Projetos"
-                    android:textColor="#EDEBE6"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif-medium" />
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/canvas_analyze_box">
 
-                <TextView
-                    android:id="@+id/tabRecordings"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:text="Gravações"
-                    android:textColor="#9A968C"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_canvas_bars" />
+                </FrameLayout>
 
-                <TextView
-                    android:id="@+id/tabReplays"
+                <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
                     android:layout_weight="1"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:text="Replays"
-                    android:textColor="#9A968C"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif-medium" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Analisar vídeo que vende"
+                        android:textColor="#EDEBE6"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:lineSpacingMultiplier="1.1"
+                        android:text="Descubra o gancho, o ritmo e o que segura quem assiste."
+                        android:textColor="#9A968C"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/canvas_circle_raised">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_canvas_arrow" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- As abas Projetos / Gravações / Replays ficam na barra de baixo; estes ids seguem existindo. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView android:id="@+id/tabProjects" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                <TextView android:id="@+id/tabRecordings" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                <TextView android:id="@+id/tabReplays" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
             </LinearLayout>
 
             <!-- Container 1: Projetos Tab -->
@@ -173,10 +249,21 @@
                 android:id="@+id/containerProjects"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="22dp"
                 android:orientation="vertical">
 
-                <!-- Empty State Card (matching reference 20260914_151749.png) -->
+                <TextView
+                    android:id="@+id/recentTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="-0.02"
+                    android:text="Recentes"
+                    android:textColor="#EDEBE6"
+                    android:textSize="20sp" />
+
+                <!-- Empty State Card -->
                 <LinearLayout
                     android:id="@+id/cardEmptyProjects"
                     android:layout_width="match_parent"
