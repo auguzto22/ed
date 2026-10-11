@@ -28,6 +28,7 @@ import com.termex.replay15.editor.domain.maskAt
 import com.termex.replay15.editor.render.EffectShaderHeaders
 import com.termex.replay15.editor.render.CanvasLayerMask
 import com.termex.replay15.editor.render.TextLayout
+import com.termex.replay15.editor.assets.TransitionDefinition
 import com.termex.replay15.editor.render.TransitionShaderBuilder
 import com.termex.replay15.editor.render.TransitionShaderHeaders
 import java.nio.ByteBuffer
@@ -69,7 +70,7 @@ class GpuPreviewRenderer(
     )
     private data class EffectTarget(val width:Int,val height:Int,val textures:IntArray,val fbos:IntArray)
     private data class EffectProgram(val id:Int,val defaults:Map<String,Float>)
-    private data class TransitionProgram(val id:Int,val defaults:Map<String,Float>,val supplemental:Set<String>)
+    private data class TransitionProgram(val id:Int,val definition:TransitionDefinition,val supplemental:Set<String>)
 
     private val thread = HandlerThread("PreviewRender").apply { start() }
     private val handler = Handler(thread.looper)
@@ -534,10 +535,9 @@ class GpuPreviewRenderer(
         bindTexture(compiled.id, "uTexB", GLES20.GL_TEXTURE_2D, inputs.textures[1], 1)
         uniform2(compiled.id, "uResolution", w.toFloat(), h.toFloat())
         uniform1(compiled.id, "uProgress", transition.progress)
-        compiled.defaults.forEach { (name, value) -> uniform1(compiled.id, "p_$name", shaderTransition.parameters[name] ?: value) }
-        compiled.supplemental.forEach { name -> uniform1(compiled.id, "p_$name", when (name) {
-            "perspective" -> 1f; "radius" -> 16f; "softness" -> .1f; else -> 1f
-        }) }
+        // Same values as the export (clamped parameters + shared supplemental defaults).
+        TransitionShaderBuilder.uniformValues(compiled.definition, compiled.supplemental, shaderTransition.parameters)
+            .forEach { (name, value) -> uniform1(compiled.id, name, value) }
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         if (diagnostics.traceTransitionAt(render.projectTimeUs)) {
             diagnostics.event("TRANSITION_FRAME t=${render.projectTimeUs} startUs=${transition.startUs} endUs=${transition.endUs} progress=${transition.progress} " +
@@ -567,8 +567,8 @@ class GpuPreviewRenderer(
             val definition=requireNotNull(TransitionCatalog.findById(context,transition.assetId)) { "Unknown transition ${transition.assetId}" }
             val body=BuiltInTransitions.shader(context,definition.shaderFile)
             val fragment=TransitionShaderBuilder.buildFragmentShader(TransitionShaderHeaders.getFragmentHeader(context),body,TransitionShaderHeaders.getFragmentFooter(context),definition)
-            val declared=definition.parameters.map{it.id}.toSet();val supplemental=TransitionShaderBuilder.findBodyParamUniforms(body)-declared
-            TransitionProgram(program(VERTEX,fragment),definition.parameters.associate{it.id to it.default},supplemental).also{transitionPrograms[transition.assetId]=it}
+            val supplemental=TransitionShaderBuilder.supplementalParameters(body,definition)
+            TransitionProgram(program(VERTEX,fragment),definition,supplemental).also{transitionPrograms[transition.assetId]=it}
         }.onFailure{diagnostics.shaderFailure(transition.assetId, it)}.getOrThrow()
     }
 

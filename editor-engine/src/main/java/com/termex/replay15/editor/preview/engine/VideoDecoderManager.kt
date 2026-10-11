@@ -71,7 +71,8 @@ class VideoDecoderManager(
             records[video.key]?.video = video
         }
         demand.active.forEach{video->request(video.key, VideoDecoderSession.Target(video.sourceTimeUs(snapshot.projectTimeUs),generation,mode,snapshot.projectTimeUs))}
-        demand.prewarm.forEach{video->request(video.key, VideoDecoderSession.Target(video.clip.inUs,generation,SeekMailbox.Mode.FAST_SCRUB,video.startUs))}
+        // A clip entering through a transition is first shown from its head handle, before its in point.
+        demand.prewarm.forEach{video->request(video.key, VideoDecoderSession.Target(video.sourceTimeUs(video.visibleStartUs),generation,SeekMailbox.Mode.FAST_SCRUB,video.visibleStartUs))}
         if(demand.omitted.isNotEmpty())diagnostics.event("DECODER_BUDGET_OMIT keys=${demand.omitted}")
     }
 

@@ -12,37 +12,59 @@ class TransitionExecutionTest {
         sourceUs = 12 * SECOND, inUs = SECOND, outUs = 11 * SECOND, width = 1920, height = 1080)
 
     @Test fun shortAndLongTransitionsKeepBothSourceTimesValidWithoutGaps() {
-        for (duration in listOf(100_000L, 500_000L, 2 * SECOND)) {
+        for (alignment in TransitionAlignment.entries) for (duration in listOf(100_000L, 500_000L, 2 * SECOND)) {
             val clips = listOf(clip("a").copy(speed = 2f), clip("b"), clip("c"))
             val project = Project(videos = clips, transitions = listOf(
-                TransitionInstance("ab", "cross_dissolve", "a", "b", duration, easing = Easing.LINEAR),
-                TransitionInstance("bc", "cube_left", "b", "c", duration, easing = Easing.LINEAR)))
+                TransitionInstance("ab", "cross_dissolve", "a", "b", duration, easing = Easing.LINEAR, alignment = alignment),
+                TransitionInstance("bc", "cube_left", "b", "c", duration, easing = Easing.LINEAR, alignment = alignment)))
             val resolver = ActiveClipResolver(project)
-            // Logical overlap must not mutate source trims or introduce a third clip.
+            // Logical overlap must not mutate source trims, introduce a third clip or move the cuts.
             assertEquals(clips, project.videos)
+            assertEquals(clips.sumOf { it.durationUs }, project.durationUs)
             for (time in 0 until project.durationUs step 33_333L) {
                 val active = resolver.resolve(time)
                 assertTrue("No frame at $time", active.videos.isNotEmpty())
                 assertTrue(active.videos.size <= 2)
-                active.videos.forEach {
-                    assertTrue(it.sourceTimeUs(time) in it.clip.inUs until it.clip.outUs)
-                }
+                // Handles read real media around the trim, never outside the file.
+                active.videos.forEach { assertTrue(it.sourceTimeUs(time) in 0 until it.clip.sourceUs) }
             }
             for (index in 1..2) {
-                val start = project.startOf(index)
-                val end = start + duration
+                val cut = project.startOf(index)
+                val (before, after) = TransitionTiming.split(duration, alignment)
+                val start = cut - before
+                val end = cut + after
                 // Deliberately non-monotonic order models scrubbing and repeated paused frames.
                 for (time in listOf(start, end - 1, start + duration / 2, start, start + duration / 2)) {
                     val active = resolver.resolve(time)
-                    assertEquals(2, active.videos.size)
+                    assertEquals("$alignment $duration at $time", 2, active.videos.size)
                     val transition = active.transitions.single()
                     assertEquals(start, transition.startUs)
                     assertEquals(end, transition.endUs)
                     assertEquals((time - start).toFloat() / duration, transition.progress, .00001f)
                 }
                 assertTrue(resolver.resolve(end).transitions.isEmpty())
+                if (start > 0) assertTrue(resolver.resolve(start - 1).transitions.isEmpty())
             }
         }
+    }
+
+    @Test fun outgoingClipKeepsMovingThroughTheWindowInsteadOfFreezing() {
+        val a = clip("a"); val b = clip("b")
+        val project = Project(videos = listOf(a, b), transitions = listOf(
+            TransitionInstance("ab", "cross_dissolve", "a", "b", SECOND, easing = Easing.LINEAR)))
+        val resolver = ActiveClipResolver(project)
+        val cut = a.durationUs
+        val samples = (cut - SECOND / 2 until cut + SECOND / 2 step 40_000L).map { time ->
+            val active = resolver.resolve(time)
+            active.videos.single { it.clip.id == "a" }.sourceTimeUs(time) to active.videos.single { it.clip.id == "b" }.sourceTimeUs(time)
+        }
+        // Both sides advance every frame: A plays past its out point, B starts before its in point.
+        samples.zipWithNext().forEach { (x, y) ->
+            assertTrue("A froze: $x -> $y", y.first > x.first)
+            assertTrue("B froze: $x -> $y", y.second > x.second)
+        }
+        assertTrue(samples.last().first > a.outUs)
+        assertTrue(samples.first().second < b.inUs)
     }
 
     @Test fun noTransitionKeepsAHalfOpenCut() {
@@ -59,20 +81,23 @@ class TransitionExecutionTest {
         val b = clip("b").copy(zoom = .8f, offsetY = .15f, fineRotation = -15f, opacity = .8f)
         val project = Project(videos = listOf(a, b), transitions = listOf(
             TransitionInstance("ab", "cross_dissolve", "a", "b", SECOND, easing = Easing.LINEAR)))
-        val time = project.startOf(1) + SECOND / 2
+        val cut = project.startOf(1)
+        // A quarter into a centered window: A is still inside its own span, B is in its head handle.
+        val time = cut - SECOND / 4
         val snapshot = ActiveClipResolver(project).resolve(time)
         val state = RenderStateEvaluator.evaluate(snapshot, project, 4, 1, 320, 180)
         assertEquals(2, state.layers.size)
-        for ((index, layer) in state.layers.withIndex()) {
-            val clip = project.videos[index]
-            val expectedSource = ProjectClipTimeMapper.projectToSource(clip, project.startOf(index), time)
-                .coerceIn(clip.inUs, clip.outUs - 1L)
-            assertEquals(expectedSource, layer.sourceTimeUs)
+        val expectedA = ProjectClipTimeMapper.projectToSource(a, 0L, time).coerceIn(a.inUs, a.outUs - 1L)
+        val expectedB = b.inUs - SECOND / 4
+        for ((layer, expected) in state.layers.zip(listOf(expectedA, expectedB))) {
+            val clip = project.videos.single { it.id == layer.key.clipId }
+            assertEquals(expected, layer.sourceTimeUs)
             assertEquals(clip.crop, layer.crop)
-            assertEquals(clip.transformAt(expectedSource).opacity, layer.opacity, 0f)
-            assertEquals(clip.transformAt(expectedSource).rotation, layer.rotation, 0f)
+            assertEquals(clip.transformAt(expected).opacity, layer.opacity, 0f)
+            assertEquals(clip.transformAt(expected).rotation, layer.rotation, 0f)
         }
-        assertEquals(.5f, state.transition!!.progress, .00001f)
-        assertEquals(project.startOf(1), state.transition!!.startUs)
+        assertEquals(.25f, state.transition!!.progress, .00001f)
+        assertEquals(cut - SECOND / 2, state.transition!!.startUs)
+        assertEquals(cut + SECOND / 2, state.transition!!.endUs)
     }
 }

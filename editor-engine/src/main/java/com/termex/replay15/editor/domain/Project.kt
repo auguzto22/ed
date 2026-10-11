@@ -463,14 +463,9 @@ data class Project(
         transitions.firstOrNull { it.leftClipId == leftClipId && it.rightClipId == rightClipId }
 
     fun withTransition(transition: com.termex.replay15.editor.assets.TransitionInstance): Project {
-        val left = videos.firstOrNull { it.id == transition.leftClipId }
-        val right = videos.firstOrNull { it.id == transition.rightClipId }
-        val transEnteringLeft = transitions.firstOrNull { it.rightClipId == transition.leftClipId }?.durationUs ?: 0L
-        val transLeavingRight = transitions.firstOrNull { it.leftClipId == transition.rightClipId }?.durationUs ?: 0L
-        val availableLeft = if (left != null) (left.durationUs - transEnteringLeft).coerceAtLeast(100_000L) else transition.durationUs
-        val availableRight = if (right != null) (right.durationUs - transLeavingRight).coerceAtLeast(100_000L) else transition.durationUs
-        val maxDuration = minOf(availableLeft, availableRight, 5_000_000L)
-        val clampedDuration = transition.durationUs.coerceIn(100_000L, maxDuration)
+        // The neighbours keep their windows; this one gets whatever room its alignment leaves.
+        val maxDuration = TransitionTiming.maxDurationUs(this, transition)
+        val clampedDuration = transition.durationUs.coerceIn(TransitionTiming.MIN_TRANSITION_US, maxDuration)
         val safeTransition = transition.copy(durationUs = clampedDuration)
         val filtered = transitions.filterNot { it.leftClipId == safeTransition.leftClipId && it.rightClipId == safeTransition.rightClipId }
         return copy(transitions = filtered + safeTransition)
@@ -568,9 +563,4 @@ data class Project(
     }
 }
 
-fun TransitionInstance.startUs(project: Project): Long {
-    val rightIdx = project.videos.indexOfFirst { it.id == rightClipId }
-    return if (rightIdx >= 0) project.startOf(rightIdx) else 0L
-}
-
-fun TransitionInstance.endUs(project: Project): Long = startUs(project) + durationUs
+// TransitionInstance.startUs/endUs live in TransitionTiming.kt: they include the alignment.

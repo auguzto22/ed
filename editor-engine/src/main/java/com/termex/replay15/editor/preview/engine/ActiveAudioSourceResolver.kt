@@ -29,15 +29,31 @@ class ActiveAudioSourceResolver(
     private val project: Project,
     private val mapper: ClipTimeMapper = ProjectClipTimeMapper,
 ) {
-    private data class Embedded(val video: ActiveClipResolver.Video)
+    /** [envelope] carries the clip's volume, its own fades and any transition cross-fades. */
+    private data class Embedded(
+        val video: ActiveClipResolver.Video,
+        val envelope: ClipAudioEnvelope,
+    )
+    private val windows = TransitionTiming.windows(project)
     private val embedded = buildList {
+        var start = 0L
         project.videos.forEachIndexed { index, clip ->
+            val entering = windows.firstOrNull { it.rightIndex == index }
+            val leaving = windows.firstOrNull { it.leftIndex == index }
+            // Audio follows the picture through the handles, so both sides overlap and cross-fade.
+            // Where the source has no media past the trim the picture holds a frame and the sound
+            // stays silent, exactly like the exported file.
             if (!clip.image && !clip.isNullObject) add(Embedded(ActiveClipResolver.Video(
-                ActiveClipResolver.ClipKey(MAIN_TRACK, clip.id), project.startOf(index), clip, mapper)))
+                ActiveClipResolver.ClipKey(MAIN_TRACK, clip.id), start, clip, mapper,
+                TransitionHandles.usableHeadUs(clip, entering?.rightExtensionUs ?: 0L),
+                TransitionHandles.usableTailUs(clip, leaving?.leftExtensionUs ?: 0L)),
+                ClipAudioEnvelope(clip, start, entering, leaving)))
+            start += clip.durationUs
         }
         project.videoTracks.forEach { track -> track.clips.forEach { placed ->
             if (!placed.clip.image && !placed.clip.isNullObject) add(Embedded(ActiveClipResolver.Video(
-                ActiveClipResolver.ClipKey(track.id, placed.clip.id), placed.startUs, placed.clip, mapper)))
+                ActiveClipResolver.ClipKey(track.id, placed.clip.id), placed.startUs, placed.clip, mapper),
+                ClipAudioEnvelope(placed.clip, placed.startUs, null, null)))
         } }
     }
 
@@ -47,15 +63,12 @@ class ActiveAudioSourceResolver(
             .map { item ->
                 val video = item.video
                 val clip = video.clip
-                val sourceTime = mapper.projectToSource(clip, video.startUs, time)
-                val entering = project.transitions.firstOrNull { it.rightClipId == clip.id }?.durationUs ?: 0L
-                val leaving = project.transitions.firstOrNull { it.leftClipId == clip.id }?.durationUs ?: 0L
+                val sourceTime = video.sourceTimeUs(time)
                 ResolvedAudioSource(
                     id = "video:${clip.id}:audio", key = video.key, uri = clip.uri,
-                    projectStartUs = video.startUs, projectEndUs = video.endUs,
-                    sourceStartUs = clip.inUs, sourceTimeUs = sourceTime,
-                    volume = AudioTimelineMapper.calculateGain(clip.volume, time - video.startUs, clip.durationUs,
-                        maxOf(clip.audioFadeInUs, entering), maxOf(clip.audioFadeOutUs, leaving)),
+                    projectStartUs = video.visibleStartUs, projectEndUs = video.visibleEndUs,
+                    sourceStartUs = video.sourceTimeUs(video.visibleStartUs), sourceTimeUs = sourceTime,
+                    volume = item.envelope.gainAt(time),
                     speed = clip.timeMap.speedAtInput(sourceTime - clip.inUs),
                     preservePitch = clip.preservePitch, generation = generation, embedded = true,
                     enhance = clip.enhance,
@@ -78,7 +91,7 @@ class ActiveAudioSourceResolver(
     fun upcoming(projectTimeUs: Long, horizonUs: Long, generation: Long): List<ResolvedAudioSource> {
         val end = projectTimeUs + horizonUs.coerceAtLeast(0L)
         val starts = buildList {
-            embedded.map { it.video.startUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
+            embedded.map { it.video.visibleStartUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
             project.audio.map { it.startUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
         }
         return starts.flatMap { resolve(it, generation) }.distinctBy { it.id }

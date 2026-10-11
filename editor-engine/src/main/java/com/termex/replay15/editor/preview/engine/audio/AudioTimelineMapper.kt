@@ -53,6 +53,10 @@ object AudioTimelineMapper {
         return (baseVolume * curve).coerceIn(0f, 4f)
     }
 
+    /** Equal-power cross-fade: in² + out² = 1, so a transition never dips in loudness. */
+    fun equalPowerIn(progress: Float): Float = sin(progress.coerceIn(0f, 1f) * PI / 2.0).toFloat()
+    fun equalPowerOut(progress: Float): Float = kotlin.math.cos(progress.coerceIn(0f, 1f) * PI / 2.0).toFloat()
+
     fun projectToSourceTimeUs(
         projectTimeUs: Long,
         startUs: Long,

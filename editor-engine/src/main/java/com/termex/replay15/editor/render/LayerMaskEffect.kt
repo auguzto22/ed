@@ -14,14 +14,22 @@ import com.termex.replay15.editor.domain.maskAt
 
 /** Export counterpart of [com.termex.replay15.editor.preview.engine.LayerMaskGpuPass]. */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
-class LayerMaskEffect(private val clip: VideoClip, private val startUs: Long) : GlEffect {
+class LayerMaskEffect(
+    private val clip: VideoClip,
+    private val startUs: Long,
+    /** Span of the media item in the composition; wider than the clip when it plays transition handles. */
+    private val itemStartUs: Long = startUs,
+    private val itemEndUs: Long = startUs + clip.durationUs.coerceAtLeast(1L),
+) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): BaseGlShaderProgram =
-        Program(useHdr, clip, startUs)
+        Program(useHdr, clip, startUs, itemStartUs, itemEndUs)
 
     private class Program(
         useHdr: Boolean,
         private val clip: VideoClip,
         private val startUs: Long,
+        private val itemStartUs: Long,
+        private val itemEndUs: Long,
     ) : BaseGlShaderProgram(useHdr, 1) {
         private val gl = GlProgram(VERTEX, FRAGMENT).apply {
             setBufferAttribute("aFramePosition", GlUtil.getNormalizedCoordinateBounds(), 4)
@@ -36,11 +44,7 @@ class LayerMaskEffect(private val clip: VideoClip, private val startUs: Long) : 
         override fun drawFrame(inputTexId: Int, presentationTimeUs: Long) {
             try {
                 val durationUs = clip.durationUs.coerceAtLeast(1L)
-                val projectTimeUs = if (presentationTimeUs in startUs..(startUs + durationUs)) {
-                    presentationTimeUs
-                } else {
-                    startUs + presentationTimeUs
-                }
+                val projectTimeUs = ExportClock.projectTimeUs(presentationTimeUs, itemStartUs, itemEndUs)
                 val timelineUs = (projectTimeUs - startUs).coerceIn(0L, durationUs)
                 val sourceUs = clip.timeMap.sourceAt(timelineUs)
                 val mask = requireNotNull(clip.maskAt(sourceUs))

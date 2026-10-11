@@ -46,8 +46,34 @@ internal object TransitionCodec {
             val easingOrdinal = input.readInt().also { require(it in Easing.entries.indices) }
             val easing = Easing.entries[easingOrdinal]
             val bezier = CubicBezier(input.readFloat(), input.readFloat(), input.readFloat(), input.readFloat())
-            TransitionInstance(id, transitionId, leftClipId, rightClipId, durationUs, params, easing, bezier)
+            // Schema < 29 had no alignment: every window started at the cut. TransitionAlignmentCodec
+            // overwrites this for newer files, so old projects keep exactly the timing they were made with.
+            TransitionInstance(id, transitionId, leftClipId, rightClipId, durationUs, params, easing, bezier,
+                TransitionAlignment.START_AT_CUT)
         }
         return project.copy(transitions = transitions)
+    }
+}
+
+/**
+ * Schema-29 appendix: where each transition sits around its cut. Written as a trailing section so
+ * files from earlier builds keep loading through the schema gate (and load as START_AT_CUT).
+ */
+internal object TransitionAlignmentCodec {
+    fun write(project: Project, out: DataOutputStream) {
+        out.writeInt(project.transitions.size)
+        project.transitions.forEach { out.writeInt(it.alignment.ordinal) }
+    }
+
+    fun read(project: Project, input: DataInputStream): Project {
+        if (input.available() <= 0) return project
+        val count = input.readInt().also { require(it in 0..200) { "Projeto incompativel" } }
+        require(count == project.transitions.size) { "Projeto incompativel" }
+        val alignments = List(count) {
+            TransitionAlignment.entries[input.readInt().also { require(it in TransitionAlignment.entries.indices) { "Projeto incompativel" } }]
+        }
+        return project.copy(transitions = project.transitions.mapIndexed { index, transition ->
+            transition.copy(alignment = alignments[index])
+        })
     }
 }

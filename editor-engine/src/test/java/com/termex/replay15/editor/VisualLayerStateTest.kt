@@ -95,9 +95,16 @@ class VisualLayerStateTest {
             assertEquals(10 * SECOND, with.startOf(1))
             assertEquals(base.videos, with.videos)
             assertEquals(base, with.withoutTransition("a", "b"))
-            val middle = ActiveClipResolver(with).resolve(10 * SECOND + duration / 2)
+            // A centered transition is half-way exactly at the cut.
+            val middle = ActiveClipResolver(with).resolve(10 * SECOND)
             assertEquals(listOf("a", "b"), middle.videos.map { it.clip.id })
             assertEquals(.5f, middle.transitions.single().progress, .0001f)
+            // Aligned after the cut, it is half-way half a duration later, as before schema 29.
+            val after = base.withTransition(transition.copy(alignment = TransitionAlignment.START_AT_CUT))
+            assertEquals(10 * SECOND, after.startOf(1))
+            val late = ActiveClipResolver(after).resolve(10 * SECOND + duration / 2)
+            assertEquals(listOf("a", "b"), late.videos.map { it.clip.id })
+            assertEquals(.5f, late.transitions.single().progress, .0001f)
         }
     }
 

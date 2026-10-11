@@ -3,6 +3,7 @@ package com.termex.replay15.editor.assets
 import org.json.JSONObject
 import com.termex.replay15.editor.domain.CubicBezier
 import com.termex.replay15.editor.domain.Easing
+import com.termex.replay15.editor.domain.TransitionAlignment
 import com.termex.replay15.editor.domain.upperBoundTime
 import com.termex.replay15.editor.domain.newId
 
@@ -91,6 +92,8 @@ data class TransitionInstance(
     val parameters: Map<String, Float> = emptyMap(),
     val easing: Easing = Easing.SMOOTH,
     val bezier: CubicBezier = CubicBezier(),
+    /** Where the window sits around the cut. Projects saved before schema 29 load as [TransitionAlignment.START_AT_CUT]. */
+    val alignment: TransitionAlignment = TransitionAlignment.CENTER,
 ) {
     init {
         require(id.length in 1..80)
