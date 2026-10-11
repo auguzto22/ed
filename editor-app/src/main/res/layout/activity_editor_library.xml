@@ -34,7 +34,7 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:background="@drawable/recly_circle_dark_btn"
-                android:elevation="6dp"
+                android:elevation="0dp"
                 android:clickable="true"
                 android:contentDescription="Voltar"
                 android:focusable="true">
@@ -44,7 +44,7 @@
                     android:layout_height="22dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_pro_back"
-                    android:tint="#F5F5F5" />
+                    android:tint="#EDEBE6" />
             </FrameLayout>
 
             <!-- Title & Subtitle -->
@@ -98,7 +98,7 @@
                     android:stateListAnimator="@null"
                     android:text="Auto Edit"
                     android:textAllCaps="false"
-                    android:textColor="#FFFFFF"
+                    android:textColor="#EDEBE6"
                     android:textSize="15sp" />
 
                 <Button
@@ -122,7 +122,7 @@
                 android:layout_height="48dp"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/recly_segmented_bar"
-                android:elevation="6dp"
+                android:elevation="0dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="4dp">
@@ -137,7 +137,7 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:text="Projetos"
-                    android:textColor="#FFFFFF"
+                    android:textColor="#EDEBE6"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif-medium" />
 
@@ -150,7 +150,7 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:text="Gravações"
-                    android:textColor="#8E8E93"
+                    android:textColor="#9A968C"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif-medium" />
 
@@ -163,7 +163,7 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:text="Replays"
-                    android:textColor="#8E8E93"
+                    android:textColor="#9A968C"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
@@ -182,7 +182,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/recly_card_dark"
-                    android:elevation="14dp"
+                    android:elevation="0dp"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="26dp">
@@ -207,7 +207,7 @@
                         android:fontFamily="sans-serif-bold"
                         android:gravity="center"
                         android:text="Seu próximo projeto&#10;começa aqui."
-                        android:textColor="#FFFFFF"
+                        android:textColor="#EDEBE6"
                         android:textSize="18sp" />
 
                     <TextView
@@ -216,7 +216,7 @@
                         android:layout_marginTop="8dp"
                         android:gravity="center"
                         android:text="Importe um vídeo e edite sem&#10;alterar o original."
-                        android:textColor="#A1A1AA"
+                        android:textColor="#9A968C"
                         android:textSize="13sp" />
 
                     <!-- Import Video Button -->
@@ -244,7 +244,7 @@
                             android:layout_marginStart="8dp"
                             android:fontFamily="sans-serif-medium"
                             android:text="Importar vídeo"
-                            android:textColor="#FFFFFF"
+                            android:textColor="#EDEBE6"
                             android:textSize="14sp" />
                     </LinearLayout>
 
@@ -260,14 +260,14 @@
                             android:layout_width="16dp"
                             android:layout_height="16dp"
                             android:src="@drawable/ic_pro_shield"
-                            android:tint="#A1A1AA" />
+                            android:tint="#9A968C" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
                             android:text="Seus arquivos originais são preservados."
-                            android:textColor="#A1A1AA"
+                            android:textColor="#9A968C"
                             android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -295,7 +295,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/recly_card_dark"
-                    android:elevation="12dp"
+                    android:elevation="0dp"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="26dp">
@@ -312,7 +312,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhuma gravação ainda"
-                        android:textColor="#FFFFFF"
+                        android:textColor="#EDEBE6"
                         android:textSize="16sp" />
 
                     <TextView
@@ -320,7 +320,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Suas gravações de tela aparecerão aqui."
-                        android:textColor="#A1A1AA"
+                        android:textColor="#9A968C"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -346,7 +346,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/recly_card_dark"
-                    android:elevation="12dp"
+                    android:elevation="0dp"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="26dp">
@@ -363,7 +363,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhum replay salvo"
-                        android:textColor="#FFFFFF"
+                        android:textColor="#EDEBE6"
                         android:textSize="16sp" />
 
                     <TextView
@@ -371,7 +371,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Seus replays instantâneos aparecerão aqui."
-                        android:textColor="#A1A1AA"
+                        android:textColor="#9A968C"
                         android:textSize="13sp" />
                 </LinearLayout>
 

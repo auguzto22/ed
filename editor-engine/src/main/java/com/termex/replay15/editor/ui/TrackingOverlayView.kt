@@ -28,26 +28,26 @@ class TrackingOverlayView(context: Context) : View(context) {
     private val density = resources.displayMetrics.density
 
     private val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF00E5FF.toInt() // Recly cyan accent
+        color = 0xFFFF5A36.toInt() // Recly cyan accent
         style = Paint.Style.STROKE
         strokeWidth = 2f * density
     }
 
     private val cornerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF00E5FF.toInt()
+        color = 0xFFFF5A36.toInt()
         style = Paint.Style.STROKE
         strokeWidth = 3.5f * density
         strokeCap = Paint.Cap.ROUND
     }
 
     private val reticlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xDD00E5FF.toInt()
+        color = 0xDDFF5A36.toInt()
         style = Paint.Style.STROKE
         strokeWidth = 1.5f * density
     }
 
     private val handleFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF00E5FF.toInt()
+        color = 0xFFFF5A36.toInt()
         style = Paint.Style.FILL
     }
 

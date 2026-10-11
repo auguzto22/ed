@@ -349,31 +349,49 @@ class EditorGlyph(
 
 fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column().apply {
     gravity = Gravity.CENTER
-    minimumWidth = dp(76)
+    minimumWidth = dp(66)
     minimumHeight = dp(74)
     contentDescription = name
     tooltipText = name
     isClickable = true
     isFocusable = true
-    setPadding(dp(8), dp(8), dp(8), dp(6))
-    val value = android.util.TypedValue()
-    theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
-    setBackgroundResource(value.resourceId)
+    setPadding(dp(4), dp(6), dp(4), dp(4))
 
-    // Cores de função do canvas: Auto Edit em vermelho (ação), Legendas em amarelo (legenda).
-    val tint = when (name) {
-        "Auto Edit", "Analisar" -> EditorStyle.ACTION
-        "Legendas" -> EditorStyle.CAPTION
-        "+ Midia" -> EditorStyle.WHITE
+    // Estilo do canvas: ícone dentro de um quadradinho com borda fina.
+    // Auto Edit = quadradinho vermelho (ação); Legendas = borda amarela (legenda); Excluir = vermelho de perigo.
+    val hot = name == "Auto Edit" || name == "Analisar"
+    val tint = when {
+        hot -> EditorStyle.INK
+        name == "Legendas" -> EditorStyle.CAPTION
+        name == "Excluir" -> EditorStyle.DANGER
         else -> EditorStyle.TEXT
     }
-    val iconView = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, tint, context))
+    val box = FrameLayout(context).apply {
         importantForAccessibility = 2
+        isDuplicateParentStateEnabled = true
+        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else 0x26FFFFFF), GradientDrawable().apply {
+            setColor(if (hot) EditorStyle.ACTION else EditorStyle.CARD)
+            setStroke(dp(1.5f), when {
+                hot -> EditorStyle.ACTION
+                name == "Legendas" -> EditorStyle.CAPTION
+                else -> EditorStyle.BORDER
+            })
+            cornerRadius = dp(12).toFloat()
+        }, null)
+        addView(ImageView(context).apply {
+            setImageDrawable(EditorGlyph(name, tint, context))
+            importantForAccessibility = 2
+        }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
     }
-    addView(iconView, LinearLayout.LayoutParams(dp(26), dp(26)))
+    addView(box, LinearLayout.LayoutParams(dp(44), dp(44)))
 
-    val labelView = label(name, 11.5f, if (tint == EditorStyle.TEXT) 0xFFC9C5BA.toInt() else tint).apply {
+    val labelTint = when {
+        hot -> EditorStyle.ACTION
+        name == "Legendas" -> EditorStyle.CAPTION
+        name == "Excluir" -> EditorStyle.DANGER
+        else -> 0xFFC9C5BA.toInt()
+    }
+    val labelView = label(name, 11f, labelTint).apply {
         gravity = Gravity.CENTER
         importantForAccessibility = 2
         setPadding(0, dp(4), 0, 0)

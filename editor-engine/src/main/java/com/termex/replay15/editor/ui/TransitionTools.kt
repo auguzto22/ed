@@ -274,7 +274,7 @@ class TransitionTools(
                     }
                     val placeholder = View(this).apply {
                         background = GradientDrawable().apply {
-                            setColor(0xFF222226.toInt())
+                            setColor(0xFF26262A.toInt())
                             cornerRadius = dp(8).toFloat()
                         }
                     }

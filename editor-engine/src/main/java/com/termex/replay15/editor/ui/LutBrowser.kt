@@ -177,7 +177,7 @@ object LutBrowser {
                 val views = card.tag as LutCardViews
                 views.name.text = displayName(file)
                 views.favorite.text = if (file.absolutePath in favorites) "★" else "☆"
-                views.favorite.setTextColor(if (file.absolutePath in favorites) 0xFFFFD166.toInt() else EditorStyle.MUTED)
+                views.favorite.setTextColor(if (file.absolutePath in favorites) 0xFFFFD23F.toInt() else EditorStyle.MUTED)
                 val chosen = file.absolutePath == selectedPath
                 card.background = GradientDrawable().apply {
                     setColor(if (chosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)

@@ -118,7 +118,7 @@ object EffectPresetGallery {
 
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF222226.toInt())
+                        setColor(0xFF26262A.toInt())
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -145,7 +145,7 @@ object EffectPresetGallery {
                 val tagView = TextView(this).apply {
                     text = preset.category
                     textSize = 9f
-                    setTextColor(0xFF888890.toInt())
+                    setTextColor(0xFF9A968C.toInt())
                     gravity = Gravity.CENTER_HORIZONTAL
                     isSingleLine = true
                 }

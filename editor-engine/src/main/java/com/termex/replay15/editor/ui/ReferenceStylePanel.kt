@@ -88,7 +88,7 @@ class ReferenceStylePanel(
             runCatching { store.rename(profile.id, name.text.toString()) }.fold({ Toast.makeText(activity, "Estilo salvo", Toast.LENGTH_SHORT).show() }, { name.error = it.message })
         })
         body.addView(activity.action("Aplicar ao clipe selecionado", true) { dialog?.dismiss(); applyProfile(profile) }, LinearLayout.LayoutParams(-1, activity.dp(52)))
-        if (profile.warnings.isNotEmpty()) body.addView(activity.label(profile.warnings.joinToString("\n"), 11f, 0xFFFFC66D.toInt()))
+        if (profile.warnings.isNotEmpty()) body.addView(activity.label(profile.warnings.joinToString("\n"), 11f, 0xFFFFD23F.toInt()))
         dialog = activity.sheet("Reference Style", body)
     }
 
@@ -125,7 +125,7 @@ class ReferenceStylePanel(
         preview(edited)
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
         body.addView(activity.sectionTitle("Preview do estilo", plan.base.summary()))
-        if (plan.unsupportedEffects.isNotEmpty()) body.addView(activity.label("Nao suportado: ${plan.unsupportedEffects.joinToString { it.name.lowercase() }}", 11f, 0xFFFFC66D.toInt()))
+        if (plan.unsupportedEffects.isNotEmpty()) body.addView(activity.label("Nao suportado: ${plan.unsupportedEffects.joinToString { it.name.lowercase() }}", 11f, 0xFFFFD23F.toInt()))
         val compare = activity.row()
         compare.addView(activity.action("Original") { preview(original) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))
         compare.addView(activity.action("Reference Style", true) { preview(edited) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))

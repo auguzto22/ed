@@ -164,7 +164,7 @@ class StickerHandlesView(context: Context) : View(context) {
         // Draw Snapping Guide Lines
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
-        paint.color = 0xFF5EDADB.toInt()
+        paint.color = 0xFFC9D3E8.toInt()
 
         if (snappedX != null) {
             val sx = width * snappedX!!
@@ -180,13 +180,13 @@ class StickerHandlesView(context: Context) : View(context) {
         canvas.rotate(transform.rotation, centerX, centerY)
 
         // Bounding Rectangle
-        paint.color = 0xFF5EDADB.toInt()
+        paint.color = 0xFFC9D3E8.toInt()
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE
         canvas.drawRoundRect(rect, 4f * density, 4f * density, paint)
 
         // Rotation Stem & Knob
-        paint.color = 0xFF5EDADB.toInt()
+        paint.color = 0xFFC9D3E8.toInt()
         paint.strokeWidth = 1.5f * density
         canvas.drawLine(centerX, rect.top, centerX, rect.top - stemLength, paint)
 
@@ -195,7 +195,7 @@ class StickerHandlesView(context: Context) : View(context) {
         paint.color = Color.WHITE
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
         paint.style = Paint.Style.STROKE
-        paint.color = 0xFF5EDADB.toInt()
+        paint.color = 0xFFC9D3E8.toInt()
         paint.strokeWidth = 2f * density
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
 
@@ -211,7 +211,7 @@ class StickerHandlesView(context: Context) : View(context) {
             paint.color = Color.WHITE
             canvas.drawCircle(cx, cy, cornerRadius, paint)
             paint.style = Paint.Style.STROKE
-            paint.color = 0xFF5EDADB.toInt()
+            paint.color = 0xFFC9D3E8.toInt()
             paint.strokeWidth = 2f * density
             canvas.drawCircle(cx, cy, cornerRadius, paint)
         }
@@ -240,7 +240,7 @@ class StickerHandlesView(context: Context) : View(context) {
         val top = 12f * density
 
         paint.style = Paint.Style.FILL
-        paint.color = 0xD918181B.toInt()
+        paint.color = 0xD91C1C1F.toInt()
         canvas.drawRoundRect(RectF(left, top, left + hudWidth, top + hudHeight), 16f * density, 16f * density, paint)
 
         textPaint.color = Color.WHITE

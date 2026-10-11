@@ -111,16 +111,9 @@ class EditorLibraryActivity : Activity() {
             cardEmptyReplays,
             bottomDock
         )
-        glassCards.forEach { card ->
-            if (card.id == R.id.bottomDock) {
-                GlassEffectHelper.applyGlassDock(card)
-            } else {
-                GlassEffectHelper.applyGlassCard(card, cornerRadiusDp = 24f, elevationDp = 8f)
-            }
-        }
-        if (bgSilk != null) {
-            GlassEffectHelper.setupRealtimeBackdrop(this, bgSilk, libraryScroll, glassCards, blurRadiusDp = 24f)
-        }
+        // Visual do canvas: superfícies chapadas com borda fina, sem vidro, desfoque nem fundo de seda.
+        glassCards.forEach { card -> card.elevation = 0f }
+        bgSilk?.visibility = View.GONE
 
         handleIntentTab(intent)
     }
@@ -187,8 +180,8 @@ class EditorLibraryActivity : Activity() {
         fun styleTab(view: TextView, active: Boolean) {
             if (active) {
                 view.setBackgroundResource(R.drawable.recly_tab_active)
-                com.termex.replay15.ui.GlassEffectHelper.applyGlassCard(view, cornerRadiusDp = 22f, elevationDp = 4f)
-                view.setTextColor(Color.parseColor("#EDEBE6"))
+                view.elevation = 0f
+                view.setTextColor(Color.WHITE)
             } else {
                 view.background = null
                 view.elevation = 0f
@@ -366,7 +359,7 @@ class EditorLibraryActivity : Activity() {
         val icon = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(14) }
             setImageResource(iconRes)
-            imageTintList = ColorStateList.valueOf(Color.WHITE)
+            imageTintList = ColorStateList.valueOf(Color.parseColor("#7F92B8"))
         }
         root.addView(icon)
 
@@ -376,7 +369,7 @@ class EditorLibraryActivity : Activity() {
         }
         val titleView = TextView(this).apply {
             text = title
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#EDEBE6"))
             textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             maxLines = 1
@@ -384,7 +377,7 @@ class EditorLibraryActivity : Activity() {
         }
         val subtitleView = TextView(this).apply {
             text = subtitle
-            setTextColor(Color.parseColor("#A1A1AA"))
+            setTextColor(Color.parseColor("#9A968C"))
             textSize = 12f
             setPadding(0, dp(2), 0, 0)
         }
@@ -395,7 +388,7 @@ class EditorLibraryActivity : Activity() {
         if (secondaryActionText != null && onSecondaryClick != null) {
             val secButton = TextView(this).apply {
                 text = secondaryActionText
-                setTextColor(Color.parseColor("#A1A1AA"))
+                setTextColor(Color.parseColor("#9A968C"))
                 textSize = 13f
                 setPadding(dp(10), dp(6), dp(10), dp(6))
                 setOnClickListener { onSecondaryClick() }
@@ -405,10 +398,10 @@ class EditorLibraryActivity : Activity() {
 
         val actionBtn = TextView(this).apply {
             text = actionText
-            setTextColor(Color.BLACK)
+            setTextColor(Color.parseColor("#141414"))
             textSize = 13f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setBackgroundResource(R.drawable.recly_pill_white)
+            setBackgroundResource(R.drawable.recly_pill_action)
             setPadding(dp(16), dp(8), dp(16), dp(8))
             setOnClickListener { onActionClick() }
         }

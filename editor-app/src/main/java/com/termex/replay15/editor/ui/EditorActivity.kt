@@ -330,13 +330,13 @@ class EditorActivity : Activity() {
             isFocusable = true
             val bg = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
-                setStroke(dp(1), EditorStyle.BORDER)
-                cornerRadius = dp(14).toFloat()
+                setStroke(dp(1.5f), EditorStyle.BORDER)
+                cornerRadius = dp(12).toFloat()
             }
             background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
             val icon = ImageView(context).apply {
                 setImageResource(R.drawable.ic_recly_close)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
+                imageTintList = ColorStateList.valueOf(EditorStyle.TEXT)
             }
             addView(icon, FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER))
             setOnClickListener { closeEditor() }
@@ -357,7 +357,7 @@ class EditorActivity : Activity() {
             contentDescription = "Qualidade de exportação"
             tooltipText = "Qualidade de exportação"
             setBackgroundColor(Color.TRANSPARENT)
-            setTextColor(0xFF8E8E93.toInt())
+            setTextColor(EditorStyle.MUTED)
             textSize = 13f
             minWidth = dp(44); minimumWidth = dp(44)
             minHeight = dp(36); minimumHeight = dp(36)
@@ -518,14 +518,15 @@ class EditorActivity : Activity() {
             tooltipText = name
             isClickable = true
             isFocusable = true
+            // Canvas: play redondo e claro; os outros controles em cartão escuro com borda fina.
             val bg = GradientDrawable().apply {
                 if (accent) {
-                    setColor(Color.WHITE)
-                    cornerRadius = dp(14).toFloat()
+                    setColor(EditorStyle.TEXT)
+                    cornerRadius = dp(24).toFloat()
                 } else {
                     setColor(EditorStyle.CARD)
-                    setStroke(dp(1), EditorStyle.BORDER)
-                    cornerRadius = dp(14).toFloat()
+                    setStroke(dp(1.5f), EditorStyle.BORDER)
+                    cornerRadius = dp(12).toFloat()
                 }
             }
             background = RippleDrawable(
@@ -536,7 +537,7 @@ class EditorActivity : Activity() {
             val icon = ImageView(context).apply {
                 id = R.id.recly_transport_icon
                 setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(if (accent) Color.BLACK else Color.WHITE)
+                imageTintList = ColorStateList.valueOf(if (accent) EditorStyle.INK else EditorStyle.TEXT)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
             }
             addView(icon, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
@@ -548,15 +549,16 @@ class EditorActivity : Activity() {
             preview.endScrub(position)
             if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
         }
-        addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
+        addView(play, LinearLayout.LayoutParams(dp(48), dp(48)))
 
         // Clock: 00:05 / 00:31
         clock = TextView(this@EditorActivity).apply {
             text = "00:00 / 00:00"
             textSize = 13.5f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             gravity = Gravity.CENTER_VERTICAL
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            // Timecode em fonte mono, como no canvas.
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD)
             setPadding(dp(12), 0, dp(12), 0)
         }
         addView(clock, LinearLayout.LayoutParams(-2, -2))
@@ -780,7 +782,7 @@ class EditorActivity : Activity() {
         setPadding(dp(12), 0, dp(12), 0)
         gravity = Gravity.CENTER_VERTICAL
         val bg = GradientDrawable().apply {
-            setColor(0x2E8E7CF0)
+            setColor(0x2E7F92B8)
             cornerRadius = dp(10).toFloat()
         }
         background = bg
@@ -795,7 +797,7 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFB8AEF5.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, 0xFFC9D3E8.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"
@@ -1175,10 +1177,17 @@ class EditorActivity : Activity() {
         workspace.addView(divider, 1, if (landscape) LinearLayout.LayoutParams(dp(10), -1) else LinearLayout.LayoutParams(-1, dp(6)))
         workspace.addView(timelinePane, if (landscape) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 0.38f))
 
-        bottom = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; setBackgroundColor(EditorStyle.PANEL) }
-        contextualTools = row().apply { setPadding(dp(8), dp(4), dp(8), dp(6)) }
+        // Barra de ferramentas do canvas: fundo preto com linha fina em cima, ícones em quadradinhos.
+        bottom = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            background = android.graphics.drawable.LayerDrawable(arrayOf(
+                android.graphics.drawable.ColorDrawable(EditorStyle.BORDER),
+                android.graphics.drawable.ColorDrawable(EditorStyle.BG),
+            )).apply { setLayerInset(1, 0, dp(1.5f), 0, 0) }
+        }
+        contextualTools = row().apply { setPadding(dp(6), dp(6), dp(6), dp(6)) }
         bottom.addView(contextualTools)
-        root.addView(bottom, LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(bottom, LinearLayout.LayoutParams(-1, dp(84)))
 
         updateContextualTools()
         setContentView(root)
@@ -3653,7 +3662,7 @@ class EditorActivity : Activity() {
         ))
 
         if (result.warnings.isNotEmpty()) {
-            body.addView(label(result.warnings.joinToString("\n"), 11f, 0xFFFFC66D.toInt()))
+            body.addView(label(result.warnings.joinToString("\n"), 11f, EditorStyle.CAPTION))
         }
 
         lateinit var dialog: Dialog

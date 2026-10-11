@@ -85,7 +85,7 @@ fun Activity.sheet(title: String, body: LinearLayout): Dialog {
             cornerRadius = dp(EditorStyle.RADIUS_PANEL).toFloat()
             setStroke(dp(1), EditorStyle.BORDER)
         }
-        addView(View(context).apply { background = GradientDrawable().apply { setColor(0xFF3F3F46.toInt()); cornerRadius = dp(2).toFloat() } },
+        addView(View(context).apply { background = GradientDrawable().apply { setColor(0xFF4A4A50.toInt()); cornerRadius = dp(2).toFloat() } },
             LinearLayout.LayoutParams(dp(40), dp(4)).apply { gravity = Gravity.CENTER; bottomMargin = dp(14) })
         val heading = row()
         heading.addView(label(title, 21f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -198,7 +198,7 @@ fun Context.editorToolCard(name: String, subtitle: String, accent: Boolean = fal
             null,
         )
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> 0xFFE4E4E7.toInt() }, context))
+            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> 0xFFEDEBE6.toInt() }, context))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }, LinearLayout.LayoutParams(dp(25), dp(25)))
         addView(label(name, 13f, when { danger -> EditorStyle.DANGER; else -> Color.WHITE }).apply {
