@@ -628,6 +628,136 @@
       "atlas": "transitions_atlas_05",
       "col": 0,
       "row": 2
+    },
+    "smooth_fade": {
+      "atlas": "transitions_atlas_05",
+      "col": 1,
+      "row": 2
+    },
+    "color_fade_dip": {
+      "atlas": "transitions_atlas_05",
+      "col": 2,
+      "row": 2
+    },
+    "cross_fade_soft": {
+      "atlas": "transitions_atlas_05",
+      "col": 3,
+      "row": 2
+    },
+    "rgb_split": {
+      "atlas": "transitions_atlas_05",
+      "col": 0,
+      "row": 3
+    },
+    "rgb_shift": {
+      "atlas": "transitions_atlas_05",
+      "col": 1,
+      "row": 3
+    },
+    "chromatic_drift": {
+      "atlas": "transitions_atlas_05",
+      "col": 2,
+      "row": 3
+    },
+    "channel_shear": {
+      "atlas": "transitions_atlas_05",
+      "col": 3,
+      "row": 3
+    },
+    "prism_wipe": {
+      "atlas": "transitions_atlas_06",
+      "col": 0,
+      "row": 0
+    },
+    "film_roll": {
+      "atlas": "transitions_atlas_06",
+      "col": 1,
+      "row": 0
+    },
+    "leader_flash": {
+      "atlas": "transitions_atlas_06",
+      "col": 2,
+      "row": 0
+    },
+    "sprocket_slip": {
+      "atlas": "transitions_atlas_06",
+      "col": 3,
+      "row": 0
+    },
+    "burn_dissolve": {
+      "atlas": "transitions_atlas_06",
+      "col": 0,
+      "row": 1
+    },
+    "anamorphic_streak": {
+      "atlas": "transitions_atlas_06",
+      "col": 1,
+      "row": 1
+    },
+    "letterbox_reveal": {
+      "atlas": "transitions_atlas_06",
+      "col": 2,
+      "row": 1
+    },
+    "flare_sweep": {
+      "atlas": "transitions_atlas_06",
+      "col": 3,
+      "row": 1
+    },
+    "cine_shutter": {
+      "atlas": "transitions_atlas_06",
+      "col": 0,
+      "row": 2
+    },
+    "social_swipe_up": {
+      "atlas": "transitions_atlas_06",
+      "col": 1,
+      "row": 2
+    },
+    "stories_flip": {
+      "atlas": "transitions_atlas_06",
+      "col": 2,
+      "row": 2
+    },
+    "heart_iris": {
+      "atlas": "transitions_atlas_06",
+      "col": 3,
+      "row": 2
+    },
+    "bubble_pop_wipe": {
+      "atlas": "transitions_atlas_06",
+      "col": 0,
+      "row": 3
+    },
+    "notification_slide": {
+      "atlas": "transitions_atlas_06",
+      "col": 1,
+      "row": 3
+    },
+    "pixel_dissolve_arcade": {
+      "atlas": "transitions_atlas_06",
+      "col": 2,
+      "row": 3
+    },
+    "scanline_wipe": {
+      "atlas": "transitions_atlas_06",
+      "col": 3,
+      "row": 3
+    },
+    "energy_blast": {
+      "atlas": "transitions_atlas_07",
+      "col": 0,
+      "row": 0
+    },
+    "level_clear_wipe": {
+      "atlas": "transitions_atlas_07",
+      "col": 1,
+      "row": 0
+    },
+    "cyber_grid_reveal": {
+      "atlas": "transitions_atlas_07",
+      "col": 2,
+      "row": 0
     }
   }
 }

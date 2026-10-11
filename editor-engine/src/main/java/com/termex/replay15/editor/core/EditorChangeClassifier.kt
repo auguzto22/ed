@@ -29,7 +29,8 @@ object EditorChangeClassifier {
     }
     private fun mapping(a:VideoClip,b:VideoClip)=a.inUs!=b.inUs||a.outUs!=b.outUs||a.speed!=b.speed||a.speedCurve!=b.speedCurve
     private fun trackPlacement(a:Project,b:Project):Boolean{
-        if(a.transitions.map{it.durationUs}!=b.transitions.map{it.durationUs})return true
+        // Duration and alignment both move the window, so decoders must re-resolve their sources.
+        if(a.transitions.map{it.durationUs to it.alignment}!=b.transitions.map{it.durationUs to it.alignment})return true
         return a.videoTracks.zip(b.videoTracks).any{(x,y)->x.clips.map{it.startUs}!=y.clips.map{it.startUs}}
     }
 }

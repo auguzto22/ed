@@ -12,7 +12,12 @@ class TimelineView(context: Context) : View(context) {
     private data class Segment(val id: String, val name: String, val start: Long, val end: Long, val speedBadge: String? = null)
     private data class Lane(val label: String, val color: Int, val type: Int, val segments: MutableList<Segment>, val trackId: String = "")
     private var lanes = listOf<Lane>()
-    var project = Project(); set(value) { field = value; positionUs = positionUs.coerceIn(0, value.durationUs); buildLanes(); invalidate() }
+    var project = Project(); set(value) {
+        field = value; transitionWindows = TransitionTiming.windows(value)
+        positionUs = positionUs.coerceIn(0, value.durationUs); buildLanes(); invalidate()
+    }
+    /** Resolved once per project snapshot; drawn as bands centred on (or beside) each cut. */
+    private var transitionWindows: List<TransitionWindow> = emptyList()
     var selected = -1; set(value) { field = value; invalidate() }
     var positionUs = 0L; set(value) { field = value; invalidate() }
     var snapping = true
@@ -186,15 +191,14 @@ class TimelineView(context: Context) : View(context) {
     private fun time(xx: Float) = (positionUs + (xx - width / 2f) / pixelsPerSecond * SECOND).toLong().coerceIn(0, project.durationUs)
     private fun transitionBoundaryAfter(index: Int): Long {
         if (index !in 0 until project.videos.lastIndex) return project.durationUs
-        val left = project.videos[index]
-        val right = project.videos[index + 1]
-        val transitionUs = project.transitionBetween(left.id, right.id)?.durationUs ?: 0L
-        return project.startOf(index + 1) + transitionUs / 2
+        // The handle sits in the middle of the window: on the cut for centered transitions.
+        return transitionWindows.firstOrNull { it.leftIndex == index }?.midpointUs ?: project.startOf(index + 1)
     }
+    // Clips are drawn at their real cuts: a transition never moves a cut, it only covers time around it.
     private fun visualStart(index: Int): Long =
-        if (index <= 0) 0L else transitionBoundaryAfter(index - 1)
+        if (index <= 0) 0L else project.startOf(index)
     private fun visualEnd(index: Int): Long =
-        if (index >= project.videos.lastIndex) project.durationUs else transitionBoundaryAfter(index)
+        if (index >= project.videos.lastIndex) project.durationUs else project.startOf(index + 1)
     private fun visualIndexAt(timeUs: Long): Int {
         if (project.videos.isEmpty()) return -1
         return project.videos.indices.firstOrNull { timeUs < visualEnd(it) } ?: project.videos.lastIndex
@@ -383,7 +387,17 @@ class TimelineView(context: Context) : View(context) {
                 val btnH = dp(22f)
                 val rect = RectF(jx - btnW / 2, cy - btnH / 2, jx + btnW / 2, cy + btnH / 2)
                 if (trans != null) {
-                    paint.color = 0xFF4A4A50.toInt()
+                    // The window itself: a translucent band over both clips, so the user sees how much of
+                    // each side the transition covers and whether it sits before, on or after the cut.
+                    transitionWindows.firstOrNull { it.leftIndex == i }?.let { window ->
+                        val bandLeft = x(window.startUs); val bandRight = x(window.endUs)
+                        paint.style = Paint.Style.FILL; paint.color = 0x38FF5A36
+                        c.drawRoundRect(bandLeft, dp(50f), bandRight, dp(116f), dp(6f), dp(6f), paint)
+                        paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1.5f); paint.color = 0xCCFF5A36.toInt()
+                        c.drawRoundRect(bandLeft, dp(50f), bandRight, dp(116f), dp(6f), dp(6f), paint)
+                        paint.style = Paint.Style.FILL
+                    }
+                    paint.color = 0xFFFF5A36.toInt()
                     paint.style = Paint.Style.FILL
                     c.drawRoundRect(rect, dp(6f), dp(6f), paint)
                     paint.color = Color.WHITE

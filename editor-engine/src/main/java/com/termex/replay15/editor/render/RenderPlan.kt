@@ -3,8 +3,17 @@ package com.termex.replay15.editor.render
 import com.termex.replay15.editor.domain.*
 import kotlin.math.roundToLong
 
-data class RenderLayer(val id: String, val clips: List<TimedVideoClip>) {
+/**
+ * One Media3 input sequence. [pieces] are the items actually exported: on the main track a clip
+ * with transitions may start earlier and end later than its own span (see [ExportPiece]).
+ */
+data class RenderLayer(
+    val id: String,
+    val clips: List<TimedVideoClip>,
+    val pieces: List<ExportPiece> = clips.map(ExportPiece::of),
+) {
     fun activeAt(timeUs: Long) = clips.firstOrNull { timeUs in it.startUs until it.endUs }
+    fun pieceAt(timeUs: Long) = pieces.firstOrNull { it.contains(timeUs) }
 }
 
 object RenderPlan {
@@ -17,23 +26,33 @@ object RenderPlan {
             val main = project.videos.map { clip -> TimedVideoClip(time, clip).also { time += clip.durationUs } }
             upper + RenderLayer(MAIN_TRACK, coalesce(main))
         } else {
-            val mainA = mutableListOf<TimedVideoClip>()
-            val mainB = mutableListOf<TimedVideoClip>()
+            // Alternate clips between two inputs so each transition has both clips on screen at
+            // once. Clips of one input are never adjacent, so there is nothing to coalesce, and
+            // the windows never overlap, so extended pieces of one input never collide.
+            val windows = TransitionTiming.windows(project)
+            val clips = List(2) { mutableListOf<TimedVideoClip>() }
+            val pieces = List(2) { mutableListOf<ExportPiece>() }
+            var start = 0L
             project.videos.forEachIndexed { index, clip ->
-                val timed = TimedVideoClip(project.startOf(index), clip)
-                if (index % 2 == 0) mainA += timed else mainB += timed
+                val timed = TimedVideoClip(start, clip)
+                clips[index % 2] += timed
+                pieces[index % 2] += ExportPlan.mainPieces(timed,
+                    windows.firstOrNull { it.rightIndex == index }, windows.firstOrNull { it.leftIndex == index })
+                start += clip.durationUs
             }
             upper + listOf(
-                RenderLayer(MAIN_TRACK_A, coalesce(mainA)),
-                RenderLayer(MAIN_TRACK_B, coalesce(mainB)),
+                RenderLayer(MAIN_TRACK_A, clips[0], pieces[0]),
+                RenderLayer(MAIN_TRACK_B, clips[1], pieces[1]),
             )
         }
     }
 
     /** Preserve project placement in each independent Media3 input sequence. */
-    fun gapBefore(previousEndUs: Long, placed: TimedVideoClip): Long {
-        require(placed.startUs >= previousEndUs) { "Overlapping clips in export sequence" }
-        return placed.startUs - previousEndUs
+    fun gapBefore(previousEndUs: Long, placed: TimedVideoClip): Long = gapBefore(previousEndUs, placed.startUs)
+
+    fun gapBefore(previousEndUs: Long, startUs: Long): Long {
+        require(startUs >= previousEndUs) { "Overlapping clips in export sequence" }
+        return startUs - previousEndUs
     }
 
     /** A split is an editing boundary, but identical adjacent pieces need not restart a decoder. */

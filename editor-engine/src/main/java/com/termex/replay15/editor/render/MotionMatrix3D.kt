@@ -18,6 +18,9 @@ class MotionMatrix3D(
     private val startUs: Long,
     private val initialProject: Project? = null,
     private val applyProjectCamera: Boolean = true,
+    /** Span of the media item in the composition; wider than the clip when it plays transition handles. */
+    private val itemStartUs: Long = startUs,
+    private val itemEndUs: Long = startUs + clip.durationUs.coerceAtLeast(1L),
 ) : GlMatrixTransformation {
 
     private class ThreadBuffers {
@@ -46,11 +49,7 @@ class MotionMatrix3D(
         val currentProject = initialProject
         val current = clip
         val durationUs = current.durationUs.coerceAtLeast(1L)
-        val projectTimeUs = if (presentationTimeUs in startUs..(startUs + durationUs)) {
-            presentationTimeUs
-        } else {
-            startUs + presentationTimeUs
-        }
+        val projectTimeUs = ExportClock.projectTimeUs(presentationTimeUs, itemStartUs, itemEndUs)
         val timelineUs = (projectTimeUs - startUs).coerceIn(0L, durationUs)
         val sourceTime = current.timeMap.sourceAt(timelineUs)
         val key = current.transformAt(sourceTime)

@@ -141,18 +141,19 @@ class ProjectEditingTest {
         val v3 = video(3 * SECOND).copy(id = "v3")
         val p = Project(videos = listOf(v1, v2, v3))
 
-        // v2 is 2 seconds. Add a 1.2s transition between v1 and v2.
+        // v2 is 2 seconds. Add a 1.2s transition between v1 and v2, entirely after the cut.
         val t1 = com.termex.replay15.editor.assets.TransitionInstance(
             id = "t1",
             transitionId = "cross_dissolve",
             leftClipId = "v1",
             rightClipId = "v2",
             durationUs = 1_200_000L,
+            alignment = TransitionAlignment.START_AT_CUT,
         )
         val pWithT1 = p.withTransition(t1)
         assertEquals(1_200_000L, pWithT1.transitions.single().durationUs)
 
-        // Now add a transition between v2 and v3 requesting 1.5s.
+        // Now add a transition between v2 and v3 requesting 1.5s, entirely before its cut.
         // v2 only has 2.0s total, and 1.2s is already used by incoming t1.
         // The available duration on v2 for t2 is at most 2.0s - 1.2s = 800ms.
         val t2 = com.termex.replay15.editor.assets.TransitionInstance(
@@ -161,10 +162,18 @@ class ProjectEditingTest {
             leftClipId = "v2",
             rightClipId = "v3",
             durationUs = 1_500_000L,
+            alignment = TransitionAlignment.END_AT_CUT,
         )
         val pWithT2 = pWithT1.withTransition(t2)
         val addedT2 = pWithT2.transitions.first { it.id == "t2" }
         assertEquals(800_000L, addedT2.durationUs)
         assertTrue(pWithT2.durationUs > 0)
+
+        // Centered on their cuts they only take half of their length from v2 each, so both fit.
+        val centered = p.withTransition(t1.copy(alignment = TransitionAlignment.CENTER))
+            .withTransition(t2.copy(alignment = TransitionAlignment.CENTER))
+        assertEquals(listOf(1_200_000L, 1_500_000L), centered.transitions.map { it.durationUs })
+        val windows = TransitionTiming.windows(centered)
+        assertTrue(windows[0].endUs <= windows[1].startUs)
     }
 }

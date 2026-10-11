@@ -18,9 +18,12 @@ class PackageEffect(
     private val clip: VideoClip?,
     private val startUs: Long,
     private val durationUs: Long = clip?.durationUs ?: 1L,
+    /** Span of the media item in the composition; wider than the clip when it plays transition handles. */
+    private val itemStartUs: Long = startUs,
+    private val itemEndUs: Long = startUs + durationUs.coerceAtLeast(1L),
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram = try {
-        Program(context, useHdr, instance, clip, startUs, durationUs)
+        Program(context, useHdr, instance, clip, startUs, durationUs, itemStartUs, itemEndUs)
     } catch (error: Throwable) {
         val vendor = runCatching { GLES20.glGetString(GLES20.GL_VENDOR) }.getOrDefault("unknown")
         val renderer = runCatching { GLES20.glGetString(GLES20.GL_RENDERER) }.getOrDefault("unknown")
@@ -29,7 +32,8 @@ class PackageEffect(
         Contrast(0f).toGlShaderProgram(context, useHdr)
     }
     private class Program(context: Context, hdr: Boolean, private val initialEffect: EffectInstance, private val initialClip: VideoClip?,
-        private val startUs: Long, private val durationUs: Long) : BaseGlShaderProgram(hdr, 1) {
+        private val startUs: Long, private val durationUs: Long,
+        private val itemStartUs: Long, private val itemEndUs: Long) : BaseGlShaderProgram(hdr, 1) {
         private val resolved = AssetRepository(context).resolve(initialEffect.assetId, initialEffect.version)
         private val definition = resolved.first
         private val isTemporal = definition.temporal || definition.engine == EffectEngine.TEMPORAL_TRAIL
@@ -117,11 +121,7 @@ class PackageEffect(
                 val effect = clip?.effects?.firstOrNull { it.id == initialEffect.id }
                     ?: initialEffect
                 val safeDurationUs = durationUs.coerceAtLeast(1L)
-                val projectTimeUs = if (presentationTimeUs in startUs..(startUs + safeDurationUs)) {
-                    presentationTimeUs
-                } else {
-                    startUs + presentationTimeUs
-                }
+                val projectTimeUs = ExportClock.projectTimeUs(presentationTimeUs, itemStartUs, itemEndUs)
                 val time = (projectTimeUs - startUs).coerceIn(0L, safeDurationUs)
                 val sourceUs = clip?.timeMap?.sourceAt(time) ?: projectTimeUs
                 val intensity = if (effect.activeAt(sourceUs))

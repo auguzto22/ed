@@ -5,6 +5,11 @@ import androidx.media3.common.VideoCompositorSettings
 import androidx.media3.common.util.Size
 import com.termex.replay15.editor.domain.*
 
+/**
+ * Decides which input is visible for every exported frame. Main-track clips that take part in a
+ * transition are both decoded through the window; the incoming one carries the composited picture
+ * once its shader has drawn, otherwise the edit stays a plain cut at its real position.
+ */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class TrackCompositor(
     private val project: Project,
@@ -20,40 +25,27 @@ class TrackCompositor(
 
     private val visible = FixedAlpha(1f)
     private val hidden = FixedAlpha(0f)
+    private val windows = TransitionTiming.windows(project)
 
     override fun getOutputSize(inputSizes: List<Size>) = Size(width, height)
+
     override fun getOverlaySettings(inputId: Int, presentationTimeUs: Long): OverlaySettings {
-        val layer = layers.getOrNull(inputId)
         if (inputId == layers.size) return visible
-        val snapshot = project
-        if (layer == null || !snapshot.visualEnabled(layer.id)) return hidden
-        val active = layer.activeAt(presentationTimeUs)
-        if (traceFrames && presentationTimeUs in 3_900_000L..6_200_000L) {
+        val layer = layers.getOrNull(inputId) ?: return hidden
+        if (!project.visualEnabled(layer.id)) return hidden
+        val piece = layer.pieceAt(presentationTimeUs) ?: return hidden
+        val main = layer.id == MAIN_TRACK_A || layer.id == MAIN_TRACK_B
+        val window = (if (main) windows.firstOrNull {
+            it.contains(presentationTimeUs) &&
+                (it.transition.leftClipId == piece.clip.id || it.transition.rightClipId == piece.clip.id)
+        } else null) ?: return visible
+        val shaderSinceUs = transitionBridgeKeys[window.transition.id]?.let(TransitionBridge::shaderSinceUs) ?: Long.MAX_VALUE
+        val shown = TransitionVisibility.visible(window, piece.clip.id, presentationTimeUs, shaderSinceUs)
+        if (traceFrames) {
             android.util.Log.d("ReclyExportFrame", "projectTimeUs=$presentationTimeUs input=$inputId layer=${layer.id} " +
-                "clip=${active?.clip?.id} startUs=${active?.startUs} endUs=${active?.endUs} " +
-                "sourceTimeUs=${active?.let { RenderPlan.sourceTime(it.clip, it.startUs, presentationTimeUs) }}")
+                "clip=${piece.clip.id} hold=${piece.hold} piece=${piece.startUs}..${piece.endUs} " +
+                "window=${window.startUs}..${window.endUs} cut=${window.cutUs} shaderSince=$shaderSinceUs shown=$shown")
         }
-        if (active == null) return hidden
-        val transition = snapshot.transitions.firstOrNull { trans ->
-            (trans.leftClipId == active.clip.id || trans.rightClipId == active.clip.id) &&
-            presentationTimeUs >= trans.startUs(snapshot) &&
-            presentationTimeUs < trans.endUs(snapshot)
-        }
-        val alpha = when {
-            transition == null -> 1f
-            transitionBridgeKeys[transition.id]?.let(TransitionBridge::isReady) == true ->
-                if (transition.leftClipId == active.clip.id) 0f else 1f
-            else -> {
-                // Fallback when transition is not ready (missing capture or shader error):
-                // Clean midpoint cut so the preview NEVER goes black.
-                val midUs = transition.startUs(snapshot) + transition.durationUs / 2
-                if (presentationTimeUs < midUs) {
-                    if (transition.leftClipId == active.clip.id) 1f else 0f
-                } else {
-                    if (transition.rightClipId == active.clip.id) 1f else 0f
-                }
-            }
-        }
-        return if (alpha == 0f) hidden else visible
+        return if (shown) visible else hidden
     }
 }

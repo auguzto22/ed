@@ -22,14 +22,12 @@ object ProjectComposition {
         private val fadeUs: Long,
         private val durationUs: Long,
         private val startUs: Long,
+        private val itemStartUs: Long = startUs,
+        private val itemEndUs: Long = startUs + durationUs,
     ) : RgbMatrix {
         override fun getMatrix(presentationTimeUs: Long, useHdr: Boolean): FloatArray {
             val fade = fadeUs.coerceAtMost(durationUs / 2).coerceAtLeast(1)
-            val projectTimeUs = if (presentationTimeUs in startUs..(startUs + durationUs)) {
-                presentationTimeUs
-            } else {
-                startUs + presentationTimeUs
-            }
+            val projectTimeUs = ExportClock.projectTimeUs(presentationTimeUs, itemStartUs, itemEndUs)
             val localUs = (projectTimeUs - startUs).coerceIn(0L, durationUs)
             val entering = if (input == ClipTransition.NONE) 1f else (localUs / fade.toFloat()).coerceIn(0f, 1f)
             val leaving = if (output == ClipTransition.NONE) 1f else ((durationUs - localUs) / fade.toFloat()).coerceIn(0f, 1f)
@@ -58,6 +56,32 @@ object ProjectComposition {
         override fun isNoOp(inputWidth: Int, inputHeight: Int) = strength == 0f
     }
 
+    /**
+     * Applies [ClipAudioEnvelope] to an item starting at [itemStartUs] in project time: volume, the
+     * clip's own fades and equal-power transition cross-fades, exactly as the preview mixes them.
+     * Gain processors run after the speed change, so positions are already in timeline time.
+     */
+    private class EnvelopeGain(private val envelope: ClipAudioEnvelope, private val itemStartUs: Long) :
+        GainProcessor.GainProvider {
+        private fun timeUs(samplePosition: Long, sampleRate: Int) = itemStartUs + samplePosition * 1_000_000L / sampleRate
+
+        override fun getGainFactorAtSamplePosition(samplePosition: Long, sampleRate: Int): Float =
+            envelope.gainAt(timeUs(samplePosition, sampleRate))
+
+        override fun isUnityUntil(samplePosition: Long, sampleRate: Int): Long {
+            val untilUs = envelope.unityUntilUs(timeUs(samplePosition, sampleRate)) ?: return C.TIME_UNSET
+            // First sample at or after untilUs, and always past the current one.
+            val untilSample = ((untilUs - itemStartUs) * sampleRate + 999_999L) / 1_000_000L
+            return maxOf(samplePosition + 1, untilSample)
+        }
+    }
+
+    /** Extended items only exist for constant-speed clips and photos. */
+    private class ConstantSpeed(private val speed: Float) : SpeedProvider {
+        override fun getSpeed(timeUs: Long) = speed
+        override fun getNextSpeedChangeTimeUs(timeUs: Long) = C.TIME_UNSET
+    }
+
     private fun gain(volume: Float, fadeInUs: Long = 0, fadeOutUs: Long = 0, durationUs: Long = 0): List<AudioProcessor> {
         if ((fadeInUs > 0 || fadeOutUs > 0) && durationUs > 0) {
             val maximum = durationUs / 2
@@ -79,30 +103,46 @@ object ProjectComposition {
         require(project.allVideos.isNotEmpty()) { "Adicione um video ou foto" }
         val (width, height) = project.dimensions(project.export.shortSide)
         val layers = RenderPlan.layers(project)
+        val windows = TransitionTiming.windows(project)
         val transitionSessionId = nextTransitionSessionId.incrementAndGet()
         TransitionBridge.clearStaleSessions(transitionSessionId)
-        val transitionBridgeKeys = project.transitions.associate { transition ->
-            val key = "$transitionSessionId:${transition.id}"
+        // The composition holds one reference per window, so a sequence moving on to its next item
+        // never frees frames the other sequence still needs.
+        val transitionBridgeKeys = windows.associate { window ->
+            val key = "$transitionSessionId:${window.transition.id}"
             TransitionBridge.retain(key)
-            transition.id to key
+            window.transition.id to key
+        }
+        val transitionDefinitions = windows.associate { window ->
+            window.transition.id to (com.termex.replay15.editor.assets.TransitionCatalog.findById(context, window.transition.transitionId)
+                ?: com.termex.replay15.editor.assets.BuiltInTransitions.definitions(context).first())
         }
         val sequences = layers.map { layer ->
+          val mainTrack = layer.id == MAIN_TRACK_A || layer.id == MAIN_TRACK_B
           val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
           var endUs = 0L
-          layer.clips.forEach { placed ->
-            val gapUs = RenderPlan.gapBefore(endUs, placed)
+          layer.pieces.forEach { piece ->
+            val gapUs = RenderPlan.gapBefore(endUs, piece.startUs)
             if (gapUs > 0L) sequence.addGap(gapUs)
-            val clip = placed.clip
+            val clip = piece.clip
             if (clip.isNullObject) {
-                sequence.addGap(clip.durationUs)
-                endUs = placed.endUs
+                sequence.addGap(piece.durationUs)
+                endUs = piece.endUs
                 return@forEach
             }
+            // Transitions live on the main track only. A hold item sits before the clip, far from
+            // the window leaving it.
+            val entering = if (mainTrack) windows.firstOrNull { it.transition.rightClipId == clip.id } else null
+            val leaving = if (mainTrack && !piece.hold) windows.firstOrNull { it.transition.leftClipId == clip.id } else null
+            val clipStartUs = piece.clipStartUs
             val media = MediaItem.Builder().setUri(clip.uri)
-            if (clip.image) media.setImageDurationMs((clip.outUs - clip.inUs) / 1000)
+            val imageDurationUs = if (piece.extended) piece.durationUs else clip.outUs - clip.inUs
+            if (clip.image) media.setImageDurationMs(imageDurationUs / 1000)
             else media.setClippingConfiguration(MediaItem.ClippingConfiguration.Builder()
-                .setStartPositionUs(clip.inUs).setEndPositionUs(clip.outUs).build())
+                .setStartPositionUs(piece.sourceStartUs).setEndPositionUs(piece.sourceEndUs).build())
             val effects = mutableListOf<Effect>()
+            // Must come first so every other effect is applied to the held frame.
+            if (piece.hold) effects += HoldFirstFrameEffect()
             if (clip.crop != CropRect()) effects += Crop(2 * clip.crop.left - 1, 2 * clip.crop.right - 1,
                 1 - 2 * clip.crop.bottom, 1 - 2 * clip.crop.top)
             if (clip.rotation != 0 || clip.flip) effects += ScaleAndRotateTransformation.Builder()
@@ -120,14 +160,15 @@ object ProjectComposition {
                 .setBlueScale(1f - clip.temperature * .18f).build()
             if (clip.blur > 0f) effects += GaussianBlur(clip.blur)
             if (clip.needsStudioEffect()) {
-                effects += StudioEffect(clip, project.backgroundColor, placed.startUs, preserveAlpha = true)
+                effects += StudioEffect(clip, project.backgroundColor, clipStartUs, preserveAlpha = true,
+                    itemStartUs = piece.startUs, itemEndUs = piece.endUs)
             }
             clip.effects.filter {
                 it.enabled && (it.intensity > 0 ||
                     it.keyframes[com.termex.replay15.editor.assets.EffectInstance.INTENSITY].orEmpty().any { key -> key.value > 0 })
             }
-                .forEach { effects += PackageEffect(it, clip, placed.startUs) }
-            if (clip.mask != null) effects += LayerMaskEffect(clip, placed.startUs)
+                .forEach { effects += PackageEffect(it, clip, clipStartUs, itemStartUs = piece.startUs, itemEndUs = piece.endUs) }
+            if (clip.mask != null) effects += LayerMaskEffect(clip, clipStartUs, piece.startUs, piece.endUs)
             effects += Presentation.createForWidthAndHeight(width, height, if (project.canvasFill == CanvasFill.FILL)
                 Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP else Presentation.LAYOUT_SCALE_TO_FIT)
             if (
@@ -141,43 +182,38 @@ object ProjectComposition {
                 clip.transform3D != Transform3D.DEFAULT ||
                 clip.parentId != null
             ) {
-                effects += MotionMatrix3D(clip, placed.startUs, project, applyProjectCamera = false)
+                effects += MotionMatrix3D(clip, clipStartUs, project, applyProjectCamera = false,
+                    itemStartUs = piece.startUs, itemEndUs = piece.endUs)
             }
             if (clip.transitionIn != ClipTransition.NONE || clip.transitionOut != ClipTransition.NONE) effects += TransitionMatrix(
-                clip.transitionIn, clip.transitionOut, clip.transitionDurationUs, clip.durationUs, placed.startUs,
+                clip.transitionIn, clip.transitionOut, clip.transitionDurationUs, clip.durationUs, clipStartUs, piece.startUs, piece.endUs,
             )
-            val transOut = project.transitions.firstOrNull { it.leftClipId == clip.id }
-            if (transOut != null) {
-                effects += TransitionCaptureEffect(
-                    transOut.id,
-                    transitionBridgeKeys.getValue(transOut.id),
-                    transOut.startUs(project),
-                    clip.durationUs,
-                )
+            // Capture before rendering: the frames kept for the next window are the clip's own.
+            if (leaving != null) effects += TransitionCaptureEffect(
+                transitionBridgeKeys.getValue(leaving.transition.id),
+                leaving.startUs - ExportPlan.CAPTURE_PREROLL_US, leaving.endUs, piece.startUs, piece.endUs,
+            )
+            if (entering != null) effects += TransitionRenderEffect(
+                entering, transitionDefinitions.getValue(entering.transition.id),
+                transitionBridgeKeys.getValue(entering.transition.id), piece.startUs, piece.endUs,
+                finishOnRelease = !piece.hold,
+            )
+            val enhance = if (clip.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(clip.enhance))
+            val audioEffects = when {
+                // A held frame has no sound, like the preview.
+                piece.hold -> emptyList()
+                entering != null || leaving != null ->
+                    listOf(GainProcessor(EnvelopeGain(ClipAudioEnvelope(clip, clipStartUs, entering, leaving), piece.startUs))) + enhance
+                else -> gain(clip.volume, clip.audioFadeInUs, clip.audioFadeOutUs, clip.durationUs) + enhance
             }
-            val transIn = project.transitions.firstOrNull { it.rightClipId == clip.id }
-            if (transIn != null) {
-                val def = com.termex.replay15.editor.assets.TransitionCatalog.findById(context, transIn.transitionId)
-                    ?: com.termex.replay15.editor.assets.BuiltInTransitions.definitions(context).first()
-                effects += TransitionRenderEffect(
-                    transIn,
-                    def,
-                    transitionBridgeKeys.getValue(transIn.id),
-                    transIn.startUs(project),
-                    transIn.durationUs,
-                )
-            }
-            val audioFadeIn = maxOf(clip.audioFadeInUs, transIn?.durationUs ?: 0L)
-            val audioFadeOut = maxOf(clip.audioFadeOutUs, transOut?.durationUs ?: 0L)
-            val audioEffects = gain(clip.volume, audioFadeIn, audioFadeOut, clip.durationUs) +
-                if (clip.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(clip.enhance))
+            val speed = if (piece.extended) ConstantSpeed(piece.speed) else ClipSpeedProvider(clip)
             val item = EditedMediaItem.Builder(media.build())
-                .setDurationUs((if (clip.image) clip.outUs - clip.inUs else clip.sourceUs).coerceAtLeast(1000L))
-                .setRemoveAudio(!project.audioEnabled(layer.id))
+                .setDurationUs((if (clip.image) imageDurationUs else clip.sourceUs).coerceAtLeast(1000L))
+                .setRemoveAudio(piece.hold || !project.audioEnabled(layer.id))
                 .setFrameRate(project.export.fps)
                 .setEffects(Effects(audioEffects, effects))
-                .setSpeed(androidx.media3.common.SpeedParameters(ClipSpeedProvider(clip), clip.preservePitch)).build()
-            sequence.addItem(item); endUs = placed.endUs
+                .setSpeed(androidx.media3.common.SpeedParameters(speed, clip.preservePitch)).build()
+            sequence.addItem(item); endUs = piece.endUs
           }
           if (endUs < project.durationUs) sequence.addGap(project.durationUs - endUs)
           sequence.build()

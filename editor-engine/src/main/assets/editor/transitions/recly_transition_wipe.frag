@@ -1,53 +1,50 @@
+// Wipes. Edges are measured in aspect-correct screen space, so a soft edge keeps the same width in
+// every direction and the iris stays round. A direction names where the edge travels.
+
+const float PI = 3.14159265;
+
+float aspectRatio() { return uResolution.x / max(uResolution.y, 1.0); }
+
+// 0 → A, 1 → B for a straight edge sweeping across [lo, hi] along coordinate [x].
+float sweep(float x, float lo, float hi, float t, float soft) {
+    float edge = mix(lo - soft, hi + soft, t);
+    return 1.0 - smoothstep(edge - soft, edge + soft, x);
+}
+
 vec4 reclyTransition(vec2 uv, float progress) {
-    vec4 ca = texture2D(uTexA, uv);
-    vec4 cb = texture2D(uTexB, uv);
-    if (progress <= 0.0) return ca;
-    if (progress >= 1.0) return cb;
-
-    float mode = floor(p_mode + 0.5);
-    float softness = max(p_softness, 0.001);
+    vec4 a = texture2D(uTexA, uv);
+    vec4 b = texture2D(uTexB, uv);
     float t = clamp(progress, 0.0, 1.0);
-    float tMapped = mix(-softness, 1.0 + softness, t);
-    float mask = 0.0;
+    float mode = floor(p_mode + 0.5);
+    float asp = aspectRatio();
+    vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+    float soft = max(p_softness, 0.002) * 0.5;
+    float m;
 
-    if (mode < 0.5) {
-        // Wipe Left (progress moves from left to right)
-        mask = smoothstep(uv.x - softness, uv.x + softness, tMapped);
-    } else if (mode < 1.5) {
-        // Wipe Right
-        mask = smoothstep((1.0 - uv.x) - softness, (1.0 - uv.x) + softness, tMapped);
-    } else if (mode < 2.5) {
-        // Wipe Up
-        mask = smoothstep(uv.y - softness, uv.y + softness, tMapped);
-    } else if (mode < 3.5) {
-        // Wipe Down
-        mask = smoothstep((1.0 - uv.y) - softness, (1.0 - uv.y) + softness, tMapped);
-    } else if (mode < 4.5) {
-        // Diagonal Wipe (top-left to bottom-right)
-        float d = (uv.x + uv.y) * 0.5;
-        mask = smoothstep(d - softness, d + softness, tMapped);
+    if (mode < 0.5) m = sweep(-p.x, -asp * 0.5, asp * 0.5, t, soft);       // edge travels left
+    else if (mode < 1.5) m = sweep(p.x, -asp * 0.5, asp * 0.5, t, soft);   // edge travels right
+    else if (mode < 2.5) m = sweep(p.y, -0.5, 0.5, t, soft);               // edge travels up
+    else if (mode < 3.5) m = sweep(-p.y, -0.5, 0.5, t, soft);              // edge travels down
+    else if (mode < 4.5) {
+        // Diagonal: from the top-left corner towards the bottom-right one.
+        vec2 d = normalize(vec2(asp, -1.0));
+        float reach = dot(vec2(asp, 1.0) * 0.5, abs(d));
+        m = sweep(dot(p, d), -reach, reach, t, soft);
     } else if (mode < 5.5) {
-        // Circle Wipe / Iris
-        vec2 center = vec2(p_center_x > 0.0 ? p_center_x : 0.5, p_center_y > 0.0 ? p_center_y : 0.5);
-        float aspect = uResolution.x / max(uResolution.y, 1.0);
-        vec2 diff = uv - center;
-        diff.x *= aspect;
-        float dist = length(diff);
-        float maxDist = length(vec2(0.5 * aspect, 0.5));
-        float radius = mix(-softness, maxDist * 1.42 + softness, t);
-        mask = 1.0 - smoothstep(radius - softness, radius + softness, dist);
+        // Iris opening from the centre until it clears the corners.
+        float radius = mix(-soft, length(vec2(asp, 1.0) * 0.5) + soft, t);
+        m = 1.0 - smoothstep(radius - soft, radius + soft, length(p));
     } else if (mode < 6.5) {
-        // Radial Wipe (Clock sweep)
-        vec2 center = vec2(p_center_x > 0.0 ? p_center_x : 0.5, p_center_y > 0.0 ? p_center_y : 0.5);
-        vec2 p = uv - center;
-        float angle = atan(p.y, p.x) + 3.14159265; // [0, 2pi]
-        float normAngle = angle / (2.0 * 3.14159265);
-        mask = smoothstep(normAngle - softness, normAngle + softness, tMapped);
+        // Clock wipe from twelve o'clock, clockwise. The edge keeps a constant width on screen.
+        float r = length(p);
+        float angle = fract(atan(p.x, p.y) / (2.0 * PI) + 1.0);
+        float s = min(soft / max(r * 2.0 * PI, 0.001), 0.25);
+        float edge = mix(-s, 1.0 + s, t);
+        m = 1.0 - smoothstep(edge - s, edge + s, angle);
     } else {
-        // Soft Wipe (linear smooth gradient)
-        float softWipeEdge = mix(-0.2, 1.2, t);
-        mask = 1.0 - smoothstep(softWipeEdge - 0.2, softWipeEdge + 0.2, uv.x);
+        // Soft wipe: a wide feathered edge travelling right.
+        float wide = max(soft, 0.18 * asp);
+        m = sweep(p.x, -asp * 0.5, asp * 0.5, t, wide);
     }
-
-    return mix(ca, cb, clamp(mask, 0.0, 1.0));
+    return mix(a, b, clamp(m, 0.0, 1.0));
 }

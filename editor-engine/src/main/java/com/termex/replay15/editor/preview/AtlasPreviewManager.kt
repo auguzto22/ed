@@ -95,7 +95,8 @@ object AtlasPreviewManager {
         "film_look" to AtlasCoordinate("effects_atlas_02", 3, 0),
     )
 
-    // 3. Static coordinates for 73 built-in Transitions
+    // 3. Static coordinates for all 99 built-in transitions (16 per atlas, 4x4 cells of 128 px).
+    // The first 73 keep their original cells; newer ones follow in catalog order.
     private val transitionCoordinates: Map<String, AtlasCoordinate> = buildMap {
         val transitionIds = listOf(
             "cross_dissolve", "fade", "dip_to_black", "dip_to_white",
@@ -116,7 +117,13 @@ object AtlasPreviewManager {
             "cube_left", "cube_right", "page_turn", "perspective_slide",
             "split_reveal", "split_horizontal", "split_vertical", "mosaic_reveal",
             "pixel_dissolve", "prism_trans", "mirror_trans", "kaleidoscope_trans",
-            "glass_trans"
+            "glass_trans", "smooth_fade", "color_fade_dip", "cross_fade_soft",
+            "rgb_split", "rgb_shift", "chromatic_drift", "channel_shear",
+            "prism_wipe", "film_roll", "leader_flash", "sprocket_slip",
+            "burn_dissolve", "anamorphic_streak", "letterbox_reveal", "flare_sweep",
+            "cine_shutter", "social_swipe_up", "stories_flip", "heart_iris",
+            "bubble_pop_wipe", "notification_slide", "pixel_dissolve_arcade", "scanline_wipe",
+            "energy_blast", "level_clear_wipe", "cyber_grid_reveal"
         )
         for (i in transitionIds.indices) {
             val atlasNum = (i / 16) + 1

@@ -18,12 +18,16 @@ import kotlin.math.pow
 
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class StudioEffect(private val clip: VideoClip, private val background: Int, private val startUs: Long = 0L,
-    private val preserveAlpha: Boolean = false) : GlEffect {
+    private val preserveAlpha: Boolean = false,
+    /** Span of the media item in the composition; wider than the clip when it plays transition handles. */
+    private val itemStartUs: Long = startUs,
+    private val itemEndUs: Long = startUs + clip.durationUs.coerceAtLeast(1L)) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): BaseGlShaderProgram =
-        Program(context, useHdr, clip, background, startUs, preserveAlpha)
+        Program(context, useHdr, clip, background, startUs, preserveAlpha, itemStartUs, itemEndUs)
 
     private class Program(context: Context, hdr: Boolean, private val initialClip: VideoClip, background: Int,
-        private val startUs: Long, preserveAlpha: Boolean) : BaseGlShaderProgram(hdr, 1) {
+        private val startUs: Long, preserveAlpha: Boolean,
+        private val itemStartUs: Long, private val itemEndUs: Long) : BaseGlShaderProgram(hdr, 1) {
         private val compileStartedNs = if (PreviewPacingProbe.enabled) System.nanoTime() else 0L
         private val gl = try { GlProgram(context, R.raw.studio_vertex, R.raw.studio_fragment) }
             catch (e: Exception) { throw VideoFrameProcessingException(e) }
@@ -145,11 +149,7 @@ class StudioEffect(private val clip: VideoClip, private val background: Int, pri
                 gl.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
                 gl.setSamplerTexIdUniform("uLut", if (lutTexture == 0) inputTexId else lutTexture, 1)
                 val durationUs = clip.durationUs.coerceAtLeast(1L)
-                val projectTimeUs = if (presentationTimeUs in startUs..(startUs + durationUs)) {
-                    presentationTimeUs
-                } else {
-                    startUs + presentationTimeUs
-                }
+                val projectTimeUs = ExportClock.projectTimeUs(presentationTimeUs, itemStartUs, itemEndUs)
                 val timelineUs = (projectTimeUs - startUs).coerceIn(0L, durationUs)
                 gl.setFloatUniform("uTime", timelineUs / 1_000_000f)
                 gl.setFloatUniform("uOpacity", clip.transformAt(clip.timeMap.sourceAt(timelineUs)).opacity)

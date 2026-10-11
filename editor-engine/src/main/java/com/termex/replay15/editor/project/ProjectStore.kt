@@ -88,6 +88,7 @@ object ProjectCodec {
             VideoAudioEnhanceCodec.write(project, o)
             CompoundCodec.write(project, o)
             MediaSourceCodec.write(project, o)
+            TransitionAlignmentCodec.write(project, o)
         }
     }
     fun read(stream: InputStream, nested: Boolean = false): Project = DataInputStream(BufferedInputStream(stream)).use { i ->
@@ -174,7 +175,8 @@ object ProjectCodec {
         val audioEnhanced = if (schema < 25) motionTracked else AudioEnhanceCodec.read(motionTracked, i)
         val videoEnhanced = if (schema < 26) audioEnhanced else VideoAudioEnhanceCodec.read(audioEnhanced, i)
         val compounded = if (schema < 27) videoEnhanced else CompoundCodec.read(videoEnhanced, i)
-        if (schema < 28) compounded else MediaSourceCodec.read(compounded, i)
+        val sourced = if (schema < 28) compounded else MediaSourceCodec.read(compounded, i)
+        if (schema < 29) sourced else TransitionAlignmentCodec.read(sourced, i)
     }
 }
 
