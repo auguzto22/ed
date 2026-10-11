@@ -72,7 +72,7 @@ object EffectPresetGallery {
                 val isChosen = selectedPreset?.id == presetId
                 views.container.background = GradientDrawable().apply {
                     setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                    cornerRadius = dp(0).toFloat()
+                    cornerRadius = dp(12).toFloat()
                     setStroke(dp(if (isChosen) 2 else 1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                 }
                 views.label.setTextColor(if (isChosen) EditorStyle.ACCENT else EditorStyle.MUTED)
@@ -102,7 +102,7 @@ object EffectPresetGallery {
 
                     background = GradientDrawable().apply {
                         setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(12).toFloat()
                         setStroke(dp(if (isChosen) 2 else 1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                     }
                 }
@@ -119,7 +119,7 @@ object EffectPresetGallery {
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
                         setColor(0xFF1C1C1E.toInt())
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(8).toFloat()
                     }
                 }
                 imageFrame.addView(placeholder, FrameLayout.LayoutParams(dp(76), dp(76)))
@@ -186,7 +186,7 @@ object EffectPresetGallery {
                     setTextColor(if (isSelected) Color.WHITE else EditorStyle.MUTED)
                     background = GradientDrawable().apply {
                         setColor(if (isSelected) EditorStyle.ACCENT else EditorStyle.CARD)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(16).toFloat()
                     }
                     isClickable = true
                     isFocusable = true

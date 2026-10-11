@@ -67,7 +67,7 @@ object LutBrowser {
         val detailRow = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, dp(8)) }
         val detailImage = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
-            background = GradientDrawable().apply { setColor(EditorStyle.CARD_ELEVATED); cornerRadius = dp(0).toFloat() }
+            background = GradientDrawable().apply { setColor(EditorStyle.CARD_ELEVATED); cornerRadius = dp(10).toFloat() }
             clipToOutline = true
         }
         detailRow.addView(detailImage, LinearLayout.LayoutParams(dp(112), dp(72)).apply { marginEnd = dp(10) })
@@ -181,7 +181,7 @@ object LutBrowser {
                 val chosen = file.absolutePath == selectedPath
                 card.background = GradientDrawable().apply {
                     setColor(if (chosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                    cornerRadius = dp(0).toFloat()
+                    cornerRadius = dp(10).toFloat()
                     setStroke(dp(if (chosen) 2 else 1), if (chosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                 }
                 card.setOnClickListener {
@@ -250,7 +250,7 @@ object LutBrowser {
 
     private fun Activity.tabBackground(selected: Boolean) = GradientDrawable().apply {
         if (selected) setColor(Color.WHITE) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
-        cornerRadius = dp(0).toFloat()
+        cornerRadius = dp(20).toFloat()
     }
 
     private fun displayName(file: File): String {

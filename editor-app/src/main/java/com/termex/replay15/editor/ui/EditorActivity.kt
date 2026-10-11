@@ -332,7 +332,7 @@ class EditorActivity : Activity() {
             val bg = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
                 setStroke(dp(1.5f), EditorStyle.BORDER)
-                cornerRadius = dp(0).toFloat()
+                cornerRadius = dp(12).toFloat()
             }
             background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
             val icon = ImageView(context).apply {
@@ -348,20 +348,15 @@ class EditorActivity : Activity() {
         // Título e meta do projeto (canvas): tocar abre o menu do projeto.
         projectTitleView = TextView(this@EditorActivity).apply {
             text = project.name
-            textSize = 15f
+            textSize = 16f
             setTextColor(EditorStyle.TEXT)
-            typeface = android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL)
-            isAllCaps = true
-            letterSpacing = -0.01f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
         projectMetaView = TextView(this@EditorActivity).apply {
             text = projectMeta()
-            textSize = 9.5f
-            isAllCaps = true
-            letterSpacing = 0.04f
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            textSize = 11f
             setTextColor(EditorStyle.MUTED)
             maxLines = 1
         }
@@ -387,12 +382,9 @@ class EditorActivity : Activity() {
             setTextColor(0xFFFAFAF6.toInt())
             background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
-                setStroke(dp(1.5f), EditorStyle.TEXT)
-                cornerRadius = dp(18).toFloat()
+                setStroke(dp(1.5f), EditorStyle.VIDEO)
+                cornerRadius = dp(10).toFloat()
             }, null)
-            isAllCaps = true
-            letterSpacing = 0.02f
-            setTextColor(EditorStyle.TEXT)
         }
         addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(6), 0) })
 
@@ -423,14 +415,14 @@ class EditorActivity : Activity() {
             background = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
                 setStroke(dp(1.5f), EditorStyle.BORDER)
-                cornerRadius = dp(0).toFloat()
+                cornerRadius = dp(12).toFloat()
             }
         }
 
         fun chipBackground(fill: Int, stroke: Int) = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
             setColor(fill)
             if (stroke != Color.TRANSPARENT) setStroke(dp(1.5f), stroke)
-            cornerRadius = dp(0).toFloat()
+            cornerRadius = dp(8).toFloat()
         }, null)
 
         fun separator() = View(this@EditorActivity).apply { setBackgroundColor(EditorStyle.BORDER) }
@@ -500,7 +492,7 @@ class EditorActivity : Activity() {
             chip.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
                 setColor(EditorStyle.BG)
                 setStroke(dp(1.5f), if (index == captionStyleSelected) EditorStyle.CAPTION else EditorStyle.BORDER)
-                cornerRadius = dp(0).toFloat()
+                cornerRadius = dp(8).toFloat()
             }, null)
         }
     }
@@ -567,11 +559,11 @@ class EditorActivity : Activity() {
             val bg = GradientDrawable().apply {
                 if (accent) {
                     setColor(EditorStyle.TEXT)
-                    cornerRadius = dp(0).toFloat()
+                    cornerRadius = dp(24).toFloat()
                 } else {
                     setColor(EditorStyle.CARD)
                     setStroke(dp(1.5f), EditorStyle.BORDER)
-                    cornerRadius = dp(0).toFloat()
+                    cornerRadius = dp(12).toFloat()
                 }
             }
             background = RippleDrawable(
@@ -828,7 +820,7 @@ class EditorActivity : Activity() {
         gravity = Gravity.CENTER_VERTICAL
         val bg = GradientDrawable().apply {
             setColor(0x2ED9D6CC)
-            cornerRadius = dp(0).toFloat()
+            cornerRadius = dp(10).toFloat()
         }
         background = bg
         val back = TextView(this@EditorActivity).apply {

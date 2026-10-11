@@ -86,7 +86,7 @@ object FilterGallery {
                 val isChosen = filter.ordinal == selected
                 views.container.background = GradientDrawable().apply {
                     setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                    cornerRadius = dp(0).toFloat()
+                    cornerRadius = dp(12).toFloat()
                     setStroke(dp(if (isChosen) 2 else 1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                 }
                 views.label.setTextColor(if (isChosen) EditorStyle.ACCENT else EditorStyle.MUTED)
@@ -113,7 +113,7 @@ object FilterGallery {
 
                     background = GradientDrawable().apply {
                         setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(12).toFloat()
                         setStroke(dp(if (isChosen) 2 else 1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                     }
                 }
@@ -131,7 +131,7 @@ object FilterGallery {
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
                         setColor(0xFF1C1C1E.toInt())
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(8).toFloat()
                     }
                 }
                 imageFrame.addView(placeholder, FrameLayout.LayoutParams(dp(76), dp(76)))
@@ -182,11 +182,11 @@ object FilterGallery {
                 btn.background = GradientDrawable().apply {
                     if (isCurrent) {
                         setColor(Color.WHITE)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(20).toFloat()
                     } else {
                         setColor(EditorStyle.CARD)
                         setStroke(dp(1), EditorStyle.BORDER)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(12).toFloat()
                     }
                 }
             }

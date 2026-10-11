@@ -40,8 +40,8 @@ object EditorStyle {
     const val VIDEO_DEEP = 0xFFC50022.toInt()
     const val DANGER = 0xFFEF4444.toInt()
     const val GREEN = 0xFF10B981.toInt()
-    const val RADIUS_PANEL = 0
-    const val RADIUS_CONTROL = 0
+    const val RADIUS_PANEL = 20
+    const val RADIUS_CONTROL = 12
     const val TOUCH_TARGET = 44
     const val MOTION_PRESS = 80L
     const val MOTION_SELECTION = 120L
@@ -56,18 +56,18 @@ fun Context.label(value: String, size: Float = 14f, color: Int = Color.WHITE) = 
     typeface = EditorFonts.get(this@label, TextFont.OUTFIT)
 }
 fun Context.action(value: String, accent: Boolean = false, onClick: () -> Unit) = Button(this).apply {
-    text = value; contentDescription = value; textSize = 12f; isAllCaps = true; letterSpacing = 0.05f
-    typeface = android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL)
+    text = value; contentDescription = value; textSize = 13f; isAllCaps = false
+    typeface = EditorFonts.get(this@action, TextFont.OUTFIT, android.graphics.Typeface.BOLD)
     minWidth = dp(48); minimumWidth = dp(48); minHeight = dp(44); minimumHeight = dp(44)
     maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
     val bg = GradientDrawable().apply {
         if (accent) {
             setColor(EditorStyle.ACTION)
-            cornerRadius = dp(0).toFloat()
+            cornerRadius = dp(12).toFloat()
         } else {
             setColor(EditorStyle.CARD)
             setStroke(dp(1.5f), EditorStyle.BORDER)
-            cornerRadius = dp(0).toFloat()
+            cornerRadius = dp(12).toFloat()
         }
     }
     background = RippleDrawable(
@@ -89,7 +89,7 @@ fun Activity.sheet(title: String, body: LinearLayout): Dialog {
             cornerRadius = dp(EditorStyle.RADIUS_PANEL).toFloat()
             setStroke(dp(1), EditorStyle.BORDER)
         }
-        addView(View(context).apply { background = GradientDrawable().apply { setColor(0xFF4A4A50.toInt()); cornerRadius = dp(0).toFloat() } },
+        addView(View(context).apply { background = GradientDrawable().apply { setColor(0xFF4A4A50.toInt()); cornerRadius = dp(2).toFloat() } },
             LinearLayout.LayoutParams(dp(40), dp(4)).apply { gravity = Gravity.CENTER; bottomMargin = dp(14) })
         val heading = row()
         heading.addView(label(title, 21f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -197,7 +197,7 @@ fun Context.editorToolCard(name: String, subtitle: String, accent: Boolean = fal
             GradientDrawable().apply {
                 setColor(if (accent) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
                 setStroke(dp(1), when { danger -> EditorStyle.DANGER; accent -> EditorStyle.BORDER_LIGHT; else -> EditorStyle.BORDER })
-                cornerRadius = dp(0).toFloat()
+                cornerRadius = dp(14).toFloat()
             },
             null,
         )
@@ -225,11 +225,11 @@ fun Context.editorIconButton(
     val bg = GradientDrawable().apply {
         if (accent) {
             setColor(EditorStyle.ACTION)
-            cornerRadius = dp(0).toFloat()
+            cornerRadius = dp(12).toFloat()
         } else {
             setColor(EditorStyle.CARD)
             setStroke(dp(1.5f), EditorStyle.BORDER)
-            cornerRadius = dp(0).toFloat()
+            cornerRadius = dp(12).toFloat()
         }
     }
     background = RippleDrawable(
@@ -289,7 +289,7 @@ fun Context.pillButton(value: String, active: Boolean = false, onClick: () -> Un
             setColor(EditorStyle.CARD)
             setStroke(dp(1.5f), EditorStyle.BORDER)
         }
-        cornerRadius = dp(0).toFloat()
+        cornerRadius = dp(10).toFloat()
     }
     background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x22FFFFFF), bg, null)
     setTextColor(if (active) Color.WHITE else EditorStyle.MUTED)
@@ -307,7 +307,7 @@ fun Context.exportPill(onClick: () -> Unit) = Button(this).apply {
     setPadding(dp(16), dp(6), dp(16), dp(6))
     val bg = GradientDrawable().apply {
         setColor(EditorStyle.ACTION)
-        cornerRadius = dp(0).toFloat()
+        cornerRadius = dp(10).toFloat()
     }
     background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x44000000), bg, null)
     setTextColor(EditorStyle.ON_ACTION)

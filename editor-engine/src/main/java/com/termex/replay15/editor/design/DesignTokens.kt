@@ -90,16 +90,16 @@ object DesignTokens {
     // ── Corner Radii ─────────────────────────────────────────────────────────────
 
     /** Small: chips, tags, small buttons. */
-    const val RADIUS_SM = 0
+    const val RADIUS_SM = 8
 
     /** Medium: inputs, cards, pills. */
-    const val RADIUS_MD = 0
+    const val RADIUS_MD = 14
 
     /** Large: panels, sheets, bottom sheets. */
-    const val RADIUS_LG = 0
+    const val RADIUS_LG = 20
 
     /** Extra large: modal dialogs. */
-    const val RADIUS_XL = 0
+    const val RADIUS_XL = 24
 
     /** Full circle. */
     const val RADIUS_FULL = 9999

@@ -313,7 +313,7 @@ object StudioPanels {
                         val bg = GradientDrawable().apply {
                             setColor(EditorStyle.CARD)
                             setStroke(dp(1), EditorStyle.BORDER)
-                            cornerRadius = dp(0).toFloat()
+                            cornerRadius = dp(12).toFloat()
                         }
                         background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
                         addView(dlIcon, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
@@ -339,7 +339,7 @@ object StudioPanels {
                     val bg = GradientDrawable().apply {
                         setColor(EditorStyle.CARD)
                         setStroke(dp(1), EditorStyle.BORDER)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(12).toFloat()
                     }
                     background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
                     val starIcon = ImageView(context).apply {

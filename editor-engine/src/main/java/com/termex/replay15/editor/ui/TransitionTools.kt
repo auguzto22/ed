@@ -93,7 +93,7 @@ class TransitionTools(
             setHintTextColor(EditorStyle.MUTED)
             background = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
-                cornerRadius = dp(0).toFloat()
+                cornerRadius = dp(8).toFloat()
                 setStroke(dp(1), EditorStyle.BORDER)
             }
             setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -244,7 +244,7 @@ class TransitionTools(
                         val isChosen = item.id == selectedDef.id
                         background = GradientDrawable().apply {
                             setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                            cornerRadius = dp(0).toFloat()
+                            cornerRadius = dp(12).toFloat()
                             setStroke(dp(1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                         }
                     }
@@ -275,7 +275,7 @@ class TransitionTools(
                     val placeholder = View(this).apply {
                         background = GradientDrawable().apply {
                             setColor(0xFF1C1C1E.toInt())
-                            cornerRadius = dp(0).toFloat()
+                            cornerRadius = dp(8).toFloat()
                         }
                     }
                     imageFrame.addView(placeholder, FrameLayout.LayoutParams(-1, dp(64)))
@@ -327,7 +327,7 @@ class TransitionTools(
                     setTextColor(if (active) Color.WHITE else EditorStyle.MUTED)
                     background = GradientDrawable().apply {
                         setColor(if (active) EditorStyle.CARD else Color.TRANSPARENT)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(14).toFloat()
                         if (active) setStroke(dp(1), EditorStyle.ACCENT)
                     }
                     setPadding(dp(12), dp(4), dp(12), dp(4))

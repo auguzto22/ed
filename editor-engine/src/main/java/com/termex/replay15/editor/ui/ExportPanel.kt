@@ -59,7 +59,7 @@ object ExportPanel {
             setPadding(dp(14), dp(10), dp(14), dp(10))
             background = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
-                cornerRadius = dp(0).toFloat()
+                cornerRadius = dp(12).toFloat()
                 setStroke(dp(1), EditorStyle.BORDER)
             }
         }
@@ -92,11 +92,11 @@ object ExportPanel {
                 val bg = GradientDrawable().apply {
                     if (isSelected) {
                         setColor(Color.WHITE)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(18).toFloat()
                     } else {
                         setColor(EditorStyle.CARD)
                         setStroke(dp(1), EditorStyle.BORDER)
-                        cornerRadius = dp(0).toFloat()
+                        cornerRadius = dp(10).toFloat()
                     }
                 }
                 background = RippleDrawable(
