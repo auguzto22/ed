@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Recly — Editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121214}
+a{color:#EDEBE6;text-decoration:none}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+.btn{transition:transform .12s ease,box-shadow .12s ease,background .2s}
+.btn:hover{transform:translate(-1px,-1px)}
+.btn:active{transform:translate(1px,1px)}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes eq{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+@keyframes sweep{0%{transform:translateX(-70px)}100%{transform:translateX(150px)}}
+@keyframes dash{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+.rise{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.06s}.d2{animation-delay:.12s}.d3{animation-delay:.18s}
+.eq{animation:eq 1.1s ease-in-out infinite;transform-origin:center}
+.sweep{animation:sweep 8s linear infinite alternate}
+.marquee{background-image:linear-gradient(90deg,#FFD23F 50%,transparent 50%),linear-gradient(90deg,#FFD23F 50%,transparent 50%),linear-gradient(0deg,#FFD23F 50%,transparent 50%),linear-gradient(0deg,#FFD23F 50%,transparent 50%);background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;background-size:12px 1.5px,12px 1.5px,1.5px 12px,1.5px 12px;background-position:0 0,0 100%,0 0,100% 0;animation:dash .8s linear infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #121214; color: #EDEBE6; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="display: flex; align-items: center; gap: 8px; padding: 18px 12px 8px">
+    <a href="Main.dc.html" aria-label="Voltar" class="btn" style="width: 44px; height: 44px; border-radius: 12px; background: #1C1C1F; border: 1.5px solid #2C2C30; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EDEBE6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Review fone bluetooth</span>
+      <span style="font-size: 11px; color: #9A968C">9:16 · 1080p · 30 fps</span>
+    </div>
+    <a href="AutoEdit.dc.html" class="btn" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1.5px solid #7F92B8; background: #1C1C1F; color: #C9D3E8; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; box-sizing: border-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9D3E8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"></path><path d="M6 16v-4M11 16V8M16 16v-6"></path></svg>
+      Analisar
+    </a>
+    <button class="btn" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: {{accent}}; color: #141414; font-weight: 700; font-size: 13px">Exportar</button>
+  </header>
+
+  <section aria-label="Pré-visualização" style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px">
+    <div class="rise" style="width: 186px; height: 330px; border-radius: 12px; background: #2A2A33; border: 1.5px solid #2C2C30; position: relative; overflow: hidden">
+      <div style="position: absolute; left: -30px; top: 40px; width: 160px; height: 160px; border-radius: 80px; background: #4A5A7A; opacity: 0.55"></div>
+      <div style="position: absolute; right: -40px; top: 120px; width: 140px; height: 140px; border-radius: 70px; background: #6B4A3E; opacity: 0.5"></div>
+      <span style="position: absolute; left: 8px; top: 8px; height: 20px; padding: 0 7px; border-radius: 5px; background: rgba(18,18,20,0.85); display: flex; align-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: #EDEBE6">00:12:10</span>
+
+      <div class="marquee" style="position: absolute; left: 12px; right: 12px; bottom: 46px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 17px; line-height: 1.05; text-transform: uppercase; text-align: center; color: #FFFFFF; text-shadow: 0 2px 0 #000">esse fone</span>
+        <span style="{{capStyle}}">mudou meu dia</span>
+        <span style="position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; background: #FFD23F; border-radius: 2px"></span>
+        <span style="position: absolute; right: -4px; top: -4px; width: 8px; height: 8px; background: #FFD23F; border-radius: 2px"></span>
+        <span style="position: absolute; left: -4px; bottom: -4px; width: 8px; height: 8px; background: #FFD23F; border-radius: 2px"></span>
+        <span style="position: absolute; right: -4px; bottom: -4px; width: 8px; height: 8px; background: #FFD23F; border-radius: 2px"></span>
+      </div>
+
+      <sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+        <div style="position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; gap: 6px">
+          <input aria-label="Texto da legenda" value="mudou meu dia" style="flex: 1; min-width: 0; height: 30px; padding: 0 8px; border-radius: 6px; border: 1.5px solid #FFD23F; background: #121214; color: #EDEBE6; font-size: 12px; outline: none; box-sizing: border-box">
+        </div>
+      </sc-if>
+    </div>
+
+    <div class="rise d1" role="toolbar" aria-label="Legenda selecionada" style="display: flex; align-items: center; gap: 6px; padding: 5px; border-radius: 12px; background: #1C1C1F; border: 1.5px solid #2C2C30">
+      <button onClick="{{toggleEdit}}" aria-pressed="{{editPressed}}" class="btn" style="height: 34px; padding: 0 10px; border-radius: 8px; border: 0; background: {{editBg}}; color: {{editFg}}; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg>
+        Texto
+      </button>
+      <span style="width: 1px; height: 20px; background: #2C2C30"></span>
+      <sc-for list="{{styles}}" as="s" hint-placeholder-count="3">
+        <button onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" aria-label="Estilo {{s.name}}" class="btn" style="width: 38px; height: 34px; border-radius: 8px; border: {{s.border}}; background: #121214; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+          <span style="{{s.chip}}">Aa</span>
+        </button>
+      </sc-for>
+      <span style="width: 1px; height: 20px; background: #2C2C30"></span>
+      <button class="btn" style="height: 34px; padding: 0 10px; border-radius: 8px; border: 0; background: transparent; color: #FFD23F; font-size: 12px; font-weight: 600">Auto ✓</button>
+    </div>
+  </section>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 16px">
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600">00:12:10 <span style="color: #9A968C">/ 00:42:00</span></span>
+    <button class="btn" aria-label="Reproduzir" style="width: 50px; height: 50px; border-radius: 25px; border: 0; background: #EDEBE6; display: flex; align-items: center; justify-content: center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#141414" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+    </button>
+    <div style="display: flex; gap: 4px">
+      <button class="btn" aria-label="Desfazer" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EDEBE6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"></path><path d="M4 9h11a5 5 0 010 10h-3"></path></svg>
+      </button>
+      <button class="btn" aria-label="Refazer" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E6B64" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"></path><path d="M20 9H9a5 5 0 000 10h3"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <section aria-label="Linha do tempo" style="flex: 1; position: relative; background: #1A1A1D; border-top: 1.5px solid #2C2C30; padding: 8px 0 0; display: flex; flex-direction: column; gap: 7px; overflow: hidden">
+    <div style="display: flex; padding-left: 40px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 500; color: #6E6B64">
+      <span style="width: 80px">00:00</span><span style="width: 80px">00:10</span><span style="width: 80px">00:20</span><span style="width: 80px">00:30</span>
+    </div>
+
+    <div style="display: flex; align-items: center; height: 46px">
+      <div style="width: 40px; display: flex; justify-content: center" title="Vídeo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F92B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"></rect><path d="M16 10l5-3v10l-5-3"></path></svg>
+      </div>
+      <div style="display: flex; gap: 3px; height: 46px">
+        <sc-for list="{{clips}}" as="c" hint-placeholder-count="4">
+          <div class="{{c.cls}}" style="width: {{c.w}}px; height: 46px; border-radius: 6px; background: #7F92B8; border: {{c.border}}; box-sizing: border-box; position: relative; overflow: hidden">
+            <div style="position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(0,0,0,0.18) 1px, transparent 1px); background-size: 26px 100%"></div>
+            <span style="position: absolute; left: 6px; bottom: 3px; font-size: 10px; font-weight: 700; color: #141414">{{c.label}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; height: 26px">
+      <div style="width: 40px; display: flex; justify-content: center" title="Legendas">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD23F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 15h4M13 15h4M7 11h10"></path></svg>
+      </div>
+      <div style="display: flex; gap: 3px">
+        <sc-for list="{{subs}}" as="s" hint-placeholder-count="5">
+          <div style="width: {{s.w}}px; height: 26px; border-radius: 5px; background: {{s.bg}}; border: {{s.border}}; box-sizing: border-box; padding: 0 6px; display: flex; align-items: center; font-size: 10px; font-weight: 600; color: {{s.fg}}; white-space: nowrap; overflow: hidden">{{s.t}}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; height: 34px">
+      <div style="width: 40px; display: flex; justify-content: center" title="Áudio">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A968C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+      </div>
+      <div style="width: 318px; height: 34px; border-radius: 6px; background: #26262A; display: flex; align-items: center; gap: 2px; padding: 0 5px; box-sizing: border-box; overflow: hidden">
+        <sc-for list="{{wave}}" as="b" hint-placeholder-count="60">
+          <div class="eq" style="width: 3px; flex-shrink: 0; height: {{b.h}}px; border-radius: 2px; background: #8C8A84; animation-delay: {{b.d}}"></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div aria-hidden="true" class="sweep" style="position: absolute; left: 150px; top: 0; bottom: 0; width: 2px; background: {{accent}}">
+      <div style="position: absolute; top: 2px; left: -5px; width: 12px; height: 12px; border-radius: 3px; background: {{accent}}"></div>
+    </div>
+  </section>
+
+  <nav aria-label="Ferramentas" style="display: flex; justify-content: space-between; padding: 10px 10px 20px; background: #121214; border-top: 1.5px solid #2C2C30">
+    <sc-for list="{{tools}}" as="t" hint-placeholder-count="5">
+      <a href="{{t.href}}" style="width: 64px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: {{t.fg}}">
+        <span class="btn" style="width: 44px; height: 44px; border-radius: 12px; background: {{t.bg}}; border: 1.5px solid {{t.line}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{t.stroke}}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"></path></svg>
+        </span>
+        {{t.label}}
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#FF5A36","options":["#FF5A36","#FFD23F","#7F92B8","#EDEBE6"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cap: 'destaque', editing: false };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#FF5A36';
+    const base = "font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 17px; line-height: 1.1; text-transform: uppercase; text-align: center; ";
+    const caps = {
+      destaque: base + 'padding: 1px 7px; border-radius: 4px; background: #FFD23F; color: #141414;',
+      contorno: base + 'color: #FFD23F; text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;',
+      caixa: base + 'padding: 1px 7px; border-radius: 3px; background: #141414; color: #FFFFFF;'
+    };
+    const chips = {
+      destaque: "font-size: 12px; font-weight: 800; padding: 0 4px; border-radius: 3px; background: #FFD23F; color: #141414;",
+      contorno: "font-size: 13px; font-weight: 800; color: #FFD23F; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000;",
+      caixa: "font-size: 12px; font-weight: 700; padding: 0 4px; border-radius: 3px; background: #EDEBE6; color: #141414;"
+    };
+    const styles = [
+      { id: 'destaque', name: 'Destaque' },
+      { id: 'contorno', name: 'Contorno' },
+      { id: 'caixa', name: 'Caixa' }
+    ].map((s) => ({
+      ...s,
+      chip: chips[s.id],
+      pressed: this.state.cap === s.id ? 'true' : 'false',
+      border: this.state.cap === s.id ? '1.5px solid #FFD23F' : '1.5px solid #2C2C30',
+      pick: () => this.setState({ cap: s.id })
+    }));
+    const wave = [];
+    for (let i = 0; i < 62; i++) {
+      const h = 6 + Math.round(Math.abs(Math.sin(i * 0.7) * 12 + Math.sin(i * 0.23) * 8));
+      wave.push({ h: Math.min(h, 26), d: '-' + ((i * 0.13) % 1.1).toFixed(2) + 's' });
+    }
+    const subsRaw = [
+      { w: 56, t: 'Esse fone' },
+      { w: 68, t: 'mudou meu dia' },
+      { w: 88, t: 'bateria de 30 h' },
+      { w: 52, t: 'e o grave…' },
+      { w: 46, t: 'link na bio' }
+    ];
+    const subs = subsRaw.map((s, i) => ({
+      ...s,
+      bg: i === 1 ? '#FFD23F' : 'rgba(255,210,63,0.16)',
+      fg: i === 1 ? '#141414' : '#F3D98A',
+      border: i === 1 ? '1.5px solid #FFD23F' : '1px solid rgba(255,210,63,0.35)'
+    }));
+    const icon = {
+      split: 'M6 3v18M18 3v18M6 12h12',
+      trim: 'M12 3v18M5 8l-3 4 3 4M19 8l3 4-3 4',
+      text: 'M4 7V5h16v2M12 5v14M9 19h6',
+      audio: 'M9 18V5l12-2v13M6 21a3 3 0 100-6 3 3 0 000 6zM18 19a3 3 0 100-6 3 3 0 000 6z',
+      bolt: 'M13 2L4 14h7l-1 8 9-12h-7z'
+    };
+    const tool = (label, ic, href, hot) => ({
+      label, href, icon: icon[ic],
+      bg: hot ? accent : '#1C1C1F',
+      line: hot ? accent : '#2C2C30',
+      stroke: hot ? '#141414' : '#EDEBE6',
+      fg: hot ? accent : '#C9C5BA'
+    });
+    return {
+      accent,
+      capStyle: caps[this.state.cap],
+      styles,
+      editing: this.state.editing,
+      editPressed: this.state.editing ? 'true' : 'false',
+      editBg: this.state.editing ? '#FFD23F' : 'transparent',
+      editFg: this.state.editing ? '#141414' : '#EDEBE6',
+      toggleEdit: () => this.setState({ editing: !this.state.editing }),
+      clips: [
+        { w: 70, label: 'Gancho', border: '1.5px solid #121214', cls: 'rise d1' },
+        { w: 104, label: 'Demo', border: '2px solid ' + accent, cls: 'rise d2' },
+        { w: 60, label: 'Close', border: '1.5px solid #121214', cls: 'rise d3' },
+        { w: 72, label: 'CTA', border: '1.5px solid #121214', cls: 'rise d3' }
+      ],
+      subs,
+      tools: [
+        tool('Dividir', 'split', '#', false),
+        tool('Aparar', 'trim', '#', false),
+        tool('Texto', 'text', '#', false),
+        tool('Áudio', 'audio', '#', false),
+        tool('Auto Edit', 'bolt', 'AutoEdit.dc.html', true)
+      ],
+      wave
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -57,7 +57,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_pro_home"
-                android:tint="#F5F5F5" />
+                android:tint="#141414" />
 
             <TextView
                 android:id="@+id/navHomeText"
@@ -66,7 +66,7 @@
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Início"
-                android:textColor="#F5F5F5"
+                android:textColor="#141414"
                 android:textSize="10.5sp" />
         </LinearLayout>
 
@@ -86,7 +86,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_pro_video"
-                android:tint="#A5A5AA" />
+                android:tint="#9A968C" />
 
             <TextView
                 android:id="@+id/navRecordingsText"
@@ -94,8 +94,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Vídeos"
-                android:textColor="#A5A5AA"
+                android:text="Gravações"
+                android:textColor="#9A968C"
                 android:textSize="10.5sp" />
         </LinearLayout>
 
@@ -115,7 +115,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_pro_scissors"
-                android:tint="#A5A5AA" />
+                android:tint="#9A968C" />
 
             <TextView
                 android:id="@+id/navEditorText"
@@ -124,7 +124,7 @@
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Editor"
-                android:textColor="#A5A5AA"
+                android:textColor="#9A968C"
                 android:textSize="10.5sp" />
         </LinearLayout>
 
@@ -144,7 +144,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_pro_gear"
-                android:tint="#A5A5AA" />
+                android:tint="#9A968C" />
 
             <TextView
                 android:id="@+id/navSettingsText"
@@ -152,8 +152,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Configurações"
-                android:textColor="#A5A5AA"
+                android:text="Config."
+                android:textColor="#9A968C"
                 android:textSize="10.5sp" />
         </LinearLayout>
 

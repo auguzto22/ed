@@ -14,6 +14,8 @@ import com.termex.replay15.editor.transform.TransformKeyframe
 import com.termex.replay15.editor.transform.TransformState
 import kotlin.math.*
 
+private const val CAPTION_FRAME = 0xFFFAFAF6.toInt()
+
 /**
  * Professional direct manipulation overlay for text layers on preview.
  *
@@ -190,7 +192,7 @@ class TextHandlesView(context: Context) : View(context) {
         // Draw Snapping Guide Lines
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
-        paint.color = 0xFF6366F1.toInt()
+        paint.color = 0xFFC50022.toInt()
 
         if (snappedX != null) {
             val sx = width * snappedX!!
@@ -205,14 +207,17 @@ class TextHandlesView(context: Context) : View(context) {
         canvas.save()
         canvas.rotate(transform.rotation, centerX, centerY)
 
-        // Bounding Rectangle
-        paint.color = 0xFFFF8A1F.toInt()
+        // Bounding Rectangle — legendas usam a moldura amarela tracejada do canvas; textos mantêm o roxo.
+        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else 0xFFFAFAF6.toInt()
+        paint.color = frameColor
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE
+        if (activeClip.isCaption) paint.pathEffect = DashPathEffect(floatArrayOf(6f * density, 4f * density), 0f)
         canvas.drawRoundRect(rect, 4f * density, 4f * density, paint)
+        paint.pathEffect = null
 
         // Rotation Stem & Knob
-        paint.color = 0xFFFF8A1F.toInt()
+        paint.color = frameColor
         paint.strokeWidth = 1.5f * density
         canvas.drawLine(centerX, rect.top, centerX, rect.top - stemLength, paint)
 
@@ -221,7 +226,7 @@ class TextHandlesView(context: Context) : View(context) {
         paint.color = Color.WHITE
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
         paint.style = Paint.Style.STROKE
-        paint.color = 0xFFFF8A1F.toInt()
+        paint.color = frameColor
         paint.strokeWidth = 2f * density
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
 
@@ -237,7 +242,7 @@ class TextHandlesView(context: Context) : View(context) {
             paint.color = Color.WHITE
             canvas.drawCircle(cx, cy, cornerRadius, paint)
             paint.style = Paint.Style.STROKE
-            paint.color = 0xFFFF8A1F.toInt()
+            paint.color = frameColor
             paint.strokeWidth = 2f * density
             canvas.drawCircle(cx, cy, cornerRadius, paint)
         }
@@ -266,7 +271,7 @@ class TextHandlesView(context: Context) : View(context) {
         val top = 12f * density
 
         paint.style = Paint.Style.FILL
-        paint.color = 0xD918181B.toInt()
+        paint.color = 0xD9121213.toInt()
         canvas.drawRoundRect(RectF(left, top, left + hudWidth, top + hudHeight), 16f * density, 16f * density, paint)
 
         textPaint.color = Color.WHITE

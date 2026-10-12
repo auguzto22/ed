@@ -79,7 +79,29 @@ class EditorGlyph(
         style = Paint.Style.FILL
     }
 
+    /**
+     * Ícones das cinco ferramentas do canvas, desenhados com os mesmos traçados do design
+     * (viewBox 24x24, traço 2.1). O nome começa com "canvas:".
+     */
+    private val canvasPaths: List<Path>? = CANVAS_ICONS[kind]?.mapNotNull { androidx.core.graphics.PathParser.createPathFromPathData(it) }
+
+    private fun drawCanvasIcon(canvas: Canvas, paths: List<Path>) {
+        canvas.save()
+        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+        canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
+        val stroke = Paint(paint).apply {
+            strokeWidth = 2.1f
+            style = if (kind == "canvas:autoedit") Paint.Style.FILL_AND_STROKE else Paint.Style.STROKE
+        }
+        paths.forEach { canvas.drawPath(it, stroke) }
+        canvas.restore()
+    }
+
     override fun draw(canvas: Canvas) {
+        if (canvasPaths != null) {
+            drawCanvasIcon(canvas, canvasPaths)
+            return
+        }
         if (delegate != null) {
             delegate.bounds = bounds
             delegate.draw(canvas)
@@ -347,26 +369,64 @@ class EditorGlyph(
     override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
-fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column().apply {
+
+private val CANVAS_ICONS: Map<String, List<String>> = mapOf(
+    "canvas:dividir" to listOf("M6 3v18M18 3v18M6 12h12"),
+    "canvas:aparar" to listOf("M12 3v18M5 8l-3 4 3 4M19 8l3 4-3 4"),
+    "canvas:texto" to listOf("M4 7V5h16v2M12 5v14M9 19h6"),
+    "canvas:audio" to listOf(
+        "M9 18V5l12-2v13",
+        "M3 18a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
+        "M15 16a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
+    ),
+    "canvas:autoedit" to listOf("M13 2L4 14h7l-1 8 9-12h-7z"),
+)
+
+fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): LinearLayout = column().apply {
     gravity = Gravity.CENTER
     minimumWidth = dp(66)
-    minimumHeight = dp(58)
+    minimumHeight = dp(74)
     contentDescription = name
     tooltipText = name
     isClickable = true
     isFocusable = true
-    setPadding(dp(6), dp(6), dp(6), dp(4))
-    val value = android.util.TypedValue()
-    theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
-    setBackgroundResource(value.resourceId)
+    setPadding(dp(4), dp(6), dp(4), dp(4))
 
-    val iconView = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, if (name == "+ Midia") EditorStyle.ACCENT else 0xFFE8E8EE.toInt(), context))
-        importantForAccessibility = 2
+    // Estilo do canvas: ícone dentro de um quadradinho com borda fina.
+    // Auto Edit = quadradinho vermelho (ação); Legendas = borda amarela (legenda); Excluir = vermelho de perigo.
+    val hot = name == "Auto Edit" || name == "Analisar"
+    val tint = when {
+        hot -> EditorStyle.ON_ACTION
+        name == "Legendas" -> EditorStyle.CAPTION
+        name == "Excluir" -> EditorStyle.DANGER
+        else -> EditorStyle.TEXT
     }
-    addView(iconView, LinearLayout.LayoutParams(dp(22), dp(22)))
+    val box = FrameLayout(context).apply {
+        importantForAccessibility = 2
+        isDuplicateParentStateEnabled = true
+        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else 0x26FFFFFF), GradientDrawable().apply {
+            setColor(if (hot) EditorStyle.ACTION else EditorStyle.CARD)
+            setStroke(dp(1.5f), when {
+                hot -> EditorStyle.ACTION
+                name == "Legendas" -> EditorStyle.CAPTION
+                else -> EditorStyle.BORDER
+            })
+            cornerRadius = dp(12).toFloat()
+        }, null)
+        addView(ImageView(context).apply {
+            setImageDrawable(EditorGlyph(glyph, tint, context))
+            importantForAccessibility = 2
+        }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
+    }
+    addView(box, LinearLayout.LayoutParams(dp(44), dp(44)))
 
-    val labelView = label(name, 10.5f, 0xFFC9C9D3.toInt()).apply {
+    val labelTint = when {
+        hot -> EditorStyle.ACTION_TEXT
+        name == "Legendas" -> EditorStyle.CAPTION
+        name == "Excluir" -> EditorStyle.DANGER
+        else -> 0xFFC9C5BA.toInt()
+    }
+    val labelView = label(name, 11f, labelTint).apply {
         gravity = Gravity.CENTER
         importantForAccessibility = 2
         setPadding(0, dp(3), 0, 0)
@@ -376,9 +436,9 @@ fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column()
 
     setOnClickListener {
         // Small "pop" on the glyph so every tap is acknowledged before the panel opens.
-        iconView.animate().cancel()
-        iconView.scaleX = .8f; iconView.scaleY = .8f
-        iconView.animate().scaleX(1f).scaleY(1f).setDuration(240)
+        box.animate().cancel()
+        box.scaleX = .8f; box.scaleY = .8f
+        box.animate().scaleX(1f).scaleY(1f).setDuration(240)
             .setInterpolator(android.view.animation.OvershootInterpolator(3f)).start()
         click()
     }

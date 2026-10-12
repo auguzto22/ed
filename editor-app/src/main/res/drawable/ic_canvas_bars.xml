@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Canvas: três barras (vermelho, azul, amarelo) do cartão "Analisar vídeo que vende". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:pathData="M12,26 h6 v12 h-6 z" android:fillColor="#C50022" />
+    <path android:pathData="M21,16 h6 v22 h-6 z" android:fillColor="#8C8880" />
+    <path android:pathData="M30,22 h6 v16 h-6 z" android:fillColor="#FAFAF6" />
+</vector>
