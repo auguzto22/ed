@@ -20,3 +20,6 @@ tools/jdk/
 android-sdk/
 *.log
 *.png
+
+__pycache__/
+*.pyc
