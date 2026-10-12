@@ -306,7 +306,8 @@ class TimelineView(context: Context) : View(context) {
         while (tick <= project.durationUs && x(tick) <= width + dp(24f)) {
             val xx = x(tick)
             if (tick % labelStep == 0L) {
-                paint.color = 0xB3FFFFFF.toInt()
+                // O rótulo que passa sob a agulha acende; os outros ficam discretos.
+                paint.color = if (abs(xx - width / 2f) < dp(16f)) Color.WHITE else 0x8CFFFFFF.toInt()
                 val secs = tick / SECOND
                 c.drawText(String.format(java.util.Locale.ROOT, "%d:%02d", secs / 60, secs % 60), xx, rulerY, paint)
             } else {
@@ -876,18 +877,26 @@ class TimelineView(context: Context) : View(context) {
             c.drawRoundRect(dp(4f), ly + dp(8f), dp(7f), ly + dp(25f), dp(1.5f), dp(1.5f), paint)
             text(c, lane.label, dp(9.5f), ly + dp(20.5f), lane.color, 8.5f)
         }; c.restore()
-        // Playhead: linha vermelha do canvas.
-        paint.color = 0xFFC50022.toInt()
-        paint.strokeWidth = dp(if (isPlayheadGrabbed) 2.5f else 1.8f)
-        c.drawLine(width / 2f, dp(43f), width / 2f, height.toFloat(), paint)
+        // Agulha do Recly: linha vermelha que atravessa da régua até o fim, com uma "pílula"
+        // vermelha no topo marcada por um traço branco. Ao segurar, a pílula cresce com halo.
+        val cx = width / 2f
+        val capTop = dp(19f)
+        val capHalfW = dp(if (isPlayheadGrabbed) 5f else 3.5f)
+        val capBottom = capTop + dp(if (isPlayheadGrabbed) 20f else 15f)
+        paint.style = Paint.Style.FILL
         if (isPlayheadGrabbed) {
-            paint.color = 0x33C50022
-            c.drawCircle(width / 2f, dp(43f), dp(10f), paint)
-            paint.color = 0xFFC50022.toInt()
-            c.drawCircle(width / 2f, dp(43f), dp(5.5f), paint)
-        } else {
-            c.drawCircle(width / 2f, dp(43f), dp(3.5f), paint)
+            paint.color = 0x40C50022
+            c.drawRoundRect(cx - capHalfW - dp(5f), capTop - dp(5f), cx + capHalfW + dp(5f), capBottom + dp(5f), dp(10f), dp(10f), paint)
         }
+        paint.color = 0xFFC50022.toInt()
+        paint.strokeWidth = dp(if (isPlayheadGrabbed) 2.5f else 2f)
+        paint.strokeCap = Paint.Cap.ROUND
+        c.drawLine(cx, capBottom, cx, height.toFloat() - dp(4f), paint)
+        c.drawRoundRect(cx - capHalfW, capTop, cx + capHalfW, capBottom, capHalfW, capHalfW, paint)
+        paint.color = Color.WHITE
+        paint.strokeWidth = dp(1.5f)
+        c.drawLine(cx, capTop + dp(4f), cx, capBottom - dp(4f), paint)
+        paint.strokeCap = Paint.Cap.BUTT
     }
     override fun onTouchEvent(e: MotionEvent): Boolean {
         scale.onTouchEvent(e)

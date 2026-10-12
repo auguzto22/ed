@@ -736,7 +736,7 @@ class EditorActivity : Activity() {
             setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             val from = length
             append(" / $total")
-            setSpan(android.text.style.ForegroundColorSpan(0x8CFFFFFF.toInt()), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
