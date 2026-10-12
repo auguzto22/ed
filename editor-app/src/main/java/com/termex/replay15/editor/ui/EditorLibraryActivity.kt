@@ -2,431 +2,383 @@ package com.termex.replay15.editor.ui
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ContentUris
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.graphics.Color
+import android.graphics.Bitmap
+import android.graphics.drawable.GradientDrawable
+import android.media.MediaMetadataRetriever
 import android.net.Uri
-import com.termex.replay15.editor.media.MediaSourceAccess
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.TextUtils
+import android.text.format.DateUtils
+import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
+import android.view.WindowInsets
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.recly.editor.R
 import com.termex.replay15.editor.domain.Project
+import com.termex.replay15.editor.media.MediaSourceAccess
 import com.termex.replay15.editor.project.ProjectStore
-import com.termex.replay15.ui.DockNavigationHelper
-import com.termex.replay15.ui.DockTab
-import com.termex.replay15.ui.GlassEffectHelper
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
+/**
+ * Recly — Início.
+ *
+ * Só edição: criar projeto, Auto Edit, analisar um vídeo que vende e os projetos recentes.
+ * Nada de gravações de tela ou replays; o editor funciona sozinho.
+ */
 class EditorLibraryActivity : Activity() {
 
     companion object {
         private const val REQ_PICK_VIDEO = 810
-    }
+        private const val COLLAPSED_COUNT = 4
 
-    private enum class LibraryTab {
-        PROJECTS, RECORDINGS, REPLAYS
+        /** Extra lido pelo EditorActivity para abrir uma ferramenta logo após importar. */
+        const val EXTRA_OPEN_TOOL = "recly_open_tool"
+        const val TOOL_AUTO_EDIT = "auto_edit"
+        const val TOOL_ANALYZE = "analyze"
+
+        /** Tons dos cartões sem miniatura, na ordem da grade. */
+        private val TONES = intArrayOf(0xFF2A2D35.toInt(), 0xFF332D28.toInt(), 0xFF2A2F2B.toInt(), 0xFF2E2B34.toInt())
     }
 
     private val io = Executors.newSingleThreadExecutor()
-    private var currentTab = LibraryTab.PROJECTS
-
-    private lateinit var tabProjects: TextView
-    private lateinit var tabRecordings: TextView
-    private lateinit var tabReplays: TextView
-
-    private lateinit var containerProjects: LinearLayout
-    private lateinit var cardEmptyProjects: LinearLayout
+    private val thumbs = ConcurrentHashMap<String, Bitmap>()
+    private lateinit var store: ProjectStore
+    private lateinit var cardEmptyProjects: View
     private lateinit var listProjects: LinearLayout
-
-    private lateinit var containerRecordings: LinearLayout
-    private lateinit var cardEmptyRecordings: LinearLayout
-    private lateinit var listRecordings: LinearLayout
-
-    private lateinit var containerReplays: LinearLayout
-    private lateinit var cardEmptyReplays: LinearLayout
-    private lateinit var listReplays: LinearLayout
+    private lateinit var btnSeeAll: TextView
+    private var projects: List<Project> = emptyList()
+    private var expanded = false
+    private var pendingTool: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_editor_library)
+        store = ProjectStore(File(filesDir, "editor-projects"))
+        pendingTool = savedInstanceState?.getString(EXTRA_OPEN_TOOL)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(
                 0,
                 android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
-                    android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
             )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = 0
         }
+        applyInsets()
+        applyType()
 
-        findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
-
-        tabProjects = findViewById(R.id.tabProjects)
-        tabRecordings = findViewById(R.id.tabRecordings)
-        tabReplays = findViewById(R.id.tabReplays)
-
-        containerProjects = findViewById(R.id.containerProjects)
         cardEmptyProjects = findViewById(R.id.cardEmptyProjects)
         listProjects = findViewById(R.id.listProjects)
+        btnSeeAll = findViewById(R.id.btnSeeAll)
 
-        containerRecordings = findViewById(R.id.containerRecordings)
-        cardEmptyRecordings = findViewById(R.id.cardEmptyRecordings)
-        listRecordings = findViewById(R.id.listRecordings)
-
-        containerReplays = findViewById(R.id.containerReplays)
-        cardEmptyReplays = findViewById(R.id.cardEmptyReplays)
-        listReplays = findViewById(R.id.listReplays)
-
-        val pickVideoAction = View.OnClickListener { openVideoPicker() }
-        findViewById<Button>(R.id.btnNewProject).setOnClickListener(pickVideoAction)
-        findViewById<View>(R.id.btnImportVideo).setOnClickListener(pickVideoAction)
-
-        tabProjects.setOnClickListener { switchTab(LibraryTab.PROJECTS) }
-        tabRecordings.setOnClickListener { switchTab(LibraryTab.RECORDINGS) }
-        tabReplays.setOnClickListener { switchTab(LibraryTab.REPLAYS) }
-
-        val bgSilk = findViewById<View>(R.id.libraryBgSilk)
-        val libraryScroll = findViewById<ScrollView>(R.id.libraryScroll)
-        val bottomDock = findViewById<View>(R.id.bottomDock)
-        val glassCards = listOfNotNull(
-            cardEmptyProjects,
-            cardEmptyRecordings,
-            cardEmptyReplays,
-            bottomDock
-        )
-        glassCards.forEach { card ->
-            if (card.id == R.id.bottomDock) {
-                GlassEffectHelper.applyGlassDock(card)
-            } else {
-                GlassEffectHelper.applyGlassCard(card, cornerRadiusDp = 24f, elevationDp = 8f)
-            }
+        findViewById<View>(R.id.btnNewProject).setOnClickListener { openVideoPicker(null) }
+        findViewById<View>(R.id.btnImportVideo).setOnClickListener { openVideoPicker(null) }
+        findViewById<View>(R.id.btnAutoEdit).setOnClickListener { openVideoPicker(TOOL_AUTO_EDIT) }
+        findViewById<View>(R.id.cardAnalyze).setOnClickListener { openVideoPicker(TOOL_ANALYZE) }
+        findViewById<View>(R.id.navPresets).setOnClickListener { openVideoPicker(TOOL_AUTO_EDIT) }
+        findViewById<View>(R.id.navSettings).setOnClickListener { showAbout() }
+        findViewById<View>(R.id.btnProfile).setOnClickListener { showAbout() }
+        findViewById<View>(R.id.navProjects).setOnClickListener {
+            findViewById<android.widget.ScrollView>(R.id.libraryScroll).smoothScrollTo(0, 0)
         }
-        if (bgSilk != null) {
-            GlassEffectHelper.setupRealtimeBackdrop(this, bgSilk, libraryScroll, glassCards, blurRadiusDp = 24f)
-        }
+        btnSeeAll.setOnClickListener { expanded = !expanded; renderProjects() }
 
-        handleIntentTab(intent)
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleIntentTab(intent)
-    }
-
-    private fun handleIntentTab(intent: Intent?) {
-        val tabExtra = intent?.getStringExtra("initial_tab")
-        val initialDockTab = if (tabExtra == "PROJECTS") DockTab.EDITOR else DockTab.RECORDINGS
-        if (tabExtra == "PROJECTS") {
-            switchTab(LibraryTab.PROJECTS)
-        } else {
-            switchTab(LibraryTab.RECORDINGS)
-        }
-        DockNavigationHelper.bind(this, initialDockTab) { tab ->
-            when (tab) {
-                DockTab.EDITOR -> switchTab(LibraryTab.PROJECTS)
-                DockTab.RECORDINGS, DockTab.LIBRARY -> switchTab(LibraryTab.RECORDINGS)
-                else -> {}
-            }
-        }
+        installEditorMotion(findViewById(R.id.libraryRoot))
+        intro()
     }
 
     override fun onResume() {
         super.onResume()
-        loadData()
+        loadProjects()
     }
 
-    private fun openVideoPicker() {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(EXTRA_OPEN_TOOL, pendingTool)
+    }
+
+    /** Barras do sistema transparentes: o cabeçalho e a navegação recebem o recuo. */
+    @Suppress("DEPRECATION")
+    private fun applyInsets() {
+        val root = findViewById<View>(R.id.libraryRoot)
+        root.setOnApplyWindowInsetsListener { view, insets ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            } else {
+                view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
+                    insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+            }
+            insets
+        }
+    }
+
+    private fun applyType() {
+        val display = ReclyType.display(this)
+        listOf(R.id.libraryTitle, R.id.libraryBrand, R.id.labelNewProject, R.id.labelAutoEdit,
+            R.id.recentTitle, R.id.emptyTitle).forEach { findViewById<TextView>(it).typeface = display }
+        listOf(R.id.analyzeTitle, R.id.labelImport, R.id.navProjectsText)
+            .forEach { findViewById<TextView>(it).typeface = ReclyType.body(this, 700) }
+        listOf(R.id.analyzeBody, R.id.btnSeeAll)
+            .forEach { findViewById<TextView>(it).typeface = ReclyType.body(this, 500) }
+
+        val title = findViewById<TextView>(R.id.libraryTitle)
+        val text = getString(R.string.library_title)
+        val highlight = getString(R.string.library_title_highlight)
+        val spannable = SpannableString(text)
+        val at = text.indexOf(highlight)
+        if (at >= 0) {
+            spannable.setSpan(ForegroundColorSpan(EditorStyle.ACCENT), at, at + highlight.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        title.text = spannable
+    }
+
+    /** Entrada curta e escalonada, como no protótipo. */
+    private fun intro() {
+        val ids = intArrayOf(R.id.libraryTitle, R.id.btnNewProject, R.id.cardAnalyze, R.id.recentTitle)
+        ids.forEachIndexed { i, id ->
+            val v = findViewById<View>(id)
+            val target = if (id == R.id.btnNewProject) v.parent as View else v
+            target.alpha = 0f
+            target.translationY = dp(12).toFloat()
+            target.animate().alpha(1f).translationY(0f).setStartDelay(60L * i).setDuration(420L)
+                .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0.8f, 0.2f, 1f)).start()
+        }
+    }
+
+    private fun openVideoPicker(tool: String?) {
+        pendingTool = tool
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "video/*"
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         }
         runCatching { startActivityForResult(intent, REQ_PICK_VIDEO) }
-            .onFailure {
-                Toast.makeText(this, "Seletor de vídeos indisponível", Toast.LENGTH_SHORT).show()
-            }
+            .onFailure { Toast.makeText(this, "Seletor de vídeos indisponível", Toast.LENGTH_SHORT).show() }
     }
 
+    @Deprecated("Platform document picker")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQ_PICK_VIDEO && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-            val persisted = runCatching { MediaSourceAccess.persistReadPermission(contentResolver, uri, data.flags) }.getOrDefault(false)
-            if (!persisted) {
-                Toast.makeText(this, "Não foi possível manter acesso a este vídeo", Toast.LENGTH_LONG).show()
-                return
-            }
-            startActivity(Intent(this, EditorActivity::class.java).putExtra("uri", uri.toString()))
+        if (requestCode != REQ_PICK_VIDEO) return
+        val tool = pendingTool
+        pendingTool = null
+        if (resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        val persisted = runCatching { MediaSourceAccess.persistReadPermission(contentResolver, uri, data.flags) }.getOrDefault(false)
+        if (!persisted) {
+            Toast.makeText(this, "Não foi possível manter acesso a este vídeo", Toast.LENGTH_LONG).show()
+            return
         }
+        val open = Intent(this, EditorActivity::class.java).putExtra("uri", uri.toString())
+        if (tool != null) open.putExtra(EXTRA_OPEN_TOOL, tool)
+        startActivity(open)
     }
 
-    private fun switchTab(tab: LibraryTab) {
-        currentTab = tab
-
-        fun styleTab(view: TextView, active: Boolean) {
-            if (active) {
-                view.setBackgroundResource(R.drawable.recly_tab_active)
-                com.termex.replay15.ui.GlassEffectHelper.applyGlassCard(view, cornerRadiusDp = 22f, elevationDp = 4f)
-                view.setTextColor(Color.parseColor("#F5F5F5"))
-            } else {
-                view.background = null
-                view.elevation = 0f
-                view.outlineProvider = null
-                view.setTextColor(Color.parseColor("#A5A5AA"))
-            }
-        }
-
-        styleTab(tabProjects, tab == LibraryTab.PROJECTS)
-        styleTab(tabRecordings, tab == LibraryTab.RECORDINGS)
-        styleTab(tabReplays, tab == LibraryTab.REPLAYS)
-
-        containerProjects.visibility = if (tab == LibraryTab.PROJECTS) View.VISIBLE else View.GONE
-        containerRecordings.visibility = if (tab == LibraryTab.RECORDINGS) View.VISIBLE else View.GONE
-        containerReplays.visibility = if (tab == LibraryTab.REPLAYS) View.VISIBLE else View.GONE
-    }
-
-    private fun loadData() {
+    private fun loadProjects() {
         io.execute {
-            val projectStore = ProjectStore(File(filesDir, "editor-projects"))
-            val projects = runCatching { projectStore.list() }.getOrDefault(emptyList())
-
-            val recordings = mutableListOf<VideoItem>()
-            val replays = mutableListOf<VideoItem>()
-
-            runCatching {
-                val projection = arrayOf(
-                    MediaStore.Video.Media._ID,
-                    MediaStore.Video.Media.DISPLAY_NAME,
-                    MediaStore.Video.Media.DURATION
-                )
-                contentResolver.query(
-                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                    projection,
-                    "${MediaStore.Video.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Video.Media.IS_PENDING} = 0",
-                    arrayOf("Movies/GravadorDeTela%"),
-                    "${MediaStore.Video.Media.DATE_ADDED} DESC"
-                )?.use { cursor ->
-                    val idCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
-                    val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
-                    val durCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
-                    while (cursor.moveToNext() && (recordings.size + replays.size) < 150) {
-                        val id = cursor.getLong(idCol)
-                        val name = cursor.getString(nameCol) ?: "Vídeo"
-                        val duration = cursor.getLong(durCol)
-                        val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
-                        val item = VideoItem(id, name, uri, duration)
-
-                        if (name.contains("Replay", ignoreCase = true)) {
-                            replays.add(item)
-                        } else {
-                            recordings.add(item)
-                        }
-                    }
-                }
-            }
-
+            val loaded = runCatching { store.list() }.getOrDefault(emptyList())
+                .sortedByDescending { it.modifiedAt }
             runOnUiThread {
                 if (isDestroyed || isFinishing) return@runOnUiThread
-                renderProjects(projects, projectStore)
-                renderRecordings(recordings)
-                renderReplays(replays)
+                projects = loaded
+                renderProjects()
             }
         }
     }
 
-    private fun renderProjects(projects: List<Project>, projectStore: ProjectStore) {
+    private fun renderProjects() {
         listProjects.removeAllViews()
         if (projects.isEmpty()) {
             cardEmptyProjects.visibility = View.VISIBLE
             listProjects.visibility = View.GONE
-        } else {
-            cardEmptyProjects.visibility = View.GONE
-            listProjects.visibility = View.VISIBLE
-
-            projects.forEach { project ->
-                val card = buildItemCard(
-                    title = project.name,
-                    subtitle = timeLabel(project.durationUs),
-                    iconRes = R.drawable.ic_pro_scissors,
-                    actionText = "Editar",
-                    onActionClick = {
-                        startActivity(Intent(this, EditorActivity::class.java).putExtra("project", project.id))
-                    },
-                    secondaryActionText = "Excluir",
-                    onSecondaryClick = {
-                        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                            .setTitle("Excluir projeto?")
-                            .setMessage("Os vídeos originais serão mantidos.")
-                            .setNegativeButton("Cancelar", null)
-                            .setPositiveButton("Excluir") { _, _ ->
-                                io.execute {
-                                    projectStore.delete(project.id)
-                                    loadData()
-                                }
-                            }
-                            .show()
-                    }
-                )
-                listProjects.addView(card)
-            }
+            btnSeeAll.visibility = View.GONE
+            return
         }
+        cardEmptyProjects.visibility = View.GONE
+        listProjects.visibility = View.VISIBLE
+        btnSeeAll.visibility = if (projects.size > COLLAPSED_COUNT) View.VISIBLE else View.GONE
+        btnSeeAll.text = if (expanded) "Mostrar menos" else "Ver todos"
+
+        val shown = if (expanded) projects else projects.take(COLLAPSED_COUNT)
+        shown.chunked(2).forEachIndexed { rowIndex, pair ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                baselineAligned = false
+            }
+            pair.forEachIndexed { col, project ->
+                val index = rowIndex * 2 + col
+                row.addView(projectCard(project, index), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    if (col == 0) marginEnd = dp(7) else marginStart = dp(7)
+                })
+            }
+            if (pair.size == 1) row.addView(spacer(), LinearLayout.LayoutParams(0, 0, 1f).apply { marginStart = dp(7) })
+            listProjects.addView(row, LinearLayout.LayoutParams(-1, -2).apply { if (rowIndex > 0) topMargin = dp(14) })
+        }
+        installEditorMotion(listProjects)
     }
 
-    private fun renderRecordings(recordings: List<VideoItem>) {
-        listRecordings.removeAllViews()
-        if (recordings.isEmpty()) {
-            cardEmptyRecordings.visibility = View.VISIBLE
-            listRecordings.visibility = View.GONE
-        } else {
-            cardEmptyRecordings.visibility = View.GONE
-            listRecordings.visibility = View.VISIBLE
+    private fun spacer() = View(this)
 
-            recordings.forEach { item ->
-                val card = buildItemCard(
-                    title = item.name,
-                    subtitle = formatDuration(item.durationMs),
-                    iconRes = R.drawable.ic_pro_video,
-                    actionText = "Editar",
-                    onActionClick = {
-                        startActivity(Intent(this, EditorActivity::class.java).putExtra("uri", item.uri.toString()))
-                    }
-                )
-                listRecordings.addView(card)
-            }
-        }
-    }
-
-    private fun renderReplays(replays: List<VideoItem>) {
-        listReplays.removeAllViews()
-        if (replays.isEmpty()) {
-            cardEmptyReplays.visibility = View.VISIBLE
-            listReplays.visibility = View.GONE
-        } else {
-            cardEmptyReplays.visibility = View.GONE
-            listReplays.visibility = View.VISIBLE
-
-            replays.forEach { item ->
-                val card = buildItemCard(
-                    title = item.name,
-                    subtitle = "${formatDuration(item.durationMs)} • Replay Instantâneo",
-                    iconRes = R.drawable.ic_save_15,
-                    actionText = "Editar",
-                    onActionClick = {
-                        startActivity(Intent(this, EditorActivity::class.java).putExtra("uri", item.uri.toString()))
-                    }
-                )
-                listReplays.addView(card)
-            }
-        }
-    }
-
-    private fun buildItemCard(
-        title: String,
-        subtitle: String,
-        iconRes: Int,
-        actionText: String,
-        onActionClick: () -> Unit,
-        secondaryActionText: String? = null,
-        onSecondaryClick: (() -> Unit)? = null
-    ): View {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setBackgroundResource(R.drawable.recly_card_dark)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(10)
-            }
-        }
-
-        val icon = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(14) }
-            setImageResource(iconRes)
-            imageTintList = ColorStateList.valueOf(Color.WHITE)
-        }
-        root.addView(icon)
-
-        val textLayout = LinearLayout(this).apply {
+    private fun projectCard(project: Project, index: Int): View {
+        val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val titleView = TextView(this).apply {
-            text = title
-            setTextColor(Color.WHITE)
-            textSize = 15f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-        val subtitleView = TextView(this).apply {
-            text = subtitle
-            setTextColor(Color.parseColor("#A1A1AA"))
-            textSize = 12f
-            setPadding(0, dp(2), 0, 0)
-        }
-        textLayout.addView(titleView)
-        textLayout.addView(subtitleView)
-        root.addView(textLayout)
-
-        if (secondaryActionText != null && onSecondaryClick != null) {
-            val secButton = TextView(this).apply {
-                text = secondaryActionText
-                setTextColor(Color.parseColor("#A1A1AA"))
-                textSize = 13f
-                setPadding(dp(10), dp(6), dp(10), dp(6))
-                setOnClickListener { onSecondaryClick() }
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Abrir ${project.name}"
+            setOnClickListener {
+                startActivity(Intent(this@EditorLibraryActivity, EditorActivity::class.java).putExtra("project", project.id))
             }
-            root.addView(secButton)
+            setOnLongClickListener { confirmDelete(project); true }
         }
 
-        val actionBtn = TextView(this).apply {
-            text = actionText
-            setTextColor(Color.BLACK)
-            textSize = 13f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setBackgroundResource(R.drawable.recly_pill_white)
-            setPadding(dp(16), dp(8), dp(16), dp(8))
-            setOnClickListener { onActionClick() }
+        val thumb = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                setColor(TONES[index % TONES.size])
+                cornerRadius = dp(12).toFloat()
+                setStroke(dp(1.5f), EditorStyle.BORDER)
+            }
+            clipToOutline = true
         }
-        root.addView(actionBtn)
+        val image = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        thumb.addView(image, FrameLayout.LayoutParams(-1, -1))
+        loadThumbnail(project, image)
 
-        root.setOnClickListener { onActionClick() }
-        return root
+        thumb.addView(FrameLayout(this).apply {
+            setBackgroundResource(R.drawable.rc_play_disc)
+            addView(ImageView(context).apply {
+                setImageResource(R.drawable.ic_rc_play)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(dp(13), dp(13), Gravity.CENTER))
+        }, FrameLayout.LayoutParams(dp(36), dp(36), Gravity.CENTER))
+
+        thumb.addView(badge(clock(project.durationUs), mono = true),
+            FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.START).apply { setMargins(dp(7), 0, 0, dp(8)) })
+        formatLabel(project)?.let { format ->
+            thumb.addView(badge(format, mono = false),
+                FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply { setMargins(0, dp(7), dp(7), 0) })
+        }
+        card.addView(thumb, LinearLayout.LayoutParams(-1, dp(132)))
+
+        card.addView(TextView(this).apply {
+            text = project.name
+            textSize = 14f
+            setTextColor(EditorStyle.INK)
+            typeface = ReclyType.body(context, 600)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(7), 0, 0)
+        })
+        card.addView(TextView(this).apply {
+            text = editedLabel(project.modifiedAt)
+            textSize = 12f
+            setTextColor(EditorStyle.MUTED)
+            typeface = ReclyType.body(context, 500)
+            maxLines = 1
+        })
+        return card
     }
 
-    private fun formatDuration(durationMs: Long): String {
-        val totalSec = (durationMs / 1000).coerceAtLeast(0)
-        val min = totalSec / 60
-        val sec = totalSec % 60
-        return String.format(java.util.Locale.ROOT, "%02d:%02d", min, sec)
+    private fun badge(value: String, mono: Boolean) = TextView(this).apply {
+        text = value
+        textSize = 11f
+        setTextColor(EditorStyle.INK)
+        typeface = if (mono) ReclyType.mono(context) else ReclyType.body(context, 700)
+        setBackgroundResource(R.drawable.rc_badge_dark)
+        setPadding(dp(6), dp(2), dp(6), dp(2))
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    /** Primeiro quadro do primeiro clipe, em segundo plano; sem miniatura o cartão fica no tom sólido. */
+    private fun loadThumbnail(project: Project, target: ImageView) {
+        val clip = project.videos.firstOrNull { !it.image } ?: return
+        val key = "${project.id}:${clip.id}:${clip.inUs}"
+        thumbs[key]?.let { target.setImageBitmap(it); return }
+        target.tag = key
+        io.execute {
+            val bitmap = runCatching {
+                val retriever = MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(this, Uri.parse(clip.uri))
+                    retriever.getScaledFrameAtTime(clip.inUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, 360, 360)
+                } finally {
+                    retriever.release()
+                }
+            }.getOrNull() ?: return@execute
+            thumbs[key] = bitmap
+            runOnUiThread {
+                if (!isDestroyed && target.tag == key) {
+                    target.alpha = 0f
+                    target.setImageBitmap(bitmap)
+                    target.animate().alpha(1f).setDuration(180L).start()
+                }
+            }
+        }
+    }
+
+    private fun formatLabel(project: Project): String? {
+        val ratio = when {
+            project.aspect > 0f -> project.aspect
+            else -> project.videos.firstOrNull()?.let { clip ->
+                val rotated = clip.rotation % 180 != 0
+                val w = if (rotated) clip.height else clip.width
+                val h = if (rotated) clip.width else clip.height
+                if (w > 0 && h > 0) w.toFloat() / h else null
+            } ?: return null
+        }
+        val known = listOf(9f / 16f to "9:16", 4f / 5f to "4:5", 1f to "1:1", 4f / 3f to "4:3", 16f / 9f to "16:9")
+        return known.minByOrNull { kotlin.math.abs(it.first - ratio) }?.takeIf { kotlin.math.abs(it.first - ratio) < 0.04f }?.second
+    }
+
+    private fun editedLabel(modifiedAt: Long): String {
+        if (modifiedAt <= 0L) return "Projeto salvo"
+        val relative = DateUtils.getRelativeTimeSpanString(modifiedAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
+        return "Editado $relative".replace("Editado em ", "Editado ")
+    }
+
+    private fun clock(us: Long): String {
+        val totalSec = (us / 1_000_000L).coerceAtLeast(0)
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", totalSec / 60, totalSec % 60)
+    }
+
+    private fun confirmDelete(project: Project) {
+        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Excluir \"${project.name}\"?")
+            .setMessage("Só o projeto é apagado. Os vídeos originais continuam no aparelho.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Excluir") { _, _ ->
+                io.execute {
+                    runCatching { store.delete(project.id) }
+                    loadProjects()
+                }
+            }
+            .show()
+    }
+
+    private fun showAbout() {
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: ""
+        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Recly $version".trim())
+            .setMessage("Editor de vídeo com legendas automáticas e Auto Edit.\n\nSeus vídeos originais nunca são alterados: cada projeto guarda só as decisões de edição.\n\nToque e segure um projeto para excluí-lo.")
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     override fun onDestroy() {
-        io.shutdown()
+        io.shutdownNow()
         super.onDestroy()
     }
-
-    private data class VideoItem(
-        val id: Long,
-        val name: String,
-        val uri: Uri,
-        val durationMs: Long
-    )
 }

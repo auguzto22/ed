@@ -91,20 +91,20 @@ object ExportPanel {
                 setPadding(dp(12), dp(4), dp(12), dp(4))
                 val bg = GradientDrawable().apply {
                     if (isSelected) {
-                        setColor(Color.WHITE)
-                        cornerRadius = dp(18).toFloat()
+                        setColor(EditorStyle.BLUE_DEEP)
+                        setStroke(dp(EditorStyle.STROKE), EditorStyle.BLUE)
                     } else {
                         setColor(EditorStyle.CARD)
-                        setStroke(dp(1), EditorStyle.BORDER)
-                        cornerRadius = dp(10).toFloat()
+                        setStroke(dp(EditorStyle.STROKE), EditorStyle.BORDER)
                     }
+                    cornerRadius = dp(EditorStyle.RADIUS_CONTROL).toFloat()
                 }
                 background = RippleDrawable(
                     ColorStateList.valueOf(if (isSelected) 0x33000000 else 0x22FFFFFF),
                     bg,
                     null,
                 )
-                setTextColor(if (isSelected) Color.BLACK else Color.WHITE)
+                setTextColor(if (isSelected) Color.WHITE else EditorStyle.INK)
                 setOnClickListener { onClick() }
             }
         }

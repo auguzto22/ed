@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Replay15" parent="android:style/Theme.Material.NoActionBar">
+    <style name="Theme.Recly" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:colorControlActivated">@color/recly_coral</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">@color/recly_bg_main</item>
         <item name="android:navigationBarColor">@color/recly_bg_main</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:colorAccent">@color/recly_accent_white</item>
+        <item name="android:colorAccent">@color/recly_coral</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
     </style>
 
-    <style name="Theme.Replay15.Editor" parent="android:style/Theme.Material.NoActionBar">
+    <style name="Theme.Recly.Editor" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:colorControlActivated">@color/recly_coral</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:statusBarColor">@color/recly_bg_main</item>
         <item name="android:navigationBarColor">@color/recly_bg_main</item>
-        <item name="android:colorAccent">@color/recly_accent_white</item>
+        <item name="android:colorAccent">@color/recly_coral</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>

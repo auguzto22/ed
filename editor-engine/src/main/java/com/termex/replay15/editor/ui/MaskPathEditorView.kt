@@ -19,13 +19,13 @@ class MaskPathEditorView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : View(context, attrs) {
     private val density = resources.displayMetrics.density
-    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x334F5B68; strokeWidth = density }
-    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x554D8DFF; style = Paint.Style.FILL }
+    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x334A4A50; strokeWidth = density }
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x55FF5A36; style = Paint.Style.FILL }
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF8CB4FF.toInt(); style = Paint.Style.STROKE; strokeWidth = 2f * density
+        color = 0xFFFF8C70.toInt(); style = Paint.Style.STROKE; strokeWidth = 2f * density
     }
     private val pointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; style = Paint.Style.FILL }
-    private val selectedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFC66D.toInt(); style = Paint.Style.FILL }
+    private val selectedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = EditorStyle.ACCENT; style = Paint.Style.FILL }
     private val path = Path()
     private var values = MaskState.DEFAULT_CUSTOM_PATH
     private var selected = -1
@@ -55,7 +55,7 @@ class MaskPathEditorView @JvmOverloads constructor(
     })
 
     init {
-        setBackgroundColor(0xFF15191F.toInt())
+        setBackgroundColor(0xFF121214.toInt())
         contentDescription = "Editor do caminho da mascara"
     }
 

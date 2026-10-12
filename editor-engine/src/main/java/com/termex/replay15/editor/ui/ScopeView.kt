@@ -32,15 +32,15 @@ class ScopeView(context: Context) : View(context) {
 
     init {
         minimumHeight = context.dp(150)
-        gridPaint.color = 0xFF2A2436.toInt()
+        gridPaint.color = 0xFF2C2C30.toInt()
         gridPaint.strokeWidth = 1f
-        labelPaint.color = 0xFF8B8499.toInt()
+        labelPaint.color = 0xFF9A968C.toInt()
         labelPaint.textSize = context.dp(9).toFloat()
         contentDescription = "Escopo de cor e brilho do quadro atual"
     }
 
     override fun onDraw(canvas: Canvas) {
-        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), pad, pad, paint.apply { color = 0xFF0D0C13.toInt() })
+        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), pad, pad, paint.apply { color = 0xFF121214.toInt() })
         val w = width - 2 * pad
         val h = height - 2 * pad
         if (w <= 0f || h <= 0f) return
@@ -72,7 +72,7 @@ class ScopeView(context: Context) : View(context) {
     private fun drawWaveform(canvas: Canvas, data: ScopeFrame, w: Float, h: Float) {
         // A 128-column waveform is denser than the pixels available, so the envelope is drawn
         // as a filled band: a line would alias and hide the very clipping it is meant to reveal.
-        paint.color = 0xCC8A7CFF.toInt()
+        paint.color = 0xCC7F92B8.toInt()
         val columnWidth = w / data.waveformColumns
         for (column in 0 until data.waveformColumns) {
             val x = pad + column * columnWidth
@@ -120,9 +120,9 @@ class ScopeView(context: Context) : View(context) {
             val radians = Math.toRadians((degrees - 90).toDouble())
             val x = cx + (Math.cos(radians) * radius).toFloat()
             val y = cy + (Math.sin(radians) * radius).toFloat()
-            canvas.drawCircle(x, y, context.dp(1.5f).toFloat(), gridPaint.apply { color = 0xFF6C6480.toInt() })
+            canvas.drawCircle(x, y, context.dp(1.5f).toFloat(), gridPaint.apply { color = 0xFF6E6B64.toInt() })
         }
-        paint.color = 0xFFE8E4F5.toInt()
+        paint.color = 0xFFEDEBE6.toInt()
         val bins = ScopeAnalyzer.VECTOR_BINS
         for (binY in 0 until bins) for (binX in 0 until bins) {
             val count = data.vectorscope[(binY * bins + binX) * 2]
@@ -139,7 +139,7 @@ class ScopeView(context: Context) : View(context) {
     }
 
     private fun drawHistogram(canvas: Canvas, data: ScopeFrame, w: Float, h: Float) {
-        paint.color = 0xFFB4A8FF.toInt()
+        paint.color = 0xFFC9D3E8.toInt()
         val columnWidth = w / data.histogram.size
         val peak = data.histogram.maxOrNull()?.coerceAtLeast(1e-4f) ?: 1f
         data.histogram.forEachIndexed { index, value ->

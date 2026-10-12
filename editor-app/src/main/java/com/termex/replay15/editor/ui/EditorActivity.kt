@@ -155,6 +155,8 @@ class EditorActivity : Activity() {
     private var openCompoundId: String? = null
     private val voiceLimit = Runnable { finishVoiceover(true) }
     private var replaceStickerId: String? = null
+    /** Ferramenta pedida pela tela inicial; consumida após a primeira importação. */
+    private var pendingOpenTool: String? = null
     private var pendingLutClipId: String? = null
     /** UI-only caption scope; it is deliberately not part of Project persistence. */
     private var subtitleApplyRange: ApplyRange = ApplyRange.current()
@@ -290,6 +292,7 @@ class EditorActivity : Activity() {
                         intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
                     }
                 if (mediaUri != null) {
+                    if (savedInstanceState == null) pendingOpenTool = intent.getStringExtra(EditorLibraryActivity.EXTRA_OPEN_TOOL)
                     importMedia(listOf(mediaUri), false)
                 } else {
                     refresh(false)
@@ -317,127 +320,195 @@ class EditorActivity : Activity() {
     }
 
     private fun buildTopBar(): LinearLayout = row().apply {
-        setPadding(dp(12), dp(6), dp(12), dp(6))
+        setPadding(dp(12), dp(10), dp(12), dp(8))
         setBackgroundColor(EditorStyle.BG)
 
-        // Close button (X)
-        val closeBtn = FrameLayout(this@EditorActivity).apply {
-            contentDescription = "Fechar editor"
-            tooltipText = "Fechar editor"
-            isClickable = true
-            isFocusable = true
-            val bg = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1), EditorStyle.BORDER)
-                cornerRadius = dp(14).toFloat()
-            }
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
-            val icon = ImageView(context).apply {
-                setImageResource(R.drawable.ic_recly_close)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
-            }
-            addView(icon, FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER))
-            setOnClickListener { closeEditor() }
+        // Voltar — quadrado plano com linha
+        val backBtn = editorIconButton("Voltar", R.drawable.ic_rc_back) { closeEditor() }.apply {
+            contentDescription = "Voltar para o início"
             expandTouchTarget(48)
         }
-        addView(closeBtn, LinearLayout.LayoutParams(dp(36), dp(36)))
+        addView(backBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
 
-        // Spacer to push quality + export to the right
+        // Nome do projeto + formato (toque no formato abre a qualidade de exportação)
+        val titles = column().apply { setPadding(dp(10), 0, dp(8), 0) }
         projectTitleView = TextView(this@EditorActivity).apply {
-            text = ""
-            isClickable = false
-            isFocusable = false
+            text = project.name
+            textSize = 16f
+            setTextColor(EditorStyle.INK)
+            typeface = ReclyType.display(this@EditorActivity)
+            letterSpacing = -0.01f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            includeFontPadding = false
         }
-        addView(projectTitleView, LinearLayout.LayoutParams(0, -2, 1f))
-
-        // Export quality – plain text, no button frame
-        quality = action("${project.export.shortSide}p") { exportPanel(false) }.apply {
+        titles.addView(projectTitleView)
+        quality = Button(this@EditorActivity).apply {
+            text = metaLabel()
             contentDescription = "Qualidade de exportação"
             tooltipText = "Qualidade de exportação"
-            setBackgroundColor(Color.TRANSPARENT)
-            setTextColor(0xFF8E8E93.toInt())
-            textSize = 13f
-            minWidth = dp(44); minimumWidth = dp(44)
-            minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(4), dp(2), dp(8), dp(2))
+            isAllCaps = false
+            textSize = 11f
+            setTextColor(EditorStyle.MUTED)
+            typeface = ReclyType.body(this@EditorActivity, 500)
+            background = null
+            stateListAnimator = null
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            minWidth = 0; minimumWidth = 0; minHeight = 0; minimumHeight = 0
+            setPadding(0, dp(3), 0, 0)
+            setOnClickListener { exportPanel(false) }
         }
-        addView(quality, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(4), 0) })
+        titles.addView(quality, LinearLayout.LayoutParams(-2, -2))
+        addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Export button (White pill, black text)
+        // Analisar — contorno azul
+        val analyzeBtn = row().apply {
+            contentDescription = "Analisar vídeo de referência"
+            tooltipText = "Analisar"
+            isClickable = true; isFocusable = true
+            gravity = Gravity.CENTER
+            setPadding(dp(10), 0, dp(12), 0)
+            background = reclySurface(EditorStyle.CARD, EditorStyle.BLUE, EditorStyle.RADIUS_CONTROL.toFloat())
+            addView(ImageView(context).apply {
+                setImageDrawable(EditorGlyph("Analisar", EditorStyle.BLUE_LIGHT, context))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(16), dp(16)))
+            addView(TextView(context).apply {
+                text = "Analisar"
+                textSize = 13f
+                setTextColor(EditorStyle.BLUE_LIGHT)
+                typeface = ReclyType.body(context, 600)
+                setPadding(dp(6), 0, 0, 0)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            })
+            setOnClickListener { analyzeReference() }
+        }
+        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(40)).apply { setMargins(0, 0, dp(8), 0) })
+
+        // Exportar — coral
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
             contentDescription = "Exportar vídeo"
             tooltipText = "Exportar vídeo"
-            minWidth = dp(74); minimumWidth = dp(74)
-            minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(10), dp(2), dp(10), dp(2))
+            typeface = ReclyType.body(this@EditorActivity, 700)
+            minWidth = dp(76); minimumWidth = dp(76)
+            minHeight = dp(40); minimumHeight = dp(40)
+            setPadding(dp(14), 0, dp(14), 0)
         }
-        addView(exportBtn, LinearLayout.LayoutParams(-2, dp(36)))
+        addView(exportBtn, LinearLayout.LayoutParams(-2, dp(40)))
+    }
+
+    /** Formato · resolução · fps, mostrado sob o nome do projeto. */
+    private fun metaLabel(): String {
+        val (w, h) = project.dimensions()
+        val ratio = if (w > 0 && h > 0) w.toFloat() / h else 0f
+        val known = listOf(9f / 16f to "9:16", 4f / 5f to "4:5", 1f to "1:1", 4f / 3f to "4:3", 16f / 9f to "16:9")
+        val format = known.minByOrNull { abs(it.first - ratio) }?.takeIf { abs(it.first - ratio) < 0.04f }?.second ?: "Livre"
+        return "$format · ${project.export.shortSide}p · ${project.export.fps} fps"
+    }
+
+    /** "Analisar" sempre trabalha sobre um clipe: usa o selecionado ou o que está sob o cursor. */
+    private fun analyzeReference() {
+        if (project.videos.isEmpty()) { pick(false); return }
+        if (selected !in project.videos.indices) selectMainClip(project.indexAt(position))
+        referenceStylePanel.open()
+    }
+
+    /** Ferramenta pedida na tela inicial (Auto Edit / Analisar), aberta uma única vez após a importação. */
+    private fun runPendingOpenTool() {
+        val tool = pendingOpenTool ?: return
+        pendingOpenTool = null
+        if (project.videos.isEmpty()) return
+        selectMainClip(0)
+        main.post {
+            if (isDestroyed) return@post
+            when (tool) {
+                EditorLibraryActivity.TOOL_AUTO_EDIT -> autoEditPanel.open()
+                EditorLibraryActivity.TOOL_ANALYZE -> referenceStylePanel.open()
+            }
+        }
     }
 
     private fun buildPlaybackControls(): LinearLayout = row().apply {
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(4), dp(16), dp(4))
+        setPadding(dp(16), dp(4), dp(10), dp(4))
         setBackgroundColor(EditorStyle.BG)
 
-        fun controlBtn(name: String, iconRes: Int, accent: Boolean = false, callback: () -> Unit): View = FrameLayout(this@EditorActivity).apply {
+        fun ghostBtn(name: String, iconRes: Int, callback: () -> Unit): View = FrameLayout(this@EditorActivity).apply {
             contentDescription = name
             tooltipText = name
             isClickable = true
             isFocusable = true
-            val bg = GradientDrawable().apply {
-                if (accent) {
-                    setColor(Color.WHITE)
-                    cornerRadius = dp(14).toFloat()
-                } else {
-                    setColor(EditorStyle.CARD)
-                    setStroke(dp(1), EditorStyle.BORDER)
-                    cornerRadius = dp(14).toFloat()
-                }
-            }
-            background = RippleDrawable(
-                ColorStateList.valueOf(if (accent) 0x33000000 else 0x26FFFFFF),
-                bg,
-                null,
-            )
-            val icon = ImageView(context).apply {
-                id = R.id.recly_transport_icon
+            background = reclySurface(android.graphics.Color.TRANSPARENT, null, EditorStyle.RADIUS_CONTROL.toFloat())
+            addView(ImageView(context).apply {
                 setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(if (accent) Color.BLACK else Color.WHITE)
-                scaleType = ImageView.ScaleType.CENTER_INSIDE
-            }
-            addView(icon, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
+                imageTintList = ColorStateList.valueOf(EditorStyle.INK)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER))
             setOnClickListener { callback() }
         }
 
-        // Play / Pause button
-        play = controlBtn("Reproduzir", R.drawable.ic_recly_play, accent = true) {
-            preview.endScrub(position)
-            if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
-        }
-        addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
-
-        // Clock: 00:05 / 00:31
+        // Relógio: 00:12 / 00:42 em mono, duração apagada
+        val left = FrameLayout(this@EditorActivity)
         clock = TextView(this@EditorActivity).apply {
-            text = "00:00 / 00:00"
-            textSize = 13.5f
-            setTextColor(Color.WHITE)
+            text = clockText(0L, 0L)
+            textSize = 12f
+            setTextColor(EditorStyle.INK)
+            typeface = ReclyType.mono(this@EditorActivity)
             gravity = Gravity.CENTER_VERTICAL
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            setPadding(dp(12), 0, dp(12), 0)
         }
-        addView(clock, LinearLayout.LayoutParams(-2, -2))
+        left.addView(clock, FrameLayout.LayoutParams(-2, -2, Gravity.START or Gravity.CENTER_VERTICAL))
+        addView(left, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Undo & Redo dummy views so refresh() doesn't NPE
-        undo = View(this@EditorActivity)
-        redo = View(this@EditorActivity)
+        // Play / Pause — disco claro no centro
+        play = FrameLayout(this@EditorActivity).apply {
+            contentDescription = "Reproduzir"
+            tooltipText = "Reproduzir"
+            isClickable = true
+            isFocusable = true
+            background = RippleDrawable(ColorStateList.valueOf(0x33000000),
+                GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(EditorStyle.INK) }, null)
+            val icon = ImageView(context).apply {
+                id = R.id.recly_transport_icon
+                setImageResource(R.drawable.ic_recly_play)
+                imageTintList = ColorStateList.valueOf(EditorStyle.ON_ACCENT)
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
+            }
+            addView(icon, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
+            setOnClickListener {
+                preview.endScrub(position)
+                if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
+            }
+        }
+        addView(play, LinearLayout.LayoutParams(dp(50), dp(50)))
+
+        // Desfazer / Refazer
+        val right = row().apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL }
+        undo = ghostBtn("Desfazer", R.drawable.ic_recly_undo) { if (history.canUndo) performHistoryEdit { history.undo() } }
+        redo = ghostBtn("Refazer", R.drawable.ic_recly_redo) { if (history.canRedo) performHistoryEdit { history.redo() } }
+        right.addView(undo, LinearLayout.LayoutParams(dp(44), dp(44)))
+        right.addView(redo, LinearLayout.LayoutParams(dp(44), dp(44)))
+        addView(right, LinearLayout.LayoutParams(0, -2, 1f))
+    }
+
+    private fun clockText(positionUs: Long, durationUs: Long): CharSequence {
+        val full = timeLabelCapCut(positionUs, durationUs)
+        val cut = full.indexOf(" / ")
+        if (cut < 0) return full
+        return android.text.SpannableString(full).apply {
+            setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), cut, full.length,
+                android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
         contentDescription = "Redimensionar previa e linha do tempo"
         isFocusable = true
-        background = GradientDrawable().apply {
-            setColor(EditorStyle.BG)
-            setStroke(dp(1), EditorStyle.BORDER)
+        background = android.graphics.drawable.LayerDrawable(arrayOf(
+            GradientDrawable().apply { setColor(EditorStyle.BG) },
+            GradientDrawable().apply { setColor(EditorStyle.BORDER_LIGHT); cornerRadius = dp(2).toFloat() },
+        )).apply {
+            setLayerGravity(1, Gravity.CENTER)
+            if (landscape) setLayerSize(1, dp(4), dp(36)) else setLayerSize(1, dp(36), dp(4))
         }
         var last = 0f
         setOnTouchListener { _, event ->
@@ -634,7 +705,10 @@ class EditorActivity : Activity() {
     }
 
     private fun buildTimelineContainer(landscape: Boolean): LinearLayout = column().apply {
-        setBackgroundColor(EditorStyle.BG)
+        background = android.graphics.drawable.LayerDrawable(arrayOf(
+            GradientDrawable().apply { setColor(EditorStyle.BORDER) },
+            GradientDrawable().apply { setColor(EditorStyle.TIMELINE) },
+        )).apply { setLayerInsetTop(1, dp(EditorStyle.STROKE)) }
         addView(compoundBar(), LinearLayout.LayoutParams(-1, dp(34)))
         addView(timeline, LinearLayout.LayoutParams(-1, 0, 1f))
     }
@@ -646,14 +720,14 @@ class EditorActivity : Activity() {
         setPadding(dp(12), 0, dp(12), 0)
         gravity = Gravity.CENTER_VERTICAL
         val bg = GradientDrawable().apply {
-            setColor(0x2E8E7CF0)
-            cornerRadius = dp(10).toFloat()
+            setColor(EditorStyle.BLUE_DEEP)
+            cornerRadius = dp(EditorStyle.RADIUS_CONTROL).toFloat()
         }
         background = bg
         val back = TextView(this@EditorActivity).apply {
             text = "‹  Projeto"
             textSize = 12f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.INK)
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
             setPadding(dp(10), dp(6), dp(10), dp(6))
             isClickable = true; isFocusable = true
@@ -661,12 +735,12 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFB8AEF5.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, EditorStyle.BLUE_LIGHT).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"
             textSize = 15f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.INK)
             setPadding(dp(10), dp(4), dp(10), dp(4))
             isClickable = true; isFocusable = true
             contentDescription = "Opcoes do compound"
@@ -703,7 +777,7 @@ class EditorActivity : Activity() {
     private fun compoundMenu(compound: CompoundClip) {
         val children = CompoundEditing.children(project, compound)
         val body = column().apply { setPadding(dp(16), 0, dp(16), dp(8)) }
-        body.addView(label(compound.name, 16f, Color.WHITE).apply {
+        body.addView(label(compound.name, 16f, EditorStyle.INK).apply {
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
         })
         body.addView(label("${children.size} clipes  •  ${timeLabel(CompoundEditing.durationUs(project, compound))}", 12f, EditorStyle.MUTED).apply {
@@ -884,7 +958,7 @@ class EditorActivity : Activity() {
         workspace.addView(monitor, if (landscape) LinearLayout.LayoutParams(0, -1, 1.15f) else LinearLayout.LayoutParams(-1, 0, 0.62f))
 
         previewBox = FrameLayout(this).apply {
-            setBackgroundColor(Color.BLACK)
+            setBackgroundColor(EditorStyle.BG)
         }
         frame = FrameLayout(this)
         val surface = SurfaceView(this)
@@ -972,8 +1046,19 @@ class EditorActivity : Activity() {
         }
         frame.addView(trackingOverlay, FrameLayout.LayoutParams(-1, -1))
         previewBox.addView(frame, FrameLayout.LayoutParams(-1, -1, Gravity.CENTER))
-        empty = label("Sua proxima historia\ncomeca aqui\n\nToque para importar um video ou uma foto", 19f, EditorStyle.MUTED).apply {
-            gravity = Gravity.CENTER; setOnClickListener { pick(false) }
+        empty = heading("", 22f).apply {
+            val headline = "Sua próxima história\ncomeça aqui"
+            val hint = "\n\nToque para importar um vídeo ou foto"
+            text = android.text.SpannableStringBuilder(headline).apply {
+                val at = headline.indexOf("história")
+                setSpan(android.text.style.ForegroundColorSpan(EditorStyle.ACCENT), at, at + "história".length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                val start = length
+                append(hint)
+                setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), start, length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(android.text.style.AbsoluteSizeSpan(14, true), start, length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            gravity = Gravity.CENTER; isClickable = true; isFocusable = true
+            setOnClickListener { pick(false) }
         }
         previewBox.addView(empty, FrameLayout.LayoutParams(-1, -1))
         monitor.addView(previewBox, LinearLayout.LayoutParams(-1, 0, 1f).apply { setMargins(dp(8), dp(4), dp(8), dp(2)) })
@@ -1038,10 +1123,17 @@ class EditorActivity : Activity() {
         workspace.addView(divider, 1, if (landscape) LinearLayout.LayoutParams(dp(10), -1) else LinearLayout.LayoutParams(-1, dp(6)))
         workspace.addView(timelinePane, if (landscape) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 0.38f))
 
-        bottom = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; setBackgroundColor(EditorStyle.PANEL) }
-        contextualTools = row().apply { setPadding(dp(8), dp(4), dp(8), dp(6)) }
+        bottom = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            background = android.graphics.drawable.LayerDrawable(arrayOf(
+                GradientDrawable().apply { setColor(EditorStyle.BORDER) },
+                GradientDrawable().apply { setColor(EditorStyle.BG) },
+            )).apply { setLayerInsetTop(1, dp(EditorStyle.STROKE)) }
+        }
+        contextualTools = row().apply { setPadding(dp(6), dp(2), dp(6), dp(8)) }
         bottom.addView(contextualTools)
-        root.addView(bottom, LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(bottom, LinearLayout.LayoutParams(-1, dp(86)))
 
         updateContextualTools()
         setContentView(root)
@@ -1323,7 +1415,7 @@ class EditorActivity : Activity() {
         if (stickerHandles.selected !in project.stickers.map { it.id }) stickerHandles.selected = null
         handles.texts = project.texts.takeIf { project.visualEnabled(TEXT_TRACK) && !project.trackState(TEXT_TRACK).locked } ?: emptyList(); handles.invalidate()
         stickerHandles.stickers = project.stickers.takeIf { project.visualEnabled(STICKER_TRACK) && !project.trackState(STICKER_TRACK).locked } ?: emptyList(); stickerHandles.invalidate()
-        quality.text = "${project.export.shortSide}p"
+        quality.text = metaLabel()
         quality.contentDescription = "Qualidade de exportação: ${project.export.shortSide}p"
         undo.isEnabled = history.canUndo; undo.alpha = if (history.canUndo) 1.0f else 0.35f
         redo.isEnabled = history.canRedo; redo.alpha = if (history.canRedo) 1.0f else 0.35f
@@ -1346,7 +1438,7 @@ class EditorActivity : Activity() {
             (if (project.compounds.isEmpty()) "" else "  •  ${project.compounds.size} compound${if (project.compounds.size > 1) "s" else ""}") +
             "  •  ${project.audio.size} audios  •  ${project.texts.size + project.stickers.size} camadas"
         if (::projectTitleView.isInitialized) {
-            projectTitleView.text = ""
+            projectTitleView.text = project.name
         }
         updateContextualTools()
         updatePosition(); fitPreview()
@@ -1377,7 +1469,7 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
-        clock.text = timeLabelCapCut(position, project.durationUs)
+        clock.text = clockText(position, project.durationUs)
     }
     private fun error(message: String) {
         info.text = message
@@ -1649,7 +1741,7 @@ class EditorActivity : Activity() {
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 busy = false; importing = null
-                result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next) },
+                result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next); runPendingOpenTool() },
                     { refresh(); error("Nao foi possivel importar: ${it.message}") })
             }
         }
@@ -1955,7 +2047,7 @@ class EditorActivity : Activity() {
         val time = numberField(body, "Posicao (segundos)", marker.timeUs / SECOND.toDouble())
         var color = marker.color
         val colors = row()
-        listOf(0xFFFFC66D.toInt(), 0xFFC3A0FF.toInt(), 0xFF5BC7BC.toInt(), 0xFFFF7C8F.toInt()).forEach { value ->
+        listOf(EditorStyle.ACCENT, EditorStyle.BLUE, EditorStyle.PRIMARY_SOFT, EditorStyle.BLUE_LIGHT).forEach { value ->
             colors.addView(action("●") { color = value }.apply { setTextColor(value); textSize = 26f }, LinearLayout.LayoutParams(0, dp(52), 1f))
         }
         body.addView(colors)
@@ -3515,7 +3607,7 @@ class EditorActivity : Activity() {
         ))
 
         if (result.warnings.isNotEmpty()) {
-            body.addView(label(result.warnings.joinToString("\n"), 11f, 0xFFFFC66D.toInt()))
+            body.addView(label(result.warnings.joinToString("\n"), 11f, EditorStyle.ACCENT))
         }
 
         lateinit var dialog: Dialog

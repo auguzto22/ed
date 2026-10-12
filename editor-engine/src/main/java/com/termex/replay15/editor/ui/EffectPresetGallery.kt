@@ -118,7 +118,7 @@ object EffectPresetGallery {
 
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF222226.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -145,7 +145,7 @@ object EffectPresetGallery {
                 val tagView = TextView(this).apply {
                     text = preset.category
                     textSize = 9f
-                    setTextColor(0xFF888890.toInt())
+                    setTextColor(EditorStyle.MUTED)
                     gravity = Gravity.CENTER_HORIZONTAL
                     isSingleLine = true
                 }
@@ -183,10 +183,11 @@ object EffectPresetGallery {
                     text = title
                     textSize = 12f
                     setPadding(dp(12), dp(6), dp(12), dp(6))
-                    setTextColor(if (isSelected) Color.WHITE else EditorStyle.MUTED)
+                    setTextColor(if (isSelected) 0xFFFFFFFF.toInt() else EditorStyle.MUTED)
                     background = GradientDrawable().apply {
-                        setColor(if (isSelected) EditorStyle.ACCENT else EditorStyle.CARD)
-                        cornerRadius = dp(16).toFloat()
+                        setColor(if (isSelected) EditorStyle.BLUE_DEEP else EditorStyle.CARD)
+                        setStroke(dp(EditorStyle.STROKE), if (isSelected) EditorStyle.BLUE else EditorStyle.BORDER)
+                        cornerRadius = dp(EditorStyle.RADIUS_CONTROL).toFloat()
                     }
                     isClickable = true
                     isFocusable = true

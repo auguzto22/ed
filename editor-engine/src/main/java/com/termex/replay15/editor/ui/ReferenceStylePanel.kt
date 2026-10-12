@@ -35,24 +35,24 @@ class ReferenceStylePanel(
             Toast.makeText(activity, "Selecione um clipe para aplicar um estilo", Toast.LENGTH_SHORT).show(); return
         }
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
-        body.addView(activity.sectionTitle("Estilo de referencia", "Analisa a linguagem de edicao de um unico video. Nenhum frame, audio ou asset e copiado para o projeto."))
-        body.addView(activity.action("Usar novo video como referencia", true) { dialog?.dismiss(); pickReference() }, LinearLayout.LayoutParams(-1, activity.dp(52)))
+        body.addView(activity.sectionTitle("Por que esse vídeo vende", "Lê gancho, ritmo de cortes, legendas e zoom de um vídeo de referência. Nenhum quadro, áudio ou asset é copiado."))
+        body.addView(activity.action("Escolher vídeo de referência", true) { dialog?.dismiss(); pickReference() }, LinearLayout.LayoutParams(-1, activity.dp(52)))
         val profiles = store.list()
-        if (profiles.isEmpty()) body.addView(activity.label("Nenhum estilo salvo ainda.", 12f, EditorStyle.MUTED))
+        if (profiles.isEmpty()) body.addView(activity.label("Nenhuma análise salva ainda.", 12f, EditorStyle.MUTED))
         else {
-            body.addView(activity.sectionTitle("Estilos salvos"))
+            body.addView(activity.sectionTitle("Análises salvas"))
             profiles.forEach { profile ->
                 body.addView(activity.action(profile.name) { dialog?.dismiss(); showProfile(profile) }, LinearLayout.LayoutParams(-1, activity.dp(48)))
             }
         }
-        dialog = activity.sheet("Reference Style", body)
+        dialog = activity.sheet("Analisar referência", body)
     }
 
     fun analyze(uri: Uri) {
         val token = ReferenceAnalysisCancellation().also { cancellation = it }
         processing(true)
         val progressText = activity.label(ReferenceAnalysisStage.PREPARING.label, 15f)
-        val progressDialog = AlertDialog.Builder(activity).setTitle("Analisando referencia").setView(progressText)
+        val progressDialog = AlertDialog.Builder(activity).setTitle("Analisando referência").setView(progressText)
             .setNegativeButton("Cancelar") { _, _ -> token.cancel() }.setOnCancelListener { token.cancel() }.show()
         worker.execute {
             val result = runCatching {
@@ -88,8 +88,8 @@ class ReferenceStylePanel(
             runCatching { store.rename(profile.id, name.text.toString()) }.fold({ Toast.makeText(activity, "Estilo salvo", Toast.LENGTH_SHORT).show() }, { name.error = it.message })
         })
         body.addView(activity.action("Aplicar ao clipe selecionado", true) { dialog?.dismiss(); applyProfile(profile) }, LinearLayout.LayoutParams(-1, activity.dp(52)))
-        if (profile.warnings.isNotEmpty()) body.addView(activity.label(profile.warnings.joinToString("\n"), 11f, 0xFFFFC66D.toInt()))
-        dialog = activity.sheet("Reference Style", body)
+        if (profile.warnings.isNotEmpty()) body.addView(activity.label(profile.warnings.joinToString("\n"), 11f, EditorStyle.ACCENT))
+        dialog = activity.sheet("Analisar referência", body)
     }
 
     private fun applyProfile(profile: ReferenceStyleProfile) {
@@ -125,7 +125,7 @@ class ReferenceStylePanel(
         preview(edited)
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
         body.addView(activity.sectionTitle("Preview do estilo", plan.base.summary()))
-        if (plan.unsupportedEffects.isNotEmpty()) body.addView(activity.label("Nao suportado: ${plan.unsupportedEffects.joinToString { it.name.lowercase() }}", 11f, 0xFFFFC66D.toInt()))
+        if (plan.unsupportedEffects.isNotEmpty()) body.addView(activity.label("Nao suportado: ${plan.unsupportedEffects.joinToString { it.name.lowercase() }}", 11f, EditorStyle.ACCENT))
         val compare = activity.row()
         compare.addView(activity.action("Original") { preview(original) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))
         compare.addView(activity.action("Reference Style", true) { preview(edited) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))

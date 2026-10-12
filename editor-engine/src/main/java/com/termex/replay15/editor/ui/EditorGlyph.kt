@@ -52,10 +52,7 @@ class EditorGlyph(
             "Editar" -> R.drawable.ic_recly_cut
             "Projeto" -> R.drawable.ic_pro_folder
             "Favorito" -> R.drawable.ic_recly_star_filled
-            "Replay" -> R.drawable.ic_recly_replay_badge
-            "Econômico" -> R.drawable.ic_recly_economy
             "Qualidade" -> R.drawable.ic_recly_quality
-            "Facecam" -> R.drawable.ic_recly_facecam
             "+ Midia" -> R.drawable.ic_pro_plus
             else -> 0
         }
@@ -69,7 +66,7 @@ class EditorGlyph(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = tint
         style = Paint.Style.STROKE
-        strokeWidth = 1.8f
+        strokeWidth = 2.1f
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
@@ -320,6 +317,26 @@ class EditorGlyph(
                 canvas.drawCircle(12f, 12f, 2f, fillPaint)
                 canvas.drawCircle(18f, 12f, 2f, fillPaint)
             }
+            "Auto Edit" -> {
+                val bolt = Path().apply {
+                    moveTo(13f, 2f); lineTo(4f, 14f); lineTo(11f, 14f); lineTo(10f, 22f); lineTo(19f, 10f); lineTo(12f, 10f); close()
+                }
+                canvas.drawPath(bolt, fillPaint)
+            }
+            "Analisar", "Scopes" -> {
+                line(3f, 20f, 21f, 20f)
+                line(6f, 16f, 6f, 12f)
+                line(11f, 16f, 11f, 8f)
+                line(16f, 16f, 16f, 10f)
+            }
+            "Stickers" -> {
+                val sticker = Path().apply {
+                    moveTo(4f, 4f); lineTo(20f, 4f); lineTo(20f, 13f); lineTo(13f, 20f); lineTo(4f, 20f); close()
+                }
+                canvas.drawPath(sticker, paint)
+                val fold = Path().apply { moveTo(20f, 13f); lineTo(13f, 13f); lineTo(13f, 20f) }
+                canvas.drawPath(fold, paint)
+            }
             else -> {
                 canvas.drawRoundRect(3.5f, 3.5f, 20.5f, 20.5f, 3f, 3f, paint)
                 line(7.5f, 12f, 16.5f, 12f)
@@ -347,29 +364,36 @@ class EditorGlyph(
     override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
+/** Tools the design calls out as "hot" (filled coral tile) in the bottom bar. */
+private val HOT_TOOLS = setOf("Auto Edit")
+
 fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column().apply {
-    gravity = Gravity.CENTER
-    minimumWidth = dp(76)
-    minimumHeight = dp(74)
+    gravity = Gravity.CENTER_HORIZONTAL
+    minimumWidth = dp(66)
     contentDescription = name
     tooltipText = name
     isClickable = true
     isFocusable = true
-    setPadding(dp(8), dp(8), dp(8), dp(6))
-    val value = android.util.TypedValue()
-    theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
-    setBackgroundResource(value.resourceId)
+    setPadding(dp(4), dp(8), dp(4), dp(4))
+    val hot = name in HOT_TOOLS
 
-    val iconView = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, if (name == "+ Midia") EditorStyle.WHITE else 0xFFE4E4E7.toInt(), context))
+    val tile = FrameLayout(context).apply {
+        background = if (hot) reclySurface(EditorStyle.PRIMARY, EditorStyle.PRIMARY, 12f, 0x33000000)
+            else reclySurface(EditorStyle.CARD, EditorStyle.BORDER, 12f)
         importantForAccessibility = 2
+        addView(ImageView(context).apply {
+            setImageDrawable(EditorGlyph(name, if (hot) EditorStyle.ON_ACCENT else EditorStyle.INK, context))
+            importantForAccessibility = 2
+        }, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
     }
-    addView(iconView, LinearLayout.LayoutParams(dp(26), dp(26)))
+    addView(tile, LinearLayout.LayoutParams(dp(44), dp(44)))
 
-    val labelView = label(name, 11.5f, 0xFFD4D4D8.toInt()).apply {
+    val labelView = label(name, 11f, if (hot) EditorStyle.PRIMARY else 0xFFC9C5BA.toInt()).apply {
         gravity = Gravity.CENTER
         importantForAccessibility = 2
-        setPadding(0, dp(4), 0, 0)
+        maxLines = 1
+        typeface = ReclyType.body(context, 600)
+        setPadding(0, dp(5), 0, 0)
     }
     addView(labelView)
 
@@ -381,14 +405,9 @@ fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).appl
     tooltipText = name
     isClickable = true
     isFocusable = true
-    val bg = GradientDrawable().apply {
-        setColor(EditorStyle.CARD)
-        setStroke(dp(1), EditorStyle.BORDER)
-        cornerRadius = dp(14).toFloat()
-    }
-    background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
+    background = reclySurface(EditorStyle.CARD, EditorStyle.BORDER, 12f)
     val icon = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, Color.WHITE, context))
+        setImageDrawable(EditorGlyph(name, EditorStyle.INK, context))
         scaleType = ImageView.ScaleType.CENTER_INSIDE
     }
     addView(icon, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))

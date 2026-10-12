@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Marca Recly: barra de corte + play, sobre o fundo coral do ícone adaptativo. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:fillColor="#FFB77AFF" android:pathData="M54,18a36,36 0,1 0,36 36h-11a25,25 0,1 1,-25 -25z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M54,39a15,15 0,1 0,15 15h12a27,27 0,1 1,-27 -27z" />
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M41,37v34" android:strokeColor="#141414" android:strokeWidth="7" android:strokeLineCap="round" />
+    <path android:pathData="M51,43.5l20,10.5 -20,10.5z" android:fillColor="#141414" android:strokeColor="#141414" android:strokeWidth="6" android:strokeLineJoin="round" />
 </vector>

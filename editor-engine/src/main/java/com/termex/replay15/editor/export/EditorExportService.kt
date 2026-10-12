@@ -176,8 +176,8 @@ class EditorExportService : Service() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         val open = PendingIntent.getActivity(this, 510, openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val builder = Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_save_15)
-            .setContentTitle("Editor Replay15").setContentText(value.message).setContentIntent(open)
+        val builder = Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_rc_export)
+            .setContentTitle("Recly").setContentText(value.message).setContentIntent(open)
             .setOnlyAlertOnce(true).setOngoing(value.active)
         if (value.active) {
             builder.setProgress(100, value.progress, value.progress == 0)

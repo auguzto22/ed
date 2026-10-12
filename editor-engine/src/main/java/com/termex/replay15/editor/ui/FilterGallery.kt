@@ -130,7 +130,7 @@ object FilterGallery {
                 // Placeholder view while thumbnail renders
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF222226.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -178,16 +178,16 @@ object FilterGallery {
             for (i in 0 until tabs.childCount) {
                 val btn = tabs.getChildAt(i) as Button
                 val isCurrent = i == category
-                btn.setTextColor(if (isCurrent) Color.BLACK else Color.WHITE)
+                btn.setTextColor(if (isCurrent) Color.WHITE else EditorStyle.INK)
                 btn.background = GradientDrawable().apply {
                     if (isCurrent) {
-                        setColor(Color.WHITE)
-                        cornerRadius = dp(20).toFloat()
+                        setColor(EditorStyle.BLUE_DEEP)
+                        setStroke(dp(EditorStyle.STROKE), EditorStyle.BLUE)
                     } else {
                         setColor(EditorStyle.CARD)
-                        setStroke(dp(1), EditorStyle.BORDER)
-                        cornerRadius = dp(12).toFloat()
+                        setStroke(dp(EditorStyle.STROKE), EditorStyle.BORDER)
                     }
+                    cornerRadius = dp(EditorStyle.RADIUS_CONTROL).toFloat()
                 }
             }
         }

@@ -177,7 +177,7 @@ object LutBrowser {
                 val views = card.tag as LutCardViews
                 views.name.text = displayName(file)
                 views.favorite.text = if (file.absolutePath in favorites) "★" else "☆"
-                views.favorite.setTextColor(if (file.absolutePath in favorites) 0xFFFFD166.toInt() else EditorStyle.MUTED)
+                views.favorite.setTextColor(if (file.absolutePath in favorites) EditorStyle.ACCENT else EditorStyle.MUTED)
                 val chosen = file.absolutePath == selectedPath
                 card.background = GradientDrawable().apply {
                     setColor(if (chosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
@@ -211,6 +211,8 @@ object LutBrowser {
         updateTabs = {
             allButton.background = tabBackground(!favoritesOnly)
             favoritesButton.background = tabBackground(favoritesOnly)
+            allButton.setTextColor(if (!favoritesOnly) Color.WHITE else EditorStyle.INK)
+            favoritesButton.setTextColor(if (favoritesOnly) Color.WHITE else EditorStyle.INK)
         }
         updateTabs()
         refreshGrid()
@@ -249,8 +251,9 @@ object LutBrowser {
     private data class LutCardViews(val image: ImageView, val name: TextView, val favorite: TextView)
 
     private fun Activity.tabBackground(selected: Boolean) = GradientDrawable().apply {
-        if (selected) setColor(Color.WHITE) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
-        cornerRadius = dp(20).toFloat()
+        if (selected) { setColor(EditorStyle.BLUE_DEEP); setStroke(dp(EditorStyle.STROKE), EditorStyle.BLUE) }
+        else { setColor(EditorStyle.CARD); setStroke(dp(EditorStyle.STROKE), EditorStyle.BORDER) }
+        cornerRadius = dp(EditorStyle.RADIUS_CONTROL).toFloat()
     }
 
     private fun displayName(file: File): String {

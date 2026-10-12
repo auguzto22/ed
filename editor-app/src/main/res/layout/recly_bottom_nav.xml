@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Navegação inferior do Recly: pílula clara no item ativo, ícones nos demais, linha superior de 1.5dp. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottomNav"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rc_top_hairline"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="14dp"
+    tools:ignore="HardcodedText">
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/navProjects"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_gravity="center"
+            android:background="@drawable/rc_nav_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="16dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_rc_grid" />
+
+            <TextView
+                android:id="@+id/navProjectsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Projetos"
+                android:textColor="@color/recly_on_accent"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <FrameLayout
+            android:id="@+id/navPresets"
+            android:layout_width="48dp"
+            android:layout_height="44dp"
+            android:layout_gravity="center"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Presets do Auto Edit"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_rc_presets" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <FrameLayout
+            android:id="@+id/navSettings"
+            android:layout_width="48dp"
+            android:layout_height="44dp"
+            android:layout_gravity="center"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Ajustes"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_rc_settings" />
+        </FrameLayout>
+    </FrameLayout>
+</LinearLayout>

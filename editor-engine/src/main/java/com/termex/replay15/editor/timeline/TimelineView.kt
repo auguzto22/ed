@@ -6,9 +6,16 @@ import android.graphics.*
 import android.os.Build
 import android.view.*
 import com.termex.replay15.editor.domain.*
+import com.termex.replay15.editor.ui.EditorStyle
+import com.termex.replay15.editor.ui.ReclyType
+
 import kotlin.math.*
 
+/** Audio lane: warm grey, like the waveform in the design. */
+private const val AUDIO = 0xFFB8B4AA.toInt()
+
 class TimelineView(context: Context) : View(context) {
+    private val labelFace: Typeface by lazy { ReclyType.body(context, 600) }
     private data class Segment(val id: String, val name: String, val start: Long, val end: Long, val speedBadge: String? = null)
     private data class Lane(val label: String, val color: Int, val type: Int, val segments: MutableList<Segment>, val trackId: String = "")
     private var lanes = listOf<Lane>()
@@ -138,7 +145,7 @@ class TimelineView(context: Context) : View(context) {
         }
     })
     init {
-        setBackgroundColor(Color.BLACK); isFocusable = true
+        setBackgroundColor(EditorStyle.TIMELINE); isFocusable = true
         contentDescription = "Linha do tempo. Arraste para buscar ou ver faixas. Pince para ampliar."
     }
     fun zoom(factor: Float) { zoomAround(factor, width / 2f) }
@@ -170,15 +177,15 @@ class TimelineView(context: Context) : View(context) {
             }
             result += packed
         }
-        pack(project.adjustmentClips.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "FX", 0xFFC39BFF.toInt(), 4)
+        pack(project.adjustmentClips.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "FX", EditorStyle.BLUE_LIGHT, 4)
         project.videoTracks.withIndex().toList().asReversed().forEach { (index, track) ->
-            result += Lane("V${index + 2}", 0xFF89BCFF.toInt(), 3,
+            result += Lane("V${index + 2}", EditorStyle.BLUE, 3,
                 track.clips.map { Segment(it.clip.id, it.clip.name, it.startUs, it.endUs, it.clip.speedBadge) }.toMutableList(), track.id)
         }
-        project.audio.forEachIndexed { n, a -> result += Lane("A${n + 1}", 0xFF5BC7BC.toInt(), 0,
+        project.audio.forEachIndexed { n, a -> result += Lane("A${n + 1}", AUDIO, 0,
             mutableListOf(Segment(a.id, a.name, a.startUs, min(project.durationUs, a.startUs + a.durationUs))), "audio:${a.id}") }
-        pack(project.texts.map { Segment(it.id, it.text.replace('\n', ' '), it.startUs, it.endUs) }, "T", 0xFFE6B965.toInt(), 1)
-        pack(project.stickers.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "L", 0xFF93A8F8.toInt(), 2)
+        pack(project.texts.map { Segment(it.id, it.text.replace('\n', ' '), it.startUs, it.endUs) }, "T", EditorStyle.ACCENT, 1)
+        pack(project.stickers.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "L", EditorStyle.PRIMARY_SOFT, 2)
         lanes = result; vertical = vertical.coerceIn(0f, maxScroll())
     }
     private fun maxScroll() = max(0f, lanes.size * dp(39f) - (height - dp(140f)))
@@ -243,7 +250,7 @@ class TimelineView(context: Context) : View(context) {
         return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", m, s, frames)
     }
     private fun text(c: Canvas, value: String, xx: Float, yy: Float, color: Int = Color.WHITE, size: Float = 10f) {
-        paint.color = color; paint.textSize = dp(size); paint.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        paint.color = color; paint.textSize = dp(size); paint.typeface = labelFace
         c.drawText(value, xx, yy, paint)
     }
     private fun drawSpeedBadge(c: Canvas, value: String?, left: Float, right: Float, top: Float, bottom: Float) {
@@ -275,13 +282,13 @@ class TimelineView(context: Context) : View(context) {
         var tick = time(gutter) / step * step
         while (tick <= project.durationUs && x(tick) <= width) {
             val xx = x(tick)
-            text(c, java.lang.String.format(java.util.Locale.ROOT, "%02d:%02d", tick / SECOND / 60, tick / SECOND % 60), xx + dp(3f), dp(16f), 0xFF8E8E93.toInt(), 9f)
+            text(c, java.lang.String.format(java.util.Locale.ROOT, "%02d:%02d", tick / SECOND / 60, tick / SECOND % 60), xx + dp(3f), dp(16f), EditorStyle.DIM, 9f)
             tick += step
         }
         project.camera.keyframes.forEach { key ->
             val xx = x(key.timeUs)
             if (xx >= gutter && xx <= width) text(c, "◆", xx - dp(4f), dp(30f),
-                if (kotlin.math.abs(key.timeUs - positionUs) <= 20_000L) Color.WHITE else 0xFFB58AFF.toInt(), 10f)
+                if (kotlin.math.abs(key.timeUs - positionUs) <= 20_000L) Color.WHITE else EditorStyle.BLUE_LIGHT, 10f)
         }
         // Magnetic snap guide line
         snapper.activeSnapTarget?.let { snapT ->
@@ -301,7 +308,7 @@ class TimelineView(context: Context) : View(context) {
         project.videos.forEachIndexed { index, clip ->
             val l = x(visualStart(index)); val r = x(visualEnd(index))
             if (r >= gutter && l <= width) {
-                paint.color = 0xFF161616.toInt(); c.drawRoundRect(l, dp(50f), r - dp(2f), dp(116f), dp(8f), dp(8f), paint)
+                paint.color = EditorStyle.CARD_ELEVATED; c.drawRoundRect(l, dp(50f), r - dp(2f), dp(116f), dp(8f), dp(8f), paint)
                 c.save(); c.clipRect(l, dp(50f), r - dp(2f), dp(116f))
                 var xx = l + floor(max(0f, gutter - l) / dp(64f)) * dp(64f)
                 while (xx < min(r, width.toFloat())) {
@@ -339,11 +346,11 @@ class TimelineView(context: Context) : View(context) {
                 c.restore()
                 if (index == selected) {
                     val left = l + if (trimSide == -1) delta else 0f; val right = r + if (trimSide == 1) delta else 0f
-                    paint.color = Color.WHITE; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f)
+                    paint.color = EditorStyle.PRIMARY; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f)
                     c.drawRoundRect(left, dp(48f), right, dp(118f), dp(8f), dp(8f), paint); paint.style = Paint.Style.FILL
-                    paint.color = Color.WHITE
+                    paint.color = EditorStyle.PRIMARY
                     c.drawRoundRect(left - dp(3.5f), dp(68f), left + dp(4.5f), dp(98f), dp(3.5f), dp(3.5f), paint)
-                    paint.color = Color.WHITE
+                    paint.color = EditorStyle.PRIMARY
                     c.drawRoundRect(right - dp(4.5f), dp(68f), right + dp(3.5f), dp(98f), dp(3.5f), dp(3.5f), paint)
 
                     // Professional Trim Preview HUD
@@ -360,9 +367,9 @@ class TimelineView(context: Context) : View(context) {
                         val textW = paint.measureText(badgeText)
                         val badgeX = (if (trimSide < 0) left else right - textW - dp(16f)).coerceIn(gutter + dp(8f), width - textW - dp(24f))
                         val badgeY = dp(36f)
-                        paint.color = 0xEE18181C.toInt(); paint.style = Paint.Style.FILL
+                        paint.color = 0xEE1C1C1F.toInt(); paint.style = Paint.Style.FILL
                         c.drawRoundRect(badgeX - dp(8f), badgeY - dp(14f), badgeX + textW + dp(8f), badgeY + dp(6f), dp(6f), dp(6f), paint)
-                        paint.color = 0xFF3F3F46.toInt(); paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1.5f)
+                        paint.color = EditorStyle.BORDER_LIGHT; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1.5f)
                         c.drawRoundRect(badgeX - dp(8f), badgeY - dp(14f), badgeX + textW + dp(8f), badgeY + dp(6f), dp(6f), dp(6f), paint)
                         paint.style = Paint.Style.FILL; paint.color = Color.WHITE
                         c.drawText(badgeText, badgeX, badgeY, paint)
@@ -383,7 +390,7 @@ class TimelineView(context: Context) : View(context) {
                 val btnH = dp(22f)
                 val rect = RectF(jx - btnW / 2, cy - btnH / 2, jx + btnW / 2, cy + btnH / 2)
                 if (trans != null) {
-                    paint.color = 0xFF3F3F46.toInt()
+                    paint.color = EditorStyle.BORDER_LIGHT
                     paint.style = Paint.Style.FILL
                     c.drawRoundRect(rect, dp(6f), dp(6f), paint)
                     paint.color = Color.WHITE
@@ -400,7 +407,7 @@ class TimelineView(context: Context) : View(context) {
                     }
                     c.drawPath(path, paint)
                 } else {
-                    paint.color = 0xEE222228.toInt()
+                    paint.color = 0xEE26262A.toInt()
                     paint.style = Paint.Style.FILL
                     c.drawRoundRect(rect, dp(5f), dp(5f), paint)
                     paint.color = 0x88FFFFFF.toInt()
@@ -445,7 +452,7 @@ class TimelineView(context: Context) : View(context) {
         lanes.forEachIndexed { i, lane ->
             val y = dp(132f) + i * dp(39f) - vertical
             if (y + dp(35f) >= dp(130f) && y < height) {
-                paint.color = 0xFF121212.toInt(); c.drawRect(gutter, y, width.toFloat(), y + dp(34f), paint)
+                paint.color = EditorStyle.CARD; c.drawRect(gutter, y, width.toFloat(), y + dp(34f), paint)
                 lane.segments.forEach { s ->
                     val isTextTrack = lane.type == 1
                     val isStickerTrack = lane.type == 2
@@ -484,7 +491,7 @@ class TimelineView(context: Context) : View(context) {
                             val liveFadeOut = if (isCurrentAudioDragged && audioDraftFadeOutUs != null) audioDraftFadeOutUs!! else (audio?.fadeOutUs ?: 0L)
 
                             if (audio != null && wave != null) {
-                                paint.color = 0x885BC7BC.toInt(); paint.strokeWidth = dp(1f)
+                                paint.color = 0x88B8B4AA.toInt(); paint.strokeWidth = dp(1f)
                                 var px = max(gutter, l)
                                 while (px < min(r, width.toFloat())) {
                                     val amplitude = wave.at(liveIn + time(px) - liveStart) * dp(14f)
@@ -496,7 +503,7 @@ class TimelineView(context: Context) : View(context) {
                             val isSelectedAudio = s.id == selectedLayerId || isCurrentAudioDragged
                             if (isSelectedAudio && audio != null) {
                                 // 1. Visible Contour
-                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = 0xFF5BC7BC.toInt()
+                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = AUDIO
                                 c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint)
                                 paint.style = Paint.Style.FILL
 
@@ -505,9 +512,9 @@ class TimelineView(context: Context) : View(context) {
                                 if (handleW >= dp(6f)) {
                                     c.save()
                                     c.clipRect(l, y, l + handleW, y + dp(33f))
-                                    paint.color = 0xFF80E5DA.toInt()
+                                    paint.color = EditorStyle.INK
                                     c.drawRoundRect(l, y, l + handleW * 2f, y + dp(33f), dp(6f), dp(6f), paint)
-                                    paint.color = 0xFF1C1C1E.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    paint.color = EditorStyle.BG; paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(l + dp(4f), y + dp(9f), l + dp(4f), y + dp(24f), paint)
                                     val leftPath = Path().apply {
                                         moveTo(l + dp(6.5f), y + dp(12f))
@@ -520,9 +527,9 @@ class TimelineView(context: Context) : View(context) {
 
                                     c.save()
                                     c.clipRect(r - handleW, y, r, y + dp(33f))
-                                    paint.color = 0xFF80E5DA.toInt()
+                                    paint.color = EditorStyle.INK
                                     c.drawRoundRect(r - handleW * 2f, y, r, y + dp(33f), dp(6f), dp(6f), paint)
-                                    paint.color = 0xFF1C1C1E.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    paint.color = EditorStyle.BG; paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(r - dp(4f), y + dp(9f), r - dp(4f), y + dp(24f), paint)
                                     val rightPath = Path().apply {
                                         moveTo(r - dp(6.5f), y + dp(12f))
@@ -537,16 +544,16 @@ class TimelineView(context: Context) : View(context) {
                                 // 3. Fade In & Fade Out Lines / Handles
                                 if (liveFadeIn > 0L) {
                                     val fadeEndX = l + (liveFadeIn / SECOND.toFloat() * pixelsPerSecond).coerceAtMost(r - l)
-                                    paint.color = 0xAA5BC7BC.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    paint.color = 0xAAB8B4AA.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(l, y + dp(33f), fadeEndX, y, paint)
-                                    paint.style = Paint.Style.FILL; paint.color = 0xFF80E5DA.toInt()
+                                    paint.style = Paint.Style.FILL; paint.color = EditorStyle.INK
                                     c.drawCircle(fadeEndX, y + dp(4f), dp(3.5f), paint)
                                 }
                                 if (liveFadeOut > 0L) {
                                     val fadeStartX = r - (liveFadeOut / SECOND.toFloat() * pixelsPerSecond).coerceAtMost(r - l)
-                                    paint.color = 0xAA5BC7BC.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    paint.color = 0xAAB8B4AA.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(fadeStartX, y, r, y + dp(33f), paint)
-                                    paint.style = Paint.Style.FILL; paint.color = 0xFF80E5DA.toInt()
+                                    paint.style = Paint.Style.FILL; paint.color = EditorStyle.INK
                                     c.drawCircle(fadeStartX, y + dp(4f), dp(3.5f), paint)
                                 }
 
@@ -564,9 +571,9 @@ class TimelineView(context: Context) : View(context) {
                                     val textW = paint.measureText(badgeText)
                                     val badgeX = (l + (r - l - textW) / 2f).coerceIn(gutter + dp(8f), width - textW - dp(20f))
                                     val badgeY = if (y - dp(18f) >= dp(130f)) y - dp(6f) else y + dp(48f)
-                                    paint.color = 0xEE18181C.toInt(); paint.style = Paint.Style.FILL
+                                    paint.color = 0xEE1C1C1F.toInt(); paint.style = Paint.Style.FILL
                                     c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
-                                    paint.color = 0xFF5BC7BC.toInt(); paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
+                                    paint.color = AUDIO; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
                                     c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
                                     paint.style = Paint.Style.FILL; paint.color = Color.WHITE
                                     c.drawText(badgeText, badgeX, badgeY, paint)
@@ -585,8 +592,8 @@ class TimelineView(context: Context) : View(context) {
                                             val isCurrentSelected = s.id == selectedLayerId
                                             paint.color = when {
                                                 isUnderPlayhead -> Color.WHITE
-                                                isCurrentSelected -> 0xFF80E5DA.toInt()
-                                                else -> 0xCC80E5DA.toInt()
+                                                isCurrentSelected -> EditorStyle.INK
+                                                else -> 0xCCEDEBE6.toInt()
                                             }
                                             c.drawCircle(kx, ky, dp(3.5f), paint)
                                             if (isUnderPlayhead) {
@@ -609,7 +616,7 @@ class TimelineView(context: Context) : View(context) {
                             val isSelectedSticker = s.id == selectedLayerId || isCurrentStickerDragged
                             if (isSelectedSticker) {
                                 // 1. Visible Contour
-                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = 0xFF93A8F8.toInt()
+                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = EditorStyle.PRIMARY_SOFT
                                 c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint)
                                 paint.style = Paint.Style.FILL
 
@@ -618,9 +625,9 @@ class TimelineView(context: Context) : View(context) {
                                 if (handleW >= dp(6f)) {
                                     c.save()
                                     c.clipRect(l, y, l + handleW, y + dp(33f))
-                                    paint.color = 0xFFB8C7FF.toInt()
+                                    paint.color = 0xFFFFB49E.toInt()
                                     c.drawRoundRect(l, y, l + handleW * 2f, y + dp(33f), dp(6f), dp(6f), paint)
-                                    paint.color = 0xFF1C1C1E.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    paint.color = EditorStyle.BG; paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(l + dp(4f), y + dp(9f), l + dp(4f), y + dp(24f), paint)
                                     val leftPath = Path().apply {
                                         moveTo(l + dp(6.5f), y + dp(12f))
@@ -633,9 +640,9 @@ class TimelineView(context: Context) : View(context) {
 
                                     c.save()
                                     c.clipRect(r - handleW, y, r, y + dp(33f))
-                                    paint.color = 0xFFB8C7FF.toInt()
+                                    paint.color = 0xFFFFB49E.toInt()
                                     c.drawRoundRect(r - handleW * 2f, y, r, y + dp(33f), dp(6f), dp(6f), paint)
-                                    paint.color = 0xFF1C1C1E.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    paint.color = EditorStyle.BG; paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(r - dp(4f), y + dp(9f), r - dp(4f), y + dp(24f), paint)
                                     val rightPath = Path().apply {
                                         moveTo(r - dp(6.5f), y + dp(12f))
@@ -659,9 +666,9 @@ class TimelineView(context: Context) : View(context) {
                                     val textW = paint.measureText(badgeText)
                                     val badgeX = (l + (r - l - textW) / 2f).coerceIn(gutter + dp(8f), width - textW - dp(20f))
                                     val badgeY = if (y - dp(18f) >= dp(130f)) y - dp(6f) else y + dp(48f)
-                                    paint.color = 0xEE18181C.toInt(); paint.style = Paint.Style.FILL
+                                    paint.color = 0xEE1C1C1F.toInt(); paint.style = Paint.Style.FILL
                                     c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
-                                    paint.color = 0xFF93A8F8.toInt(); paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
+                                    paint.color = EditorStyle.PRIMARY_SOFT; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
                                     c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
                                     paint.style = Paint.Style.FILL; paint.color = Color.WHITE
                                     c.drawText(badgeText, badgeX, badgeY, paint)
@@ -679,8 +686,8 @@ class TimelineView(context: Context) : View(context) {
                                             val isCurrentSelected = s.id == selectedLayerId
                                             paint.color = when {
                                                 isUnderPlayhead -> Color.WHITE
-                                                isCurrentSelected -> 0xFFB8C7FF.toInt()
-                                                else -> 0xCCB8C7FF.toInt()
+                                                isCurrentSelected -> 0xFFFFB49E.toInt()
+                                                else -> 0xCCFFB49E.toInt()
                                             }
                                             c.save(); c.rotate(45f, kx, cy)
                                             c.drawRect(kx - dp(4.5f), cy - dp(4.5f), kx + dp(4.5f), cy + dp(4.5f), paint)
@@ -700,7 +707,7 @@ class TimelineView(context: Context) : View(context) {
                             val isSelectedText = s.id == selectedLayerId || isCurrentTextDragged
                             if (isSelectedText) {
                                 // 1. Visible Contour
-                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = 0xFFFFD700.toInt()
+                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = EditorStyle.ACCENT
                                 c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint)
                                 paint.style = Paint.Style.FILL
 
@@ -710,9 +717,9 @@ class TimelineView(context: Context) : View(context) {
                                     // Left Handle
                                     c.save()
                                     c.clipRect(l, y, l + handleW, y + dp(33f))
-                                    paint.color = 0xFFFFE082.toInt()
+                                    paint.color = 0xFFFFE38A.toInt()
                                     c.drawRoundRect(l, y, l + handleW * 2f, y + dp(33f), dp(6f), dp(6f), paint)
-                                    paint.color = 0xFF1C1C1E.toInt()
+                                    paint.color = EditorStyle.BG
                                     paint.strokeWidth = dp(1.5f)
                                     paint.style = Paint.Style.STROKE
                                     c.drawLine(l + dp(4f), y + dp(9f), l + dp(4f), y + dp(24f), paint)
@@ -728,9 +735,9 @@ class TimelineView(context: Context) : View(context) {
                                     // Right Handle
                                     c.save()
                                     c.clipRect(r - handleW, y, r, y + dp(33f))
-                                    paint.color = 0xFFFFE082.toInt()
+                                    paint.color = 0xFFFFE38A.toInt()
                                     c.drawRoundRect(r - handleW * 2f, y, r, y + dp(33f), dp(6f), dp(6f), paint)
-                                    paint.color = 0xFF1C1C1E.toInt()
+                                    paint.color = EditorStyle.BG
                                     paint.strokeWidth = dp(1.5f)
                                     paint.style = Paint.Style.STROKE
                                     c.drawLine(r - dp(4f), y + dp(9f), r - dp(4f), y + dp(24f), paint)
@@ -757,9 +764,9 @@ class TimelineView(context: Context) : View(context) {
                                     val textW = paint.measureText(badgeText)
                                     val badgeX = (l + (r - l - textW) / 2f).coerceIn(gutter + dp(8f), width - textW - dp(20f))
                                     val badgeY = if (y - dp(18f) >= dp(130f)) y - dp(6f) else y + dp(48f)
-                                    paint.color = 0xEE18181C.toInt(); paint.style = Paint.Style.FILL
+                                    paint.color = 0xEE1C1C1F.toInt(); paint.style = Paint.Style.FILL
                                     c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
-                                    paint.color = 0xFFFFD700.toInt(); paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
+                                    paint.color = EditorStyle.ACCENT; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
                                     c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
                                     paint.style = Paint.Style.FILL; paint.color = Color.WHITE
                                     c.drawText(badgeText, badgeX, badgeY, paint)
@@ -777,8 +784,8 @@ class TimelineView(context: Context) : View(context) {
                                             val isCurrentSelected = s.id == selectedLayerId
                                             paint.color = when {
                                                 isUnderPlayhead -> Color.WHITE
-                                                isCurrentSelected -> 0xFFFFCE80.toInt()
-                                                else -> 0xCCFFCE80.toInt()
+                                                isCurrentSelected -> 0xFFFFE38A.toInt()
+                                                else -> 0xCCFFE38A.toInt()
                                             }
                                             c.save(); c.rotate(45f, kx, cy)
                                             c.drawRect(kx - dp(4.5f), cy - dp(4.5f), kx + dp(4.5f), cy + dp(4.5f), paint)
@@ -804,23 +811,22 @@ class TimelineView(context: Context) : View(context) {
                 }
             }
         }
-        if (lanes.isEmpty()) text(c, "Adicione audio, texto ou uma camada", width / 2f - dp(88f), dp(166f), 0xFF8E8E93.toInt())
+        if (lanes.isEmpty()) text(c, "Adicione audio, texto ou uma camada", width / 2f - dp(88f), dp(166f), EditorStyle.MUTED)
         c.restore(); c.restore()
-        paint.color = 0xFF121212.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
-        text(c, "V1", dp(9f), dp(90f), Color.WHITE)
+        paint.color = EditorStyle.BG; c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
+        text(c, "V1", dp(9f), dp(90f), EditorStyle.BLUE)
         c.save(); c.clipRect(0f, dp(130f), gutter, height.toFloat())
         lanes.forEachIndexed { i, lane -> text(c, lane.label, dp(9f), dp(154f) + i * dp(39f) - vertical, lane.color) }; c.restore()
-        paint.color = Color.WHITE
-        paint.strokeWidth = dp(if (isPlayheadGrabbed) 2.5f else 1.8f)
+        paint.color = EditorStyle.PRIMARY
+        paint.strokeWidth = dp(if (isPlayheadGrabbed) 2.5f else 2f)
         c.drawLine(width / 2f, dp(43f), width / 2f, height.toFloat(), paint)
         if (isPlayheadGrabbed) {
-            paint.color = 0x33FFFFFF.toInt()
-            c.drawCircle(width / 2f, dp(43f), dp(10f), paint)
-            paint.color = Color.WHITE
-            c.drawCircle(width / 2f, dp(43f), dp(5.5f), paint)
-        } else {
-            c.drawCircle(width / 2f, dp(43f), dp(3.5f), paint)
+            paint.color = 0x33FF5A36
+            c.drawCircle(width / 2f, dp(43f), dp(11f), paint)
+            paint.color = EditorStyle.PRIMARY
         }
+        val head = dp(if (isPlayheadGrabbed) 7f else 6f)
+        c.drawRoundRect(width / 2f - head, dp(43f) - head, width / 2f + head, dp(43f) + head, dp(3f), dp(3f), paint)
     }
     override fun onTouchEvent(e: MotionEvent): Boolean {
         scale.onTouchEvent(e)
