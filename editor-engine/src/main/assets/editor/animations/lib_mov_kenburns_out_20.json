@@ -1,0 +1,1 @@
+{"id":"lib_mov_kenburns_out_20","type":"ANIMATION","version":1,"engineVersion":1,"name":"Zoom lento afastando 20%","category":"MOTION","license":"Recly original presets","premium":false,"points":[{"time":0,"zoom":1.2},{"time":1,"zoom":1.0,"easing":"LINEAR"}]}

@@ -1,0 +1,1 @@
+{"id":"lib_out_elastico_esquerda_longa_fade","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída Elástico esquerda longa · fade","category":"OUT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"ELASTIC"},{"time":1,"x":-0.45,"y":0.0,"opacity":0.0}]}

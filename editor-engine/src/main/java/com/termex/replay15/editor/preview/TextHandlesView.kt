@@ -206,13 +206,13 @@ class TextHandlesView(context: Context) : View(context) {
         canvas.rotate(transform.rotation, centerX, centerY)
 
         // Bounding Rectangle
-        paint.color = 0xFFB77AFF.toInt()
+        paint.color = 0xFFFF8A1F.toInt()
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE
         canvas.drawRoundRect(rect, 4f * density, 4f * density, paint)
 
         // Rotation Stem & Knob
-        paint.color = 0xFFB77AFF.toInt()
+        paint.color = 0xFFFF8A1F.toInt()
         paint.strokeWidth = 1.5f * density
         canvas.drawLine(centerX, rect.top, centerX, rect.top - stemLength, paint)
 
@@ -221,7 +221,7 @@ class TextHandlesView(context: Context) : View(context) {
         paint.color = Color.WHITE
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
         paint.style = Paint.Style.STROKE
-        paint.color = 0xFFB77AFF.toInt()
+        paint.color = 0xFFFF8A1F.toInt()
         paint.strokeWidth = 2f * density
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
 
@@ -237,7 +237,7 @@ class TextHandlesView(context: Context) : View(context) {
             paint.color = Color.WHITE
             canvas.drawCircle(cx, cy, cornerRadius, paint)
             paint.style = Paint.Style.STROKE
-            paint.color = 0xFFB77AFF.toInt()
+            paint.color = 0xFFFF8A1F.toInt()
             paint.strokeWidth = 2f * density
             canvas.drawCircle(cx, cy, cornerRadius, paint)
         }

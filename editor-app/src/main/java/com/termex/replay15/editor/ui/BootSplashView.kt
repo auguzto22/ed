@@ -74,9 +74,9 @@ class BootSplashView(context: Context) : View(context) {
         val r = min(w, h) * .13f
         // Breathing glow behind the mark.
         val glowAmount = phase(0f, .5f)
-        glow.shader = RadialGradient(cx, cy, r * 3.2f, intArrayOf((0x669B87FF and 0x00FFFFFF) or ((0x66 * glowAmount).toInt() shl 24), 0x009B87FF), null, Shader.TileMode.CLAMP)
+        glow.shader = RadialGradient(cx, cy, r * 3.2f, intArrayOf((0x66FF8A1F and 0x00FFFFFF) or ((0x66 * glowAmount).toInt() shl 24), 0x00FF8A1F), null, Shader.TileMode.CLAMP)
         canvas.drawCircle(cx, cy, r * 3.2f, glow)
-        // Outer ring (violet sweep) then inner ring (white), drawn as growing arcs.
+        // Outer ring (orange sweep) then inner ring (white), drawn as growing arcs.
         val outer = phase(.02f, .55f); val inner = phase(.18f, .7f)
         ring.strokeWidth = r * .3f
         ring.shader = SweepGradient(cx, cy, intArrayOf(EditorStyle.ACCENT_DEEP, EditorStyle.ACCENT, EditorStyle.ACCENT_PINK, EditorStyle.ACCENT_DEEP), null)

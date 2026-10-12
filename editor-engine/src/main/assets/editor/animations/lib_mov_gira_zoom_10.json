@@ -1,0 +1,1 @@
+{"id":"lib_mov_gira_zoom_10","type":"ANIMATION","version":1,"engineVersion":1,"name":"Girar e aproximar 10°","category":"MOTION","license":"Recly original presets","premium":false,"points":[{"time":0,"rotation":-10.0},{"time":1,"rotation":10.0,"zoom":1.12,"easing":"SMOOTH"}]}

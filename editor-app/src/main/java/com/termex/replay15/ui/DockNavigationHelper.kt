@@ -15,7 +15,6 @@ import android.view.animation.PathInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.recly.core.media.ReclyMediaContract
 import com.recly.editor.R
 
 enum class DockTab {
@@ -153,36 +152,13 @@ object DockNavigationHelper {
         val animator = LiquidNavAnimator(pill, containers, activity)
         animator.select(currentTab, animate = false)
 
-        // 1. Início / Gravador -> Abre o app Recly Recorder
+        // 1. Início
         navHome.setOnClickListener {
             animator.select(DockTab.HOME)
             onTabChanged?.invoke(DockTab.HOME)
-            val launchIntent = activity.packageManager.getLaunchIntentForPackage(ReclyMediaContract.RECORDER_PACKAGE_NAME)
-            if (launchIntent != null) {
-                activity.startActivity(launchIntent)
-            } else {
-                android.app.AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                    .setTitle("Recly Recorder")
-                    .setMessage("O aplicativo Recly Recorder não foi encontrado neste aparelho. Deseja obtê-lo para gravar telas e replays?")
-                    .setPositiveButton("Instalar / Abrir") { _, _ ->
-                        val marketIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=${ReclyMediaContract.RECORDER_PACKAGE_NAME}")).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        runCatching {
-                            activity.startActivity(marketIntent)
-                        }.onFailure {
-                            val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=${ReclyMediaContract.RECORDER_PACKAGE_NAME}")).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            runCatching { activity.startActivity(webIntent) }
-                        }
-                    }
-                    .setNegativeButton("Agora não", null)
-                    .show()
-            }
         }
 
-        // 2. Gravações (Vídeos)
+        // 2. Vídeos
         navRecordings.setOnClickListener {
             animator.select(DockTab.RECORDINGS)
             onTabChanged?.invoke(DockTab.RECORDINGS)

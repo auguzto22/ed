@@ -61,7 +61,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Projetos, gravações e replays."
+                android:text="Seus projetos e vídeos editados."
                 android:textColor="#A5A5AA"
                 android:textSize="14sp" />
 
@@ -113,7 +113,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:text="Gravações"
+                    android:text="Vídeos"
                     android:textColor="#8E8E93"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif-medium" />
@@ -275,7 +275,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
-                        android:text="Nenhuma gravação ainda"
+                        android:text="Nenhum vídeo ainda"
                         android:textColor="#FFFFFF"
                         android:textSize="16sp" />
 
@@ -283,7 +283,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Suas gravações de tela aparecerão aqui."
+                        android:text="Os vídeos que você exportar aparecerão aqui."
                         android:textColor="#A1A1AA"
                         android:textSize="13sp" />
                 </LinearLayout>

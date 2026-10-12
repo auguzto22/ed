@@ -1,0 +1,1 @@
+{"id":"lib_exit_diagonal","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída diagonal","category":"EXIT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"EASE_IN"},{"time":1,"x":-0.4,"y":0.4,"opacity":0.0}]}

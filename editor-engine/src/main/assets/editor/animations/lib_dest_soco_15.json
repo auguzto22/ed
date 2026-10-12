@@ -1,0 +1,1 @@
+{"id":"lib_dest_soco_15","type":"ANIMATION","version":1,"engineVersion":1,"name":"Soco de zoom 15%","category":"EMPHASIS","license":"Recly original presets","premium":false,"points":[{"time":0},{"time":0.15,"zoom":1.15,"easing":"EASE_OUT"},{"time":1,"easing":"SMOOTH"}]}

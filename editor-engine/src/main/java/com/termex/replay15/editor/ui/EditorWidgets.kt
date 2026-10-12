@@ -12,22 +12,22 @@ import com.termex.replay15.editor.domain.TextFont
 import com.termex.replay15.editor.render.EditorFonts
 
 object EditorStyle {
-    // Graphite base with a violet accent (the Recly brand colour) and a cyan secondary for
-    // live/realtime states. Contrast of MUTED on PANEL stays above 4.5:1.
-    const val BG = 0xFF09090C.toInt()
-    const val PANEL = 0xFF121217.toInt()
-    const val CARD = 0xFF19191F.toInt()
-    const val CARD_ELEVATED = 0xFF22222A.toInt()
-    const val BORDER = 0xFF2A2A33.toInt()
+    // Preto com laranja (a identidade do Recly) e âmbar como secundária para estados ao vivo.
+    // Contrast of MUTED on PANEL stays above 4.5:1.
+    const val BG = 0xFF050505.toInt()
+    const val PANEL = 0xFF0F0F10.toInt()
+    const val CARD = 0xFF171719.toInt()
+    const val CARD_ELEVATED = 0xFF212124.toInt()
+    const val BORDER = 0xFF2C2A28.toInt()
     const val BORDER_LIGHT = 0x24FFFFFF.toInt()
-    const val MUTED = 0xFF9C9CAB.toInt()
-    const val ACCENT = 0xFF9B87FF.toInt()
-    const val ACCENT_DEEP = 0xFF7357FF.toInt()
-    const val ACCENT_PINK = 0xFFD66BFF.toInt()
-    const val ACCENT_SOFT = 0x339B87FF.toInt()
-    const val CYAN = 0xFF34D7F0.toInt()
+    const val MUTED = 0xFFA39C95.toInt()
+    const val ACCENT = 0xFFFF8A1F.toInt()
+    const val ACCENT_DEEP = 0xFFFF6A00.toInt()
+    const val ACCENT_PINK = 0xFFFFB347.toInt()
+    const val ACCENT_SOFT = 0x33FF8A1F.toInt()
+    const val CYAN = 0xFFFFC46B.toInt()
     const val WHITE = 0xFFFFFFFF.toInt()
-    const val DANGER = 0xFFFF5C7A.toInt()
+    const val DANGER = 0xFFFF4D4D.toInt()
     const val GREEN = 0xFF3DDC97.toInt()
     const val RADIUS_PANEL = 22
     const val RADIUS_CONTROL = 12
@@ -37,7 +37,7 @@ object EditorStyle {
     const val MOTION_TOOLBAR = 220L
     const val MOTION_PANEL = 280L
 
-    /** Primary call-to-action fill: violet to magenta. */
+    /** Primary call-to-action fill: laranja para âmbar. */
     fun accentGradient(radius: Float): GradientDrawable = GradientDrawable(
         GradientDrawable.Orientation.TL_BR, intArrayOf(ACCENT_DEEP, ACCENT_PINK),
     ).apply { cornerRadius = radius }

@@ -1,0 +1,1 @@
+{"id":"lib_entrance_chicote","type":"ANIMATION","version":1,"engineVersion":1,"name":"Entrada chicote","category":"ENTRANCE","license":"Recly original presets","premium":false,"points":[{"time":0,"x":-0.7,"rotation":-30.0,"opacity":0.0,"easing":"EASE_OUT"},{"time":0.7,"x":0.03,"rotation":4.0},{"time":1}]}

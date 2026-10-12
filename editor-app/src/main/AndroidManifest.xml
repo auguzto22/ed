@@ -15,19 +15,6 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
-    <!-- Queries for Recorder App -->
-    <queries>
-        <package android:name="com.recly.recorder" />
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="market" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="https" />
-        </intent>
-    </queries>
-
     <application
         android:name="android.app.Application"
         android:allowBackup="false"
@@ -59,13 +46,6 @@
             android:exported="true"
             android:theme="@style/Theme.Replay15.Editor"
             android:windowSoftInputMode="adjustNothing">
-
-            <!-- Custom Recly Edit Action -->
-            <intent-filter>
-                <action android:name="com.recly.action.EDIT_VIDEO" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="video/*" />
-            </intent-filter>
 
             <!-- Standard System View / Edit Actions -->
             <intent-filter>

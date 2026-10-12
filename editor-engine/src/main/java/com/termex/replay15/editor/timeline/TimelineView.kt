@@ -296,7 +296,7 @@ class TimelineView(context: Context) : View(context) {
         project.camera.keyframes.forEach { key ->
             val xx = x(key.timeUs)
             if (xx >= gutter && xx <= width) text(c, "◆", xx - dp(4f), dp(30f),
-                if (kotlin.math.abs(key.timeUs - positionUs) <= 20_000L) Color.WHITE else 0xFFB58AFF.toInt(), 10f)
+                if (kotlin.math.abs(key.timeUs - positionUs) <= 20_000L) Color.WHITE else 0xFFFFB36B.toInt(), 10f)
         }
         // Magnetic snap guide line
         snapper.activeSnapTarget?.let { snapT ->
@@ -655,7 +655,7 @@ class TimelineView(context: Context) : View(context) {
                                 if (handleW >= dp(6f)) {
                                     c.save()
                                     c.clipRect(l, y, l + handleW, y + dp(33f))
-                                    paint.color = 0xFFB8C7FF.toInt()
+                                    paint.color = 0xFFFFC98F.toInt()
                                     c.drawRoundRect(l, y, l + handleW * 2f, y + dp(33f), dp(6f), dp(6f), paint)
                                     paint.color = 0xFF1C1C1E.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(l + dp(4f), y + dp(9f), l + dp(4f), y + dp(24f), paint)
@@ -670,7 +670,7 @@ class TimelineView(context: Context) : View(context) {
 
                                     c.save()
                                     c.clipRect(r - handleW, y, r, y + dp(33f))
-                                    paint.color = 0xFFB8C7FF.toInt()
+                                    paint.color = 0xFFFFC98F.toInt()
                                     c.drawRoundRect(r - handleW * 2f, y, r, y + dp(33f), dp(6f), dp(6f), paint)
                                     paint.color = 0xFF1C1C1E.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
                                     c.drawLine(r - dp(4f), y + dp(9f), r - dp(4f), y + dp(24f), paint)
@@ -716,8 +716,8 @@ class TimelineView(context: Context) : View(context) {
                                             val isCurrentSelected = s.id == selectedLayerId
                                             paint.color = when {
                                                 isUnderPlayhead -> Color.WHITE
-                                                isCurrentSelected -> 0xFFB8C7FF.toInt()
-                                                else -> 0xCCB8C7FF.toInt()
+                                                isCurrentSelected -> 0xFFFFC98F.toInt()
+                                                else -> 0xCCFFC98F.toInt()
                                             }
                                             c.save(); c.rotate(45f, kx, cy)
                                             c.drawRect(kx - dp(4.5f), cy - dp(4.5f), kx + dp(4.5f), cy + dp(4.5f), paint)
@@ -853,8 +853,8 @@ class TimelineView(context: Context) : View(context) {
             c.drawRoundRect(dp(4f), ly + dp(8f), dp(7f), ly + dp(25f), dp(1.5f), dp(1.5f), paint)
             text(c, lane.label, dp(9.5f), ly + dp(20.5f), lane.color, 8.5f)
         }; c.restore()
-        // Playhead: soft violet halo behind a crisp white line.
-        paint.color = 0x409B87FF
+        // Playhead: soft orange halo behind a crisp white line.
+        paint.color = 0x40FF8A1F
         paint.strokeWidth = dp(5f)
         c.drawLine(width / 2f, dp(43f), width / 2f, height.toFloat(), paint)
         paint.color = Color.WHITE

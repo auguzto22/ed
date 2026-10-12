@@ -94,7 +94,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Gravações"
+                android:text="Vídeos"
                 android:textColor="#A5A5AA"
                 android:textSize="10.5sp" />
         </LinearLayout>

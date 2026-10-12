@@ -30,11 +30,35 @@ class AnimationTools(private val activity: Activity, private val project: () -> 
                 val shown = when (index) { 0 -> definitions.filter { repository.favorite(it.id) }; 1 -> definitions.filter { it.id in repository.recent() }
                     else -> definitions.filter { it.category == AnimationCategory.entries[index - 2] } }
                 if (shown.isEmpty()) report("Nenhuma animacao nesta colecao")
-                else choiceSheet(name, shown.map { it.name }) { selected -> dialog.dismiss(); configure(clipId, shown[selected]) }
+                else searchableList(name, shown) { chosen -> dialog.dismiss(); configure(clipId, chosen) }
             })
         }
         body.addView(action("Importar animacao .json") { dialog.dismiss(); pick() })
         dialog = sheet("Biblioteca de animacoes", body)
+    }
+    /** Lista pesquisavel: a biblioteca tem centenas de presets, entao botoes grandes nao servem mais. */
+    private fun searchableList(title: String, all: List<AnimationPreset>, choose: (AnimationPreset) -> Unit) = with(activity) {
+        val body = column(); lateinit var dialog: Dialog
+        val search = EditText(this).apply { hint = "Buscar (ex.: mola, esquerda, zoom)"; isSingleLine = true }
+        body.addView(search)
+        var shown = all
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf<String>())
+        val list = ListView(this).apply { this.adapter = adapter }
+        fun refresh() {
+            val q = search.text.toString().trim().lowercase()
+            shown = if (q.isEmpty()) all else all.filter { it.name.lowercase().contains(q) }
+            adapter.clear(); adapter.addAll(shown.map { (if (repository.favorite(it.id)) "★ " else "") + it.name })
+        }
+        search.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = refresh()
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+        list.setOnItemClickListener { _, _, position, _ -> dialog.dismiss(); choose(shown[position]) }
+        refresh()
+        body.addView(list, android.widget.LinearLayout.LayoutParams(-1, dp(360)))
+        body.addView(label("${all.size} animacoes", 11f, EditorStyle.MUTED))
+        dialog = sheet(title, body, maxHeightRatio = .85f)
     }
     private fun configure(clipId: String, preset: AnimationPreset) = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with

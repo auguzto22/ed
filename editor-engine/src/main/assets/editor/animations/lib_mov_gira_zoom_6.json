@@ -1,0 +1,1 @@
+{"id":"lib_mov_gira_zoom_6","type":"ANIMATION","version":1,"engineVersion":1,"name":"Girar e aproximar 6°","category":"MOTION","license":"Recly original presets","premium":false,"points":[{"time":0,"rotation":-6.0},{"time":1,"rotation":6.0,"zoom":1.12,"easing":"SMOOTH"}]}

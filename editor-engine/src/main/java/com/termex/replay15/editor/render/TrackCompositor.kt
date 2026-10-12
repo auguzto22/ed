@@ -44,13 +44,16 @@ class TrackCompositor(
             transitionBridgeKeys[transition.id]?.let(TransitionBridge::isReady) == true ->
                 if (transition.leftClipId == active.clip.id) 0f else 1f
             else -> {
-                // Fallback when transition is not ready (missing capture or shader error):
-                // Clean midpoint cut so the preview NEVER goes black.
-                val midUs = transition.startUs(snapshot) + transition.durationUs / 2
-                if (presentationTimeUs < midUs) {
-                    if (transition.leftClipId == active.clip.id) 1f else 0f
+                // Fallback when transition is not ready (missing capture or shader error).
+                // The window is the first part of the RIGHT clip (the left clip already ended),
+                // so hiding the right clip here would expose the empty background for half the
+                // window and show up as a flash. Always keep the active clip visible; only a
+                // left clip that still overlaps is dropped after the midpoint.
+                if (transition.rightClipId == active.clip.id) {
+                    1f
                 } else {
-                    if (transition.rightClipId == active.clip.id) 1f else 0f
+                    val midUs = transition.startUs(snapshot) + transition.durationUs / 2
+                    if (presentationTimeUs < midUs) 1f else 0f
                 }
             }
         }

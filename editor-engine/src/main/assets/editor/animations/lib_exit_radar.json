@@ -1,0 +1,1 @@
+{"id":"lib_exit_radar","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída radar","category":"EXIT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"EASE_IN"},{"time":1,"zoom":2.2,"rotation":45.0,"opacity":0.0}]}

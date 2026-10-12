@@ -1,0 +1,1 @@
+{"id":"lib_out_elastico_cima_longa_zoom","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída Elástico cima longa · zoom","category":"OUT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"ELASTIC"},{"time":1,"x":0.0,"y":-0.45,"zoom":1.4,"opacity":0.0}]}

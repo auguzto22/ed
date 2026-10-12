@@ -14,6 +14,8 @@ import com.termex.replay15.editor.core.isEditorDebuggable
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.domain.VideoFilter
 import com.termex.replay15.editor.preview.AtlasPreviewManager
+import com.termex.replay15.editor.preview.RepresentativeFrameProvider
+import com.termex.replay15.editor.render.FilterColorMath
 
 object FilterGallery {
 
@@ -33,7 +35,7 @@ object FilterGallery {
             "Escolha um look e ajuste a intensidade. A cor aparece na prévia ao selecionar.",
         ))
 
-        val groups = listOf("Todos", "Cinema", "Retrato", "Vintage", "Criativos")
+        val groups = listOf("Todos", "Cinema", "Retrato", "Vintage", "Criativos", "Cores", "P&B", "Natureza", "Neon")
         var selected = clip.filter
         var strength = (clip.filterStrength * 100).toInt()
         var category = 0
@@ -45,8 +47,17 @@ object FilterGallery {
             (clip.inUs + clip.outUs) / 2
         }
 
+        // One small decoded frame is shared by every library thumbnail; decoded lazily off the main thread.
+        val thumbnailWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
+        var cachedBase: Bitmap? = null
+        fun baseFrame(): Bitmap? = synchronized(thumbnailWorker) {
+            cachedBase ?: RepresentativeFrameProvider.extractBaseFrame(activity, clip, targetTimestampUs, 120).also { cachedBase = it }
+        }
+
         // Map filter to category index
-        fun categoryOf(filter: VideoFilter): Int = when (filter) {
+        fun categoryOf(filter: VideoFilter): Int = if (filter.group.isNotEmpty()) {
+            groups.indexOf(filter.group).let { if (it > 0) it else 4 }
+        } else when (filter) {
             VideoFilter.CINEMA, VideoFilter.TEAL_ORANGE, VideoFilter.NIGHT, VideoFilter.URBAN,
             VideoFilter.DOCUMENTARY, VideoFilter.NOIR, VideoFilter.DRAMA -> 1
 
@@ -166,10 +177,24 @@ object FilterGallery {
                     },
                 )
 
-                // Load pre-rendered thumbnail directly from atlas
-                AtlasPreviewManager.getFilterPreview(activity, filter) { drawable ->
-                    imageView.setImageDrawable(drawable)
-                    placeholder.visibility = View.GONE
+                if (filter.ordinal < AtlasPreviewManager.ATLAS_FILTER_COUNT) {
+                    // Original filters have pre-rendered thumbnails in the atlas.
+                    AtlasPreviewManager.getFilterPreview(activity, filter) { drawable ->
+                        imageView.setImageDrawable(drawable)
+                        placeholder.visibility = View.GONE
+                    }
+                } else {
+                    // Library filters have no atlas cell: tint a small frame of the user's own clip instead.
+                    thumbnailWorker.execute {
+                        val base = baseFrame()
+                        val bitmap = base?.let { FilterColorMath.renderFilteredBitmap(it, filter) }
+                        imageView.post {
+                            if (bitmap != null) {
+                                imageView.setImageBitmap(bitmap)
+                                placeholder.visibility = View.GONE
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -248,6 +273,7 @@ object FilterGallery {
             android.util.Log.d("ReclyPerf", "FILTER_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
         }
         dialog.setOnDismissListener {
+            thumbnailWorker.shutdownNow()
             if (!applied) {
                 restore()
             }

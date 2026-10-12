@@ -1,0 +1,1 @@
+{"id":"lib_out_mola_cima_longa_fade","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída Mola cima longa · fade","category":"OUT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"SPRING"},{"time":1,"x":0.0,"y":-0.45,"opacity":0.0}]}

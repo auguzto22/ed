@@ -1,0 +1,1 @@
+{"id":"lib_exit_foco","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída foco","category":"EXIT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"EASE_IN"},{"time":0.4,"zoom":0.97,"easing":"EASE_IN"},{"time":1,"zoom":1.6,"opacity":0.0}]}
