@@ -2,133 +2,136 @@ package com.termex.replay15.editor.backgroundremoval
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.os.SystemClock
 import android.util.Base64
+import android.util.Log
 import com.termex.replay15.editor.ai.GeminiApiKeyConfig
 import com.termex.replay15.editor.captions.GeminiHttpClient
 import com.termex.replay15.editor.domain.BackgroundMode
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
-import com.termex.replay15.editor.domain.BackgroundRemovalProvider
-import org.json.JSONArray
-import org.json.JSONObject
+import com.termex.replay15.editor.domain.SegmentationQuality
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-private const val GEMINI_MODEL = "gemini-3.8-flash"
-
 /**
- * Bitmap background remover supporting Gemini AI and local ML Kit fallback.
- * Applies foreground isolation for stickers, photos, and still-frame overlays.
+ * Removes the background of chosen images (photo overlays / stickers) using only the Gemini API.
+ *
+ * Gemini returns the traced contour of every foreground subject; everything outside the union
+ * of those contours becomes fully transparent. There is no local fallback and no guessed shape:
+ * if Gemini cannot trace the subject, this returns null and the caller keeps the original image.
  */
 class GeminiBitmapMaskApplier(
-    context: Context,
+    @Suppress("UNUSED_PARAMETER") context: Context,
     private val apiKey: String = GeminiApiKeyConfig.getApiKey(),
 ) : AutoCloseable {
 
-    private val mlKitApplier = MlKitBitmapMaskApplier(context)
     private val http = GeminiHttpClient(apiKey)
+    /** Avoids hammering the API every frame after a failure; retried after the cooldown. */
+    private val failedAt = ConcurrentHashMap<String, Long>()
+    @Volatile private var closed = false
 
     fun apply(source: Bitmap, effect: BackgroundRemovalEffect): Bitmap? {
         if (!effect.enabled || effect.mode != BackgroundMode.REMOVE) return source
-
-        if (effect.provider == BackgroundRemovalProvider.MLKIT || apiKey.isBlank()) {
-            return mlKitApplier.apply(source, effect)
+        if (closed || source.isRecycled) return null
+        if (apiKey.isBlank()) {
+            Log.w(TAG, "GEMINI_API_KEY ausente; remoção de fundo indisponível")
+            return null
         }
+        val key = "${System.identityHashCode(source)}:${source.generationId}:${effect.quality}"
+        failedAt[key]?.let { if (SystemClock.elapsedRealtime() - it < FAILURE_COOLDOWN_MS) return null }
 
-        // Try Gemini segmentation first
-        val geminiResult = runCatching { applyWithGemini(source, effect) }.getOrNull()
-        if (geminiResult != null) return geminiResult
-
-        // If provider is AUTO or Gemini failed, fallback to local ML Kit
-        if (effect.provider == BackgroundRemovalProvider.AUTO) {
-            return mlKitApplier.apply(source, effect)
+        val subjects = runCatching { requestSubjects(source, effect.quality) }
+            .onFailure { Log.w(TAG, "Gemini não conseguiu recortar a imagem", it) }
+            .getOrDefault(emptyList())
+        if (subjects.isEmpty()) {
+            failedAt[key] = SystemClock.elapsedRealtime()
+            return null
         }
-
-        // If explicitly set to GEMINI and failed, also fallback gracefully rather than returning null
-        return mlKitApplier.apply(source, effect) ?: source
+        failedAt.remove(key)
+        return cutout(source, subjects, effect)
     }
 
-    private fun applyWithGemini(source: Bitmap, effect: BackgroundRemovalEffect): Bitmap? {
-        val maxDim = 512
+    private fun requestSubjects(source: Bitmap, quality: SegmentationQuality): List<GeminiSubject> {
+        val maxDim = when (quality) {
+            SegmentationQuality.FAST -> 768
+            SegmentationQuality.BALANCED -> 1024
+            SegmentationQuality.HIGH -> 1536
+        }
         val scale = min(1f, maxDim.toFloat() / max(source.width, source.height))
-        val targetW = (source.width * scale).roundToInt().coerceAtLeast(64)
-        val targetH = (source.height * scale).roundToInt().coerceAtLeast(64)
         val scaled = if (scale < 1f) {
-            Bitmap.createScaledBitmap(source, targetW, targetH, true)
-        } else {
-            source
+            Bitmap.createScaledBitmap(
+                source,
+                (source.width * scale).roundToInt().coerceAtLeast(1),
+                (source.height * scale).roundToInt().coerceAtLeast(1),
+                true,
+            )
+        } else source
+
+        // JPEG has no alpha: flatten onto white so already-transparent areas read as background.
+        val opaque = Bitmap.createBitmap(scaled.width, scaled.height, Bitmap.Config.ARGB_8888)
+        Canvas(opaque).apply {
+            drawColor(android.graphics.Color.WHITE)
+            drawBitmap(scaled, 0f, 0f, null)
         }
+        if (scaled !== source) scaled.recycle()
+        val bytes = ByteArrayOutputStream().use { out ->
+            opaque.compress(Bitmap.CompressFormat.JPEG, 92, out)
+            out.toByteArray()
+        }
+        opaque.recycle()
 
-        val baos = ByteArrayOutputStream()
-        scaled.compress(Bitmap.CompressFormat.JPEG, 85, baos)
-        if (scaled != source) scaled.recycle()
-        val imageBase64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+        val payload = GeminiSegmentationRequest.build(Base64.encodeToString(bytes, Base64.NO_WRAP))
+        val response = http.withRetry({ if (closed) throw IllegalStateException("closed") }) {
+            http.createInteraction(payload) { if (closed) throw IllegalStateException("closed") }
+        }
+        return GeminiSegmentationParser.parseSubjects(GeminiSegmentationRequest.outputText(response))
+    }
 
-        val prompt = """
-            Identify and segment the primary foreground subject(s) in this image.
-            Return ONLY a JSON object with:
-            1. "box_2d": [ymin, xmin, ymax, xmax] (integers 0 to 1000).
-            2. "polygons": an array of polygon contours, each being an array of [y, x] coordinate pairs (0 to 1000) tracing the subject's outer edge.
-            Format: {"box_2d": [ymin, xmin, ymax, xmax], "polygons": [[[y, x], ...]]}
-        """.trimIndent()
-
-        val payload = JSONObject()
-            .put("model", GEMINI_MODEL)
-            .put("store", false)
-            .put("input", prompt)
-            .put("contents", JSONArray().put(JSONObject()
-                .put("parts", JSONArray()
-                    .put(JSONObject().put("text", prompt))
-                    .put(JSONObject().put("inline_data", JSONObject()
-                        .put("mime_type", "image/jpeg")
-                        .put("data", imageBase64))))))
-            .put("generationConfig", JSONObject().put("response_mime_type", "application/json"))
-
-        val resp = http.withRetry({}) {
-            try {
-                http.postJson("/v1beta/models/$GEMINI_MODEL:generateContent", payload)
-            } catch (_: Throwable) {
-                http.createInteraction(payload) {}
+    /** Keeps only the pixels inside the subjects' contours, at the source's full resolution. */
+    private fun cutout(source: Bitmap, subjects: List<GeminiSubject>, effect: BackgroundRemovalEffect): Bitmap {
+        val w = source.width
+        val h = source.height
+        val path = Path().apply { fillType = Path.FillType.WINDING }
+        subjects.forEach { subject ->
+            subject.polygon.forEachIndexed { index, (x, y) ->
+                if (index == 0) path.moveTo(x * w, y * h) else path.lineTo(x * w, y * h)
             }
+            path.close()
         }
 
-        val candidates = resp.optJSONArray("candidates")
-        val rawText = if (candidates != null && candidates.length() > 0) {
-            candidates.getJSONObject(0).optJSONObject("content")
-                ?.optJSONArray("parts")?.getJSONObject(0)?.optString("text")
-        } else {
-            resp.optString("output_text").takeIf(String::isNotBlank)
-        } ?: resp.toString()
+        val mask = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8)
+        val featherPx = effect.feather * min(w, h) * 0.05f
+        Canvas(mask).drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            if (featherPx >= 0.5f) maskFilter = BlurMaskFilter(featherPx, BlurMaskFilter.Blur.NORMAL)
+        })
 
-        val segResult = GeminiSegmentationParser.parseSegmentation(rawText, source.width, source.height, 0L)
-            ?: return null
-
-        val pixels = IntArray(source.width * source.height)
-        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
-        val mask = segResult.mask
-
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                val index = y * source.width + x
-                val confidence = mask[index]
-                val alpha = (smoothstep(effect.threshold - effect.feather, effect.threshold + effect.feather, confidence) *
-                    ((pixels[index] ushr 24) / 255f) * 255f).roundToInt().coerceIn(0, 255)
-                pixels[index] = (pixels[index] and 0x00FFFFFF) or (alpha shl 24)
-            }
+        val output = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        Canvas(output).apply {
+            drawBitmap(source, 0f, 0f, null)
+            // DST_IN multiplies the image alpha by the mask: outside the subjects alpha becomes 0.
+            drawBitmap(mask, 0f, 0f, Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN) })
         }
-
-        val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        output.setPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
+        mask.recycle()
         return output
     }
 
-    private fun smoothstep(edge0: Float, edge1: Float, value: Float): Float {
-        val t = ((value - edge0) / (edge1 - edge0).coerceAtLeast(.001f)).coerceIn(0f, 1f)
-        return t * t * (3f - 2f * t)
+    override fun close() {
+        closed = true
+        failedAt.clear()
     }
 
-    override fun close() {
-        mlKitApplier.close()
+    private companion object {
+        const val TAG = "GeminiBgRemoval"
+        const val FAILURE_COOLDOWN_MS = 30_000L
     }
 }

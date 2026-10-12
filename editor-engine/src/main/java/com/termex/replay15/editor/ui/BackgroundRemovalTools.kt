@@ -94,24 +94,17 @@ class BackgroundRemovalTools(
             var effect = sticker.backgroundRemoval
             lateinit var dialog: Dialog
             val body = column()
-            body.addView(sectionTitle("Remover Fundo", "Aplica a máscara de IA à foto sobreposta."))
+            body.addView(sectionTitle("Remover Fundo", "O Gemini recorta o assunto da foto e deixa todo o resto transparente."))
             val enabled = CheckBox(this).apply { text = "Ativar remoção de fundo"; isChecked = effect.enabled }
             body.addView(enabled)
             fun updated() = project().copy(stickers = project().stickers.map {
                 if (it.id == stickerId) it.copy(backgroundRemoval = effect) else it
             })
             fun preview() = previewApply(updated())
-            enabled.setOnCheckedChangeListener { _, checked -> effect = effect.copy(enabled = checked); preview() }
-            body.addView(label("Motor de IA", 13f, EditorStyle.MUTED))
-            val providers = row()
-            BackgroundRemovalProvider.entries.forEach { provider ->
-                providers.addView(action(providerLabel(provider), effect.provider == provider) {
-                    effect = effect.copy(provider = provider); preview()
-                }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            enabled.setOnCheckedChangeListener { _, checked ->
+                effect = effect.copy(enabled = checked, provider = BackgroundRemovalProvider.GEMINI); preview()
             }
-            body.addView(providers)
-
-            body.addView(label("Qualidade da máscara", 13f, EditorStyle.MUTED))
+            body.addView(label("Precisão do recorte", 13f, EditorStyle.MUTED))
             val qualities = row()
             SegmentationQuality.entries.forEach { quality ->
                 qualities.addView(action(qualityLabel(quality), effect.quality == quality) {
@@ -119,9 +112,6 @@ class BackgroundRemovalTools(
                 }, LinearLayout.LayoutParams(0, dp(48), 1f))
             }
             body.addView(qualities)
-            slider(body, "Precisão / limiar (%)", (effect.threshold * 100).toInt(), 100) {
-                effect = effect.copy(threshold = it / 100f); preview()
-            }
             slider(body, "Suavizar bordas (%)", (effect.feather * 1000).toInt(), 500) {
                 effect = effect.copy(feather = it / 1000f); preview()
             }
