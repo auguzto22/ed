@@ -127,12 +127,17 @@ object RenderStateEvaluator {
             val wordState = if (text.wordCues.isEmpty()) 0L else {
                 var activeIdx = -1
                 var spokenCount = 0
+                var popPhase = 0L
                 for (i in text.wordCues.indices) {
                     val cue = text.wordCues[i]
-                    if (snapshot.projectTimeUs in cue.startUs until cue.endUs) activeIdx = i
+                    if (snapshot.projectTimeUs in cue.startUs until cue.endUs) {
+                        activeIdx = i
+                        // "Pulo" da palavra: redesenha em 6 etapas nos primeiros 180 ms.
+                        if (text.wordStyle.pop) popPhase = ((snapshot.projectTimeUs - cue.startUs) / 30_000L).coerceAtMost(6L)
+                    }
                     if (snapshot.projectTimeUs >= cue.endUs) spokenCount++
                 }
-                ((activeIdx + 1).toLong() shl 16) or spokenCount.toLong()
+                (popPhase shl 40) or ((activeIdx + 1).toLong() shl 16) or spokenCount.toLong()
             }
             PreviewRenderState.TextRenderState(
                 text.id, text.text, startUs, endUs,

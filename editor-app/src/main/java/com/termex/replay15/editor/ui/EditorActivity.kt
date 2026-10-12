@@ -1,6 +1,7 @@
 package com.termex.replay15.editor.ui
 
 import com.termex.replay15.editor.media.GalleryPickerActivity
+import com.termex.replay15.editor.captions.AnimatedCaptionStyles
 import com.termex.replay15.editor.media.MediaSourceStatus
 
 import com.termex.replay15.editor.core.PreviewPacingProbe
@@ -574,6 +575,9 @@ class EditorActivity : Activity() {
     }
 
     private var pendingOpenTool: String? = null
+
+    /** Estilo de legenda animada da sessão (usado ao gerar legendas e como seleção do painel). */
+    private var captionAnimatedStyleId = "karaoke"
 
     private fun consumePendingOpenTool() {
         val tool = pendingOpenTool ?: return
@@ -1398,7 +1402,7 @@ class EditorActivity : Activity() {
             ToolEntry("Estilo", "Cores e contorno") { subtitleStylePanel(id) },
             ToolEntry("Fonte", "Tipografia") { subtitleFontPanel(id) },
             ToolEntry("Animação", "Entrada e saída") { subtitleAnimationPanel(id) },
-            ToolEntry("Palavra", "Destaque por palavra") { subtitleWordPanel(id) },
+            ToolEntry("Legenda animada", "Cor na palavra falada") { subtitleWordPanel(id) },
             ToolEntry("Posição", "Onde aparece") { subtitlePositionPanel(id) },
             ToolEntry("Máscara", "Recorte do texto") { textMaskPanel(id) },
             ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
@@ -3949,6 +3953,8 @@ class EditorActivity : Activity() {
         val correction = CheckBox(this).apply { text = "Correção inteligente"; isChecked = true }
         val terms = CheckBox(this).apply { text = "Reconhecer nomes e gírias"; isChecked = true }
         body.addView(correction); body.addView(terms)
+        body.addView(sectionTitle("Estilo animado", "Como a legenda reage à fala. Dá para trocar depois em Legenda › Legenda animada."))
+        body.addView(AnimatedCaptionPicker.build(this, captionAnimatedStyleId) { style -> captionAnimatedStyleId = style.id })
         body.addView(label("Termos personalizados: ${project.captionVocabulary.size}. Eles são usados somente na correção, nunca junto com timestamps.", 11f, EditorStyle.MUTED))
         lateinit var dialog: Dialog
         body.addView(action("Gerar legendas", true) {
@@ -4015,7 +4021,10 @@ class EditorActivity : Activity() {
                 val added = updated.texts.filter { it.id !in known }
                 if (added.isEmpty()) { card?.fail("Nenhuma fala encontrada"); return@fold }
                 val timelineChanged = project.videos.map { it.id to it.durationUs } != snapshot.videos.map { it.id to it.durationUs }
-                edit(project.copy(texts = project.texts + added, captionLanguage = updated.captionLanguage))
+                // Estilo animado escolhido na geração (cor na palavra falada, caixa, pulo...).
+                val style = AnimatedCaptionStyles.byId(captionAnimatedStyleId)
+                val styled = if (style == null) added else added.map { style.patch().applyTo(AnimatedCaptionStyles.withWordTiming(it)) }
+                edit(project.copy(texts = project.texts + styled, captionLanguage = updated.captionLanguage))
                 val note = if (timelineChanged) " Confira o sincronismo: a timeline mudou durante a geração." else ""
                 card?.succeed("${added.size} legendas na timeline.$note", "Editar legendas") { textMenu() }
                     ?: feedback("${added.size} legendas criadas")
@@ -4048,7 +4057,11 @@ class EditorActivity : Activity() {
     }
 
     private fun applySubtitlePatch(id: String, patch: SubtitleStylePatch) {
-        val changed = SubtitleApplyRangeResolver.apply(project, id, subtitleApplyRange, patch)
+        // Efeitos por palavra precisam do tempo de cada palavra; legendas sem ele recebem uma estimativa.
+        val base = if (patch.wordStyle?.animated == true) project.copy(texts = project.texts.map {
+            if (it.isCaption) AnimatedCaptionStyles.withWordTiming(it) else it
+        }) else project
+        val changed = SubtitleApplyRangeResolver.apply(base, id, subtitleApplyRange, patch)
         if (changed == project) {
             info.text = "Nenhuma legenda encontrada neste escopo"
         } else {
@@ -4217,6 +4230,65 @@ class EditorActivity : Activity() {
         subtitleDialog("Estilo da legenda", body)
     }
 
+    /**
+     * Fontes como "Aa" desenhado na própria fonte, numa faixa que rola. A escolhida ganha moldura
+     * vermelha; o último quadro abre a galeria completa (busca, categorias, downloads).
+     */
+    private fun fontStrip(current: () -> String, onPick: (String) -> Unit): HorizontalScrollView {
+        val strip = row().apply { setPadding(0, dp(2), 0, dp(2)) }
+        val boxes = mutableListOf<Pair<String, FrameLayout>>()
+        fun boxBackground(selected: Boolean) = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+            setColor(if (selected) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
+            setStroke(dp(if (selected) 2 else 1), if (selected) EditorStyle.ACTION else EditorStyle.BORDER)
+            cornerRadius = dp(12).toFloat()
+        }, null)
+        fun paint() { val chosen = current(); boxes.forEach { (fontId, box) -> box.background = boxBackground(fontId == chosen) } }
+        val fonts = (com.termex.replay15.editor.font.FontCatalog.builtIns +
+            com.termex.replay15.editor.font.FontCatalog.remotes().filter { it.downloaded }.map { it.toFontAsset() }).distinctBy { it.id }
+        fun tile(name: String, sample: TextView, click: () -> Unit): Pair<LinearLayout, FrameLayout> {
+            val cell = column().apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                isClickable = true; isFocusable = true
+                contentDescription = "Fonte $name"
+                setOnClickListener { click() }
+            }
+            val box = FrameLayout(this).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
+            box.addView(sample, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+            cell.addView(box, LinearLayout.LayoutParams(dp(64), dp(56)))
+            cell.addView(label(name, 10f, EditorStyle.MUTED).apply {
+                gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(0, dp(3), 0, 0)
+            }, LinearLayout.LayoutParams(dp(64), -2))
+            return cell to box
+        }
+        fonts.forEach { asset ->
+            val sample = TextView(this).apply {
+                text = "Aa"; textSize = 22f; includeFontPadding = false
+                setTextColor(EditorStyle.TEXT)
+                typeface = EditorFonts.get(this@EditorActivity, asset.id)
+            }
+            val (cell, box) = tile(asset.displayName, sample) {
+                onPick(asset.id); paint()
+                window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+            }
+            boxes += asset.id to box
+            strip.addView(cell, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(6) })
+        }
+        val more = TextView(this).apply { text = "+"; textSize = 24f; setTextColor(EditorStyle.TEXT); includeFontPadding = false }
+        val (moreCell, moreBox) = tile("Mais fontes", more) {
+            StudioPanels.fonts(this, current()) { fontId -> onPick(fontId); paint() }
+        }
+        moreBox.background = boxBackground(false)
+        strip.addView(moreCell, LinearLayout.LayoutParams(-2, -2))
+        paint()
+        return HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(strip)
+            // Começa mostrando a fonte atual.
+            post { boxes.firstOrNull { it.first == current() }?.second?.let { box -> smoothScrollTo(((box.parent as View).left - dp(24)).coerceAtLeast(0), 0) } }
+        }
+    }
+
     private fun subtitleFontPanel(id: String) {
         val text = project.texts.firstOrNull { it.id == id } ?: return
         if (!text.isCaption) { textPanel(id); return }
@@ -4235,13 +4307,15 @@ class EditorActivity : Activity() {
         selectedRow.addView(selectedSample, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(14) })
         selectedRow.addView(selected, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(selectedRow)
-        body.addView(action("Abrir galeria de fontes", true) {
-            StudioPanels.fonts(this, current) { fontId ->
-                selected.text = FontCatalog.requireOrDefault(fontId).displayName
-                selectedSample.typeface = EditorFonts.get(this, fontId)
-                update(fontId)
-            }
-        })
+        var chosenFont = current
+        fun pick(fontId: String) {
+            chosenFont = fontId
+            selected.text = FontCatalog.requireOrDefault(fontId).displayName
+            selectedSample.typeface = EditorFonts.get(this, fontId)
+            update(fontId)
+        }
+        body.addView(fontStrip({ chosenFont }) { pick(it) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        body.addView(action("Abrir galeria de fontes") { StudioPanels.fonts(this, chosenFont) { pick(it) } })
         addSubtitleApplyBar(body, id) { patch }
         subtitleDialog("Fonte da legenda", body)
     }
@@ -4276,41 +4350,40 @@ class EditorActivity : Activity() {
         subtitleDialog("Animação da legenda", body)
     }
 
+    /**
+     * Legenda animada: a palavra falada muda de cor, ganha caixa, pula ou aparece. Cada quadro da
+     * grade é a frase animada de verdade. Legendas sem tempo por palavra (SRT, texto digitado)
+     * recebem uma divisão estimada, então o efeito funciona em qualquer legenda ou texto.
+     */
     private fun subtitleWordPanel(id: String) {
         val text = project.texts.firstOrNull { it.id == id } ?: return
-        if (!text.isCaption) { textPanel(id); return }
         val body = column()
         var patch = SubtitleStylePatch()
-        fun chooseWordStyle(name: String, style: SubtitleWordStyle, animation: TextAnimation) {
-            patch = patch.plus(SubtitleStylePatch(wordStyle = style, duringAnimation = animation, animation = TextAnimation.NONE))
-            subtitlePatchPreview(id, patch)
+        body.addView(sectionTitle("Legenda animada", if (text.wordCues.isEmpty())
+            "Esta legenda não tem o tempo de cada palavra; o Recly divide pelo tamanho das palavras. Para sincronia exata, gere legendas automáticas."
+        else "A palavra acompanha o tempo medido na transcrição. Toque num estilo para ver no vídeo."))
+        body.addView(AnimatedCaptionPicker.build(this, captionAnimatedStyleId) { style ->
+            captionAnimatedStyleId = style.id
+            patch = style.patch()
+            previewEdit(project.copy(texts = project.texts.map {
+                if (it.id == id) patch.applyTo(AnimatedCaptionStyles.withWordTiming(it)) else it
+            }))
+            // Mostra o efeito: volta ao começo desta legenda e toca.
+            val clip = project.texts.firstOrNull { it.id == id }
+            if (clip != null && position !in clip.startUs until clip.endUs) seek(clip.startUs)
+            if (!preview.isPlaying) preview.toggle(project.durationUs)
+        })
+        if (text.isCaption) {
+            addSubtitleApplyBar(body, id) { patch }
+            subtitleDialog("Legenda animada", body)
+        } else {
+            body.addView(action("Aplicar", true) {
+                val current = project.texts.firstOrNull { it.id == id } ?: return@action
+                edit(project.copy(texts = project.texts.map { if (it.id == id) patch.applyTo(AnimatedCaptionStyles.withWordTiming(current)) else it }))
+                feedback("Animação aplicada")
+            }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8) })
+            subtitleDialog("Texto animado", body)
         }
-        body.addView(sectionTitle("Palavra", if (text.wordCues.isEmpty())
-            "Esta legenda não tem timestamps por palavra; gere legendas automáticas com alinhamento para ativar o modo palavra."
-        else "A palavra ativa acompanha os timestamps medidos pela transcrição."))
-        body.addView(action("Sem destaque") {
-            chooseWordStyle("Sem destaque", SubtitleWordStyle(), TextAnimation.NONE)
-        })
-        body.addView(action("Word Pop") {
-            chooseWordStyle("Word Pop", SubtitleWordStyle(
-                normalColor = text.color, spokenColor = text.color, futureColor = text.color,
-                activeColor = 0xFFFFCF5A.toInt(), activeScale = 1.15f, boldCurrentWord = true,
-            ), TextAnimation.WORD_POP)
-        })
-        body.addView(action("Karaoke") {
-            chooseWordStyle("Karaoke", SubtitleWordStyle(
-                normalColor = text.color, futureColor = text.color, spokenColor = 0xFFFFCF5A.toInt(),
-                activeColor = Color.WHITE, activeScale = 1f, boldCurrentWord = true,
-            ), TextAnimation.KARAOKE)
-        })
-        body.addView(action("Destacar palavra atual") {
-            chooseWordStyle("Palavra atual", SubtitleWordStyle(
-                normalColor = text.color, futureColor = text.color, spokenColor = text.color,
-                activeColor = 0xFFFFCF5A.toInt(), activeScale = 1f, boldCurrentWord = true,
-            ), TextAnimation.CURRENT_WORD_HIGHLIGHT)
-        })
-        addSubtitleApplyBar(body, id) { patch }
-        subtitleDialog("Animação por palavra", body)
     }
 
     private fun subtitlePositionPanel(id: String) {
@@ -4460,6 +4533,8 @@ class EditorActivity : Activity() {
         fontButton = action("Aa   ${com.termex.replay15.editor.font.FontCatalog.requireOrDefault(fontId).displayName}") {
             StudioPanels.fonts(this, fontId) { selectedFontId -> fontId = selectedFontId; updatePreview() }
         }.apply { typeface = EditorFonts.get(this@EditorActivity, fontId) }
+        body.addView(fontStrip({ fontId }) { selectedFontId -> fontId = selectedFontId; updatePreview() },
+            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         body.addView(fontButton, LinearLayout.LayoutParams(-1, dp(54)))
         if (text.isCaption) {
             body.addView(action("Usar fonte global") {

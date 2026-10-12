@@ -10,6 +10,7 @@ import android.text.SpannableString
 import android.text.TextPaint
 import android.text.style.CharacterStyle
 import android.text.style.RelativeSizeSpan
+import android.text.style.ReplacementSpan
 import android.text.style.StyleSpan
 import android.text.StaticLayout
 import com.termex.replay15.editor.domain.TextClip
@@ -84,42 +85,122 @@ object TextLayout {
         return Block(layout, text, padding, height * .018f)
     }
 
+    /** Texto exibido: caixa alta caractere a caractere, para os índices das palavras não mudarem. */
+    private fun displayText(text: TextClip): String =
+        if (text.wordStyle.uppercase) String(CharArray(text.text.length) { text.text[it].uppercaseChar() }) else text.text
+
     private fun wordStyledText(text: TextClip, timeUs: Long?): CharSequence {
+        val shown = displayText(text)
         if (timeUs != null && (text.animation == TextAnimation.TYPEWRITER || text.enterAnimation == TextAnimation.TYPEWRITER)) {
             val progress = ((timeUs - text.startUs).toFloat() / minOf(text.durationUs, 1_500_000L).coerceAtLeast(1L)).coerceIn(0f, 1f)
-            val charCount = (text.text.length * progress).toInt().coerceIn(1, text.text.length)
-            return text.text.substring(0, charCount)
+            val charCount = (shown.length * progress).toInt().coerceIn(1, shown.length)
+            return shown.substring(0, charCount)
         }
-        if (timeUs == null || text.wordCues.isEmpty()) return text.text
-        val words = Regex("\\S+").findAll(text.text).toList()
-        if (words.isEmpty()) return text.text
-        val styled = SpannableString(text.text)
+        if (timeUs == null || text.wordCues.isEmpty()) return shown
+        val words = Regex("\\S+").findAll(shown).toList()
+        if (words.isEmpty()) return shown
+        val styled = SpannableString(shown)
         val style = text.wordStyle
+        val hasOutline = text.outlineWidth > 0f
         words.forEachIndexed { index, match ->
             val cue = text.wordCues.getOrNull(index) ?: return@forEachIndexed
+            val start = match.range.first
+            val end = match.range.last + 1
             val active = timeUs in cue.startUs until cue.endUs
             val spoken = timeUs >= cue.endUs
+            if (style.reveal && !active && !spoken) {
+                // Ainda não falada: some, mas continua ocupando o lugar para a linha não pular.
+                styled.setSpan(HiddenSpan, start, end, 0)
+                return@forEachIndexed
+            }
+            val activeColor = style.activePalette.takeIf { it.isNotEmpty() }?.let { it[index % it.size] } ?: style.activeColor
             val color = when {
-                active && style.activeColor != 0 -> style.activeColor
+                active && activeColor != 0 -> activeColor
                 spoken && style.spokenColor != 0 -> style.spokenColor
                 !active && !spoken && style.futureColor != 0 -> style.futureColor
                 style.normalColor != 0 -> style.normalColor
                 else -> 0
             }
-            if (color != 0) styled.setSpan(FillOnlyColorSpan(color), match.range.first, match.range.last + 1, 0)
-            if (active && style.activeScale != 1f) {
-                styled.setSpan(RelativeSizeSpan(style.activeScale), match.range.first, match.range.last + 1, 0)
+            val scale = if (!active) 1f else if (style.pop) popScale(style.activeScale, timeUs - cue.startUs) else style.activeScale
+            if (active && style.highlightColor != 0) {
+                // A caixa desenha a própria palavra, então cor, tamanho e negrito vão junto com ela.
+                styled.setSpan(HighlightWordSpan(style.highlightColor, color, scale, style.boldCurrentWord, hasOutline), start, end, 0)
+                return@forEachIndexed
             }
-            if (active && style.boldCurrentWord) {
-                styled.setSpan(StyleSpan(Typeface.BOLD), match.range.first, match.range.last + 1, 0)
-            }
+            if (color != 0) styled.setSpan(FillOnlyColorSpan(color), start, end, 0)
+            if (scale != 1f) styled.setSpan(RelativeSizeSpan(scale), start, end, 0)
+            if (active && style.boldCurrentWord) styled.setSpan(StyleSpan(Typeface.BOLD), start, end, 0)
         }
         return styled
+    }
+
+    /** Cresce de 1 até [target] em 180 ms com um leve overshoot ("pulo"); sem alvo, pula até 1,15. */
+    private fun popScale(target: Float, elapsedUs: Long): Float {
+        val goal = if (target == 1f) 1.15f else target
+        val t = (elapsedUs / 180_000f).coerceIn(0f, 1f)
+        val c = 2.2f
+        val eased = 1f + (c + 1f) * (t - 1f) * (t - 1f) * (t - 1f) + c * (t - 1f) * (t - 1f)
+        return (1f + (goal - 1f) * eased).coerceIn(.8f, 1.6f)
     }
 
     private class FillOnlyColorSpan(private val color: Int) : CharacterStyle() {
         override fun updateDrawState(textPaint: TextPaint) {
             if (textPaint.style == Paint.Style.FILL) textPaint.color = color
+        }
+    }
+
+    /** Palavra ainda não falada no modo "revelar": invisível nas duas passadas (contorno e preenchimento). */
+    private object HiddenSpan : CharacterStyle() {
+        override fun updateDrawState(textPaint: TextPaint) {
+            textPaint.color = Color.TRANSPARENT
+            textPaint.clearShadowLayer()
+        }
+    }
+
+    /**
+     * Palavra falada dentro de uma caixa arredondada. A caixa entra na passada do contorno (fica
+     * atrás dele); sem contorno, entra na passada de preenchimento. [textColor] 0 mantém a cor da camada.
+     */
+    private class HighlightWordSpan(
+        private val boxColor: Int,
+        private val textColor: Int,
+        private val scale: Float,
+        private val bold: Boolean,
+        private val hasOutline: Boolean,
+    ) : ReplacementSpan() {
+        private fun styled(paint: Paint): TextPaint = TextPaint(paint).apply {
+            textSize = paint.textSize * scale
+            if (bold) typeface = Typeface.create(paint.typeface, Typeface.BOLD)
+        }
+
+        private fun padX(paint: Paint) = paint.textSize * .22f
+
+        override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
+            val p = styled(paint)
+            if (fm != null) {
+                val m = p.fontMetricsInt
+                fm.ascent = m.ascent; fm.descent = m.descent; fm.top = m.top; fm.bottom = m.bottom
+            }
+            return (p.measureText(text, start, end) + padX(p) * 2).toInt()
+        }
+
+        override fun draw(canvas: Canvas, text: CharSequence, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
+            val p = styled(paint)
+            val pad = padX(p)
+            val width = p.measureText(text, start, end)
+            val boxPass = if (hasOutline) paint.style == Paint.Style.STROKE else paint.style == Paint.Style.FILL
+            if (boxPass) {
+                val box = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.FILL
+                    color = boxColor
+                    alpha = (Color.alpha(boxColor) * (paint.alpha / 255f)).toInt()
+                }
+                val rect = RectF(x, y + p.ascent() - pad * .25f, x + width + pad * 2, y + p.descent() + pad * .25f)
+                canvas.drawRoundRect(rect, p.textSize * .22f, p.textSize * .22f, box)
+            }
+            if (paint.style == Paint.Style.FILL && textColor != 0) p.color = (textColor and 0x00FFFFFF) or (paint.alpha shl 24)
+            p.clearShadowLayer()
+            canvas.drawText(text, start, end, x + pad, y.toFloat(), p)
         }
     }
 

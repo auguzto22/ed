@@ -576,10 +576,26 @@ data class SubtitleWordStyle(
     val futureColor: Int = 0,
     val activeScale: Float = 1f,
     val boldCurrentWord: Boolean = false,
+    /** Caixa arredondada atrás da palavra que está sendo falada (0 = sem caixa). */
+    val highlightColor: Int = 0,
+    /** Palavras ainda não faladas ficam invisíveis e aparecem uma a uma (o espaço já é reservado). */
+    val reveal: Boolean = false,
+    /** Mostra a legenda em CAIXA ALTA só na tela; o texto salvo não muda. */
+    val uppercase: Boolean = false,
+    /** A palavra falada "pula" ao começar (cresce com overshoot até [activeScale]). */
+    val pop: Boolean = false,
+    /** Cores que se revezam palavra a palavra na palavra falada (vazio = usa [activeColor]). */
+    val activePalette: List<Int> = emptyList(),
 ) {
     init {
         require(activeScale in .8f..1.5f)
+        require(activePalette.size <= 8)
     }
+
+    /** True when any per-word effect needs the word timing to render. */
+    val animated: Boolean
+        get() = activeColor != 0 || spokenColor != 0 || futureColor != 0 || activeScale != 1f || boldCurrentWord ||
+            highlightColor != 0 || reveal || pop || activePalette.isNotEmpty()
 }
 
 data class StickerClip(

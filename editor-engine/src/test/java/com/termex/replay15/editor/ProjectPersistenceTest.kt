@@ -154,6 +154,7 @@ class ProjectPersistenceTest {
             VideoAudioEnhanceCodec.write(original, this)
             CompoundCodec.write(original, this)
             MediaSourceCodec.write(original, this)
+            CaptionWordFxCodec.write(original, this)
             flush()
         }
         // The schema-6 base ends after the marker/background/canvas tail and the MotionCodec section.
