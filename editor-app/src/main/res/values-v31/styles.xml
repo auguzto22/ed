@@ -11,9 +11,9 @@
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:colorAccent">@color/recly_accent_white</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
-        <item name="android:windowSplashScreenBackground">#FF09090C</item>
+        <item name="android:windowSplashScreenBackground">#FF050505</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">#FF09090C</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF050505</item>
         <item name="android:windowSplashScreenAnimationDuration">600</item>
     </style>
 
@@ -26,9 +26,9 @@
         <item name="android:colorAccent">@color/recly_accent_white</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowSplashScreenBackground">#FF09090C</item>
+        <item name="android:windowSplashScreenBackground">#FF050505</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">#FF09090C</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF050505</item>
         <item name="android:windowSplashScreenAnimationDuration">600</item>
     </style>
 </resources>

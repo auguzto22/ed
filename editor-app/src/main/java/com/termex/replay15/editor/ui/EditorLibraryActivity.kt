@@ -97,7 +97,7 @@ class EditorLibraryActivity : Activity() {
 
         tabProjects.setOnClickListener { switchTab(LibraryTab.PROJECTS) }
         tabRecordings.setOnClickListener { switchTab(LibraryTab.RECORDINGS) }
-        tabReplays.setOnClickListener { switchTab(LibraryTab.REPLAYS) }
+        tabReplays.visibility = View.GONE // replays pertenciam a outro app
 
         val bgSilk = findViewById<View>(R.id.libraryBgSilk)
         val libraryScroll = findViewById<ScrollView>(R.id.libraryScroll)
@@ -139,7 +139,7 @@ class EditorLibraryActivity : Activity() {
         DockNavigationHelper.bind(this, initialDockTab) { tab ->
             when (tab) {
                 DockTab.EDITOR -> switchTab(LibraryTab.PROJECTS)
-                DockTab.RECORDINGS, DockTab.LIBRARY -> switchTab(LibraryTab.RECORDINGS)
+                DockTab.RECORDINGS, DockTab.LIBRARY, DockTab.HOME -> switchTab(LibraryTab.RECORDINGS)
                 else -> {}
             }
         }
@@ -218,7 +218,7 @@ class EditorLibraryActivity : Activity() {
                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                     projection,
                     "${MediaStore.Video.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Video.Media.IS_PENDING} = 0",
-                    arrayOf("Movies/GravadorDeTela%"),
+                    arrayOf("Movies/Recly%"),
                     "${MediaStore.Video.Media.DATE_ADDED} DESC"
                 )?.use { cursor ->
                     val idCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
@@ -231,11 +231,7 @@ class EditorLibraryActivity : Activity() {
                         val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
                         val item = VideoItem(id, name, uri, duration)
 
-                        if (name.contains("Replay", ignoreCase = true)) {
-                            replays.add(item)
-                        } else {
-                            recordings.add(item)
-                        }
+                        recordings.add(item)
                     }
                 }
             }

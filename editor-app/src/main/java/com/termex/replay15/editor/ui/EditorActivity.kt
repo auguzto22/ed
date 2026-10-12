@@ -699,7 +699,7 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFB8AEF5.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, 0xFFFFC98F.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"
@@ -3912,7 +3912,7 @@ class EditorActivity : Activity() {
 
         body.addView(sectionTitle("Cor do texto"))
         val colors = row()
-        listOf(Color.WHITE, Color.BLACK, 0xFFFFCF5A.toInt(), 0xFFFF6B7A.toInt(), 0xFFB77AFF.toInt(), 0xFF5EDADB.toInt(), 0xFF58E28A.toInt()).forEach { color ->
+        listOf(Color.WHITE, Color.BLACK, 0xFFFFCF5A.toInt(), 0xFFFF6B7A.toInt(), 0xFFFF8A1F.toInt(), 0xFF5EDADB.toInt(), 0xFF58E28A.toInt()).forEach { color ->
             colors.addView(action("●") { update(SubtitleStylePatch(color = color)) }.apply {
                 textSize = 25f; setTextColor(color)
             }, LinearLayout.LayoutParams(0, dp(52), 1f))
@@ -3933,7 +3933,7 @@ class EditorActivity : Activity() {
 
         body.addView(sectionTitle("Contorno, sombra e fundo"))
         val outlineColors = row()
-        listOf(Color.BLACK, Color.WHITE, 0xFFB77AFF.toInt(), 0xFFFFCF5A.toInt()).forEach { color ->
+        listOf(Color.BLACK, Color.WHITE, 0xFFFF8A1F.toInt(), 0xFFFFCF5A.toInt()).forEach { color ->
             outlineColors.addView(action("Contorno") { update(SubtitleStylePatch(outlineColor = color)) }.apply { setTextColor(color) },
                 LinearLayout.LayoutParams(0, dp(50), 1f))
         }
@@ -4224,7 +4224,7 @@ class EditorActivity : Activity() {
         body.addView(alignmentButton, LinearLayout.LayoutParams(-1, dp(52)))
 
         section("Cor do texto", "Escolha uma cor ou digite um codigo hexadecimal")
-        val colors = listOf(Color.WHITE, Color.BLACK, 0xFFFFCF5A.toInt(), 0xFFFF6B7A.toInt(), 0xFFB77AFF.toInt(), 0xFF5EDADB.toInt(), 0xFF58E28A.toInt())
+        val colors = listOf(Color.WHITE, Color.BLACK, 0xFFFFCF5A.toInt(), 0xFFFF6B7A.toInt(), 0xFFFF8A1F.toInt(), 0xFF5EDADB.toInt(), 0xFF58E28A.toInt())
         val colorRow = row()
         colors.forEach { chosen ->
             colorRow.addView(action("●") { color = chosen; updatePreview() }.apply { textSize = 25f; setTextColor(chosen) }, LinearLayout.LayoutParams(0, dp(52), 1f))
@@ -4251,7 +4251,7 @@ class EditorActivity : Activity() {
         }
         body.addView(backgroundRow)
         val outlineRow = row()
-        listOf(Color.BLACK, Color.WHITE, 0xFFB77AFF.toInt(), 0xFFFFCF5A.toInt()).forEach { chosen ->
+        listOf(Color.BLACK, Color.WHITE, 0xFFFF8A1F.toInt(), 0xFFFFCF5A.toInt()).forEach { chosen ->
             outlineRow.addView(action("Contorno") { outlineColor = chosen }.apply { setTextColor(chosen) }, LinearLayout.LayoutParams(0, dp(50), 1f))
         }
         body.addView(outlineRow)
@@ -4436,7 +4436,7 @@ class EditorActivity : Activity() {
             }
         }.getOrNull() ?: "Vídeo MP4"
         AlertDialog.Builder(this).setTitle("Video exportado")
-            .setMessage("$savedName\nMovies/GravadorDeTela/Editados")
+            .setMessage("$savedName\nMovies/Recly/Editados")
             .setPositiveButton("Abrir") { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), "video/mp4").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
                     .onFailure { error("Nenhum player de video instalado") }
