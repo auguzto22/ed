@@ -157,7 +157,7 @@ class TextOverlayRenderer(
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program, "uMvp"), 1, false, mvp, 0)
             // Keyframed opacity lives in the evaluated transform; the raster is always opaque.
             GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uOpacity"), (motion[0] * text.opacity).coerceIn(0f, 1f))
-            setMaskUniforms(text.mask)
+            setMaskUniforms(text.mask, texture.width.toFloat() / texture.height.coerceAtLeast(1))
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture.texture)
             GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "uTexture"), 0)
@@ -168,7 +168,8 @@ class TextOverlayRenderer(
         lastDrawn = drawn
     }
 
-    private fun setMaskUniforms(mask: MaskState?) {
+    private fun setMaskUniforms(mask: MaskState?, aspect: Float = 1f) {
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uLayerMaskAspect"), aspect)
         if (mask == null) {
             maskMeta.fill(0f)
             GLES20.glUniform3fv(GLES20.glGetUniformLocation(program, "uLayerMaskMeta"), 1, maskMeta, 0)

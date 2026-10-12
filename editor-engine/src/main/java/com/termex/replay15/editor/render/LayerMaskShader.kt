@@ -2,7 +2,16 @@ package com.termex.replay15.editor.render
 
 import com.termex.replay15.editor.domain.MaskState
 
-/** Shared GLSL contract used by preview and text rendering. Export uses the same source in raw. */
+/**
+ * Shared GLSL contract used by the video preview, text/sticker preview and video export.
+ *
+ * Mask space is the untransformed layer with **y growing downwards** (0,0 = top-left), the same as
+ * the sliders, the custom-path editor, tracking frames and the Canvas export of text/stickers.
+ * Video passes sample a GL texture whose v grows upwards, so they call [reclyLayerMaskAlpha] with
+ * `vec2(uv.x, 1.0 - uv.y)`. Shapes are evaluated in pixel-proportional space (x scaled by
+ * [uLayerMaskAspect] = layer width / height), so a circle stays a circle and rotating a rectangle
+ * does not shear it on 9:16 or 16:9 layers.
+ */
 internal object LayerMaskShader {
     const val PATH_POINT_COUNT = MaskState.MAX_MASK_PATH_POINTS
 
@@ -10,6 +19,7 @@ internal object LayerMaskShader {
         uniform vec4 uLayerMaskCenterSize;
         uniform vec4 uLayerMaskParams;
         uniform vec3 uLayerMaskMeta;
+        uniform float uLayerMaskAspect;
         uniform vec2 uLayerMaskPath0;
         uniform vec2 uLayerMaskPath1;
         uniform vec2 uLayerMaskPath2;
@@ -54,7 +64,8 @@ internal object LayerMaskShader {
         }
 
         float reclySdStar(vec2 p) {
-            float angle = atan(p.y, p.x);
+            // Angle measured from "up" (-y in mask space) so one point faces up, like the Canvas star.
+            float angle = atan(p.x, -p.y);
             float ray = cos(angle * 5.0);
             float boundary = mix(0.43, 1.0, smoothstep(-0.35, 0.75, ray));
             return length(p) - boundary;
@@ -84,11 +95,13 @@ internal object LayerMaskShader {
         float reclyLayerMaskAlpha(vec2 uv) {
             if (uLayerMaskMeta.x < 0.5) return 1.0;
             float type = uLayerMaskMeta.x - 1.0;
-            vec2 p = uv - uLayerMaskCenterSize.xy;
+            float aspect = max(uLayerMaskAspect, 0.01);
+            float shortSide = min(aspect, 1.0);
+            vec2 p = (uv - uLayerMaskCenterSize.xy) * vec2(aspect, 1.0);
             float c = cos(uLayerMaskParams.x);
             float s = sin(uLayerMaskParams.x);
             p = mat2(c, -s, s, c) * p;
-            vec2 halfSize = max(vec2(0.002), uLayerMaskCenterSize.zw * 0.5 + uLayerMaskParams.zz);
+            vec2 halfSize = max(vec2(0.002), uLayerMaskCenterSize.zw * vec2(aspect, 1.0) * 0.5 + uLayerMaskParams.zz * shortSide);
             float distanceToEdge;
             if (type < 0.5) {
                 distanceToEdge = reclySdBox(p, halfSize);
@@ -101,8 +114,10 @@ internal object LayerMaskShader {
             } else if (type < 4.5) {
                 distanceToEdge = abs(p.x) - halfSize.x;
             } else if (type < 5.5) {
-                vec2 normalized = vec2(p.x / halfSize.x, -p.y / halfSize.y);
-                distanceToEdge = reclySdHeart(normalized) * min(halfSize.x, halfSize.y);
+                // The heart SDF spans x in [-0.604, 0.604] and y in [0, 1.104] (tip at y = 0, y up):
+                // map the mask box onto that so the heart fills its box like the Canvas heart.
+                vec2 normalized = vec2(0.604 * p.x / halfSize.x, 1.104 * (0.5 - 0.5 * p.y / halfSize.y));
+                distanceToEdge = reclySdHeart(normalized) * min(halfSize.x / 0.604, halfSize.y * 2.0 / 1.104);
             } else if (type < 6.5) {
                 distanceToEdge = reclySdStar(p / halfSize) * min(halfSize.x, halfSize.y);
             } else if (uLayerMaskMeta.z >= 3.0) {
@@ -111,7 +126,7 @@ internal object LayerMaskShader {
             } else {
                 distanceToEdge = reclySdBox(p, halfSize);
             }
-            float feather = max(uLayerMaskParams.y, 0.0001);
+            float feather = max(uLayerMaskParams.y * shortSide, 0.0001);
             float shapeAlpha = 1.0 - smoothstep(-feather, feather, distanceToEdge);
             if (uLayerMaskMeta.y > 0.5) shapeAlpha = 1.0 - shapeAlpha;
             return mix(1.0, shapeAlpha, clamp(uLayerMaskParams.w, 0.0, 1.0));

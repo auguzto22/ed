@@ -41,7 +41,7 @@ internal class LayerMaskGpuPass : AutoCloseable {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, sourceTexture)
         GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "uTexture"), 0)
-        setMaskUniforms(mask)
+        setMaskUniforms(mask, w.toFloat() / h)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         return target.texture
     }
@@ -56,7 +56,8 @@ internal class LayerMaskGpuPass : AutoCloseable {
         targets.remove(from)?.let { targets[to] = it }
     }
 
-    private fun setMaskUniforms(mask: MaskState) {
+    private fun setMaskUniforms(mask: MaskState, aspect: Float) {
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uLayerMaskAspect"), aspect)
         centerSize[0] = mask.centerX
         centerSize[1] = mask.centerY
         centerSize[2] = mask.width
@@ -157,7 +158,8 @@ internal class LayerMaskGpuPass : AutoCloseable {
             ${LayerMaskShader.FUNCTIONS}
             void main() {
                 vec4 source = texture2D(uTexture, vUv);
-                gl_FragColor = vec4(source.rgb, source.a * reclyLayerMaskAlpha(vUv));
+                // The texture's v grows upwards; mask space grows downwards.
+                gl_FragColor = vec4(source.rgb, source.a * reclyLayerMaskAlpha(vec2(vUv.x, 1.0 - vUv.y)));
             }
         """.trimIndent()
     }

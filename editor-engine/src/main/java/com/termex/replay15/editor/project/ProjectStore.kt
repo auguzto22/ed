@@ -176,7 +176,9 @@ object ProjectCodec {
         val videoEnhanced = if (schema < 26) audioEnhanced else VideoAudioEnhanceCodec.read(audioEnhanced, i)
         val compounded = if (schema < 27) videoEnhanced else CompoundCodec.read(videoEnhanced, i)
         val sourced = if (schema < 28) compounded else MediaSourceCodec.read(compounded, i)
-        if (schema < 29) sourced else CaptionWordFxCodec.read(sourced, i)
+        val worded = if (schema < 29) sourced else CaptionWordFxCodec.read(sourced, i)
+        // Schema 30 changed video mask/track space (y up -> y down); older files are converted.
+        if (schema < 30) LegacyMaskSpaceMigration.migrate(worded) else worded
     }
 }
 

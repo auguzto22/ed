@@ -10,6 +10,7 @@ import com.termex.replay15.editor.domain.VideoFilter
 import com.termex.replay15.editor.presets.PresetCatalog
 import com.termex.replay15.editor.preview.engine.audio.PreviewTransportClock
 import com.termex.replay15.editor.tracking.LayerGeometry
+import com.termex.replay15.editor.domain.MaskState
 import com.termex.replay15.editor.tracking.TrackingRegion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -62,11 +63,38 @@ class EditorBugfixRegressionTest {
     }
 
     @Test
-    fun `tracked points are converted to mask texture space`() {
+    fun `tracked points already live in mask space and legacy points are flipped`() {
         val track = TrackingTrack("track-1", listOf(TrackingPoint(0L, .4f, .2f, .1f, .1f, 1f)))
         val mask = LayerGeometry.toMaskSpace(track).points.single()
         assertEquals(.4f, mask.centerX, 1e-6f)
-        assertEquals(.8f, mask.centerY, 1e-6f)
+        assertEquals(.2f, mask.centerY, 1e-6f)
+        assertEquals(.8f, LayerGeometry.fromLegacyMaskSpace(mask).centerY, 1e-6f)
+    }
+
+    @Test
+    fun `tracking selection goes through the crop to the full frame`() {
+        // Right half of the frame, bottom half: the quad shows only that region.
+        val cropped = LayerGeometry(1920, 1080, CropRect(.5f, .5f, 1f, 1f), 0, false, 1f, 0f, 0f, 0f, 1920, 1080, CanvasFill.FILL)
+        val (x, y) = cropped.canvasToSource(.5f, .5f)
+        assertEquals(.75f, x, 1e-4f); assertEquals(.75f, y, 1e-4f)
+        val (left, top) = cropped.canvasToSource(0f, 0f)
+        assertEquals(.5f, left, 1e-4f); assertEquals(.5f, top, 1e-4f)
+    }
+
+    @Test
+    fun `a linked track moves the mask relative to where it was placed`() {
+        val track = TrackingTrack("track-1", listOf(
+            TrackingPoint(0L, .3f, .3f, .1f, .1f, 1f),
+            TrackingPoint(1_000_000L, .5f, .4f, .2f, .1f, 1f),
+        ))
+        val mask = MaskState.default().copy(centerX = .35f, centerY = .3f, width = .4f, height = .2f, trackingTrackId = track.id)
+        val start = mask.at(0L, track)
+        assertEquals(.35f, start.centerX, 1e-5f); assertEquals(.4f, start.width, 1e-5f)
+        val later = mask.at(1_000_000L, track)
+        assertEquals(.55f, later.centerX, 1e-5f)
+        assertEquals(.4f, later.centerY, 1e-5f)
+        assertEquals(.8f, later.width, 1e-5f)
+        assertEquals(.2f, later.height, 1e-5f)
     }
 
     @Test

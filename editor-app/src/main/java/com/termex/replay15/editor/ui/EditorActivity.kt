@@ -2126,12 +2126,9 @@ class EditorActivity : Activity() {
             clip = clip,
             currentTimelineUs = timelineUs,
             overlay = trackingOverlay,
-            onUpdateClip = { updated ->
-                edit(project.mapVideo(clip.id) { updated })
-            },
-            onOpenMask = {
-                videoMaskPanel(clip)
-            },
+            onUpdateClip = { change -> edit(project.mapVideo(clip.id, change)) },
+            // Reopen with the clip as it is now: the tracking run just added a track and the link.
+            onOpenMask = { project.allVideos.firstOrNull { it.id == clip.id }?.let(::videoMaskPanel) },
             canvasWidth = project.dimensions().first,
             canvasHeight = project.dimensions().second,
             canvasFill = project.canvasFill,

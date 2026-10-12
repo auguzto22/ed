@@ -123,12 +123,18 @@ data class MaskState(
             copy(centerX = it.centerX, centerY = it.centerY, width = it.width, height = it.height,
                 rotation = it.rotation, feather = it.feather, expansion = it.expansion, keyframes = emptyList())
         } ?: this
-        val point = tracking?.at(timeUs)
-        return if (point == null) animated else animated.copy(
-            centerX = point.centerX,
-            centerY = point.centerY,
-            width = point.width,
-            height = point.height,
+        val point = tracking?.at(timeUs) ?: return animated
+        // The track moves the mask *relative* to where the user placed it: the first tracked
+        // frame is the anchor. Replacing the geometry with the tracked box snapped the mask to the
+        // target's size and made the centre/size sliders do nothing while a track was linked.
+        val anchor = tracking.points.first()
+        val scaleX = point.width / anchor.width.coerceAtLeast(.001f)
+        val scaleY = point.height / anchor.height.coerceAtLeast(.001f)
+        return animated.copy(
+            centerX = (animated.centerX + point.centerX - anchor.centerX).coerceIn(0f, 1f),
+            centerY = (animated.centerY + point.centerY - anchor.centerY).coerceIn(0f, 1f),
+            width = (animated.width * scaleX).coerceIn(.01f, 2f),
+            height = (animated.height * scaleY).coerceIn(.01f, 2f),
         )
     }
 

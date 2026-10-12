@@ -35,7 +35,8 @@ object TrackingTools {
         clip: VideoClip,
         currentTimelineUs: Long,
         overlay: TrackingOverlayView,
-        onUpdateClip: (VideoClip) -> Unit,
+        /** Applies a change to the clip *as it is in the project now* (never a stale copy). */
+        onUpdateClip: ((VideoClip) -> VideoClip) -> Unit,
         onOpenMask: () -> Unit,
         canvasWidth: Int = clip.width,
         canvasHeight: Int = clip.height,
@@ -118,21 +119,19 @@ object TrackingTools {
                 stepUs = stepUs,
                 region = selectedRegion,
             ) { frameTrack ->
-                // The mask samples the clip texture (v grows upwards).
+                // Frames and mask share the same y-down source space.
                 val newTrack = LayerGeometry.toMaskSpace(frameTrack)
                 // Add new track to clip (up to 8 tracks)
-                val updatedTracks = (clip.trackingTracks.filterNot { it.id == newTrack.id } + newTrack).takeLast(8)
-                val updatedClip = clip.copy(trackingTracks = updatedTracks)
-                onUpdateClip(updatedClip)
+                onUpdateClip { current ->
+                    current.copy(trackingTracks = (current.trackingTracks.filterNot { it.id == newTrack.id } + newTrack).takeLast(8))
+                }
 
                 // Prompt user to link with mask
                 AlertDialog.Builder(activity)
                     .setTitle("Rastreamento Concluído")
                     .setMessage("Gerados ${newTrack.points.size} pontos de rastreamento com sucesso.\n\nDeseja vincular a máscara do vídeo a este rastreio agora?")
                     .setPositiveButton("Vincular Máscara") { _, _ ->
-                        val currentMask = updatedClip.mask ?: MaskState.default()
-                        val linkedMask = currentMask.copy(trackingTrackId = newTrack.id)
-                        onUpdateClip(updatedClip.copy(mask = linkedMask))
+                        onUpdateClip { current -> current.copy(mask = linkedMask(current.mask, newTrack)) }
                         mainDialog.dismiss()
                         onOpenMask()
                     }
@@ -156,9 +155,7 @@ object TrackingTools {
                 )
                 if (!isLinked) {
                     trackRow.addView(action("Vincular") {
-                        val currentMask = clip.mask ?: MaskState.default()
-                        val linkedMask = currentMask.copy(trackingTrackId = track.id)
-                        onUpdateClip(clip.copy(mask = linkedMask))
+                        onUpdateClip { current -> current.copy(mask = linkedMask(current.mask, track)) }
                         Toast.makeText(activity, "Máscara vinculada ao Track ${index + 1}", Toast.LENGTH_SHORT).show()
                         mainDialog.dismiss()
                         onOpenMask()
@@ -167,7 +164,10 @@ object TrackingTools {
                 trackRow.addView(action("Excluir") {
                     val remaining = clip.trackingTracks.filterNot { it.id == track.id }
                     val unlinkedMask = if (clip.mask?.trackingTrackId == track.id) clip.mask.copy(trackingTrackId = null) else clip.mask
-                    onUpdateClip(clip.copy(trackingTracks = remaining, mask = unlinkedMask))
+                    onUpdateClip { current ->
+                        current.copy(trackingTracks = current.trackingTracks.filterNot { it.id == track.id },
+                            mask = current.mask?.let { if (it.trackingTrackId == track.id) it.copy(trackingTrackId = null) else it })
+                    }
                     mainDialog.dismiss()
                     show(activity, clip.copy(trackingTracks = remaining, mask = unlinkedMask), currentTimelineUs, overlay, onUpdateClip, onOpenMask,
                         canvasWidth, canvasHeight, canvasFill)
@@ -185,6 +185,21 @@ object TrackingTools {
             overlay.visibility = View.GONE
             overlay.isEnabled = false
         }
+    }
+
+    /**
+     * Mask linked to [track]. Without a mask yet, it starts as an ellipse around the tracked target
+     * (the track's first frame), since the track now moves the mask relative to where it starts.
+     */
+    private fun linkedMask(existing: MaskState?, track: TrackingTrack): MaskState {
+        val anchor = track.points.first()
+        val base = existing ?: MaskState.default(com.termex.replay15.editor.domain.MaskType.ELLIPSE).copy(
+            centerX = anchor.centerX,
+            centerY = anchor.centerY,
+            width = (anchor.width * 1.3f).coerceIn(.05f, 2f),
+            height = (anchor.height * 1.3f).coerceIn(.05f, 2f),
+        )
+        return base.copy(trackingTrackId = track.id)
     }
 
     private fun startTrackingProcess(

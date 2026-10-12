@@ -12,7 +12,11 @@ import com.termex.replay15.editor.domain.MaskState
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.domain.maskAt
 
-/** Export counterpart of [com.termex.replay15.editor.preview.engine.LayerMaskGpuPass]. */
+/**
+ * Export counterpart of [com.termex.replay15.editor.preview.engine.LayerMaskGpuPass].
+ * Must run on the untransformed source frame (before crop, rotation and flip), exactly where the
+ * preview applies it, or the mask lands somewhere else in the exported video.
+ */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class LayerMaskEffect(private val clip: VideoClip, private val startUs: Long) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): BaseGlShaderProgram =
@@ -31,7 +35,12 @@ class LayerMaskEffect(private val clip: VideoClip, private val startUs: Long) : 
         private val meta = FloatArray(3)
         private val path = Array(MaskState.MAX_MASK_PATH_POINTS) { FloatArray(2) }
 
-        override fun configure(inputWidth: Int, inputHeight: Int): Size = Size(inputWidth, inputHeight)
+        private var aspect = 1f
+
+        override fun configure(inputWidth: Int, inputHeight: Int): Size {
+            aspect = inputWidth.coerceAtLeast(1).toFloat() / inputHeight.coerceAtLeast(1)
+            return Size(inputWidth, inputHeight)
+        }
 
         override fun drawFrame(inputTexId: Int, presentationTimeUs: Long) {
             try {
@@ -70,6 +79,7 @@ class LayerMaskEffect(private val clip: VideoClip, private val startUs: Long) : 
             gl.setFloatsUniform("uLayerMaskCenterSize", centerSize)
             gl.setFloatsUniform("uLayerMaskParams", params)
             gl.setFloatsUniform("uLayerMaskMeta", meta)
+            gl.setFloatUniform("uLayerMaskAspect", aspect)
             for (index in path.indices) {
                 val point = mask.customPath.getOrNull(index)
                 path[index][0] = point?.x ?: .5f
@@ -99,7 +109,7 @@ class LayerMaskEffect(private val clip: VideoClip, private val startUs: Long) : 
             ${LayerMaskShader.FUNCTIONS}
             void main(){
                 vec4 source=texture2D(uTexSampler,vUv);
-                gl_FragColor=vec4(source.rgb,source.a*reclyLayerMaskAlpha(vUv));
+                gl_FragColor=vec4(source.rgb,source.a*reclyLayerMaskAlpha(vec2(vUv.x,1.0-vUv.y)));
             }
         """.trimIndent()
     }

@@ -13,11 +13,13 @@ import kotlin.math.sin
  * The target is chosen on the preview, i.e. in project-canvas space, but frames are decoded in
  * source space and the resulting track drives the clip mask, which is evaluated on the clip
  * texture. Tracking used the canvas selection directly as a source position, so whenever the clip
- * was fitted, filled, zoomed, moved or rotated the tracker followed some other part of the image.
- * The mask also samples the GL texture, whose v axis grows upwards, while decoded frames grow
- * downwards, so the attached mask moved vertically opposite to the tracked object.
+ * was fitted, filled, zoomed, moved, rotated or cropped the tracker followed some other part of
+ * the image.
  *
- * The forward model mirrors GpuPreviewRenderer.drawLayer exactly.
+ * Mask space is the untransformed source frame with y growing downwards — the same space as the
+ * decoded tracking frames — so a track drives the mask without any axis conversion.
+ *
+ * The forward model mirrors GpuPreviewRenderer.drawLayer exactly, including the crop re-framing.
  */
 data class LayerGeometry(
     val sourceWidth: Int,
@@ -66,8 +68,10 @@ data class LayerGeometry(
         if (kotlin.math.abs(det) < 1e-6f) return canvasX to canvasY
         val qx = (m11 * nx - m01 * ny) / det
         val qy = (-m10 * nx + m00 * ny) / det
-        // Quad uv is y-up; decoded frames are y-down.
-        return (qx + 1f) / 2f to 1f - (qy + 1f) / 2f
+        // Quad uv (y-up, 0..1 over the cropped region) -> full frame (y-down), through the crop.
+        val u = (qx + 1f) / 2f
+        val vDown = 1f - (qy + 1f) / 2f
+        return (crop.left + u * (crop.right - crop.left)) to (crop.top + vDown * (crop.bottom - crop.top))
     }
 
     /** Bounding box of the selection mapped into the source frame, clamped to valid values. */
@@ -87,10 +91,13 @@ data class LayerGeometry(
     }
 
     companion object {
-        /** Frame space (y down) -> clip mask space (texture v, y up). */
-        fun toMaskSpace(track: TrackingTrack): TrackingTrack = track.copy(points = track.points.map(::toMaskSpace))
+        /** Frame space and mask space are both y-down now; kept for callers, it is the identity. */
+        fun toMaskSpace(track: TrackingTrack): TrackingTrack = track
 
-        fun toMaskSpace(point: TrackingPoint): TrackingPoint =
+        fun toMaskSpace(point: TrackingPoint): TrackingPoint = point
+
+        /** Masks/tracks saved before schema 30 used texture space (y up); converts one point. */
+        fun fromLegacyMaskSpace(point: TrackingPoint): TrackingPoint =
             point.copy(centerY = (1f - point.centerY).coerceIn(0f, 1f))
     }
 }
