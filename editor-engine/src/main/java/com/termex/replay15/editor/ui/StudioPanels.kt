@@ -187,7 +187,7 @@ object StudioPanels {
 
     fun fonts(activity: Activity, currentId: String, select: (String) -> Unit) = with(activity) {
         val body = column()
-        body.addView(sectionTitle("Biblioteca de fontes", "Toque para selecionar. Fontes remotas são baixadas sob demanda."))
+        body.addView(sectionTitle("Biblioteca de fontes", "Cada \"Aa\" mostra a fonte de verdade. Toque para usar, segure para favoritar."))
 
         // ── Search field ────────────────────────────────────────────────────
         val search = EditText(this).apply { hint = "Buscar por nome"; isSingleLine = true }
@@ -208,7 +208,8 @@ object StudioPanels {
 
         // ── RecyclerView (virtualized font list) ────────────────────────────
         val recyclerView = androidx.recyclerview.widget.RecyclerView(this).apply {
-            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@with)
+            // Grade de "Aa": cada célula mostra a letra desenhada na própria fonte.
+            layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@with, 3)
             setHasFixedSize(false)
         }
         body.addView(recyclerView, LinearLayout.LayoutParams(-1, dp(420)))
@@ -248,7 +249,12 @@ object StudioPanels {
         }
 
         // ── Adapter ─────────────────────────────────────────────────────────
-        class FontViewHolder(val row: LinearLayout) : androidx.recyclerview.widget.RecyclerView.ViewHolder(row)
+        class FontViewHolder(
+            val tile: FrameLayout,
+            val sample: TextView,
+            val name: TextView,
+            val badge: TextView,
+        ) : androidx.recyclerview.widget.RecyclerView.ViewHolder(tile)
 
         val adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<FontViewHolder>() {
             private var items: List<FontAsset> = filteredFonts()
@@ -261,26 +267,77 @@ object StudioPanels {
             override fun getItemCount() = items.size
 
             override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): FontViewHolder {
-                val row = row()
-                return FontViewHolder(row)
+                val tile = FrameLayout(activity).apply {
+                    isClickable = true
+                    isFocusable = true
+                    layoutParams = android.view.ViewGroup.MarginLayoutParams(-1, dp(96)).apply {
+                        setMargins(dp(3), dp(3), dp(3), dp(3))
+                    }
+                }
+                val sample = TextView(activity).apply {
+                    text = "Aa"
+                    textSize = 30f
+                    gravity = Gravity.CENTER
+                    setTextColor(EditorStyle.TEXT)
+                    includeFontPadding = false
+                }
+                tile.addView(sample, FrameLayout.LayoutParams(-1, -1).apply { bottomMargin = dp(18) })
+                val name = TextView(activity).apply {
+                    textSize = 10f
+                    gravity = Gravity.CENTER
+                    setTextColor(EditorStyle.MUTED)
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    setPadding(dp(6), 0, dp(6), dp(8))
+                }
+                tile.addView(name, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+                // Canto: ★ favorita ou ↓ para baixar.
+                val badge = TextView(activity).apply {
+                    textSize = 11f
+                    setPadding(dp(6), dp(4), dp(6), 0)
+                }
+                tile.addView(badge, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END))
+                return FontViewHolder(tile, sample, name, badge)
             }
 
             override fun onBindViewHolder(holder: FontViewHolder, position: Int) {
                 val font = items[position]
-                holder.row.removeAllViews()
-
-                // Font name + preview
                 val isDownloaded = font.source != FontSource.DOWNLOADED ||
                     FontCatalog.findRemote(font.id)?.downloaded == true
-                val label = action("${font.displayName}  ·  Grave seus momentos", font.id == currentId) {
+                val isFav = font.id in preferences.favorites()
+                val selected = font.id == currentId
+
+                holder.sample.typeface = if (isDownloaded) EditorFonts.get(this@with, font.id) else Typeface.DEFAULT
+                holder.sample.alpha = if (isDownloaded) 1f else 0.35f
+                holder.name.text = font.displayName
+                holder.name.setTextColor(if (selected) EditorStyle.TEXT else EditorStyle.MUTED)
+                holder.badge.text = when {
+                    !isDownloaded -> "↓"
+                    isFav -> "★"
+                    else -> ""
+                }
+                holder.badge.setTextColor(if (!isDownloaded) EditorStyle.MUTED else EditorStyle.ACTION)
+                holder.tile.contentDescription = buildString {
+                    append(font.displayName)
+                    if (selected) append(", em uso")
+                    if (!isDownloaded) append(", toque para baixar")
+                    if (isFav) append(", favorita")
+                }
+                holder.tile.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                    setColor(EditorStyle.CARD)
+                    setStroke(if (selected) dp(2) else dp(1), if (selected) EditorStyle.ACTION else EditorStyle.BORDER)
+                    cornerRadius = dp(10).toFloat()
+                }, null)
+
+                holder.tile.setOnClickListener {
                     if (isDownloaded) {
                         preferences.markRecent(font.id)
                         select(font.id)
                         dialog.dismiss()
                     } else {
-                        // Trigger download, then select
+                        holder.badge.text = "…"
                         fontRepo.ensureFont(font.id,
-                            onProgress = { /* Could show progress spinner */ },
+                            onProgress = { },
                             onComplete = { result ->
                                 activity.runOnUiThread {
                                     result.onSuccess {
@@ -288,6 +345,7 @@ object StudioPanels {
                                         select(font.id)
                                         dialog.dismiss()
                                     }.onFailure {
+                                        holder.badge.text = "↓"
                                         android.widget.Toast.makeText(activity,
                                             "Falha ao baixar ${font.displayName}", android.widget.Toast.LENGTH_SHORT).show()
                                     }
@@ -295,63 +353,15 @@ object StudioPanels {
                             }
                         )
                     }
-                }.apply {
-                    textSize = 18f
-                    if (isDownloaded) {
-                        typeface = EditorFonts.get(this@with, font.id)
-                    }
                 }
-                holder.row.addView(label, LinearLayout.LayoutParams(0, dp(68), 1f))
-
-                // Download status indicator
-                if (!isDownloaded) {
-                    val dlIcon = ImageView(activity).apply {
-                        setImageResource(android.R.drawable.stat_sys_download)
-                        contentDescription = "Baixar ${font.displayName}"
-                    }
-                    val dlFrame = FrameLayout(activity).apply {
-                        val bg = GradientDrawable().apply {
-                            setColor(EditorStyle.CARD)
-                            setStroke(dp(1), EditorStyle.BORDER)
-                            cornerRadius = dp(12).toFloat()
-                        }
-                        background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
-                        addView(dlIcon, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
-                        setOnClickListener {
-                            fontRepo.ensureFont(font.id, onComplete = { result ->
-                                activity.runOnUiThread {
-                                    result.onSuccess { refresh() }
-                                    result.onFailure {
-                                        android.widget.Toast.makeText(activity,
-                                            "Falha ao baixar ${font.displayName}", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            })
-                        }
-                    }
-                    holder.row.addView(dlFrame, LinearLayout.LayoutParams(dp(52), dp(56)).apply { marginStart = dp(6) })
+                holder.tile.setOnLongClickListener {
+                    preferences.toggleFavorite(font.id)
+                    android.widget.Toast.makeText(activity,
+                        if (isFav) "${font.displayName} saiu dos favoritos" else "${font.displayName} nos favoritos",
+                        android.widget.Toast.LENGTH_SHORT).show()
+                    refresh()
+                    true
                 }
-
-                // Favorite button
-                val isFav = font.id in preferences.favorites()
-                val favBtn = FrameLayout(activity).apply {
-                    contentDescription = if (isFav) "Remover dos favoritos" else "Adicionar aos favoritos"
-                    val bg = GradientDrawable().apply {
-                        setColor(EditorStyle.CARD)
-                        setStroke(dp(1), EditorStyle.BORDER)
-                        cornerRadius = dp(12).toFloat()
-                    }
-                    background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
-                    val starIcon = ImageView(context).apply {
-                        setImageResource(if (isFav) R.drawable.ic_recly_star_filled else R.drawable.ic_recly_star_outline)
-                    }
-                    addView(starIcon, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
-                    setOnClickListener {
-                        preferences.toggleFavorite(font.id)
-                        refresh()
-                    }
-                }
-                holder.row.addView(favBtn, LinearLayout.LayoutParams(dp(52), dp(56)).apply { marginStart = dp(6) })
             }
         }
         recyclerView.adapter = adapter

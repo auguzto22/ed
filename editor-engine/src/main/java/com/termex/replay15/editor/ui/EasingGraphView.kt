@@ -38,16 +38,16 @@ class EasingGraphView(context: Context) : View(context) {
             val p1x = x(bezier.x1); val p1y = y(bezier.y1)
             val p2x = x(bezier.x2); val p2y = y(bezier.y2)
             if (active == 0) {
-                paint.color = 0x446366F1.toInt()
+                paint.color = 0x44C50022.toInt()
                 canvas.drawCircle(p1x, p1y, context.dp(14).toFloat(), paint)
             }
             if (active == 1) {
-                paint.color = 0x446366F1.toInt()
+                paint.color = 0x44C50022.toInt()
                 canvas.drawCircle(p2x, p2y, context.dp(14).toFloat(), paint)
             }
-            paint.color = if (active == 0) Color.WHITE else 0xFF6366F1.toInt()
+            paint.color = if (active == 0) Color.WHITE else 0xFFC50022.toInt()
             canvas.drawCircle(p1x, p1y, context.dp(7).toFloat(), paint)
-            paint.color = if (active == 1) Color.WHITE else 0xFF6366F1.toInt()
+            paint.color = if (active == 1) Color.WHITE else 0xFFC50022.toInt()
             canvas.drawCircle(p2x, p2y, context.dp(7).toFloat(), paint)
         }
         paint.textSize = context.dp(11).toFloat(); paint.color = EditorStyle.MUTED

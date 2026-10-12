@@ -102,7 +102,7 @@ object DockNavigationHelper {
                 val isActive = index == activeIndex
                 val icon = container.getChildAt(0) as? ImageView
                 val text = container.getChildAt(1) as? TextView
-                val tint = if (isActive) Color.parseColor("#F5F5F5") else Color.parseColor("#A5A5AA")
+                val tint = if (isActive) Color.parseColor("#141414") else Color.parseColor("#9A968C") // canvas: pílula clara, texto escuro
                 icon?.imageTintList = ColorStateList.valueOf(tint)
                 text?.setTextColor(tint)
                 val scale = if (isActive) 1.04f else 1f

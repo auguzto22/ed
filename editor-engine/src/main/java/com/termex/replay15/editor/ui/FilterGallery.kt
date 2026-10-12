@@ -141,7 +141,7 @@ object FilterGallery {
                 // Placeholder view while thumbnail renders
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF222226.toInt())
+                        setColor(0xFF1C1C1E.toInt())
                         cornerRadius = dp(8).toFloat()
                     }
                 }

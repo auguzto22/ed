@@ -41,7 +41,7 @@ object ActionFeedback {
             background = GradientDrawable().apply {
                 setColor(0xE6141419.toInt())
                 cornerRadius = 20 * density
-                setStroke((1 * density).toInt(), if (kind == Kind.ERROR) 0x66FF5C7A else 0x55FF8A1F)
+                setStroke((1 * density).toInt(), if (kind == Kind.ERROR) 0x66FF5C7A else 0x55C50022)
             }
             elevation = 10 * density
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -157,7 +157,7 @@ class ProgressOrb(context: Context) : View(context) {
         when (state) {
             0 -> {
                 ring.shader = SweepGradient(w / 2f, h / 2f,
-                    intArrayOf(0x00FF8A1F, EditorStyle.ACCENT, EditorStyle.ACCENT_PINK, EditorStyle.CYAN, 0x00FF8A1F), null)
+                    intArrayOf(0x00C50022, EditorStyle.ACCENT, EditorStyle.ACCENT_PINK, EditorStyle.CYAN, 0x00C50022), null)
                 canvas.save(); canvas.rotate(angle, w / 2f, h / 2f)
                 canvas.drawArc(box, 0f, 300f, false, ring)
                 canvas.restore()
@@ -231,7 +231,7 @@ class BackgroundTaskCard private constructor(
         setPadding(px(10f), px(10f), px(10f), px(10f))
         background = GradientDrawable().apply {
             setColor(0xEB121217.toInt()); cornerRadius = 18 * density
-            setStroke(px(1f), 0x44FF8A1F)
+            setStroke(px(1f), 0x44C50022)
         }
         elevation = 14 * density
         val top = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
@@ -341,7 +341,7 @@ private class ShimmerBar(context: Context) : View(context) {
         val band = w * .4f
         val start = -band + (w + band) * offset
         paint.shader = android.graphics.LinearGradient(start, 0f, start + band, 0f,
-            intArrayOf(0x00FF8A1F, EditorStyle.ACCENT, EditorStyle.CYAN, 0x00FFC46B), null, android.graphics.Shader.TileMode.CLAMP)
+            intArrayOf(0x00C50022, EditorStyle.ACCENT, EditorStyle.CYAN, 0x00E5304F), null, android.graphics.Shader.TileMode.CLAMP)
         canvas.drawRoundRect(maxOf(0f, start), 0f, minOf(w, start + band), h, r, r, paint)
     }
 }

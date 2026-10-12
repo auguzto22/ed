@@ -126,7 +126,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         // Motion Path Trajectory
         if (target.clip.keyframes.size >= 2) {
             val pathPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xAA00E5FF.toInt()
+                color = 0xAAC50022.toInt()
                 strokeWidth = 1.5f * density
                 style = Paint.Style.STROKE
                 pathEffect = DashPathEffect(floatArrayOf(6f * density, 4f * density), 0f)
@@ -139,7 +139,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
             }
             canvas.drawPath(motionPath, pathPaint)
             val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFF00E5FF.toInt()
+                color = 0xFFC50022.toInt()
                 style = Paint.Style.FILL
             }
             target.clip.keyframes.forEach { kf ->
@@ -150,7 +150,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         }
 
         val isNull = target.clip.isNullObject
-        val strokeColor = if (isNull) 0xFFFFB300.toInt() else Color.WHITE
+        val strokeColor = if (isNull) 0xFFFAFAF6.toInt() else Color.WHITE
         paint.color = strokeColor; paint.strokeWidth = 1.5f * density; paint.style = Paint.Style.STROKE
         if (isNull) {
             paint.pathEffect = DashPathEffect(floatArrayOf(8f * density, 4f * density), 0f)
@@ -169,7 +169,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         // Draw Anchor Point Pivot Crosshair
         val anchorPx = rect.centerX() + value.anchorX * (rect.width() / 2f)
         val anchorPy = rect.centerY() + value.anchorY * (rect.height() / 2f)
-        paint.color = 0xFFFFAB00.toInt()
+        paint.color = 0xFFFAFAF6.toInt()
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
         canvas.drawCircle(anchorPx, anchorPy, 6f * density, paint)
@@ -184,10 +184,10 @@ class VideoLayerHandlesView(context: Context) : View(context) {
             val badgeWidth = paint.measureText(badgeText)
             val badgeLeft = rect.left + 4f * density
             val badgeTop = rect.top + 4f * density
-            paint.color = 0xD9141416.toInt()
+            paint.color = 0xD9000000.toInt()
             paint.style = Paint.Style.FILL
             canvas.drawRoundRect(badgeLeft, badgeTop, badgeLeft + badgeWidth + 8f * density, badgeTop + 14f * density, 4f * density, 4f * density, paint)
-            paint.color = if (isNull) 0xFFFFB300.toInt() else 0xFF00E5FF.toInt()
+            paint.color = if (isNull) 0xFFFAFAF6.toInt() else 0xFFC50022.toInt()
             canvas.drawText(badgeText, badgeLeft + 4f * density, badgeTop + 11f * density, paint)
         }
 
@@ -210,7 +210,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         val textWidth = paint.measureText(text)
         val left = (width - textWidth) / 2f - 10f * density
         val top = 10f * density
-        paint.color = 0xD9141416.toInt(); paint.style = Paint.Style.FILL
+        paint.color = 0xD9000000.toInt(); paint.style = Paint.Style.FILL
         canvas.drawRoundRect(left, top, left + textWidth + 20f * density, top + 30f * density, 10f * density, 10f * density, paint)
         paint.color = Color.WHITE
         canvas.drawText(text, left + 10f * density, top + 20f * density, paint)
