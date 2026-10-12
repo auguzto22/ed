@@ -12,7 +12,7 @@ import com.termex.replay15.editor.domain.MaskState
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.domain.maskAt
 
-/** Export counterpart of [com.termex.replay15.editor.preview.engine.LayerMaskGpuPass]. */
+/** Export counterpart of the native preview layer-mask shader. */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class LayerMaskEffect(
     private val clip: VideoClip,

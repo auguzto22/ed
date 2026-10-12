@@ -27,7 +27,7 @@ class PreviewPersistenceInstrumentedTest {
         val diagnostics = PreviewDiagnostics(app)
         val mailbox = SeekMailbox()
         val errors = ConcurrentLinkedQueue<Throwable>()
-        lateinit var renderer: GpuPreviewRenderer
+        lateinit var renderer: NativePreviewRenderer
         lateinit var manager: VideoDecoderManager
         var project = Project(videos = listOf(VideoClip(
             id = "clip", uri = source.toURI().toString(), name = "fixture", sourceUs = 5_000_000,
@@ -52,7 +52,7 @@ class PreviewPersistenceInstrumentedTest {
         }
         try {
             main {
-                renderer = GpuPreviewRenderer(app, SurfaceView(app), mailbox::isCurrent, { 0L }, diagnostics, { false }, {}, errors::add)
+                renderer = NativePreviewRenderer(app, SurfaceView(app), mailbox::isCurrent, { 0L }, diagnostics, { false }, {}, errors::add)
                 manager = VideoDecoderManager(app, renderer, mailbox, diagnostics, { errors.add(it.cause ?: IllegalStateException(it.toString())) }, 2)
                 // No later play/tick rescues this request: createInput completes after this callback.
                 request(0)

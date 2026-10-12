@@ -3,7 +3,7 @@ package com.termex.replay15.editor.ui
 import com.termex.replay15.editor.assets.TransitionDefinition
 import com.termex.replay15.editor.assets.TransitionInstance
 import com.termex.replay15.editor.domain.*
-import com.termex.replay15.editor.render.TransitionShaderBuilder
+import com.termex.replay15.editor.transitions.TransitionPrograms
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToLong
@@ -35,12 +35,12 @@ class TransitionDraft(
     var easing: Easing = existing?.easing ?: Easing.SMOOTH
     var durationUs: Long = existing?.durationUs ?: DEFAULT_DURATION_US
         private set
-    private val values = existing?.parameters.orEmpty().filterKeys { it != TransitionShaderBuilder.MODE }.toMutableMap()
+    private val values = existing?.parameters.orEmpty().filterKeys { it != TransitionPrograms.MODE }.toMutableMap()
 
     val hadTransition: Boolean get() = existing != null
 
     /** Parameters the user can edit for the current transition (never the internal mode). */
-    val editableParameters get() = definition?.parameters.orEmpty().filter { it.id != TransitionShaderBuilder.MODE }
+    val editableParameters get() = definition?.parameters.orEmpty().filter { it.id != TransitionPrograms.MODE }
 
     fun valueOf(id: String): Float {
         val parameter = definition?.parameters?.firstOrNull { it.id == id }

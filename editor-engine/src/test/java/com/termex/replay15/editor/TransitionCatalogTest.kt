@@ -283,9 +283,9 @@ class TransitionCatalogTest {
         val footer = loadFooter()
         for (def in definitions) {
             val body = loadShader(def.shaderFile)
-            val fullShader = com.termex.replay15.editor.render.TransitionShaderBuilder
+            val fullShader = com.termex.replay15.editor.transitions.TransitionPrograms
                 .buildFragmentShader(header, body, footer, def)
-            com.termex.replay15.editor.render.TransitionShaderBuilder
+            com.termex.replay15.editor.transitions.TransitionPrograms
                 .validateNoDuplicateUniforms(fullShader)
         }
     }
@@ -297,7 +297,7 @@ class TransitionCatalogTest {
         val footer = loadFooter()
         for (def in definitions) {
             val body = loadShader(def.shaderFile)
-            val fullShader = com.termex.replay15.editor.render.TransitionShaderBuilder
+            val fullShader = com.termex.replay15.editor.transitions.TransitionPrograms
                 .buildFragmentShader(header, body, footer, def)
             for (param in def.parameters) {
                 val uniformDecl = "uniform float p_${param.id};"

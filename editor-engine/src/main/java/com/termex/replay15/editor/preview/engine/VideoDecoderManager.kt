@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class VideoDecoderManager(
     private val context: Context,
-    private val renderer: GpuPreviewRenderer,
+    private val renderer: NativePreviewRenderer,
     private val mailbox: SeekMailbox,
     private val diagnostics: PreviewDiagnostics,
     private val onError: (PreviewMediaFailure) -> Unit,

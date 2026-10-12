@@ -104,6 +104,7 @@ class EditorExportService : Service() {
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                         main.removeCallbacks(poll); transformer = null
+                        com.termex.replay15.editor.transitions.NativeTransitionSessions.clear()
                         publish(ExportState(true, 100, "Salvando na galeria..."))
                         saveToGallery(requireNotNull(output))
                     }
@@ -199,6 +200,7 @@ class EditorExportService : Service() {
         activeProjectSnapshot = null
         main.removeCallbacks(poll)
         transformer?.cancel(); transformer = null
+        com.termex.replay15.editor.transitions.NativeTransitionSessions.clear()
         if (deleteOutput) output?.delete()
         publish(value)
         stopForeground(STOP_FOREGROUND_DETACH)
@@ -212,6 +214,7 @@ class EditorExportService : Service() {
     override fun onDestroy() {
         cancelled.set(true); main.removeCallbacksAndMessages(null)
         transformer?.cancel(); transformer = null
+        com.termex.replay15.editor.transitions.NativeTransitionSessions.clear()
         io.shutdown()
         if (state.active) state = ExportState(message = "Exportacao interrompida. O projeto continua salvo.")
         super.onDestroy()

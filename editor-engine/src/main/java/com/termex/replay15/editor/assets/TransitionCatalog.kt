@@ -77,13 +77,13 @@ object TransitionCatalog {
     }
 
     fun all(context: Context): List<TransitionDefinition> =
-        BuiltInTransitions.definitions(context)
+        TransitionPackages.definitions(context)
 
     fun findById(context: Context, id: String): TransitionDefinition? =
-        BuiltInTransitions.findById(context, id)
+        TransitionPackages.findById(context, id)
 
     fun find(id: String): TransitionDefinition? =
-        BuiltInTransitions.findById(id)
+        TransitionPackages.findById(id)
 
     fun search(context: Context, query: String): List<TransitionDefinition> =
         filter(all(context), CATEGORY_ALL, query)

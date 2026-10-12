@@ -12,10 +12,10 @@ import subprocess
 root = Path(__file__).resolve().parents[1]
 out = root / 'editor-engine/build/camera-gpu'
 out.mkdir(parents=True, exist_ok=True)
-preview = (root / 'editor-engine/src/main/java/com/termex/replay15/editor/preview/engine/GpuPreviewRenderer.kt').read_text()
+preview = (root / 'editor-preview-native/src/android.rs').read_text()
 export = (root / 'editor-engine/src/main/java/com/termex/replay15/editor/render/SceneCameraEffect.kt').read_text()
-vertex = re.search(r'private const val VERTEX="([^"]+)"', preview)[1]
-fragment = re.search(r'private const val OVERLAY="([^"]+)"', preview)[1]
+vertex = json.loads('"' + re.search(r'const VERTEX: &str = "((?:\\.|[^"\\])*)";', preview)[1] + '"')
+fragment = json.loads('"' + re.search(r'const COPY: &str = "((?:\\.|[^"\\])*)";', preview)[1] + '"')
 export_shaders = re.findall(r'"((?:attribute vec4|precision mediump)[^"\n]+)"', export)
 assert len(export_shaders) == 2
 (out / 'shaders.h').write_text('\n'.join(f'const char *{name} = {json.dumps(shader)};' for name, shader in zip(

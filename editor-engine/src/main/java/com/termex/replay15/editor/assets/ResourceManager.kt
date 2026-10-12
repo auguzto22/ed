@@ -60,7 +60,7 @@ object ResourceManager {
     }
 
     private fun registerBuiltinAttributions(context: Context) {
-        // Transitions (from BuiltInTransitions → already registered via BuiltInTransitions.init)
+        // Transitions (from TransitionPackages → already registered via TransitionPackages.init)
         TransitionCatalog.all(context).forEach { trans ->
             ResourceCreditsRegistry.register(
                 ResourceLicenseMetadata(
@@ -161,7 +161,7 @@ object ResourceManager {
     }
 
     private fun isBuiltinResource(resourceId: String): Boolean {
-        return BuiltInTransitions.findById(resourceId) != null ||
+        return TransitionPackages.findById(resourceId) != null ||
                 BuiltInEffects.definitions(android.app.Application()).any { it.id == resourceId } ||
                 FontCatalog.builtIns.any { it.id == resourceId }
     }

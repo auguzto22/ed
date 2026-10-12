@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.tasks.Exec
 
 plugins {
     id("com.android.library")
@@ -15,6 +16,7 @@ fun buildConfigString(value: String): String =
 android {
     namespace = "com.recly.editor.engine"
     compileSdk = 37
+    ndkVersion = "26.3.11579264"
 
     buildFeatures {
         buildConfig = true
@@ -46,6 +48,41 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+}
+
+val sdkDirectory = localProperties.getProperty("sdk.dir") ?: System.getenv("ANDROID_HOME")
+    ?: error("Android SDK directory is required to build the Rust preview")
+val androidNdkDirectory = file("$sdkDirectory/ndk/26.3.11579264")
+val cargoBinary = System.getenv("CARGO")
+    ?: file("${System.getProperty("user.home")}/.cargo/bin/cargo").takeIf { it.isFile }?.absolutePath
+    ?: "cargo"
+val rustPreviewOutput = layout.projectDirectory.dir("src/main/jniLibs")
+val buildRustPreview = tasks.register<Exec>("buildRustPreview") {
+    workingDir(rootProject.file("editor-preview-native"))
+    environment("ANDROID_NDK_HOME", androidNdkDirectory.absolutePath)
+    commandLine(
+        cargoBinary, "ndk", "-t", "arm64-v8a", "-t", "x86_64",
+        "-o", rustPreviewOutput.asFile.absolutePath,
+        "build", "--release",
+    )
+    inputs.files(fileTree(rootProject.file("editor-preview-native")) {
+        include("Cargo.toml", "Cargo.lock", "src/**/*.rs", "shaders/**/*.frag")
+    })
+    inputs.files(fileTree("src/main/assets/editor/transitions"), file("src/main/assets/editor/transitions.json"),
+        file("src/main/res/raw/transition_header.glsl"), file("src/main/res/raw/transition_footer.glsl"))
+    outputs.dir(rustPreviewOutput)
+}
+
+tasks.named("preBuild").configure { dependsOn(buildRustPreview) }
+
+val buildRustTransitionHost = tasks.register<Exec>("buildRustTransitionHost") {
+    workingDir(rootProject.file("editor-preview-native"))
+    commandLine(cargoBinary, "build", "--offline")
+}
+tasks.withType<Test>().configureEach {
+    dependsOn(buildRustTransitionHost)
+    systemProperty("java.library.path", rootProject.file("editor-preview-native/target/debug").absolutePath)
 }
 
 dependencies {

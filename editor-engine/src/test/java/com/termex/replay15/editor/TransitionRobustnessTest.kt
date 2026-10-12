@@ -2,7 +2,7 @@ package com.termex.replay15.editor
 
 import com.termex.replay15.editor.assets.*
 import com.termex.replay15.editor.domain.*
-import com.termex.replay15.editor.render.TransitionShaderBuilder
+import com.termex.replay15.editor.transitions.TransitionPrograms
 import com.termex.replay15.editor.ui.TransitionPreviewHelper
 import org.junit.Assert.*
 import org.junit.Test
@@ -54,10 +54,10 @@ class TransitionRobustnessTest {
         """.trimIndent()
         val footer = "void main() { gl_FragColor = reclyTransition(vec2(0.5), uProgress); }"
 
-        val shader = TransitionShaderBuilder.buildFragmentShader(header, shaderBody, footer, definition)
+        val shader = TransitionPrograms.buildFragmentShader(header, shaderBody, footer, definition)
 
         // Verify that validateNoDuplicateUniforms passes
-        TransitionShaderBuilder.validateNoDuplicateUniforms(shader)
+        TransitionPrograms.validateNoDuplicateUniforms(shader)
 
         // Verify that p_mode appears exactly once despite being in parameters and shaderBody
         val pModeMatches = Regex("""uniform\s+\w+\s+p_mode\s*;""").findAll(shader).count()
@@ -70,7 +70,7 @@ class TransitionRobustnessTest {
         // Verify that validateNoDuplicateUniforms throws on deliberate duplicate uniforms
         val faultyShader = "uniform float uProgress;\nuniform float uProgress;\nvoid main(){}"
         assertThrows(IllegalArgumentException::class.java) {
-            TransitionShaderBuilder.validateNoDuplicateUniforms(faultyShader)
+            TransitionPrograms.validateNoDuplicateUniforms(faultyShader)
         }
     }
 

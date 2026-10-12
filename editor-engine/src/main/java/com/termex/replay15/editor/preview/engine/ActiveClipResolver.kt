@@ -15,12 +15,27 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
      */
     data class Video(val key: ClipKey, val startUs: Long, val clip: VideoClip, private val mapper: ClipTimeMapper = ProjectClipTimeMapper,
                      val leadInUs: Long = 0L, val leadOutUs: Long = 0L) {
+        private val nativeSegments by lazy {
+            clip.timeMap.segments.flatMap { listOf(it.sourceUs, it.endUs, it.timelineUs) }.toLongArray()
+        }
+        private val nativeSpeeds by lazy { clip.timeMap.segments.map { it.speed }.toFloatArray() }
         val endUs = startUs + clip.durationUs
         /** First project instant on screen; earlier than [startUs] while a transition brings it in. */
         val visibleStartUs: Long get() = startUs - leadInUs
         /** End of the visible span; later than [endUs] while a transition takes it out. */
         val visibleEndUs: Long get() = endUs + leadOutUs
         fun sourceTimeUs(projectTimeUs: Long): Long {
+            if (mapper === ProjectClipTimeMapper && NativePreviewBridge.available) {
+                val offset = when {
+                    leadInUs > 0L && projectTimeUs < startUs -> (projectTimeUs - startUs).coerceAtLeast(-leadInUs)
+                    leadOutUs > 0L && projectTimeUs >= endUs ->
+                        (projectTimeUs - startUs).coerceAtMost(clip.durationUs + leadOutUs - 1L)
+                    else -> projectTimeUs.coerceIn(startUs, (endUs - 1L).coerceAtLeast(startUs)) - startUs
+                }
+                return NativePreviewBridge.nativeClipSourceAt(nativeSegments, nativeSpeeds, clip.durationUs,
+                    clip.inUs, clip.outUs, clip.sourceUs, clip.speed, clip.reverse, clip.image,
+                    clip.speedCurve.isNotEmpty(), offset)
+            }
             if (leadInUs > 0L && projectTimeUs < startUs) {
                 return TransitionHandles.sourceAt(clip, (projectTimeUs - startUs).coerceAtLeast(-leadInUs))
             }
@@ -42,8 +57,14 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
                     return endUs + ((sourceTimeUs - clip.outUs) / clip.speed.toDouble()).roundToLong()
                 }
             }
-            return mapper.sourceToProject(clip, startUs, sourceTimeUs)
+            return if (mapper === ProjectClipTimeMapper && NativePreviewBridge.available) startUs + NativePreviewBridge.nativeClipTimelineAt(
+                nativeSegments, nativeSpeeds, clip.durationUs, clip.inUs, clip.outUs, clip.reverse, sourceTimeUs)
+                else mapper.sourceToProject(clip, startUs, sourceTimeUs)
         }
+        fun speedAtSource(sourceTimeUs: Long): Float = if (mapper === ProjectClipTimeMapper && NativePreviewBridge.available)
+            NativePreviewBridge.nativeClipSpeedAt(nativeSegments, nativeSpeeds,
+                clip.inUs, clip.outUs, sourceTimeUs - clip.inUs)
+            else clip.timeMap.speedAtInput(sourceTimeUs - clip.inUs)
         fun contains(timeUs: Long) = timeUs >= visibleStartUs && timeUs < visibleEndUs
     }
     data class Transition(val instance: TransitionInstance, val progress: Float, val startUs: Long = 0, val endUs: Long = 0)
@@ -74,14 +95,23 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
     }
     private val all = main + layers.flatten()
     private val visualTracks = all.map { it.key.trackId }.distinct().filter(project::visualEnabled).toSet()
+    private val eligibleVideos = all.filter { !it.clip.isNullObject && it.key.trackId in visualTracks }
+    private val activeStarts = eligibleVideos.map { it.visibleStartUs }.toLongArray()
+    private val activeEnds = eligibleVideos.map { it.visibleEndUs }.toLongArray()
+    private val prewarmVideos = eligibleVideos.filterNot { it.clip.image }
+    private val prewarmStarts = prewarmVideos.map { it.visibleStartUs }.toLongArray()
+    private val prewarmTracks = prewarmVideos.map { it.key.trackId }.distinct().withIndex()
+        .associate { it.value to it.index }.let { ids -> prewarmVideos.map { ids.getValue(it.key.trackId) }.toIntArray() }
     private val audioResolver = ActiveAudioSourceResolver(project, timeMapper)
 
     fun resolve(projectTimeUs: Long): Snapshot {
         // The UI can point at durationUs; the last visible instant is durationUs - 1.
         val time = projectTimeUs.coerceIn(0, (durationUs - 1).coerceAtLeast(0))
-        val active = all.filter { !it.clip.isNullObject && it.contains(time) }
+        val active = if (NativePreviewBridge.available)
+            NativePreviewBridge.nativeSelectActive(activeStarts, activeEnds, time).map(eligibleVideos::get)
+            else eligibleVideos.filter { it.contains(time) }
         val audio = audioResolver.resolve(time, 0L)
-        return Snapshot(time, active.filter { it.key.trackId in visualTracks }, audio,
+        return Snapshot(time, active, audio,
             ActiveTextResolver.activeTexts(project, time),
             project.stickers.filter { project.visualEnabled(STICKER_TRACK) && LayerStateEvaluator.isActive(it, time) },
             project.adjustmentClips.filter { it.enabled && time >= it.startUs && time < it.endUs },
@@ -101,10 +131,10 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
         val time = projectTimeUs.coerceIn(0, durationUs)
         val end = time + horizonUs.coerceAtMost(durationUs - time)
         // A clip entering through a transition is needed from its visible start, before its cut.
-        return all.asSequence().filter {
-            !it.clip.image && !it.clip.isNullObject && it.key.trackId in visualTracks &&
-                it.visibleStartUs > time && it.visibleStartUs <= end
-        }.sortedBy { it.visibleStartUs }.distinctBy { it.key.trackId }.toList()
+        return if (NativePreviewBridge.available)
+            NativePreviewBridge.nativeSelectUpcoming(prewarmStarts, prewarmTracks, time, end).map(prewarmVideos::get)
+            else prewarmVideos.filter { it.visibleStartUs > time && it.visibleStartUs <= end }
+                .sortedBy { it.visibleStartUs }.distinctBy { it.key.trackId }
     }
 
 }

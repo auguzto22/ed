@@ -20,3 +20,6 @@ tools/jdk/
 android-sdk/
 *.log
 *.png
+editor-engine/src/main/jniLibs/
+/editor-preview-native/target/
+/.kotlin/

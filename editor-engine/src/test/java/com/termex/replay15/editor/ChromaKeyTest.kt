@@ -19,7 +19,7 @@ class ChromaKeyTest {
 
     @Test
     fun `preview draw shader owns matte and spill suppression`() {
-        val source = File("src/main/java/com/termex/replay15/editor/preview/engine/GpuPreviewRenderer.kt").readText()
+        val source = File("../editor-preview-native/shaders/layer.frag").readText()
         assertTrue(source.contains("uniform vec4 uChroma"))
         assertTrue(source.contains("smoothstep(threshold"))
         assertTrue(source.contains("dominance*uKeyEdge.y"))

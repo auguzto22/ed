@@ -130,6 +130,31 @@ class AudioPreviewEngineArchitectureTest {
     }
 
     @Test
+    fun stoppedAudioHeadDoesNotFreezePreviewAtVideoToImageTransition() {
+        var now = 0L
+        var audioPositionUs: Long? = null
+        val clock = PreviewTransportClock(
+            audioPositionProvider = { audioPositionUs },
+            nowNs = { now }
+        )
+        clock.setDuration(30_000_000L)
+        clock.seek(14_900_000L)
+        clock.start()
+
+        now += 170_000_000L
+        audioPositionUs = 15_070_000L
+        assertEquals(15_070_000L, clock.positionUs())
+
+        // The video's audio ends at the cut; the following still image has no audio.
+        repeat(100) {
+            now += 16_000_000L
+            clock.positionUs()
+        }
+        assertEquals(16_670_000L, clock.positionUs())
+        assertTrue(clock.isPlaying())
+    }
+
+    @Test
     fun audioMixerAppliesGainAndLimiting() {
         val mixer = AudioMixer(sampleRate = 48000, blockFrames = 512)
         val block = mixer.mix(emptyList(), 0L, 1L)

@@ -10,6 +10,7 @@ android {
         applicationId = "com.recly.editor"
         minSdk = 29
         targetSdk = 37
+        ndk.abiFilters += setOf("arm64-v8a", "x86_64")
         versionCode = 64
         versionName = "4.1.0"
 

@@ -3,15 +3,13 @@ package com.termex.replay15.editor.assets
 import android.content.Context
 import org.json.JSONArray
 
-object BuiltInTransitions {
+object TransitionPackages {
     @Volatile private var cached: List<TransitionDefinition>? = null
 
     fun definitions(context: Context): List<TransitionDefinition> {
         return cached ?: synchronized(this) {
             cached ?: run {
-                val text = context.assets.open("editor/transitions.json").bufferedReader().use { it.readText() }
-                val catalog = JSONArray(text)
-                val list = List(catalog.length()) { TransitionDefinition.parse(catalog.getJSONObject(it).toString()) }
+                val list = com.termex.replay15.editor.transitions.TransitionPrograms.catalog()
                 list.forEach { item ->
                     com.termex.replay15.editor.licenses.ResourceCreditsRegistry.register(
                         com.termex.replay15.editor.licenses.ResourceLicenseMetadata(
@@ -39,6 +37,4 @@ object BuiltInTransitions {
     fun findById(id: String): TransitionDefinition? =
         cached?.firstOrNull { it.id == id }
 
-    fun shader(context: Context, shaderFile: String): String =
-        context.assets.open("editor/transitions/$shaderFile").bufferedReader().use { it.readText() }
 }

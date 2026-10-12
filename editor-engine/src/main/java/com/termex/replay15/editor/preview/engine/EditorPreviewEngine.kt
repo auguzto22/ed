@@ -45,7 +45,7 @@ class EditorPreviewEngine(
         PreviewMediaFailure.DecoderFailure(null,null,"audio",generation,failure).also(diagnostics::mediaFailure).let(::onFailure)
     }
     private val clock=PreviewTransportClock(audioPositionProvider = { audio.getPlaybackPositionUs() })
-    private val renderer=GpuPreviewRenderer(context,surfaceView,mailbox::isCurrent,clock::positionUs,diagnostics,clock::isPlaying,::onFramePresented){failure->
+    private val renderer=NativePreviewRenderer(context,surfaceView,mailbox::isCurrent,clock::positionUs,diagnostics,clock::isPlaying,::onFramePresented){failure->
         PreviewMediaFailure.SurfaceFailure(null,null,generation,failure).also(diagnostics::mediaFailure).let(::onFailure)
     }
     private val maxDecoders=run{val am=context.getSystemService(ActivityManager::class.java);if(am?.isLowRamDevice==true)2 else 4}

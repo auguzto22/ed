@@ -1,5 +1,6 @@
 package com.termex.replay15.editor.render
 
+import com.termex.replay15.editor.transitions.NativeTransitionSessions
 import androidx.media3.common.OverlaySettings
 import androidx.media3.common.VideoCompositorSettings
 import androidx.media3.common.util.Size
@@ -39,7 +40,7 @@ class TrackCompositor(
             it.contains(presentationTimeUs) &&
                 (it.transition.leftClipId == piece.clip.id || it.transition.rightClipId == piece.clip.id)
         } else null) ?: return visible
-        val shaderSinceUs = transitionBridgeKeys[window.transition.id]?.let(TransitionBridge::shaderSinceUs) ?: Long.MAX_VALUE
+        val shaderSinceUs = if (transitionBridgeKeys[window.transition.id]?.let { NativeTransitionSessions.composited(it, presentationTimeUs) } == true) presentationTimeUs else Long.MAX_VALUE
         val shown = TransitionVisibility.visible(window, piece.clip.id, presentationTimeUs, shaderSinceUs)
         if (traceFrames) {
             android.util.Log.d("ReclyExportFrame", "projectTimeUs=$presentationTimeUs input=$inputId layer=${layer.id} " +

@@ -11,10 +11,18 @@ class VideoFrameScheduler(
     }
 
     fun decide(videoProjectPtsUs: Long, projectTimeUs: Long): Decision {
-        val deltaUs = videoProjectPtsUs - projectTimeUs
+        val deltaUs = if (NativePreviewBridge.available) NativePreviewBridge.nativeFrameDecision(
+            videoProjectPtsUs, projectTimeUs, lateDropThresholdUs, earlyToleranceUs
+        ) else (videoProjectPtsUs - projectTimeUs).let { delta ->
+            when {
+                delta < -lateDropThresholdUs -> delta
+                delta > earlyToleranceUs -> delta
+                else -> 0L
+            }
+        }
         return when {
-            deltaUs < -lateDropThresholdUs -> Decision.Drop(-deltaUs)
-            deltaUs > earlyToleranceUs -> Decision.Wait(deltaUs)
+            deltaUs < 0 -> Decision.Drop(-deltaUs)
+            deltaUs > 0 -> Decision.Wait(deltaUs)
             else -> Decision.Present
         }
     }

@@ -56,10 +56,19 @@ class ActiveAudioSourceResolver(
                 ClipAudioEnvelope(placed.clip, placed.startUs, null, null)))
         } }
     }
+    private val enabledEmbedded = embedded.filter { project.audioEnabled(it.video.key.trackId) }
+    private val embeddedStarts = enabledEmbedded.map { it.video.visibleStartUs }.toLongArray()
+    private val embeddedEnds = enabledEmbedded.map { it.video.visibleEndUs }.toLongArray()
+    private val enabledExternal = project.audio.filter { project.audioEnabled("audio:${it.id}") }
+    private val externalStarts = enabledExternal.map { it.startUs }.toLongArray()
+    private val externalEnds = enabledExternal.map { it.startUs + it.durationUs }.toLongArray()
 
     fun resolve(projectTimeUs: Long, generation: Long): List<ResolvedAudioSource> {
         val time = projectTimeUs.coerceAtLeast(0L)
-        val videoAudio = embedded.asSequence().filter { it.video.contains(time) && project.audioEnabled(it.video.key.trackId) }
+        val videoIndices = if (NativePreviewBridge.available)
+            NativePreviewBridge.nativeSelectActive(embeddedStarts, embeddedEnds, time).asSequence()
+            else enabledEmbedded.indices.asSequence().filter { time >= embeddedStarts[it] && time < embeddedEnds[it] }
+        val videoAudio = videoIndices.map(enabledEmbedded::get)
             .map { item ->
                 val video = item.video
                 val clip = video.clip
@@ -69,14 +78,15 @@ class ActiveAudioSourceResolver(
                     projectStartUs = video.visibleStartUs, projectEndUs = video.visibleEndUs,
                     sourceStartUs = video.sourceTimeUs(video.visibleStartUs), sourceTimeUs = sourceTime,
                     volume = item.envelope.gainAt(time),
-                    speed = clip.timeMap.speedAtInput(sourceTime - clip.inUs),
+                    speed = video.speedAtSource(sourceTime),
                     preservePitch = clip.preservePitch, generation = generation, embedded = true,
                     enhance = clip.enhance,
                 )
             }
-        val external = project.audio.asSequence().filter {
-            project.audioEnabled("audio:${it.id}") && time >= it.startUs && time < it.startUs + it.durationUs
-        }.map { clip ->
+        val externalIndices = if (NativePreviewBridge.available)
+            NativePreviewBridge.nativeSelectActive(externalStarts, externalEnds, time).asSequence()
+            else enabledExternal.indices.asSequence().filter { time >= externalStarts[it] && time < externalEnds[it] }
+        val external = externalIndices.map(enabledExternal::get).map { clip ->
             ResolvedAudioSource(
                 id = "audio:${clip.id}", key = ActiveClipResolver.ClipKey("audio:${clip.id}", clip.id), uri = clip.uri,
                 projectStartUs = clip.startUs, projectEndUs = clip.startUs + clip.durationUs,
@@ -91,8 +101,8 @@ class ActiveAudioSourceResolver(
     fun upcoming(projectTimeUs: Long, horizonUs: Long, generation: Long): List<ResolvedAudioSource> {
         val end = projectTimeUs + horizonUs.coerceAtLeast(0L)
         val starts = buildList {
-            embedded.map { it.video.visibleStartUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
-            project.audio.map { it.startUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
+            enabledEmbedded.map { it.video.visibleStartUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
+            enabledExternal.map { it.startUs }.filter { it > projectTimeUs && it <= end }.forEach { add(it) }
         }
         return starts.flatMap { resolve(it, generation) }.distinctBy { it.id }
     }

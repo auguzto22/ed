@@ -42,7 +42,7 @@ class TransitionTools(
         val original = project()
         val leftIndex = original.videos.indexOfFirst { it.id == leftClipId }
         if (leftIndex < 0 || original.videos.getOrNull(leftIndex + 1)?.id != rightClipId) return@with
-        val definitions = BuiltInTransitions.definitions(this)
+        val definitions = TransitionPackages.definitions(this)
         val state = TransitionDraft(original, leftClipId, rightClipId, definitions)
         var committed = false
         var group = TransitionGroups.GROUPS.firstOrNull { g ->

@@ -30,12 +30,6 @@ for index, definition in enumerate(definitions):
         lines.append(f'glUniform1f(glGetUniformLocation(program, "p_{name}"), {float(value):.9f}f);')
     lines.append('break;')
 lines.append('}}')
-preview = (root / 'editor-engine/src/main/java/com/termex/replay15/editor/preview/engine/GpuPreviewRenderer.kt').read_text()
-for name in ['VERTEX', 'DRAW', 'OVERLAY']:
-    pattern = r'private const val ' + name + r'=(?:"""(.*?)"""|"([^"\n]+)")'
-    match = re.search(pattern, preview, re.DOTALL)
-    shader = next(group for group in match.groups() if group is not None)
-    lines.append(f'static const char *production_{name.lower()} = {json.dumps(shader)};')
 (out / 'transition_cases.h').write_text('\n'.join(lines))
 subprocess.run(['gcc', str(root / 'tools/test_transition_gpu.c'), '-I', str(out),
                 '-o', str(out / 'test-gpu'), '-lEGL', '-lGLESv2', '-lm'], check=True)

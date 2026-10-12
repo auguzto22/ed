@@ -1,11 +1,12 @@
 package com.termex.replay15.editor.preview.engine.audio
 
+import com.termex.replay15.editor.preview.engine.NativePreviewBridge
 import kotlin.math.tanh
 import com.termex.replay15.editor.preview.engine.ResolvedAudioSource
 
 /**
  * Mixes multiple active audio streams in block chunks into normalized float PCM.
- * Reuses internal buffers to ensure zero allocations during the mix loop.
+ * Reuses the decode scratch buffer; accumulation and limiting run in Rust.
  */
 class AudioMixer(
     val sampleRate: Int = 48000,
@@ -53,22 +54,12 @@ class AudioMixer(
 
             val readFrames = source.session.readTimelineFrames(scratchBuffer, blockFrames, source.speed, source.preservePitch, generation, source.resolved.enhance)
             if (readFrames <= 0) continue
-            for (frame in 0 until readFrames) {
-                mixed[frame * 2] += scratchBuffer[frame * 2] * gain
-                mixed[frame * 2 + 1] += scratchBuffer[frame * 2 + 1] * gain
-            }
+            if (NativePreviewBridge.available) NativePreviewBridge.nativeMixSource(mixed, scratchBuffer, readFrames, gain)
+            else for (index in 0 until readFrames * 2) mixed[index] += scratchBuffer[index] * gain
         }
 
-        // Apply soft limiter / clamp to avoid harsh digital clipping
-        for (i in 0 until totalSamples) {
-            val s = mixed[i]
-            mixed[i] = if (s > 1.0f || s < -1.0f) {
-                // Soft saturation curve when exceeding unity gain
-                tanh(s)
-            } else {
-                s
-            }
-        }
+        if (NativePreviewBridge.available) NativePreviewBridge.nativeLimitPcm(mixed, totalSamples)
+        else for (index in 0 until totalSamples) if (kotlin.math.abs(mixed[index]) > 1f) mixed[index] = tanh(mixed[index])
 
         return block
     }

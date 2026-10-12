@@ -23,9 +23,9 @@ class ClipAudioEnvelope(
         val local = (projectTimeUs - clipStartUs).coerceIn(0L, durationUs)
         val base = AudioTimelineMapper.calculateGain(clip.volume, local, durationUs, fadeInUs, fadeOutUs)
         val fadeIn = entering?.takeIf { it.contains(projectTimeUs) }
-            ?.let { AudioTimelineMapper.equalPowerIn(it.linearProgress(projectTimeUs)) } ?: 1f
+            ?.let { com.termex.replay15.editor.transitions.NativeTransitionBridge.nativeAudioGain(it.linearProgress(projectTimeUs), true) } ?: 1f
         val fadeOut = leaving?.takeIf { it.contains(projectTimeUs) }
-            ?.let { AudioTimelineMapper.equalPowerOut(it.linearProgress(projectTimeUs)) } ?: 1f
+            ?.let { com.termex.replay15.editor.transitions.NativeTransitionBridge.nativeAudioGain(it.linearProgress(projectTimeUs), false) } ?: 1f
         return (base * fadeIn * fadeOut).coerceIn(0f, 4f)
     }
 

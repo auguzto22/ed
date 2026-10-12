@@ -10,40 +10,12 @@ import androidx.media3.transformer.*
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.core.isEditorDebuggable
 import java.util.concurrent.atomic.AtomicLong
+import com.termex.replay15.editor.transitions.*
 
 /** Builds the offline export composition. Interactive preview has its own decoder/GL engine. */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class, androidx.media3.common.util.ExperimentalApi::class])
 object ProjectComposition {
     private val nextTransitionSessionId = AtomicLong()
-
-    private class TransitionMatrix(
-        private val input: ClipTransition,
-        private val output: ClipTransition,
-        private val fadeUs: Long,
-        private val durationUs: Long,
-        private val startUs: Long,
-        private val itemStartUs: Long = startUs,
-        private val itemEndUs: Long = startUs + durationUs,
-    ) : RgbMatrix {
-        override fun getMatrix(presentationTimeUs: Long, useHdr: Boolean): FloatArray {
-            val fade = fadeUs.coerceAtMost(durationUs / 2).coerceAtLeast(1)
-            val projectTimeUs = ExportClock.projectTimeUs(presentationTimeUs, itemStartUs, itemEndUs)
-            val localUs = (projectTimeUs - startUs).coerceIn(0L, durationUs)
-            val entering = if (input == ClipTransition.NONE) 1f else (localUs / fade.toFloat()).coerceIn(0f, 1f)
-            val leaving = if (output == ClipTransition.NONE) 1f else ((durationUs - localUs) / fade.toFloat()).coerceIn(0f, 1f)
-            val amount = minOf(entering, leaving)
-            val white = (input == ClipTransition.FADE_WHITE && entering <= leaving) ||
-                (output == ClipTransition.FADE_WHITE && leaving < entering)
-            val offset = if (white) 1f - amount else 0f
-            return floatArrayOf(
-                amount, 0f, 0f, 0f,
-                0f, amount, 0f, 0f,
-                0f, 0f, amount, 0f,
-                offset, offset, offset, 1f,
-            )
-        }
-        override fun isNoOp(inputWidth: Int, inputHeight: Int) = input == ClipTransition.NONE && output == ClipTransition.NONE
-    }
 
     private class AdjustableInvert(private val strength: Float) : RgbMatrix {
         private val matrix = floatArrayOf(
@@ -105,18 +77,15 @@ object ProjectComposition {
         val layers = RenderPlan.layers(project)
         val windows = TransitionTiming.windows(project)
         val transitionSessionId = nextTransitionSessionId.incrementAndGet()
-        TransitionBridge.clearStaleSessions(transitionSessionId)
-        // The composition holds one reference per window, so a sequence moving on to its next item
-        // never frees frames the other sequence still needs.
+        NativeTransitionSessions.clearStaleSessions(transitionSessionId)
+        // Effect adapters retain their session during composition construction, so one input
+        // cannot free frames before the other input creates its GL program.
         val transitionBridgeKeys = windows.associate { window ->
             val key = "$transitionSessionId:${window.transition.id}"
-            TransitionBridge.retain(key)
             window.transition.id to key
         }
-        val transitionDefinitions = windows.associate { window ->
-            window.transition.id to (com.termex.replay15.editor.assets.TransitionCatalog.findById(context, window.transition.transitionId)
-                ?: com.termex.replay15.editor.assets.BuiltInTransitions.definitions(context).first())
-        }
+        val outgoingEnds = layers.flatMap { it.pieces }.filterNot { it.hold }
+            .associate { it.clip.id to it.endUs }
         val sequences = layers.map { layer ->
           val mainTrack = layer.id == MAIN_TRACK_A || layer.id == MAIN_TRACK_B
           val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
@@ -142,7 +111,7 @@ object ProjectComposition {
                 .setStartPositionUs(piece.sourceStartUs).setEndPositionUs(piece.sourceEndUs).build())
             val effects = mutableListOf<Effect>()
             // Must come first so every other effect is applied to the held frame.
-            if (piece.hold) effects += HoldFirstFrameEffect()
+            if (piece.hold) effects += NativeHoldFrameEffect()
             if (clip.crop != CropRect()) effects += Crop(2 * clip.crop.left - 1, 2 * clip.crop.right - 1,
                 1 - 2 * clip.crop.bottom, 1 - 2 * clip.crop.top)
             if (clip.rotation != 0 || clip.flip) effects += ScaleAndRotateTransformation.Builder()
@@ -185,18 +154,17 @@ object ProjectComposition {
                 effects += MotionMatrix3D(clip, clipStartUs, project, applyProjectCamera = false,
                     itemStartUs = piece.startUs, itemEndUs = piece.endUs)
             }
-            if (clip.transitionIn != ClipTransition.NONE || clip.transitionOut != ClipTransition.NONE) effects += TransitionMatrix(
-                clip.transitionIn, clip.transitionOut, clip.transitionDurationUs, clip.durationUs, clipStartUs, piece.startUs, piece.endUs,
+            if (clip.transitionIn != ClipTransition.NONE || clip.transitionOut != ClipTransition.NONE) effects += NativeClipFadeEffect(
+                clip, clipStartUs, piece.startUs, piece.endUs,
             )
             // Capture before rendering: the frames kept for the next window are the clip's own.
-            if (leaving != null) effects += TransitionCaptureEffect(
+            if (leaving != null) effects += NativeTransitionCaptureEffect(
                 transitionBridgeKeys.getValue(leaving.transition.id),
                 leaving.startUs - ExportPlan.CAPTURE_PREROLL_US, leaving.endUs, piece.startUs, piece.endUs,
             )
-            if (entering != null) effects += TransitionRenderEffect(
-                entering, transitionDefinitions.getValue(entering.transition.id),
+            if (entering != null) effects += NativeTransitionRenderEffect(
+                entering, outgoingEnds.getValue(entering.transition.leftClipId),
                 transitionBridgeKeys.getValue(entering.transition.id), piece.startUs, piece.endUs,
-                finishOnRelease = !piece.hold,
             )
             val enhance = if (clip.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(clip.enhance))
             val audioEffects = when {

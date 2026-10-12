@@ -113,7 +113,16 @@ class AudioPreviewEngine(context: Context, private val onError: (Throwable) -> U
                 val disappeared = previousIds - ids
                 val unexpected = activeSources.filter { it.id in disappeared && nextMixProjectUs < it.projectEndUs }
                 if (unexpected.isNotEmpty()) logMissing(unexpected, nextMixProjectUs, gen)
-                if (demands.isEmpty()) { prebuffer = false; await(8L); continue }
+                if (demands.isEmpty()) {
+                    // The last audio clip may end while video or still images continue. A stale
+                    // source must not keep its stopped AudioTrack as the preview's master clock.
+                    activeSources = emptyList()
+                    activeSourceIds = emptySet()
+                    diagnostics.activeAudioSourceCount.set(0L)
+                    prebuffer = false
+                    await(8L)
+                    continue
+                }
                 val newSources = demands.filter { it.id !in configuredSourceIds }
                 if (newSources.isNotEmpty()) {
                     decoderManager.prepareAndSeek(newSources, gen); configuredSourceIds += newSources.map { it.id }

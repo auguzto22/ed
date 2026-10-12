@@ -67,6 +67,7 @@ data class PreviewRenderState(
         val effects: List<Effect>,
         val backgroundRemoval: BackgroundRemovalEffect,
         val mask: MaskState?,
+        val edgeFade: List<Long> = listOf(0L, 0L, 0L, 0L, 0L),
     )
     data class Effect(
         val id: String,
@@ -108,7 +109,9 @@ object RenderStateEvaluator {
                 (clip.effects.filter { it.activeAt(sourceUs) }.map { it.toRenderEffect(sourceUs) } +
                     snapshot.adjustments.flatMap { adjustment -> adjustment.effects.filter { it.enabled && it.activeAt(snapshot.projectTimeUs) }
                         .map { it.toRenderEffect(snapshot.projectTimeUs) } }),
-                clip.backgroundRemoval, clip.maskAt(sourceUs))
+                clip.backgroundRemoval, clip.maskAt(sourceUs),
+                listOf(clip.transitionIn.ordinal.toLong(), clip.transitionOut.ordinal.toLong(),
+                    clip.transitionDurationUs, clip.durationUs, snapshot.projectTimeUs - placed.startUs))
         }
         val transition = snapshot.transitions.firstOrNull()?.let { active ->
             val left = layers.firstOrNull { it.key.clipId == active.instance.leftClipId }

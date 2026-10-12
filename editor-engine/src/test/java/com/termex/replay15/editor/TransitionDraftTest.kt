@@ -3,7 +3,7 @@ package com.termex.replay15.editor
 import com.termex.replay15.editor.assets.TransitionDefinition
 import com.termex.replay15.editor.assets.TransitionInstance
 import com.termex.replay15.editor.domain.*
-import com.termex.replay15.editor.render.TransitionShaderBuilder
+import com.termex.replay15.editor.transitions.TransitionPrograms
 import com.termex.replay15.editor.ui.TransitionDraft
 import com.termex.replay15.editor.ui.TransitionGroups
 import org.json.JSONArray
@@ -75,7 +75,7 @@ class TransitionDraftTest {
         assertTrue(draft.hadTransition)
         assertFalse(draft.instance()!!.parameters.containsKey("mode"))
         assertTrue(draft.editableParameters.none { it.id == "mode" })
-        val values = TransitionShaderBuilder.uniformValues(def("dip_to_black"), emptySet(), old.parameters)
+        val values = TransitionPrograms.uniformValues(def("dip_to_black"), emptySet(), old.parameters)
         assertEquals(1f, values.getValue("p_mode"), 0f)
     }
 

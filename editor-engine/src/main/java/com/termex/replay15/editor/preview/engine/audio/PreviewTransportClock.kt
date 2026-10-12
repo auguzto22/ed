@@ -23,28 +23,29 @@ class PreviewTransportClock(
         if (!running) return anchorUs
 
         // 1. Audio Master Clock
-        val fallbackUs = anchorUs + ((nowNs() - anchorNs) / 1_000L).coerceAtLeast(0)
+        val now = nowNs()
+        val fallbackUs = anchorUs + ((now - anchorNs) / 1_000L).coerceAtLeast(0)
         val audioPos = audioPositionProvider()?.takeIf { candidate ->
             candidate in 0..durationUs && candidate >= (lastAudioUs ?: Long.MIN_VALUE) &&
                 kotlin.math.abs(candidate - fallbackUs) <= AUDIO_REACQUIRE_TOLERANCE_US
         }
-        if (audioPos != null) {
-            // Re-anchor monotonic fallback in real time so switching has zero jump
-            anchorUs = audioPos
-            anchorNs = nowNs()
+        if (audioPos != null && (lastAudioUs == null || audioPos > lastAudioUs!!)) {
+            // A stopped AudioTrack repeats its final position. Only advancing audio can anchor
+            // the transport; never move backwards from the running fallback clock.
+            anchorUs = maxOf(audioPos, fallbackUs)
+            anchorNs = now
             lastAudioUs = audioPos
-            return audioPos
+            return anchorUs
         }
 
         // 2. Monotonic fallback clock
-        val elapsedUs = ((nowNs() - anchorNs) / 1_000L).coerceAtLeast(0)
-        if (durationUs > 0 && elapsedUs >= durationUs - anchorUs) {
+        if (durationUs > 0 && fallbackUs >= durationUs) {
             anchorUs = durationUs
-            anchorNs = nowNs()
+            anchorNs = now
             running = false
             return durationUs
         }
-        return anchorUs + elapsedUs
+        return fallbackUs
     }
 
     @Synchronized
