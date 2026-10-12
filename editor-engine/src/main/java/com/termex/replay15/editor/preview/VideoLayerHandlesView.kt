@@ -58,12 +58,16 @@ class VideoLayerHandlesView(context: Context) : View(context) {
             ?.let { Target(null, index, start, it) }
     }
 
+    // Clip rotation is counter-clockwise-positive in the GPU preview and in export (GL/Media3),
+    // while Android View angles grow clockwise. The handles used the View sign directly, so the
+    // video turned the opposite way of the finger and of its own frame. On screen the frame is
+    // drawn with -rotation, hit tests undo it with +rotation and gestures subtract the angle.
     private fun hitTest(target: Target, x: Float, y: Float): Boolean {
         val sourceUs = RenderPlan.sourceTime(target.clip, target.startUs, timeUs)
         val value = key(target).copy(sourceUs = sourceUs)
         val point = floatArrayOf(x, y)
         val rect = bounds(value)
-        Matrix().apply { setRotate(-value.rotation, rect.centerX(), rect.centerY()); mapPoints(point) }
+        Matrix().apply { setRotate(value.rotation, rect.centerX(), rect.centerY()); mapPoints(point) }
 
         val cornerRadiusPx = 24f * resources.displayMetrics.density
         val lx = point[0]; val ly = point[1]
@@ -153,7 +157,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         } else {
             paint.pathEffect = null
         }
-        canvas.save(); canvas.rotate(value.rotation, rect.centerX(), rect.centerY()); canvas.drawRect(rect, paint)
+        canvas.save(); canvas.rotate(-value.rotation, rect.centerX(), rect.centerY()); canvas.drawRect(rect, paint)
 
         // Reset pathEffect for corners and handles
         paint.pathEffect = null
@@ -271,7 +275,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
                 }
                 val point = floatArrayOf(event.x, event.y)
                 val rect = bounds(value)
-                Matrix().apply { setRotate(-value.rotation, rect.centerX(), rect.centerY()); mapPoints(point) }
+                Matrix().apply { setRotate(value.rotation, rect.centerX(), rect.centerY()); mapPoints(point) }
 
                 // Check 48dp corner hit testing
                 val cornerRadiusPx = 24f * density
@@ -324,7 +328,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
                     val angle = atan2(event.getY(1) - event.getY(0), event.getX(1) - event.getX(0))
                     base.copy(
                         zoom = (base.zoom * distance / pinchDistance).coerceIn(.25f, 4f),
-                        rotation = (base.rotation + (angle - pinchAngle) * 180f / PI.toFloat()).let { ((it + 180f) % 360f + 360f) % 360f - 180f },
+                        rotation = (base.rotation - (angle - pinchAngle) * 180f / PI.toFloat()).let { ((it + 180f) % 360f + 360f) % 360f - 180f },
                     )
                 } else if (touchMode == TouchMode.CORNER_SCALE_ROTATE && isDragging) {
                     val rect = bounds(base)
@@ -332,7 +336,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
                     val angleNow = atan2(event.y - rect.centerY(), event.x - rect.centerX())
                     base.copy(
                         zoom = (base.zoom * distNow / initialDistanceToCenter).coerceIn(.25f, 4f),
-                        rotation = (base.rotation + (angleNow - initialAngleToCenter) * 180f / PI.toFloat()).let { ((it + 180f) % 360f + 360f) % 360f - 180f },
+                        rotation = (base.rotation - (angleNow - initialAngleToCenter) * 180f / PI.toFloat()).let { ((it + 180f) % 360f + 360f) % 360f - 180f },
                     )
                 } else if (touchMode == TouchMode.MOVE && isDragging) {
                     base.copy(

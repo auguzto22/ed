@@ -123,6 +123,9 @@ class GpuPreviewRenderer(
     private val mvp = FloatArray(16)
     private val motionBuf = FloatArray(4) // reusable buffer for overlayMotion, avoids per-frame allocation
     @Volatile private var lastRenderedState: PreviewRenderState? = null
+    // Render-thread only: bounded hold of the presented buffer while a composition is incomplete.
+    private var holdSinceNs = 0L
+    private var holdExpired = false
 
     @Volatile private var decoderSurfaceCount = 0
     private lateinit var choreographer: Choreographer
@@ -361,10 +364,12 @@ class GpuPreviewRenderer(
         }
         // Keep the presented buffer while a seek waits for its own decoded texture.
         // An intentional empty timeline still draws its background and overlays.
-        if (render.layers.isNotEmpty() && render.layers.none { layer ->
-                if (layer.image) imageTextures.containsKey(layer.uri)
-                else slots[layer.key]?.hasFrame == true
-            }) return
+        // Readiness must use the same generation rule as the layer loop below: after every seek
+        // (tap, end of scrub, edit, transition preview) the slots still hold the previous
+        // generation, so the old `hasFrame`-only check let a frame through in which every video
+        // layer was then skipped. That background-only swap was the flash seen during fast
+        // scrubbing and right before a transition preview.
+        if (shouldHoldPresentedFrame(render)) return
         makeCurrent()
         val started = System.nanoTime()
         val cameraActive = !render.camera.isDefault
@@ -484,6 +489,43 @@ class GpuPreviewRenderer(
             diagnostics.frameRendered((System.nanoTime() - started) / 1_000_000.0, render.timeUs)
             main.post { if (!released.get() && isGenerationCurrent(render.generation)) onFramePresented(render.timeUs) }
         }
+    }
+
+    private fun isLayerCurrent(render: PreviewRenderState, layer: PreviewRenderState.Layer): Boolean =
+        if (layer.image) (imageTextures[layer.uri] ?: 0) > 0
+        else slots[layer.key]?.let { it.hasFrame && it.frameGeneration == render.generation } == true
+
+    /**
+     * Holds the last presented buffer (bounded) instead of publishing an incomplete composition:
+     * no layer ready yet, a layer still showing a previous seek generation, or a transition with
+     * only one decoded input. After [MAX_HOLD_NS] the partial frame is drawn so a source that
+     * never arrives cannot freeze the preview.
+     */
+    private fun shouldHoldPresentedFrame(render: PreviewRenderState): Boolean {
+        if (render.layers.isEmpty()) return false
+        val noneReady = render.layers.none { isLayerCurrent(render, it) }
+        val seekInFlight = render.layers.any { layer ->
+            !layer.image && slots[layer.key]?.let { it.hasFrame && it.frameGeneration != render.generation } == true
+        }
+        val transitionIncomplete = render.transition?.let { transition ->
+            render.layers.any { (it.key == transition.left || it.key == transition.right) && !isLayerCurrent(render, it) }
+        } == true
+        if (!noneReady && !seekInFlight && !transitionIncomplete) {
+            holdSinceNs = 0L; holdExpired = false
+            return false
+        }
+        // Nothing has been presented yet: there is no buffer to keep, wait for real content.
+        if (lastRenderedState == null && noneReady) return true
+        if (holdExpired) return false
+        val now = System.nanoTime()
+        if (holdSinceNs == 0L) {
+            holdSinceNs = now
+            // Make sure a paused preview re-evaluates once the bound expires.
+            handler.postDelayed({ requestRender() }, MAX_HOLD_NS / 1_000_000L + 1L)
+        }
+        if (now - holdSinceNs < MAX_HOLD_NS) return true
+        holdExpired = true
+        return false
     }
 
     /** Each clip is first drawn into a full-canvas texture with its own crop and transform.
@@ -713,19 +755,30 @@ class GpuPreviewRenderer(
     private fun deleteEffectTarget(target:EffectTarget){GLES20.glDeleteTextures(2,target.textures,0);GLES20.glDeleteFramebuffers(2,target.fbos,0)}
 
     private fun ensureImages(render: PreviewRenderState) {
-        render.layers.filter { it.image }.forEach { layer ->
-            if (imageTextures.containsKey(layer.uri) || !imagePending.add(layer.uri)) return@forEach
-            imageWorker.execute {
-                val bitmap = runCatching { ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, Uri.parse(layer.uri))) {
-                    decoder, info, _ -> decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                    val scale = minOf(1f, 2048f/maxOf(info.size.width,info.size.height))
-                    if (scale < 1f) decoder.setTargetSize((info.size.width*scale).toInt(),(info.size.height*scale).toInt())
-                } }.getOrNull()
-                handler.post {
-                    imagePending.remove(layer.uri)
-                    if (released.get()) { bitmap?.recycle(); return@post }
-                    if (bitmap != null) { imageTextures[layer.uri] = upload(bitmap);imageSizes[layer.uri]=bitmap.width to bitmap.height; bitmap.recycle(); requestRender() }
-                }
+        render.layers.filter { it.image }.forEach { layer -> ensureImage(layer.uri) }
+    }
+
+    /**
+     * Decodes photos that are about to enter the timeline. Without this a photo was only decoded
+     * when it became active, so a video -> photo transition started with one missing input.
+     */
+    fun prefetchImages(uris: List<String>) {
+        if (released.get() || uris.isEmpty()) return
+        handler.post { if (!released.get()) uris.forEach(::ensureImage) }
+    }
+
+    private fun ensureImage(uri: String) {
+        if (imageTextures.containsKey(uri) || !imagePending.add(uri)) return
+        imageWorker.execute {
+            val bitmap = runCatching { ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, Uri.parse(uri))) {
+                decoder, info, _ -> decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                val scale = minOf(1f, 2048f/maxOf(info.size.width,info.size.height))
+                if (scale < 1f) decoder.setTargetSize((info.size.width*scale).toInt(),(info.size.height*scale).toInt())
+            } }.getOrNull()
+            handler.post {
+                imagePending.remove(uri)
+                if (released.get()) { bitmap?.recycle(); return@post }
+                if (bitmap != null) { imageTextures[uri] = upload(bitmap);imageSizes[uri]=bitmap.width to bitmap.height; bitmap.recycle(); requestRender() }
             }
         }
     }
@@ -755,8 +808,11 @@ class GpuPreviewRenderer(
                     val motion = overlayMotion(sticker.animation, sticker.startUs, sticker.endUs, render.timeUs, render.width, render.height)
                     canvas.save()
                     canvas.translate(transform.x * render.width + motion[2], transform.y * render.height + motion[3])
-                    // Negate rotation to compensate for GL FBO_FLIP_Y matrix applied when rendering the overlay texture
-                    canvas.rotate(-transform.rotation)
+                    // The overlay is sampled with FBO_FLIP_Y, which only undoes GL's bottom-up rows: the
+                    // bitmap is shown upright, not mirrored. Rotation therefore keeps the Canvas sign used
+                    // by the sticker handles and by export (TextCanvasOverlay); negating it turned the
+                    // sticker the opposite way of the finger.
+                    canvas.rotate(transform.rotation)
                     canvas.scale((if (sticker.flip) -1f else 1f) * motion[1], motion[1])
                     val lottieRect = RectF(-w / 2f, -h / 2f, w / 2f, h / 2f)
                     CanvasLayerMask.draw(canvas, lottieRect, sticker.maskAt(render.timeUs)) {
@@ -787,8 +843,8 @@ class GpuPreviewRenderer(
                 paint.alpha = (255 * transform.opacity * motion[0]).toInt().coerceIn(0, 255)
                 canvas.save()
                 canvas.translate(transform.x * render.width + motion[2], transform.y * render.height + motion[3])
-                // Negate rotation to compensate for GL FBO_FLIP_Y matrix applied when rendering the overlay texture
-                canvas.rotate(-transform.rotation)
+                // Same sign as the handles and export; see the Lottie branch above.
+                canvas.rotate(transform.rotation)
                 canvas.scale((if (sticker.flip) -1f else 1f) * motion[1], motion[1])
                 rect.set(-w / 2, -h / 2, w / 2, h / 2)
                 CanvasLayerMask.draw(canvas, rect, sticker.maskAt(render.timeUs)) {
@@ -925,6 +981,8 @@ class GpuPreviewRenderer(
     }
 
     companion object {
+        /** Longest time a seek/transition may keep the previous frame on screen before drawing partially. */
+        private const val MAX_HOLD_NS = 400_000_000L
         private val IDENTITY=floatArrayOf(1f,0f,0f,0f,0f,1f,0f,0f,0f,0f,1f,0f,0f,0f,0f,1f)
         private val FBO_FLIP_Y=floatArrayOf(1f,0f,0f,0f,0f,-1f,0f,0f,0f,0f,1f,0f,0f,1f,0f,1f)
         private const val VERTEX="attribute vec2 aPosition; attribute vec2 aUv; uniform mat4 uMvp; uniform mat4 uTexMatrix; varying vec2 vUv; void main(){ gl_Position=uMvp*vec4(aPosition,0.,1.); vUv=(uTexMatrix*vec4(aUv,0.,1.)).xy; }"

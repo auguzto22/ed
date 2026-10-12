@@ -37,8 +37,18 @@ class FontRepository(private val context: Context) {
 
     /** Whether [id] is available immediately (built-in or cached on disk). */
     fun isAvailable(id: String): Boolean {
-        if (FontCatalog.find(id)?.source != FontSource.DOWNLOADED) return true
-        return fontCache.isDownloaded(id)
+        val asset = FontCatalog.find(id)
+        // Catalog fonts that are not downloaded yet are absent from FontCatalog.find(); the old
+        // `find(id)?.source != DOWNLOADED` check was therefore true for them, ensureFont never
+        // downloaded anything and every "Aa" catalog font silently rendered as the default.
+        if (asset != null && asset.source != FontSource.DOWNLOADED) return true
+        if (FontCatalog.findRemote(id) == null) return asset != null
+        if (!fontCache.isDownloaded(id)) return false
+        // Present on disk (e.g. from a previous session) but not registered in this process yet.
+        if (asset == null) fontCache.diskFile(id)?.let { file ->
+            FontCatalog.findRemote(id)?.let { FontCatalog.registerDownloaded(it, file.absolutePath) }
+        }
+        return true
     }
 
     // ── Download ────────────────────────────────────────────────────────────────
@@ -91,8 +101,10 @@ class FontRepository(private val context: Context) {
      */
     fun restoreProjectFonts(
         project: Project,
+        onRestored: () -> Unit = {},
         onMissingFontWarning: (String) -> Unit = {},
     ) {
+        var restored = false
         val fontIds = (project.texts.map { it.fontId } + project.captionGlobalFontId +
             project.texts.mapNotNull { it.captionFontOverride }).distinct()
         for (id in fontIds) {
@@ -106,12 +118,15 @@ class FontRepository(private val context: Context) {
             when (result) {
                 is FontDownloader.DownloadResult.Success -> {
                     FontCatalog.registerDownloaded(metadata, result.file.absolutePath)
+                    restored = true
                 }
                 is FontDownloader.DownloadResult.Failure -> {
                     onMissingFontWarning(id)
                 }
             }
         }
+        // Text already rasterized with the fallback typeface must be redrawn with the real one.
+        if (restored) onRestored()
     }
 
     // ── Cache management ────────────────────────────────────────────────────────

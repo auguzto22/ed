@@ -81,4 +81,15 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
         }.sortedBy { it.startUs }.distinctBy { it.key.trackId }.toList()
     }
 
+    /** Photos entering within [horizonUs]; they need no decoder but must be uploaded ahead of time. */
+    fun upcomingImageUris(projectTimeUs: Long, horizonUs: Long): List<String> {
+        require(horizonUs >= 0)
+        val time = projectTimeUs.coerceIn(0, durationUs)
+        val end = time + horizonUs.coerceAtMost(durationUs - time)
+        return all.asSequence().filter {
+            it.clip.image && !it.clip.isNullObject && it.key.trackId in visualTracks &&
+                it.startUs > time && it.startUs <= end
+        }.map { it.clip.effectivePreviewUri }.distinct().toList()
+    }
+
 }

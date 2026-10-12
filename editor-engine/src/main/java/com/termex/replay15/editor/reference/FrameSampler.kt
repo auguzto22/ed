@@ -53,12 +53,26 @@ class ReferenceFrameSampler(private val context: Context, private val config: Fr
     }
 
     fun sample(info: ReferenceMediaInfo, timesUs: List<Long>, cancellation: ReferenceAnalysisCancellation, consume: (FrameFeatures) -> Unit) {
+        if (timesUs.isEmpty()) return
+        // One sequential decode instead of a sync-frame seek + GOP decode per timestamp.
+        val ordered = timesUs.zipWithNext().all { (a, b) -> a <= b }
+        var sizeW = 0; var sizeH = 0
+        val handled = if (!ordered) 0 else com.termex.replay15.editor.media.SequentialFrameReader.read(
+            context, info.uri, timesUs, config.sampleWidth, config.sampleHeight, cancellation::check,
+        ) { time, bitmap ->
+            sizeW = bitmap.width; sizeH = bitmap.height
+            try { consume(extract(time, bitmap)) } finally { bitmap.recycle() }
+        }
+        if (handled >= timesUs.size) return
         val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(context, Uri.parse(info.uri))
-            for (time in timesUs) {
+            for (time in timesUs.subList(handled, timesUs.size)) {
                 cancellation.check()
-                val bitmap = retriever.getScaledFrameAtTime(time, MediaMetadataRetriever.OPTION_CLOSEST, config.sampleWidth, config.sampleHeight) ?: continue
+                val decoded = retriever.getScaledFrameAtTime(time, MediaMetadataRetriever.OPTION_CLOSEST, config.sampleWidth, config.sampleHeight) ?: continue
+                // Consecutive frames are compared pixel by pixel; keep the size of a partial fast pass.
+                val bitmap = if (sizeW > 0 && (decoded.width != sizeW || decoded.height != sizeH))
+                    Bitmap.createScaledBitmap(decoded, sizeW, sizeH, true).also { if (it !== decoded) decoded.recycle() } else decoded
                 try { consume(extract(time, bitmap)) } finally { bitmap.recycle() }
             }
         } finally { retriever.release() }

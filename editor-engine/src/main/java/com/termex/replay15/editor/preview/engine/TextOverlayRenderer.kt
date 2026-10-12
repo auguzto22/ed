@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.opengl.GLES20
 import android.opengl.GLUtils
 import com.termex.replay15.editor.domain.MaskState
+import com.termex.replay15.editor.font.FontCatalog
 import com.termex.replay15.editor.domain.SubtitleAnimationEvaluator
 import com.termex.replay15.editor.render.LayerMaskShader
 import com.termex.replay15.editor.render.TextLayout
@@ -32,7 +33,7 @@ class TextOverlayRenderer(
     private val requestRender: () -> Unit,
     private val diagnostics: PreviewDiagnostics,
 ) {
-    private data class Key(val id: String, val revision: Long, val width: Int, val height: Int)
+    private data class Key(val id: String, val revision: Long, val width: Int, val height: Int, val fontRevision: Long)
     private data class Texture(val key: Key, val texture: Int, val width: Int, val height: Int)
     private val cacheLock = Any()
     private val cache = object : LinkedHashMap<Key, Texture>(16, .75f, true) {}
@@ -68,7 +69,7 @@ class TextOverlayRenderer(
         }
         val toRasterize = mutableListOf<Pair<PreviewRenderState.TextRenderState, Key>>()
         state.textLayers.filter { it.visible }.forEach { text ->
-            val key = Key(text.id, text.contentRevision, state.width, state.height)
+            val key = Key(text.id, text.contentRevision, state.width, state.height, FontCatalog.revision.get())
             val cached = synchronized(cacheLock) { cache.containsKey(key) }
             if (cached) {
                 diagnostics.textTextureCacheHit()
@@ -134,14 +135,17 @@ class TextOverlayRenderer(
         GLES20.glVertexAttribPointer(uv, 2, GLES20.GL_FLOAT, false, 16, quad)
         val drawn = linkedSetOf<String>()
         state.textLayers.filter { it.visible }.forEach { text ->
-            val key = Key(text.id, text.contentRevision, state.width, state.height)
+            val key = Key(text.id, text.contentRevision, state.width, state.height, FontCatalog.revision.get())
             val texture = synchronized(cacheLock) {
                 cache[key] ?: cache.values.lastOrNull { it.key.id == text.id }
             } ?: return@forEach
             val motion = SubtitleAnimationEvaluator.evaluate(text.source, state.projectTimeUs, viewportWidth, viewportHeight)
             val center = PreviewCoordinates.canvasToNdc(text.x, text.y)
-            val sx = texture.width.toFloat() / viewportWidth.coerceAtLeast(1) * text.scale * motion[1]
-            val sy = texture.height.toFloat() / viewportHeight.coerceAtLeast(1) * text.scale * motion[1]
+            // Size relative to the canvas it was rasterized for. While a re-raster is pending the
+            // previous texture is reused; dividing by the live viewport made that fallback jump in
+            // size for a frame (seen as the text blinking after an edit).
+            val sx = texture.width.toFloat() / texture.key.width.coerceAtLeast(1) * text.scale * motion[1]
+            val sy = texture.height.toFloat() / texture.key.height.coerceAtLeast(1) * text.scale * motion[1]
             val radians = Math.toRadians((-text.rotation).toDouble())
             val c = cos(radians).toFloat(); val s = sin(radians).toFloat()
             mvp.fill(0f)
@@ -151,7 +155,8 @@ class TextOverlayRenderer(
             mvp[13] = center.y - motion[3] * 2f / viewportHeight.coerceAtLeast(1)
             mvp[15] = 1f
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program, "uMvp"), 1, false, mvp, 0)
-            GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uOpacity"), motion[0])
+            // Keyframed opacity lives in the evaluated transform; the raster is always opaque.
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uOpacity"), (motion[0] * text.opacity).coerceIn(0f, 1f))
             setMaskUniforms(text.mask)
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture.texture)

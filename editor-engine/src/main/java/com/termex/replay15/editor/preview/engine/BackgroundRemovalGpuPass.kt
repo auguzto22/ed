@@ -3,6 +3,7 @@ package com.termex.replay15.editor.preview.engine
 import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20
+import com.termex.replay15.editor.backgroundremoval.BackgroundMaskShader
 import com.termex.replay15.editor.backgroundremoval.SegmentationEngine
 import com.termex.replay15.editor.backgroundremoval.SegmentationEngineFactory
 import com.termex.replay15.editor.backgroundremoval.SegmentationFrame
@@ -17,6 +18,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -79,7 +81,10 @@ internal class BackgroundRemovalGpuPass(
         // model so adding background compositing does not change the segmentation contract.
         if (effect.mode != BackgroundMode.REMOVE) return sourceTexture
         val entry = entry(key, sourceWidth, sourceHeight, effect.quality, effect.provider, image)
+        // A mask from another moment (e.g. before a seek) cuts the wrong silhouette; showing the
+        // untouched frame for the few milliseconds until the right mask lands is far less wrong.
         val cached = entry.cache.nearest(sourceTimestampUs)
+            ?.takeIf { image || abs(it.timestampUs - sourceTimestampUs) <= MAX_MASK_DISTANCE_US }
         if (cached != null) {
             if (entry.uploadedTimestampUs != cached.timestampUs) {
                 entry.mask.upload(cached)
@@ -107,7 +112,7 @@ internal class BackgroundRemovalGpuPass(
         val captureTexture = texture2d(captureWidth, captureHeight)
         val outputTexture = texture2d(sourceWidth.coerceAtLeast(2), sourceHeight.coerceAtLeast(2))
         val engine = SegmentationEngineFactory.createEngine(context, streamMode = !image, provider = provider)
-        val maxHz = if (provider == BackgroundRemovalProvider.GEMINI) (if (image) 1 else 4) else (if (image) 1 else 12)
+        val maxHz = if (provider == BackgroundRemovalProvider.GEMINI) (if (image) 1 else 4) else (if (image) 1 else 20)
         val created = Entry(
             key = key,
             sourceWidth = sourceWidth,
@@ -294,9 +299,10 @@ internal class BackgroundRemovalGpuPass(
 
     private companion object {
         val IDENTITY = floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f)
+        const val MAX_MASK_DISTANCE_US = 250_000L
         const val VERTEX = "attribute vec2 aPosition; attribute vec2 aUv; uniform mat4 uMvp; uniform mat4 uTexMatrix; varying vec2 vUv; void main(){ gl_Position=uMvp*vec4(aPosition,0.,1.); vUv=(uTexMatrix*vec4(aUv,0.,1.)).xy; }"
         const val CAPTURE_FRAGMENT = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
-        const val FRAGMENT = """
+        val FRAGMENT = """
             precision highp float;
             uniform sampler2D uTexture;
             uniform sampler2D uMaskTexture;
@@ -305,17 +311,10 @@ internal class BackgroundRemovalGpuPass(
             uniform float uFeather;
             uniform float uEdgeSmoothing;
             varying vec2 vUv;
-            float maskAt(vec2 p) { return texture2D(uMaskTexture, clamp(p, 0.0, 1.0)).r; }
+            ${BackgroundMaskShader.functions("uTexture", "uMaskTexture")}
             void main() {
                 vec4 video = texture2D(uTexture, vUv);
-                float center = maskAt(vUv);
-                float neighbours = (
-                    maskAt(vUv + vec2(uMaskTexel.x, 0.0)) + maskAt(vUv - vec2(uMaskTexel.x, 0.0)) +
-                    maskAt(vUv + vec2(0.0, uMaskTexel.y)) + maskAt(vUv - vec2(0.0, uMaskTexel.y))
-                ) * 0.25;
-                float mask = mix(center, neighbours, clamp(uEdgeSmoothing, 0.0, 1.0) * 0.35);
-                float alpha = smoothstep(uThreshold - uFeather, uThreshold + uFeather, mask);
-                gl_FragColor = vec4(video.rgb, video.a * alpha);
+                gl_FragColor = vec4(video.rgb, video.a * reclyMatteAlpha(vUv));
             }
         """
     }

@@ -13,7 +13,11 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.Toast
+import com.termex.replay15.editor.domain.CanvasFill
 import com.termex.replay15.editor.domain.MaskState
+import com.termex.replay15.editor.domain.transformAt
+import com.termex.replay15.editor.media.SequentialFrameReader
+import com.termex.replay15.editor.tracking.LayerGeometry
 import com.termex.replay15.editor.domain.TrackingTrack
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.tracking.TemplateMotionTracker
@@ -33,6 +37,9 @@ object TrackingTools {
         overlay: TrackingOverlayView,
         onUpdateClip: (VideoClip) -> Unit,
         onOpenMask: () -> Unit,
+        canvasWidth: Int = clip.width,
+        canvasHeight: Int = clip.height,
+        canvasFill: CanvasFill = CanvasFill.FIT,
     ): Unit = with(activity) {
         overlay.visibility = View.VISIBLE
         overlay.isEnabled = true
@@ -93,7 +100,15 @@ object TrackingTools {
             val fps = if (rateSpinner.selectedItemPosition == 1) 15 else 10
             val stepUs = 1_000_000L / fps
 
-            val selectedRegion = overlay.region
+            // The selection is made on the preview canvas; the tracker works on decoded frames.
+            val transform = clip.transformAt(startUs)
+            val geometry = LayerGeometry(
+                sourceWidth = clip.width, sourceHeight = clip.height, crop = clip.crop,
+                fixedRotation = clip.rotation, flip = clip.flip, zoom = transform.zoom,
+                x = transform.x, y = transform.y, rotation = transform.rotation,
+                canvasWidth = canvasWidth, canvasHeight = canvasHeight, fill = canvasFill,
+            )
+            val selectedRegion = geometry.regionToSource(overlay.region)
 
             startTrackingProcess(
                 activity = activity,
@@ -102,7 +117,9 @@ object TrackingTools {
                 endUs = endUs,
                 stepUs = stepUs,
                 region = selectedRegion,
-            ) { newTrack ->
+            ) { frameTrack ->
+                // The mask samples the clip texture (v grows upwards).
+                val newTrack = LayerGeometry.toMaskSpace(frameTrack)
                 // Add new track to clip (up to 8 tracks)
                 val updatedTracks = (clip.trackingTracks.filterNot { it.id == newTrack.id } + newTrack).takeLast(8)
                 val updatedClip = clip.copy(trackingTracks = updatedTracks)
@@ -152,7 +169,8 @@ object TrackingTools {
                     val unlinkedMask = if (clip.mask?.trackingTrackId == track.id) clip.mask.copy(trackingTrackId = null) else clip.mask
                     onUpdateClip(clip.copy(trackingTracks = remaining, mask = unlinkedMask))
                     mainDialog.dismiss()
-                    show(activity, clip.copy(trackingTracks = remaining, mask = unlinkedMask), currentTimelineUs, overlay, onUpdateClip, onOpenMask)
+                    show(activity, clip.copy(trackingTracks = remaining, mask = unlinkedMask), currentTimelineUs, overlay, onUpdateClip, onOpenMask,
+                        canvasWidth, canvasHeight, canvasFill)
                 }, LinearLayout.LayoutParams(dp(70), dp(40)))
                 body.addView(trackRow)
             }
@@ -229,68 +247,56 @@ object TrackingTools {
         progressDialog.show()
 
         trackingExecutor.execute {
-            val retriever = MediaMetadataRetriever()
-            try {
-                retriever.setDataSource(activity, Uri.parse(clip.uri))
-                val targetW = 320
-                val aspect = if (clip.width > 0) clip.height.toFloat() / clip.width else 9f / 16f
-                val targetH = (targetW * aspect).toInt().coerceIn(120, 480)
-
-                val frames = object : Iterable<TrackingFrame> {
-                    override fun iterator(): Iterator<TrackingFrame> = object : Iterator<TrackingFrame> {
-                        private var index = 0
-
-                        override fun hasNext(): Boolean = !isCancelled.get() && index < times.size
-
-                        override fun next(): TrackingFrame {
-                            val timeUs = times[index++]
-                            var bitmap = retriever.getScaledFrameAtTime(
-                                timeUs,
-                                MediaMetadataRetriever.OPTION_CLOSEST,
-                                targetW,
-                                targetH
-                            )
-                            if (bitmap == null) {
-                                bitmap = retriever.getScaledFrameAtTime(
-                                    timeUs,
-                                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
-                                    targetW,
-                                    targetH
-                                )
-                            }
-                            if (bitmap == null) {
-                                bitmap = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
-                            }
-
-                            val currentIndex = index
-                            val totalCount = times.size
-                            activity.runOnUiThread {
-                                if (progressDialog.isShowing) {
-                                    progressBar.progress = currentIndex
-                                    val percent = (currentIndex * 100) / totalCount
-                                    progressText.text = "Analisando quadros... ($currentIndex / $totalCount - $percent%)"
-                                }
-                            }
-
-                            return TrackingFrame(timeUs, bitmap)
-                        }
+            val targetW = 320
+            val targetH = 320
+            var session: TemplateMotionTracker.Session? = null
+            val tracker = TemplateMotionTracker(templateSize = 24, searchFraction = 0.22f, maxPoints = TrackingTrack.MAX_POINTS)
+            var processed = 0
+            fun push(timeUs: Long, bitmap: Bitmap) {
+                if (isCancelled.get()) { bitmap.recycle(); throw InterruptedException("Rastreamento cancelado") }
+                try {
+                    val frame = TrackingFrame(timeUs, bitmap)
+                    val current = session
+                    if (current == null) session = tracker.Session(frame, region) else current.next(frame)
+                } finally { bitmap.recycle() }
+                processed++
+                val currentIndex = processed
+                val totalCount = times.size
+                activity.runOnUiThread {
+                    if (progressDialog.isShowing) {
+                        progressBar.progress = currentIndex
+                        val percent = (currentIndex * 100) / totalCount
+                        progressText.text = "Analisando quadros... ($currentIndex / $totalCount - $percent%)"
                     }
                 }
-
-                val tracker = TemplateMotionTracker(
-                    templateSize = 24,
-                    searchFraction = 0.22f,
-                    maxPoints = TrackingTrack.MAX_POINTS
-                )
-
-                val track = tracker.track(frames, region)
-
+            }
+            var retriever: MediaMetadataRetriever? = null
+            try {
+                // One sequential decode for the whole range (fit inside 320x320, display-oriented).
+                val handled = SequentialFrameReader.read(activity, clip.uri, times, targetW, targetH,
+                    { if (isCancelled.get()) throw InterruptedException("Rastreamento cancelado") }, ::push)
+                if (handled < times.size && !isCancelled.get()) {
+                    val fallback = MediaMetadataRetriever().also { retriever = it }
+                    fallback.setDataSource(activity, Uri.parse(clip.uri))
+                    for (timeUs in times.subList(handled, times.size)) {
+                        if (isCancelled.get()) break
+                        val bitmap = fallback.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, targetW, targetH)
+                            ?: fallback.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetW, targetH)
+                            ?: continue
+                        push(timeUs, bitmap)
+                    }
+                }
+                val track = session?.result()
                 activity.runOnUiThread {
                     if (progressDialog.isShowing) progressDialog.dismiss()
-                    if (!isCancelled.get() && track.points.isNotEmpty()) {
+                    if (!isCancelled.get() && track != null && track.points.isNotEmpty()) {
                         onComplete(track)
+                    } else if (!isCancelled.get()) {
+                        Toast.makeText(activity, "Não foi possível ler os quadros deste clipe", Toast.LENGTH_LONG).show()
                     }
                 }
+            } catch (cancelled: InterruptedException) {
+                activity.runOnUiThread { if (progressDialog.isShowing) progressDialog.dismiss() }
             } catch (e: Exception) {
                 activity.runOnUiThread {
                     if (progressDialog.isShowing) progressDialog.dismiss()
@@ -299,7 +305,7 @@ object TrackingTools {
                     }
                 }
             } finally {
-                runCatching { retriever.release() }
+                runCatching { retriever?.release() }
             }
         }
     }

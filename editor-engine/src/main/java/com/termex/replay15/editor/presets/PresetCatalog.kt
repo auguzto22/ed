@@ -6,6 +6,7 @@ import com.termex.replay15.editor.domain.StudioGrade
 import com.termex.replay15.editor.domain.TextAlignment
 import com.termex.replay15.editor.domain.TextAnimation
 import com.termex.replay15.editor.domain.TextFont
+import com.termex.replay15.editor.domain.VideoFilter
 import com.termex.replay15.editor.licenses.ResourceCreditsRegistry
 import com.termex.replay15.editor.licenses.ResourceLicenseMetadata
 import java.util.UUID
@@ -27,6 +28,13 @@ object PresetCatalog {
 
     // ── Built-in Presets ────────────────────────────────────────────────────────
 
+    /*
+     * Each built-in look is one VideoFilter at full strength. The filters were referenced by raw
+     * indices from an older enum order (several out of range, so applying them threw and nothing
+     * changed; others pointed at a different look, e.g. "Noir" applied "Drama"), and their own
+     * brightness/contrast/saturation were repeated as manual adjustments in the wrong units,
+     * doubling contrast/brightness on top of the filter. Manual adjustments now stay neutral.
+     */
     private fun registerBuiltIns() {
         builtInPresets.clear()
         builtInPresets.putAll(listOf(
@@ -38,14 +46,7 @@ object PresetCatalog {
                 group = PresetGroup.CINEMATIC,
                 tags = listOf("cinema", "profissional", "filme"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 31, // DOCUMENTARY
-                    brightness = -0.04f,
-                    contrast = 0.22f,
-                    saturation = -0.60f,
-                    hue = 0f,
-                    lightness = -0.06f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.CINEMA.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.MONTSERRAT.id,
@@ -63,14 +64,7 @@ object PresetCatalog {
                 group = PresetGroup.CINEMATIC,
                 tags = listOf("noir", "pb", "dramatico", "preto", "branco"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 29, // NOIR
-                    brightness = -0.08f,
-                    contrast = 0.28f,
-                    saturation = -1.0f,
-                    hue = 0f,
-                    lightness = -0.10f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.NOIR.ordinal,
                 ),
             ),
             createBuiltIn(
@@ -80,14 +74,7 @@ object PresetCatalog {
                 group = PresetGroup.CINEMATIC,
                 tags = listOf("drama", "impacto", "cinema"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 57, // DRAMA
-                    brightness = -0.08f,
-                    contrast = 0.34f,
-                    saturation = -0.18f,
-                    hue = 0f,
-                    lightness = -0.08f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.DRAMA.ordinal,
                 ),
             ),
 
@@ -99,14 +86,7 @@ object PresetCatalog {
                 group = PresetGroup.SOCIAL,
                 tags = listOf("vibrante", "cores", "feed", "reels", "social"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 32, // VIBRANT
-                    brightness = 0f,
-                    contrast = 0.10f,
-                    saturation = 0.35f,
-                    hue = 0f,
-                    lightness = 0f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.VIBRANT.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.BEBAS.id,
@@ -127,14 +107,7 @@ object PresetCatalog {
                 group = PresetGroup.SOCIAL,
                 tags = listOf("clean", "minimalista", "suave", "neutro"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 59, // CLEAN
-                    brightness = 0.07f,
-                    contrast = 0.05f,
-                    saturation = 0.08f,
-                    hue = 0f,
-                    lightness = 0.06f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.CLEAN.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.OUTFIT.id,
@@ -154,14 +127,7 @@ object PresetCatalog {
                 group = PresetGroup.SOCIAL,
                 tags = listOf("golden", "dourado", "quente", "hora magica", "beleza"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 35, // GOLDEN
-                    brightness = 0.06f,
-                    contrast = 0.08f,
-                    saturation = 0.18f,
-                    hue = -5f,
-                    lightness = 0.08f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.GOLDEN.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.PLAYFAIR.id,
@@ -182,14 +148,7 @@ object PresetCatalog {
                 group = PresetGroup.VINTAGE,
                 tags = listOf("vintage", "retro", "filme", "velho", "nostalgia"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 34, // VINTAGE
-                    brightness = 0.03f,
-                    contrast = -0.12f,
-                    saturation = -0.30f,
-                    hue = -5f,
-                    lightness = 0.08f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.VINTAGE.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.CAVEAT.id,
@@ -210,14 +169,7 @@ object PresetCatalog {
                 group = PresetGroup.VINTAGE,
                 tags = listOf("retro", "70s", "nostalgia", "vintage"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 42, // RETRO
-                    brightness = 0.06f,
-                    contrast = 0.03f,
-                    saturation = -0.18f,
-                    hue = 10f,
-                    lightness = 0.08f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.RETRO.ordinal,
                 ),
             ),
             createBuiltIn(
@@ -227,14 +179,7 @@ object PresetCatalog {
                 group = PresetGroup.VINTAGE,
                 tags = listOf("filme", "pellicula", "cinema classico", "8mm"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 43, // FILM
-                    brightness = -0.04f,
-                    contrast = 0.22f,
-                    saturation = -0.60f,
-                    hue = 0f,
-                    lightness = -0.06f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.DOCUMENTARY.ordinal,
                 ),
             ),
 
@@ -246,14 +191,7 @@ object PresetCatalog {
                 group = PresetGroup.MINIMAL,
                 tags = listOf("minimal", "clean", "puro", "branco"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 0, // ORIGINAL
-                    brightness = 0f,
-                    contrast = 0f,
-                    saturation = 0f,
-                    hue = 0f,
-                    lightness = 0f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.ORIGINAL.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.OUTFIT.id,
@@ -272,14 +210,7 @@ object PresetCatalog {
                 group = PresetGroup.MINIMAL,
                 tags = listOf("retrato", "rosto", "beleza", "close", "pele"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 47, // PORTRAIT
-                    brightness = 0.06f,
-                    contrast = 0.06f,
-                    saturation = -0.05f,
-                    hue = -5f,
-                    lightness = 0.08f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.PORTRAIT.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.PLAYFAIR.id,
@@ -300,14 +231,7 @@ object PresetCatalog {
                 group = PresetGroup.GAMING,
                 tags = listOf("neon", "game", "gaming", "cyber", "vibrante"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 50, // NEON
-                    brightness = -0.05f,
-                    contrast = 0.25f,
-                    saturation = 0.48f,
-                    hue = 0f,
-                    lightness = -0.04f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.NEON.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.BEBAS.id,
@@ -326,14 +250,7 @@ object PresetCatalog {
                 group = PresetGroup.GAMING,
                 tags = listOf("ice", "gelo", "frio", "azul", "glacial"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 53, // ICE
-                    brightness = 0.06f,
-                    contrast = 0.08f,
-                    saturation = -0.04f,
-                    hue = 5f,
-                    lightness = 0.08f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.ICE.ordinal,
                 ),
                 textStyle = PresetTextStyle(
                     fontId = TextFont.SPACE_MONO.id,
@@ -352,14 +269,7 @@ object PresetCatalog {
                 group = PresetGroup.GAMING,
                 tags = listOf("noite", "dark", "azul", "noturno", "neon"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 39, // NIGHT
-                    brightness = -0.12f,
-                    contrast = 0.20f,
-                    saturation = -0.08f,
-                    hue = 0f,
-                    lightness = -0.12f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.NIGHT.ordinal,
                 ),
             ),
 
@@ -371,14 +281,7 @@ object PresetCatalog {
                 group = PresetGroup.BUILT_IN,
                 tags = listOf("warm", "quente", "laranja", "sol"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 33, // WARM
-                    brightness = 0f,
-                    contrast = 0f,
-                    saturation = 0.05f,
-                    hue = 0f,
-                    lightness = 0.03f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.WARM.ordinal,
                 ),
             ),
             createBuiltIn(
@@ -388,14 +291,7 @@ object PresetCatalog {
                 group = PresetGroup.BUILT_IN,
                 tags = listOf("cool", "frio", "azul", "sereno"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 34, // COOL
-                    brightness = 0f,
-                    contrast = 0f,
-                    saturation = 0.03f,
-                    hue = 0f,
-                    lightness = 0.02f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.COOL.ordinal,
                 ),
             ),
             createBuiltIn(
@@ -405,14 +301,7 @@ object PresetCatalog {
                 group = PresetGroup.BUILT_IN,
                 tags = listOf("fade", "desbotado", "suave", "light"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 40, // FADE
-                    brightness = 0.09f,
-                    contrast = -0.22f,
-                    saturation = -0.20f,
-                    hue = 0f,
-                    lightness = 0.10f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.FADE.ordinal,
                 ),
             ),
             createBuiltIn(
@@ -422,14 +311,7 @@ object PresetCatalog {
                 group = PresetGroup.BUILT_IN,
                 tags = listOf("teal", "orange", "cinema", "complementar", "hollywood"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 38, // TEAL_ORANGE
-                    brightness = -0.03f,
-                    contrast = 0.16f,
-                    saturation = 0.25f,
-                    hue = -6f,
-                    lightness = -0.02f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.TEAL_ORANGE.ordinal,
                 ),
             ),
             createBuiltIn(
@@ -439,14 +321,7 @@ object PresetCatalog {
                 group = PresetGroup.BUILT_IN,
                 tags = listOf("sunset", "por do sol", "dourado", "laranja", "golden"),
                 colorGrade = PresetColorGrade(
-                    filterIndex = 52, // SUNSET
-                    brightness = 0.05f,
-                    contrast = 0.10f,
-                    saturation = 0.28f,
-                    hue = -12f,
-                    lightness = 0.04f,
-                    temperature = 0f,
-                    grade = StudioGrade(),
+                    filterIndex = VideoFilter.SUNSET.ordinal,
                 ),
             ),
         ).associateBy { it.id })

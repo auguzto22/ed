@@ -16,6 +16,7 @@ class PreviewTransportClock(
     private var durationUs = 0L
     private var running = false
     private var lastAudioUs: Long? = null
+    private var lastAudioAdvanceNs = 0L
     val transportGeneration = AtomicLong(0L)
 
     @Synchronized
@@ -24,14 +25,23 @@ class PreviewTransportClock(
 
         // 1. Audio Master Clock
         val fallbackUs = anchorUs + ((nowNs() - anchorNs) / 1_000L).coerceAtLeast(0)
+        val now = nowNs()
         val audioPos = audioPositionProvider()?.takeIf { candidate ->
-            candidate in 0..durationUs && candidate >= (lastAudioUs ?: Long.MIN_VALUE) &&
+            val previous = lastAudioUs
+            // A drained AudioTrack keeps PLAYING but its head stops. Re-anchoring on a frozen
+            // head froze the whole transport (e.g. a transition from a video into a silent photo).
+            val stalled = previous != null && candidate <= previous &&
+                now - lastAudioAdvanceNs > AUDIO_STALL_NS
+            !stalled && candidate in 0..durationUs && candidate >= (previous ?: Long.MIN_VALUE) &&
                 kotlin.math.abs(candidate - fallbackUs) <= AUDIO_REACQUIRE_TOLERANCE_US
         }
         if (audioPos != null) {
-            // Re-anchor monotonic fallback in real time so switching has zero jump
-            anchorUs = audioPos
-            anchorNs = nowNs()
+            if (lastAudioUs == null || audioPos > lastAudioUs!!) {
+                // Re-anchor monotonic fallback in real time so switching has zero jump
+                anchorUs = audioPos
+                anchorNs = now
+                lastAudioAdvanceNs = now
+            }
             lastAudioUs = audioPos
             return audioPos
         }
@@ -71,6 +81,7 @@ class PreviewTransportClock(
     fun start() {
         if (running || anchorUs >= durationUs) return
         anchorNs = nowNs()
+        lastAudioAdvanceNs = anchorNs
         running = true
     }
 
@@ -83,5 +94,8 @@ class PreviewTransportClock(
 
     @Synchronized fun nextGeneration(): Long = transportGeneration.incrementAndGet()
 
-    companion object { private const val AUDIO_REACQUIRE_TOLERANCE_US = 250_000L }
+    companion object {
+        private const val AUDIO_REACQUIRE_TOLERANCE_US = 250_000L
+        private const val AUDIO_STALL_NS = 120_000_000L
+    }
 }

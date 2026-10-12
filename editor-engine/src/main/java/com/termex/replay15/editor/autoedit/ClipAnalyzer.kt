@@ -117,7 +117,7 @@ object ClipAnalyzer {
             while (!outputDone) {
                 cancellation.check()
                 if (!inputDone) {
-                    val index = codec.dequeueInputBuffer(10_000)
+                    val index = codec.dequeueInputBuffer(0)
                     if (index >= 0) {
                         val buffer = codec.getInputBuffer(index) ?: continue
                         val sampleTime = extractor.sampleTime
@@ -136,7 +136,7 @@ object ClipAnalyzer {
                         }
                     }
                 }
-                when (val index = codec.dequeueOutputBuffer(info, 10_000)) {
+                when (val index = codec.dequeueOutputBuffer(info, 5_000)) {
                     MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> outputFormat = codec.outputFormat
                     MediaCodec.INFO_TRY_AGAIN_LATER -> if (inputDone) Unit
                     else -> if (index >= 0) {
@@ -169,36 +169,54 @@ object ClipAnalyzer {
     }
 
     private fun analyzeMotion(context: Context, clip: VideoClip, cancellation: AutoEditCancellation): List<MotionSample> {
+        val timelineTimes = generateSequence(0L) { it + FRAME_STEP_US }.takeWhile { it <= clip.durationUs }.toList()
+        val sourceTimes = timelineTimes.map(clip.timeMap::sourceAt)
+        val result = mutableListOf<MotionSample>()
+        var previous: IntArray? = null
+        var previousWidth = 0
+        fun accept(timelineUs: Long, bitmap: Bitmap) {
+            val width = bitmap.width; val height = bitmap.height
+            val luma = luma(bitmap)
+            bitmap.recycle()
+            val before = previous
+            if (before != null && before.size == luma.size && previousWidth == width) {
+                var total = 0L; var weightedX = 0.0; var weightedY = 0.0
+                for (index in luma.indices step 2) {
+                    val delta = abs(luma[index] - before[index])
+                    total += delta
+                    weightedX += (index % width) * delta
+                    weightedY += (index / width) * delta
+                }
+                val count = (luma.size / 2).coerceAtLeast(1)
+                val amount = (total.toFloat() / count / 48f).coerceIn(0f, 1f)
+                // Normalized by the real frame size: portrait sources are not 160x90.
+                val focusX = if (total > 0) (weightedX / total / (width - 1).coerceAtLeast(1)).toFloat() else .5f
+                val focusY = if (total > 0) (weightedY / total / (height - 1).coerceAtLeast(1)).toFloat() else .5f
+                result += MotionSample(timelineUs, amount, focusX.coerceIn(0f, 1f), focusY.coerceIn(0f, 1f))
+            }
+            previous = luma
+            previousWidth = width
+        }
+        // Forward clips are read in one decoding pass instead of one GOP seek per sample.
+        var handled = 0
+        if (sourceTimes.zipWithNext().all { (a, b) -> a <= b }) {
+            var cursor = 0
+            handled = com.termex.replay15.editor.media.SequentialFrameReader.read(
+                context, clip.uri, sourceTimes, 160, 90, cancellation::check,
+            ) { requestedUs, bitmap ->
+                while (cursor < sourceTimes.size && sourceTimes[cursor] != requestedUs) cursor++
+                accept(timelineTimes[cursor.coerceAtMost(timelineTimes.lastIndex)], bitmap)
+                cursor++
+            }
+        }
+        if (handled >= sourceTimes.size) return result
         val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(context, Uri.parse(clip.uri))
-            var previous: IntArray? = null
-            val result = mutableListOf<MotionSample>()
-            var timelineUs = 0L
-            while (timelineUs <= clip.durationUs) {
+            for (index in handled until timelineTimes.size) {
                 cancellation.check()
-                val sourceUs = clip.timeMap.sourceAt(timelineUs)
-                val bitmap = retriever.getScaledFrameAtTime(sourceUs, MediaMetadataRetriever.OPTION_CLOSEST, 160, 90) ?: run {
-                    timelineUs += FRAME_STEP_US; continue
-                }
-                val luma = luma(bitmap)
-                bitmap.recycle()
-                previous?.let { before ->
-                    var total = 0L; var weightedX = 0.0; var weightedY = 0.0
-                    for (index in luma.indices step 2) {
-                        val delta = abs(luma[index] - before[index])
-                        total += delta
-                        weightedX += (index % 160) * delta
-                        weightedY += (index / 160) * delta
-                    }
-                    val count = (luma.size / 2).coerceAtLeast(1)
-                    val amount = (total.toFloat() / count / 48f).coerceIn(0f, 1f)
-                    val focusX = if (total > 0) (weightedX / total / 159.0).toFloat() else .5f
-                    val focusY = if (total > 0) (weightedY / total / 89.0).toFloat() else .5f
-                    result += MotionSample(timelineUs, amount, focusX.coerceIn(0f, 1f), focusY.coerceIn(0f, 1f))
-                }
-                previous = luma
-                timelineUs += FRAME_STEP_US
+                val bitmap = retriever.getScaledFrameAtTime(sourceTimes[index], MediaMetadataRetriever.OPTION_CLOSEST, 160, 90) ?: continue
+                accept(timelineTimes[index], bitmap)
             }
             return result
         } finally { retriever.release() }

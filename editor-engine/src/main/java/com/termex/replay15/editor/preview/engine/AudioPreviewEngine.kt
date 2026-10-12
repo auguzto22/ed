@@ -113,7 +113,20 @@ class AudioPreviewEngine(context: Context, private val onError: (Throwable) -> U
                 val disappeared = previousIds - ids
                 val unexpected = activeSources.filter { it.id in disappeared && nextMixProjectUs < it.projectEndUs }
                 if (unexpected.isNotEmpty()) logMissing(unexpected, nextMixProjectUs, gen)
-                if (demands.isEmpty()) { prebuffer = false; await(8L); continue }
+                if (demands.isEmpty()) {
+                    // Nothing audible here (a photo, a muted or silent clip). Keeping the previous
+                    // ids let the drained AudioTrack keep acting as master clock and froze playback.
+                    if (activeSourceIds.isNotEmpty()) {
+                        activeSources = emptyList(); activeSourceIds = emptySet()
+                        diagnostics.activeAudioSourceCount.set(0L)
+                    }
+                    // Once the tail has been handed to the track, stop it so the next audible clip
+                    // restarts through startOutputIfReady and re-anchors to the project clock.
+                    if (outputStarted && pcmQueue.queuedDurationUs() == 0L) {
+                        audioOutput.pause(); outputStarted = false
+                    }
+                    prebuffer = false; await(8L); continue
+                }
                 val newSources = demands.filter { it.id !in configuredSourceIds }
                 if (newSources.isNotEmpty()) {
                     decoderManager.prepareAndSeek(newSources, gen); configuredSourceIds += newSources.map { it.id }

@@ -79,7 +79,10 @@ object FontCatalog {
         original("recly_urban_regular", "Recly Urban", "Recly Urban", 400, "ReclyUrban-Regular.ttf", FontCategory.DISPLAY, FontCategory.SCRIPT),
     )
 
-    private val byId = builtIns.associateBy(FontAsset::id).toMutableMap()
+    private val builtInIds = builtIns.mapTo(HashSet(), FontAsset::id)
+    // Written by download threads (registerDownloaded) and read by render threads.
+    private val byId: MutableMap<String, FontAsset> =
+        java.util.concurrent.ConcurrentHashMap(builtIns.associateBy(FontAsset::id))
 
     // ── Remote catalog ──────────────────────────────────────────────────────────
 
@@ -133,7 +136,9 @@ object FontCatalog {
             for (i in 0 until array.length()) {
                 val obj = array.getJSONObject(i)
                 val id = obj.getString("id")
-                if (id in byId) continue // built-in wins
+                // Built-in wins. Checking byId here dropped already-downloaded fonts from the
+                // catalog whenever the editor was reopened in the same process.
+                if (id in builtInIds) continue
                 val license = obj.optString("license", "")
                 if (!FontLicenseRegistry.isApproved(license)) continue
 
@@ -207,7 +212,14 @@ object FontCatalog {
         metadata.downloaded = true
         metadata.localPath = localPath
         byId[metadata.id] = metadata.toFontAsset().copy(file = localPath)
+        revision.incrementAndGet()
     }
+
+    /**
+     * Bumped whenever a font becomes resolvable. Text rasters are keyed by it so a caption drawn
+     * with the fallback typeface while its font was downloading is re-rasterized afterwards.
+     */
+    val revision = java.util.concurrent.atomic.AtomicLong()
 
     /** Tags for a given font ID (works for built-in and remote fonts). */
     fun tagsFor(id: String): List<String> =

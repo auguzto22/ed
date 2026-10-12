@@ -6,6 +6,7 @@ import com.termex.replay15.editor.domain.TrackingTrack
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** Normalized selection made in the preview. */
 data class TrackingRegion(
@@ -26,9 +27,18 @@ data class TrackingFrame(val timeUs: Long, val bitmap: Bitmap) {
 }
 
 /**
- * Small local template tracker used for mask/text attachments. It performs bounded luminance
- * matching around the previous position, so it has no network/model dependency and never queues
- * an unbounded number of frames. Results stay normalized and are stored as one internal track.
+ * Local template tracker used for mask/text attachments (no network or model dependency).
+ *
+ * The first version compared a fixed template from the first frame with raw luminance and
+ * re-read every pixel through Bitmap.getPixel: it lost the target as soon as lighting, scale or
+ * appearance changed and was far too slow to search a useful radius. This version:
+ *  - reads each frame once into a luminance plane;
+ *  - matches zero-mean patches (robust to exposure changes);
+ *  - predicts the position with the previous velocity and searches coarse-to-fine around it;
+ *  - tests small scale changes so the box follows an object moving towards/away from camera;
+ *  - adapts the template slowly while confidence is high, anchored to the original appearance
+ *    to avoid drifting onto the background;
+ *  - holds the last good position (with low confidence) when the target is occluded.
  */
 class TemplateMotionTracker(
     private val templateSize: Int = 24,
@@ -44,76 +54,181 @@ class TemplateMotionTracker(
     fun track(frames: Iterable<TrackingFrame>, region: TrackingRegion, id: String? = null): TrackingTrack {
         val iterator = frames.iterator()
         require(iterator.hasNext()) { "At least one frame is required" }
-        val first = iterator.next()
-        val initial = Rect.from(first.bitmap, region)
-        val template = sample(first.bitmap, initial)
-        val points = ArrayList<TrackingPoint>(min(maxPoints, 256))
-        points += TrackingPoint(first.timeUs, initial.cx.toFloat() / first.bitmap.width, initial.cy.toFloat() / first.bitmap.height,
-            initial.w.toFloat() / first.bitmap.width, initial.h.toFloat() / first.bitmap.height, 1f)
-        var previous = initial
-        var previousTime = first.timeUs
-        while (iterator.hasNext() && points.size < maxPoints) {
-            val frame = iterator.next()
-            if (frame.timeUs <= previousTime) continue
-            val radiusX = max(2, (frame.bitmap.width * searchFraction).toInt())
-            val radiusY = max(2, (frame.bitmap.height * searchFraction).toInt())
-            val step = max(1, min(frame.bitmap.width, frame.bitmap.height) / 96)
-            var best = previous
-            var bestError = Float.POSITIVE_INFINITY
-            for (dy in -radiusY..radiusY step step) for (dx in -radiusX..radiusX step step) {
-                val candidate = previous.shifted(dx, dy, frame.bitmap)
-                val error = difference(frame.bitmap, candidate, template)
-                if (error < bestError) { bestError = error; best = candidate }
+        val session = Session(iterator.next(), region)
+        while (iterator.hasNext() && session.size < maxPoints) session.next(iterator.next())
+        return session.result(id)
+    }
+
+    /** Incremental API: frames can be pushed as they are decoded, without buffering them. */
+    inner class Session(first: TrackingFrame, region: TrackingRegion) {
+        private val points = ArrayList<TrackingPoint>(256)
+        private val original: FloatArray
+        private val template: FloatArray
+        private var cx: Float
+        private var cy: Float
+        private var w: Float
+        private var h: Float
+        private var vx = 0f
+        private var vy = 0f
+        private var previousTime = first.timeUs
+        private var frameW = first.bitmap.width
+        private var frameH = first.bitmap.height
+        private var lost = 0
+        val size: Int get() = points.size
+
+        init {
+            val plane = Plane.of(first.bitmap)
+            w = (region.width * plane.width).coerceIn(4f, plane.width.toFloat())
+            h = (region.height * plane.height).coerceIn(4f, plane.height.toFloat())
+            cx = region.centerX * plane.width
+            cy = region.centerY * plane.height
+            original = sample(plane, cx, cy, w, h)
+            template = original.copyOf()
+            add(first.timeUs, 1f)
+        }
+
+        fun next(frame: TrackingFrame): TrackingPoint? {
+            if (points.size >= maxPoints || frame.timeUs <= previousTime) return null
+            val plane = Plane.of(frame.bitmap)
+            if (plane.width != frameW || plane.height != frameH) {
+                // Keep the normalized position if the decoder changed the frame size.
+                cx = cx / frameW * plane.width; cy = cy / frameH * plane.height
+                w = w / frameW * plane.width; h = h / frameH * plane.height
+                frameW = plane.width; frameH = plane.height
             }
-            val confidence = (1f - bestError).coerceIn(0f, 1f)
-            points += TrackingPoint(frame.timeUs, best.cx.toFloat() / frame.bitmap.width, best.cy.toFloat() / frame.bitmap.height,
-                best.w.toFloat() / frame.bitmap.width, best.h.toFloat() / frame.bitmap.height, confidence)
-            previous = best
+            val predictedX = cx + vx
+            val predictedY = cy + vy
+            val radiusX = max(3f, plane.width * searchFraction)
+            val radiusY = max(3f, plane.height * searchFraction)
+            var bestX = predictedX; var bestY = predictedY; var bestScale = 1f
+            var bestError = Float.POSITIVE_INFINITY
+            fun test(x: Float, y: Float, scale: Float) {
+                val error = min(
+                    difference(plane, x, y, w * scale, h * scale, template),
+                    // The original appearance is a second, slightly penalised reference: it pulls
+                    // the box back after a partial occlusion instead of following the occluder.
+                    difference(plane, x, y, w * scale, h * scale, original) * 1.08f,
+                )
+                if (error < bestError) { bestError = error; bestX = x; bestY = y; bestScale = scale }
+            }
+            // Coarse grid around the prediction, then two refinement rounds.
+            var step = max(2f, min(radiusX, radiusY) / 6f)
+            var y = predictedY - radiusY
+            while (y <= predictedY + radiusY) {
+                var x = predictedX - radiusX
+                while (x <= predictedX + radiusX) { test(x, y, 1f); x += step }
+                y += step
+            }
+            // Also consider "no motion", which the velocity prediction can overshoot.
+            test(cx, cy, 1f)
+            repeat(3) {
+                step = max(.5f, step / 2.5f)
+                val baseX = bestX; val baseY = bestY; val baseScale = bestScale
+                for (dy in -2..2) for (dx in -2..2) test(baseX + dx * step, baseY + dy * step, baseScale)
+                for (scale in floatArrayOf(.94f, .97f, 1.03f, 1.06f)) test(baseX, baseY, (baseScale * scale).coerceIn(.3f, 3f))
+            }
+            val confidence = (1f - bestError * 2.2f).coerceIn(0f, 1f)
+            val dt = (frame.timeUs - previousTime).coerceAtLeast(1L)
+            if (confidence >= MIN_CONFIDENCE) {
+                val newW = (w * bestScale).coerceIn(4f, plane.width.toFloat())
+                val newH = (h * bestScale).coerceIn(4f, plane.height.toFloat())
+                // Smoothed velocity in pixels per frame interval.
+                vx = vx * .5f + (bestX - cx) * .5f
+                vy = vy * .5f + (bestY - cy) * .5f
+                cx = bestX.coerceIn(newW / 2f, plane.width - newW / 2f)
+                cy = bestY.coerceIn(newH / 2f, plane.height - newH / 2f)
+                w = newW; h = newH
+                lost = 0
+                if (confidence >= ADAPT_CONFIDENCE) {
+                    val patch = sample(plane, cx, cy, w, h)
+                    for (i in template.indices) template[i] = template[i] * (1f - ADAPT_RATE) + patch[i] * ADAPT_RATE
+                }
+            } else {
+                // Occluded / lost: hold position and decay the velocity.
+                lost++
+                vx *= .5f; vy *= .5f
+            }
             previousTime = frame.timeUs
+            return add(frame.timeUs, if (lost > 0) confidence.coerceAtMost(MIN_CONFIDENCE) else confidence, dt)
         }
-        return TrackingTrack(id = id ?: com.termex.replay15.editor.domain.newId(), points = points)
+
+        fun result(id: String? = null): TrackingTrack =
+            TrackingTrack(id = id ?: com.termex.replay15.editor.domain.newId(), points = points.toList())
+
+        private fun add(timeUs: Long, confidence: Float, @Suppress("UNUSED_PARAMETER") dt: Long = 0L): TrackingPoint {
+            val point = TrackingPoint(timeUs,
+                (cx / frameW).coerceIn(0f, 1f), (cy / frameH).coerceIn(0f, 1f),
+                (w / frameW).coerceIn(.01f, 1f), (h / frameH).coerceIn(.01f, 1f), confidence)
+            points += point
+            return point
+        }
     }
 
-    private fun sample(bitmap: Bitmap, rect: Rect): FloatArray = FloatArray(templateSize * templateSize) { index ->
-        val x = index % templateSize
-        val y = index / templateSize
-        luminance(bitmap, rect.x + ((x + .5f) * rect.w / templateSize).toInt(),
-            rect.y + ((y + .5f) * rect.h / templateSize).toInt())
-    }
-
-    private fun difference(bitmap: Bitmap, rect: Rect, template: FloatArray): Float {
-        var total = 0f
+    /** Zero-mean template sample: values are luminance minus the patch mean, divided by its spread. */
+    private fun sample(plane: Plane, cx: Float, cy: Float, w: Float, h: Float): FloatArray {
+        val values = FloatArray(templateSize * templateSize)
+        var sum = 0f
         for (y in 0 until templateSize) for (x in 0 until templateSize) {
-            val px = rect.x + ((x + .5f) * rect.w / templateSize).toInt()
-            val py = rect.y + ((y + .5f) * rect.h / templateSize).toInt()
-            total += abs(luminance(bitmap, px, py) - template[y * templateSize + x])
+            val v = plane.at(cx - w / 2f + (x + .5f) * w / templateSize, cy - h / 2f + (y + .5f) * h / templateSize)
+            values[y * templateSize + x] = v; sum += v
         }
-        return total / template.size
+        normalize(values, sum)
+        return values
     }
 
-    private fun luminance(bitmap: Bitmap, x: Int, y: Int): Float {
-        val pixel = bitmap.getPixel(x.coerceIn(0, bitmap.width - 1), y.coerceIn(0, bitmap.height - 1))
-        return (0.2126f * ((pixel ushr 16) and 0xFF) + 0.7152f * ((pixel ushr 8) and 0xFF) +
-            0.0722f * (pixel and 0xFF)) / 255f
+    private fun normalize(values: FloatArray, sum: Float) {
+        val mean = sum / values.size
+        var spread = 0f
+        for (i in values.indices) { values[i] -= mean; spread += abs(values[i]) }
+        val scale = 1f / max(spread / values.size, .02f)
+        for (i in values.indices) values[i] *= scale
     }
 
-    private data class Rect(val x: Int, val y: Int, val w: Int, val h: Int) {
-        val cx: Int get() = x + w / 2
-        val cy: Int get() = y + h / 2
-        fun shifted(dx: Int, dy: Int, bitmap: Bitmap): Rect = fromCenter(cx + dx, cy + dy, w, h, bitmap)
+    private val scratch = ThreadLocal.withInitial { FloatArray(64 * 64) }
+
+    private fun difference(plane: Plane, cx: Float, cy: Float, w: Float, h: Float, template: FloatArray): Float {
+        val patch = scratch.get()
+        var sum = 0f
+        val n = templateSize * templateSize
+        for (y in 0 until templateSize) for (x in 0 until templateSize) {
+            val v = plane.at(cx - w / 2f + (x + .5f) * w / templateSize, cy - h / 2f + (y + .5f) * h / templateSize)
+            patch[y * templateSize + x] = v; sum += v
+        }
+        val mean = sum / n
+        var spread = 0f
+        for (i in 0 until n) spread += abs(patch[i] - mean)
+        val scale = 1f / max(spread / n, .02f)
+        var total = 0f
+        for (i in 0 until n) total += abs((patch[i] - mean) * scale - template[i])
+        // Normalized zero-mean patches differ by ~0..2 per sample; map to ~0..1.
+        return total / n / 2f
+    }
+
+    /** Luminance plane in [0,1], read once per frame. Sampling outside clamps to the border. */
+    private class Plane(val width: Int, val height: Int, val luma: FloatArray) {
+        fun at(x: Float, y: Float): Float {
+            val ix = x.roundToInt().coerceIn(0, width - 1)
+            val iy = y.roundToInt().coerceIn(0, height - 1)
+            return luma[iy * width + ix]
+        }
 
         companion object {
-            fun from(bitmap: Bitmap, region: TrackingRegion): Rect = fromCenter(
-                (region.centerX * bitmap.width).toInt(), (region.centerY * bitmap.height).toInt(),
-                (region.width * bitmap.width).toInt().coerceAtLeast(2),
-                (region.height * bitmap.height).toInt().coerceAtLeast(2), bitmap)
-
-            fun fromCenter(cx: Int, cy: Int, w: Int, h: Int, bitmap: Bitmap): Rect {
-                val width = w.coerceAtMost(bitmap.width).coerceAtLeast(2)
-                val height = h.coerceAtMost(bitmap.height).coerceAtLeast(2)
-                return Rect((cx - width / 2).coerceIn(0, bitmap.width - width),
-                    (cy - height / 2).coerceIn(0, bitmap.height - height), width, height)
+            fun of(bitmap: Bitmap): Plane {
+                val w = bitmap.width; val h = bitmap.height
+                val pixels = IntArray(w * h)
+                bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+                val luma = FloatArray(pixels.size) { i ->
+                    val p = pixels[i]
+                    (0.2126f * ((p ushr 16) and 0xFF) + 0.7152f * ((p ushr 8) and 0xFF) + 0.0722f * (p and 0xFF)) / 255f
+                }
+                return Plane(w, h, luma)
             }
         }
+    }
+
+    private companion object {
+        const val MIN_CONFIDENCE = .35f
+        const val ADAPT_CONFIDENCE = .6f
+        const val ADAPT_RATE = .12f
     }
 }

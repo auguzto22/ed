@@ -106,26 +106,12 @@ class GeminiBitmapMaskApplier(
 
         val pixels = IntArray(source.width * source.height)
         source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
-        val mask = segResult.mask
-
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                val index = y * source.width + x
-                val confidence = mask[index]
-                val alpha = (smoothstep(effect.threshold - effect.feather, effect.threshold + effect.feather, confidence) *
-                    ((pixels[index] ushr 24) / 255f) * 255f).roundToInt().coerceIn(0, 255)
-                pixels[index] = (pixels[index] and 0x00FFFFFF) or (alpha shl 24)
-            }
-        }
+        // Polygon masks are coarse; the edge-aware refinement snaps them to the image contour.
+        MatteRefiner.apply(pixels, source.width, source.height, segResult.mask, segResult.width, segResult.height, effect)
 
         val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
         output.setPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
         return output
-    }
-
-    private fun smoothstep(edge0: Float, edge1: Float, value: Float): Float {
-        val t = ((value - edge0) / (edge1 - edge0).coerceAtLeast(.001f)).coerceIn(0f, 1f)
-        return t * t * (3f - 2f * t)
     }
 
     override fun close() {

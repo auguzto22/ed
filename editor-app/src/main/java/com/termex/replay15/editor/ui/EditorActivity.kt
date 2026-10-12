@@ -262,7 +262,9 @@ class EditorActivity : Activity() {
                         result.fold({ loaded ->
                             // Restore any missing downloaded fonts used in the project.
                             io.execute {
-                                FontRepository(this@EditorActivity).restoreProjectFonts(loaded) { missingId ->
+                                FontRepository(this@EditorActivity).restoreProjectFonts(loaded, onRestored = {
+                                    runOnUiThread { if (!isDestroyed && ::preview.isInitialized) preview.redraw() }
+                                }) { missingId ->
                                     runOnUiThread {
                                         Toast.makeText(this@EditorActivity,
                                             "Fonte \"$missingId\" indisponível; usando fonte padrão",
@@ -1761,6 +1763,9 @@ class EditorActivity : Activity() {
             onOpenMask = {
                 videoMaskPanel(clip)
             },
+            canvasWidth = project.dimensions().first,
+            canvasHeight = project.dimensions().second,
+            canvasFill = project.canvasFill,
         )
     }
 
@@ -2145,9 +2150,12 @@ class EditorActivity : Activity() {
                 dialog.dismiss()
                 val grade = preset.colorGrade
                 if (grade != null) {
-                    edit(project.changeVideo(selected) { target ->
+                    // mapVideo by id: `selected` is -1 for overlay-track clips, so the preset was
+                    // applied to nothing (or to another main clip).
+                    edit(project.mapVideo(clip.id) { target ->
                         target.copy(
-                            filter = grade.filterIndex,
+                            filter = grade.filterIndex.coerceIn(0, VideoFilter.entries.lastIndex),
+                            filterStrength = grade.filterStrength,
                             brightness = grade.brightness,
                             contrast = grade.contrast,
                             saturation = grade.saturation,

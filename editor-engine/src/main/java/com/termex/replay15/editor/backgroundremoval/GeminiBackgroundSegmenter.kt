@@ -62,6 +62,9 @@ class GeminiBackgroundSegmenter(
         }
 
         scope.launch {
+            // When the fallback takes over it owns the frame until its own callback; releasing it
+            // here let the next capture overwrite the bitmap while ML Kit was still reading it.
+            var delegated = false
             try {
                 val inputBitmap = frame.bitmap
                 val maxDim = 384
@@ -123,6 +126,7 @@ class GeminiBackgroundSegmenter(
                 if (result != null) {
                     callback(result)
                 } else if (fallbackEngine != null && !closed.get()) {
+                    delegated = true
                     fallbackEngine.process(frame, timestampUs, callback)
                     return@launch
                 } else {
@@ -130,13 +134,14 @@ class GeminiBackgroundSegmenter(
                 }
             } catch (_: Throwable) {
                 if (fallbackEngine != null && !closed.get()) {
+                    delegated = true
                     fallbackEngine.process(frame, timestampUs, callback)
                     return@launch
                 } else {
                     callback(null)
                 }
             } finally {
-                frame.release()
+                if (!delegated) frame.release()
             }
         }
     }

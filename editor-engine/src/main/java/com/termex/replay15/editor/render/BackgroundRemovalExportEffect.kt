@@ -14,6 +14,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.Segmentation
 import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions
 import com.recly.editor.engine.R
+import com.termex.replay15.editor.backgroundremoval.BackgroundMaskShader
 import com.termex.replay15.editor.backgroundremoval.SegmentationMaskTexture
 import com.termex.replay15.editor.backgroundremoval.SegmentationResult
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
@@ -177,7 +178,7 @@ class BackgroundRemovalExportEffect(
         private const val VERTEX = "attribute vec4 aFramePosition; varying vec2 vUv; void main(){ gl_Position=aFramePosition; vUv=(aFramePosition.xy+1.0)*0.5; }"
         private const val CAPTURE = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
         private const val ORIGINAL = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
-        private const val OUTPUT = """
+        private val OUTPUT = """
             precision highp float;
             uniform sampler2D uTexSampler;
             uniform sampler2D uMaskTexture;
@@ -186,15 +187,10 @@ class BackgroundRemovalExportEffect(
             uniform float uFeather;
             uniform float uEdgeSmoothing;
             varying vec2 vUv;
-            float maskAt(vec2 p) { return texture2D(uMaskTexture, clamp(p, 0.0, 1.0)).r; }
+            ${BackgroundMaskShader.functions("uTexSampler", "uMaskTexture")}
             void main() {
                 vec4 source = texture2D(uTexSampler, vUv);
-                float center = maskAt(vUv);
-                float around = (maskAt(vUv + vec2(uMaskTexel.x,0.0)) + maskAt(vUv - vec2(uMaskTexel.x,0.0)) +
-                    maskAt(vUv + vec2(0.0,uMaskTexel.y)) + maskAt(vUv - vec2(0.0,uMaskTexel.y))) * 0.25;
-                float mask = mix(center, around, clamp(uEdgeSmoothing,0.0,1.0) * 0.35);
-                float alpha = smoothstep(uThreshold-uFeather, uThreshold+uFeather, mask);
-                gl_FragColor = vec4(source.rgb, source.a * alpha);
+                gl_FragColor = vec4(source.rgb, source.a * reclyMatteAlpha(vUv));
             }
         """
     }

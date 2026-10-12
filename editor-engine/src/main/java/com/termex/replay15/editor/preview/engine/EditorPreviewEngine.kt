@@ -160,6 +160,7 @@ class EditorPreviewEngine(
     private fun renderAt(positionUs:Long,mode:SeekMailbox.Mode,forceAudio:Boolean){
         val snapshot=resolver.resolve(positionUs);renderState(snapshot)
         decoders.update(snapshot,resolver.upcoming(positionUs,PREWARM_US),generation,mode)
+        renderer.prefetchImages(resolver.upcomingImageUris(positionUs,IMAGE_PREFETCH_US))
         audio.updateProjectPosition(snapshot.projectTimeUs)
     }
     private fun renderState(positionUs:Long)=renderState(resolver.resolve(positionUs))
@@ -182,5 +183,5 @@ class EditorPreviewEngine(
     private fun checkMain(){check(Looper.myLooper()==Looper.getMainLooper()){ "Preview API must run on main thread" }}
     override fun close(){checkMain();if(closed)return;closed=true;cancelScheduledSeek();cancelScheduledRedraw();main.removeCallbacks(tick);clock.pause();mailbox.close();audio.close();decoders.close { renderer.close() };state=State.EMPTY;diagnostics.event("PREVIEW_RELEASE ${diagnostics.summary()}")}
     fun release()=close()
-    companion object{private const val FRAME_TICK_MS=16L;private const val PREWARM_US=800_000L}
+    companion object{private const val FRAME_TICK_MS=16L;private const val PREWARM_US=800_000L;private const val IMAGE_PREFETCH_US=1_500_000L}
 }

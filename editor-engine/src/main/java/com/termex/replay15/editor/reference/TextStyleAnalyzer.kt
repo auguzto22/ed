@@ -19,13 +19,11 @@ object TextStyleAnalyzer {
     fun analyze(context: Context, info: ReferenceMediaInfo, cancellation: ReferenceAnalysisCancellation): CaptionStyleProfile {
         val retriever = MediaMetadataRetriever(); val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         try {
-            retriever.setDataSource(context, Uri.parse(info.uri))
             val stepUs = maxOf(650_000L, info.durationUs / 120L)
-            val observations = mutableListOf<TextObservation>(); var timeUs = 0L
-            while (timeUs < info.durationUs) {
-                cancellation.check()
-                val bitmap = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, 480, 270)
-                if (bitmap != null) try {
+            val observations = mutableListOf<TextObservation>()
+            val times = generateSequence(0L) { it + stepUs }.takeWhile { it < info.durationUs }.toList()
+            fun observe(timeUs: Long, bitmap: Bitmap) {
+                try {
                     val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
                     result.textBlocks.flatMap { it.lines }.forEach { line ->
                         val box = line.boundingBox ?: return@forEach
@@ -36,7 +34,16 @@ object TextStyleAnalyzer {
                             box.centerX() / bitmap.width.toFloat(), normalizedY, box.width() / bitmap.width.toFloat(), box.height() / bitmap.height.toFloat(), pixels.first, pixels.second)
                     }
                 } finally { bitmap.recycle() }
-                timeUs += stepUs
+            }
+            // Sequential decode; only the remainder of a failed fast pass uses per-frame seeks.
+            val handled = com.termex.replay15.editor.media.SequentialFrameReader.read(
+                context, info.uri, times, 480, 270, cancellation::check, ::observe)
+            if (handled < times.size) {
+                retriever.setDataSource(context, Uri.parse(info.uri))
+                for (timeUs in times.subList(handled, times.size)) {
+                    cancellation.check()
+                    retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, 480, 270)?.let { observe(timeUs, it) }
+                }
             }
             if (observations.isEmpty()) return CaptionStyleProfile()
             val sampleCount = ((info.durationUs + stepUs - 1) / stepUs).toInt().coerceAtLeast(1)
