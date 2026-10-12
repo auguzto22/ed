@@ -266,9 +266,7 @@ class EditorActivity : Activity() {
                                     runOnUiThread { if (!isDestroyed && ::preview.isInitialized) preview.redraw() }
                                 }) { missingId ->
                                     runOnUiThread {
-                                        Toast.makeText(this@EditorActivity,
-                                            "Fonte \"$missingId\" indisponível; usando fonte padrão",
-                                            Toast.LENGTH_SHORT).show()
+                                        feedback("Fonte \"$missingId\" indisponível; usando fonte padrão")
                                     }
                                 }
                             }
@@ -319,7 +317,7 @@ class EditorActivity : Activity() {
     }
 
     private fun buildTopBar(): LinearLayout = row().apply {
-        setPadding(dp(12), dp(6), dp(12), dp(6))
+        setPadding(dp(12), dp(4), dp(12), dp(4))
         setBackgroundColor(EditorStyle.BG)
 
         // Close button (X)
@@ -376,62 +374,100 @@ class EditorActivity : Activity() {
         addView(exportBtn, LinearLayout.LayoutParams(-2, dp(36)))
     }
 
+    /**
+     * Transport row laid out like CapCut / Edits: time on the left, a compact play button in the
+     * centre and undo / redo on the right.
+     */
     private fun buildPlaybackControls(): LinearLayout = row().apply {
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(4), dp(16), dp(4))
+        setPadding(dp(14), 0, dp(10), 0)
         setBackgroundColor(EditorStyle.BG)
 
-        fun controlBtn(name: String, iconRes: Int, accent: Boolean = false, callback: () -> Unit): View = FrameLayout(this@EditorActivity).apply {
+        fun iconBtn(name: String, iconRes: Int, callback: () -> Unit): View = FrameLayout(this@EditorActivity).apply {
             contentDescription = name
             tooltipText = name
             isClickable = true
             isFocusable = true
-            val bg = GradientDrawable().apply {
-                if (accent) {
-                    setColor(Color.WHITE)
-                    cornerRadius = dp(14).toFloat()
-                } else {
-                    setColor(EditorStyle.CARD)
-                    setStroke(dp(1), EditorStyle.BORDER)
-                    cornerRadius = dp(14).toFloat()
-                }
-            }
-            background = RippleDrawable(
-                ColorStateList.valueOf(if (accent) 0x33000000 else 0x26FFFFFF),
-                bg,
-                null,
-            )
-            val icon = ImageView(context).apply {
-                id = R.id.recly_transport_icon
+            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), null,
+                GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(18).toFloat() })
+            addView(ImageView(context).apply {
                 setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(if (accent) Color.BLACK else Color.WHITE)
+                imageTintList = ColorStateList.valueOf(Color.WHITE)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
-            }
-            addView(icon, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
+            }, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
             setOnClickListener { callback() }
         }
 
-        // Play / Pause button
-        play = controlBtn("Reproduzir", R.drawable.ic_recly_play, accent = true) {
-            preview.endScrub(position)
-            if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
-        }
-        addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
-
-        // Clock: 00:05 / 00:31
+        // Clock: current time bright, total muted, tabular digits so it never jitters.
         clock = TextView(this@EditorActivity).apply {
-            text = "00:00 / 00:00"
-            textSize = 13.5f
+            text = clockText(0L, 0L)
+            textSize = 13f
             setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER_VERTICAL
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            setPadding(dp(12), 0, dp(12), 0)
+            fontFeatureSettings = "tnum"
+            letterSpacing = .02f
         }
-        addView(clock, LinearLayout.LayoutParams(-2, -2))
+        addView(clock, LinearLayout.LayoutParams(0, -1, 1f))
 
-        // Undo & Redo dummy views so refresh() doesn't NPE
-        undo = View(this@EditorActivity)
-        redo = View(this@EditorActivity)
+        // Compact play / pause: a 34dp white disc with a 15dp glyph.
+        play = FrameLayout(this@EditorActivity).apply {
+            contentDescription = "Reproduzir"
+            tooltipText = "Reproduzir"
+            isClickable = true
+            isFocusable = true
+            background = RippleDrawable(ColorStateList.valueOf(0x33000000),
+                GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) }, null)
+            elevation = dp(3).toFloat()
+            addView(ImageView(context).apply {
+                id = R.id.recly_transport_icon
+                setImageResource(R.drawable.ic_recly_play)
+                imageTintList = ColorStateList.valueOf(Color.BLACK)
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
+            }, FrameLayout.LayoutParams(dp(15), dp(15), Gravity.CENTER))
+            setOnClickListener {
+                preview.endScrub(position)
+                if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
+                animate().cancel()
+                scaleX = .86f; scaleY = .86f
+                animate().scaleX(1f).scaleY(1f).setDuration(260).setInterpolator(android.view.animation.OvershootInterpolator(2.4f)).start()
+            }
+        }
+        addView(play, LinearLayout.LayoutParams(dp(34), dp(34)))
+        play.expandTouchTarget(48)
+
+        val right = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END }
+        undo = iconBtn("Desfazer", R.drawable.ic_recly_undo) {
+            if (history.canUndo) { performHistoryEdit { history.undo() }; feedback("Desfeito") }
+        }
+        redo = iconBtn("Refazer", R.drawable.ic_recly_redo) {
+            if (history.canRedo) { performHistoryEdit { history.redo() }; feedback("Refeito") }
+        }
+        right.addView(undo, LinearLayout.LayoutParams(dp(38), dp(38)))
+        right.addView(redo, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginStart = dp(2) })
+        undo.expandTouchTarget(44); redo.expandTouchTarget(44)
+        addView(right, LinearLayout.LayoutParams(0, -1, 1f))
+    }
+
+    /** "00:03 / 00:15" with the elapsed part emphasised; sub-10-second projects show tenths. */
+    private fun clockText(positionUs: Long, durationUs: Long): CharSequence {
+        fun format(us: Long, tenths: Boolean): String {
+            val safe = us.coerceAtLeast(0L)
+            val totalSec = safe / 1_000_000L
+            val base = String.format(java.util.Locale.ROOT, "%02d:%02d", totalSec / 60, totalSec % 60)
+            return if (tenths) "$base.${(safe % 1_000_000L) / 100_000L}" else base
+        }
+        val tenths = durationUs in 1 until 10_000_000L
+        val current = format(positionUs, tenths)
+        val total = format(durationUs, tenths)
+        return android.text.SpannableStringBuilder().apply {
+            append(current)
+            setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            val from = length
+            append("  /  $total")
+            setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.RelativeSizeSpan(.92f), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
@@ -699,7 +735,7 @@ class EditorActivity : Activity() {
     private fun closeCompound() {
         openCompoundId = null
         refresh(reload = false)
-        Toast.makeText(this, "De volta ao projeto principal", Toast.LENGTH_SHORT).show()
+        feedback("De volta ao projeto principal")
     }
 
     private fun compoundMenu(compound: CompoundClip) {
@@ -788,7 +824,7 @@ class EditorActivity : Activity() {
         val created = next.compounds.firstOrNull { it !in project.compounds }
         selected = from
         edit(next)
-        if (created != null) Toast.makeText(this, "Compound criado com ${created.childCount} clipes. Use Editar > Abrir para editar por dentro.", Toast.LENGTH_LONG).show()
+        if (created != null) feedback("Compound criado com ${created.childCount} clipes. Use Editar > Abrir para editar por dentro.")
     }
 
     private fun addOrToggleKeyframeAtPlayhead() {
@@ -823,7 +859,7 @@ class EditorActivity : Activity() {
                 edit(project.copy(stickers = project.stickers.map {
                     if (it.id == sticker.id) it.copy(transformKeyframes = updatedKeys) else it
                 }))
-                Toast.makeText(this, if (existingIndex >= 0) "Keyframe removido" else "Keyframe de imagem inserido", Toast.LENGTH_SHORT).show()
+                feedback(if (existingIndex >= 0) "Keyframe removido" else "Keyframe de imagem inserido")
                 return
             }
         }
@@ -842,7 +878,7 @@ class EditorActivity : Activity() {
                 edit(project.copy(audio = project.audio.map {
                     if (it.id == audio.id) it.copy(volumeKeyframes = updatedKeys) else it
                 }))
-                Toast.makeText(this, if (existingIndex >= 0) "Keyframe de volume removido" else "Keyframe de volume inserido", Toast.LENGTH_SHORT).show()
+                feedback(if (existingIndex >= 0) "Keyframe de volume removido" else "Keyframe de volume inserido")
                 return
             }
         }
@@ -859,7 +895,7 @@ class EditorActivity : Activity() {
             val newKey = evaluated.copy(sourceUs = sourceUs)
             val updatedKeys = (clip.keyframes + newKey).sortedBy { it.sourceUs }
             edit(project.changeVideo(clipIndex) { it.copy(keyframes = updatedKeys) })
-            Toast.makeText(this, "Keyframe inserido no playhead", Toast.LENGTH_SHORT).show()
+            feedback("Keyframe inserido no playhead")
         }
     }
 
@@ -883,7 +919,8 @@ class EditorActivity : Activity() {
         root.addView(workspace, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val monitor = column()
-        workspace.addView(monitor, if (landscape) LinearLayout.LayoutParams(0, -1, 1.15f) else LinearLayout.LayoutParams(-1, 0, 0.62f))
+        // Preview gets two thirds of the height (and more width in landscape).
+        workspace.addView(monitor, if (landscape) LinearLayout.LayoutParams(0, -1, 1.3f) else LinearLayout.LayoutParams(-1, 0, 0.67f))
 
         previewBox = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
@@ -978,7 +1015,8 @@ class EditorActivity : Activity() {
             gravity = Gravity.CENTER; setOnClickListener { pick(false) }
         }
         previewBox.addView(empty, FrameLayout.LayoutParams(-1, -1))
-        monitor.addView(previewBox, LinearLayout.LayoutParams(-1, 0, 1f).apply { setMargins(dp(8), dp(4), dp(8), dp(2)) })
+        monitor.addView(previewBox, LinearLayout.LayoutParams(-1, 0, 1f).apply { setMargins(0, dp(2), 0, 0) })
+        EditorOverlayHost.attach(previewBox)
         previewBox.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> fitPreview() }
         preview = EditorPreviewEngine(this, surface, ::handlePreviewFailure)
         PreviewPerformanceController.onTierChangedListener = { _, _ ->
@@ -1031,19 +1069,19 @@ class EditorActivity : Activity() {
             { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
 
         val playbackControls = buildPlaybackControls()
-        monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(52)))
+        monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(46)))
 
         timeline = createTimelineView()
         timelinePane = buildTimelineContainer(landscape)
 
         val divider = buildDivider(workspace, monitor, landscape)
         workspace.addView(divider, 1, if (landscape) LinearLayout.LayoutParams(dp(10), -1) else LinearLayout.LayoutParams(-1, dp(6)))
-        workspace.addView(timelinePane, if (landscape) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 0.38f))
+        workspace.addView(timelinePane, if (landscape) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 0.33f))
 
         bottom = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; setBackgroundColor(EditorStyle.PANEL) }
         contextualTools = row().apply { setPadding(dp(8), dp(4), dp(8), dp(6)) }
         bottom.addView(contextualTools)
-        root.addView(bottom, LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(bottom, LinearLayout.LayoutParams(-1, dp(66)))
 
         updateContextualTools()
         setContentView(root)
@@ -1379,8 +1417,21 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
-        clock.text = timeLabelCapCut(position, project.durationUs)
+        clock.text = clockText(position, project.durationUs)
+        clock.contentDescription = timeLabelCapCut(position, project.durationUs)
     }
+    /** Animated confirmation over the preview (falls back to a toast before the screen exists). */
+    private fun feedback(message: String, error: Boolean = looksLikeProblem(message)) {
+        val kind = if (error) ActionFeedback.Kind.ERROR else ActionFeedback.Kind.SUCCESS
+        if (!EditorOverlayHost.feedback(message, kind)) Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun looksLikeProblem(message: String): Boolean {
+        val lower = message.lowercase()
+        return listOf("não foi possível", "nao foi possivel", "falha", "aguarde", "insuficiente", "nada a gerar",
+            "curta demais", "unico clipe", "único clipe", "indisponível", "indisponivel", "erro").any { it in lower }
+    }
+
     private fun error(message: String) {
         info.text = message
         AlertDialog.Builder(this).setTitle("Editor").setMessage(message).setPositiveButton("OK", null).show()
@@ -1434,7 +1485,7 @@ class EditorActivity : Activity() {
         }
     }
     private fun closeEditor() {
-        if (busy) { Toast.makeText(this, "Aguarde o processamento terminar", Toast.LENGTH_SHORT).show(); return }
+        if (busy) { feedback("Aguarde o processamento terminar"); return }
         if (fullscreen) {
             fullscreen = false; listOf(top, timelinePane, bottom, info).forEach { it.visibility = View.VISIBLE }; return
         }
@@ -1524,7 +1575,7 @@ class EditorActivity : Activity() {
             is3D = true,
         )
         edit(project.copy(videos = project.videos + nullClip))
-        Toast.makeText(this, "Objeto Nulo adicionado como controlador 3D", Toast.LENGTH_SHORT).show()
+        feedback("Objeto Nulo adicionado como controlador 3D")
     }
     private fun pickVideoLayer() {
         if (busy) return
@@ -1885,7 +1936,7 @@ class EditorActivity : Activity() {
         slider(body, "Sensibilidade (%)", 100, 300) { sensitivity = it / 100f }
         lateinit var dialog: Dialog
         body.addView(action("Detectar batidas", true) {
-            if (busy) { Toast.makeText(this, "Aguarde o processamento terminar", Toast.LENGTH_SHORT).show(); return@action }
+            if (busy) { feedback("Aguarde o processamento terminar"); return@action }
             dialog.dismiss()
             busy = true
             info.text = "Analisando o ritmo..."
@@ -2010,7 +2061,7 @@ class EditorActivity : Activity() {
         if (selected !in project.videos.indices) selected = project.indexAt(position)
         timeline.selected = selected
         videoHandles.mainClipIndex = selected
-        return project.videos.getOrNull(selected).also { if (it == null) Toast.makeText(this, "Adicione um video ou foto", Toast.LENGTH_SHORT).show() }
+        return project.videos.getOrNull(selected).also { if (it == null) feedback("Adicione um video ou foto") }
     }
 
     private fun selectedClipAtCursor(): VideoClip? {
@@ -2051,7 +2102,7 @@ class EditorActivity : Activity() {
             }.getOrNull()
             runCatching { retriever.release() }
             if (frameBitmap == null) {
-                runOnUiThread { Toast.makeText(this, "Não foi possível capturar o quadro.", Toast.LENGTH_SHORT).show() }
+                runOnUiThread { feedback("Não foi possível capturar o quadro.") }
                 return@execute
             }
             val stats = AutoColorEngine.analyze(frameBitmap)
@@ -2060,7 +2111,7 @@ class EditorActivity : Activity() {
             runOnUiThread {
                 val updatedClip = adjustment.applyTo(clip)
                 edit(project.changeVideo(selected) { updatedClip })
-                Toast.makeText(this, "Auto Cor aplicada com sucesso!", Toast.LENGTH_SHORT).show()
+                feedback("Auto Cor aplicada com sucesso!")
             }
         }
     }
@@ -2090,7 +2141,7 @@ class EditorActivity : Activity() {
                 runCatching { r1.release() }
                 runCatching { r2.release() }
                 if (refBitmap == null || targetBitmap == null) {
-                    runOnUiThread { Toast.makeText(this@EditorActivity, "Falha ao ler quadros dos clipes.", Toast.LENGTH_SHORT).show() }
+                    runOnUiThread { feedback("Falha ao ler quadros dos clipes.") }
                     return@execute
                 }
                 val refStats = AutoColorEngine.analyze(refBitmap)
@@ -2101,7 +2152,7 @@ class EditorActivity : Activity() {
                 runOnUiThread {
                     val updated = matchResult.applyTo(clip, strength = 0.85f)
                     edit(project.changeVideo(selected) { updated })
-                    Toast.makeText(this@EditorActivity, "Cores combinadas com '${refClip.name}'!", Toast.LENGTH_SHORT).show()
+                    feedback("Cores combinadas com '${refClip.name}'!")
                 }
             }
         }
@@ -2165,7 +2216,7 @@ class EditorActivity : Activity() {
                             grade = grade.grade,
                         )
                     })
-                    Toast.makeText(this, "Preset '${preset.name}' aplicado!", Toast.LENGTH_SHORT).show()
+                    feedback("Preset '${preset.name}' aplicado!")
                 }
             }, GridLayout.LayoutParams().apply {
                 width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
@@ -2196,9 +2247,9 @@ class EditorActivity : Activity() {
             val effect = MotionBlurEngine.build(clip, settings, id = newId())
             if (effect != null) {
                 edit(project.changeVideo(selected) { it.copy(effects = it.effects + effect) })
-                Toast.makeText(this, "Motion Blur aplicado!", Toast.LENGTH_SHORT).show()
+                feedback("Motion Blur aplicado!")
             } else {
-                Toast.makeText(this, "Velocidade insuficiente nos keyframes para produzir desfoque.", Toast.LENGTH_SHORT).show()
+                feedback("Velocidade insuficiente nos keyframes para produzir desfoque.")
             }
         })
         sheet("Motion Blur", body)
@@ -2262,7 +2313,7 @@ class EditorActivity : Activity() {
             if (canceled.get() || lumaFrames.size < 3) {
                 runOnUiThread {
                     progressDialog.dismiss()
-                    if (!canceled.get()) Toast.makeText(this, "Não foi possível extrair quadros suficientes para estabilização.", Toast.LENGTH_SHORT).show()
+                    if (!canceled.get()) feedback("Não foi possível extrair quadros suficientes para estabilização.")
                 }
                 return@execute
             }
@@ -2283,9 +2334,9 @@ class EditorActivity : Activity() {
                 progressDialog.dismiss()
                 if (keyframes.isNotEmpty()) {
                     edit(project.changeVideo(selected) { it.copy(keyframes = keyframes) })
-                    Toast.makeText(this, "Vídeo estabilizado! ${keyframes.size} pontos de correção aplicados.", Toast.LENGTH_LONG).show()
+                    feedback("Vídeo estabilizado! ${keyframes.size} pontos de correção aplicados.")
                 } else {
-                    Toast.makeText(this, "O vídeo já está estável.", Toast.LENGTH_SHORT).show()
+                    feedback("O vídeo já está estável.")
                 }
             }
         }
@@ -2328,7 +2379,7 @@ class EditorActivity : Activity() {
                 )
                 edit(project.copy(stickers = project.stickers + newSticker))
                 stickerHandles.selected = newSticker.id
-                Toast.makeText(this, "Sticker '$title' adicionado!", Toast.LENGTH_SHORT).show()
+                feedback("Sticker '$title' adicionado!")
             }, GridLayout.LayoutParams().apply {
                 width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                 setMargins(dp(3), dp(3), dp(3), dp(3))
@@ -2417,7 +2468,7 @@ class EditorActivity : Activity() {
         } else {
             selected = (splitIndex + 1).coerceAtMost(next.videos.lastIndex)
             edit(next)
-            Toast.makeText(this, "Parte cortada selecionada. Arraste-a na timeline ou use Editar > Mover.", Toast.LENGTH_LONG).show()
+            feedback("Parte cortada selecionada. Arraste-a na timeline ou use Editar > Mover.")
         }
     }
 
@@ -2431,7 +2482,7 @@ class EditorActivity : Activity() {
 
     private fun copyClipStyle() {
         copiedClipStyle = selectedClip()
-        Toast.makeText(this, "Estilo do clipe copiado", Toast.LENGTH_SHORT).show()
+        feedback("Estilo do clipe copiado")
     }
 
     private fun pasteClipStyle() {
@@ -2453,7 +2504,7 @@ class EditorActivity : Activity() {
 
     private fun movePanel() {
         val targets = project.videos.indices.filter { it != selected }
-        if (targets.isEmpty()) { Toast.makeText(this, "Este e o unico clipe", Toast.LENGTH_SHORT).show(); return }
+        if (targets.isEmpty()) { feedback("Este e o unico clipe"); return }
         val options = targets.map { target ->
             val clipName = project.videos[target].name.take(34)
             "Posicao ${target + 1} - $clipName"
@@ -2628,7 +2679,7 @@ class EditorActivity : Activity() {
             SmoothSlowMoPreferences.setProfile(this, profile)
             val request = SmoothSlowMoPlanner.plan(clip, profile)
             if (request == null) {
-                Toast.makeText(this, "Nada a gerar: este clipe nao esta em camera lenta", Toast.LENGTH_SHORT).show()
+                feedback("Nada a gerar: este clipe nao esta em camera lenta")
             } else {
                 SmoothSlowMoCache.requestIfNeeded(applicationContext, clip, profile) { clipId, derivedUri ->
                     runOnUiThread {
@@ -2643,7 +2694,7 @@ class EditorActivity : Activity() {
                         }
                     }
                 }
-                Toast.makeText(this, "Gerando previa interpolada em segundo plano", Toast.LENGTH_SHORT).show()
+                feedback("Gerando previa interpolada em segundo plano")
             }
             dialog.dismiss()
         })
@@ -2868,11 +2919,11 @@ class EditorActivity : Activity() {
                         shadows = corrected.grade.shadows
                         highlights = corrected.grade.highlights
                         draft()
-                        Toast.makeText(this@EditorActivity, "Cor automática aplicada na prévia", Toast.LENGTH_SHORT).show()
+                        feedback("Cor automática aplicada na prévia")
                     }
                 } else {
                     runOnUiThread {
-                        if (!isDestroyed) Toast.makeText(this@EditorActivity, "Não foi possível analisar o quadro", Toast.LENGTH_SHORT).show()
+                        if (!isDestroyed) feedback("Não foi possível analisar o quadro")
                     }
                 }
             }
@@ -2915,7 +2966,7 @@ class EditorActivity : Activity() {
                                 saturation = (clip.saturation + matchResult.saturationOffset).toInt().coerceIn(-100, 100)
                                 temperature = ((clip.temperature + matchResult.temperatureOffset) * 100).toInt().coerceIn(-100, 100)
                                 draft()
-                                Toast.makeText(this@EditorActivity, "Cores equalizadas com o clipe de referência", Toast.LENGTH_SHORT).show()
+                                feedback("Cores equalizadas com o clipe de referência")
                             }
                         }
                     }
@@ -3086,7 +3137,7 @@ class EditorActivity : Activity() {
         voiceDialog = null
         if (!save || !stopped || file == null || elapsedUs < 300_000) {
             file?.delete()
-            if (save) Toast.makeText(this, "Narracao curta demais", Toast.LENGTH_SHORT).show()
+            if (save) feedback("Narracao curta demais")
             return
         }
         val start = voiceStartUs

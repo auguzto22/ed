@@ -12,24 +12,35 @@ import com.termex.replay15.editor.domain.TextFont
 import com.termex.replay15.editor.render.EditorFonts
 
 object EditorStyle {
-    const val BG = 0xFF0C0F12.toInt()
-    const val PANEL = 0xFF15191D.toInt()
-    const val CARD = 0xFF15191D.toInt()
-    const val CARD_ELEVATED = 0xFF1E2328.toInt()
-    const val BORDER = 0xFF242A30.toInt()
-    const val BORDER_LIGHT = 0x22FFFFFF.toInt()
-    const val MUTED = 0xFFA7A7A7.toInt()
-    const val ACCENT = 0xFFFFFFFF.toInt()
+    // Graphite base with a violet accent (the Recly brand colour) and a cyan secondary for
+    // live/realtime states. Contrast of MUTED on PANEL stays above 4.5:1.
+    const val BG = 0xFF09090C.toInt()
+    const val PANEL = 0xFF121217.toInt()
+    const val CARD = 0xFF19191F.toInt()
+    const val CARD_ELEVATED = 0xFF22222A.toInt()
+    const val BORDER = 0xFF2A2A33.toInt()
+    const val BORDER_LIGHT = 0x24FFFFFF.toInt()
+    const val MUTED = 0xFF9C9CAB.toInt()
+    const val ACCENT = 0xFF9B87FF.toInt()
+    const val ACCENT_DEEP = 0xFF7357FF.toInt()
+    const val ACCENT_PINK = 0xFFD66BFF.toInt()
+    const val ACCENT_SOFT = 0x339B87FF.toInt()
+    const val CYAN = 0xFF34D7F0.toInt()
     const val WHITE = 0xFFFFFFFF.toInt()
-    const val DANGER = 0xFFEF4444.toInt()
-    const val GREEN = 0xFF10B981.toInt()
-    const val RADIUS_PANEL = 20
+    const val DANGER = 0xFFFF5C7A.toInt()
+    const val GREEN = 0xFF3DDC97.toInt()
+    const val RADIUS_PANEL = 22
     const val RADIUS_CONTROL = 12
     const val TOUCH_TARGET = 44
-    const val MOTION_PRESS = 80L
-    const val MOTION_SELECTION = 120L
-    const val MOTION_TOOLBAR = 160L
-    const val MOTION_PANEL = 200L
+    const val MOTION_PRESS = 90L
+    const val MOTION_SELECTION = 160L
+    const val MOTION_TOOLBAR = 220L
+    const val MOTION_PANEL = 280L
+
+    /** Primary call-to-action fill: violet to magenta. */
+    fun accentGradient(radius: Float): GradientDrawable = GradientDrawable(
+        GradientDrawable.Orientation.TL_BR, intArrayOf(ACCENT_DEEP, ACCENT_PINK),
+    ).apply { cornerRadius = radius }
 }
 
 fun Context.dp(value: Int) = (value * resources.displayMetrics.density).toInt()
@@ -43,27 +54,28 @@ fun Context.action(value: String, accent: Boolean = false, onClick: () -> Unit) 
     typeface = EditorFonts.get(this@action, TextFont.OUTFIT, android.graphics.Typeface.BOLD)
     minWidth = dp(48); minimumWidth = dp(48); minHeight = dp(44); minimumHeight = dp(44)
     maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
-    val bg = GradientDrawable().apply {
-        if (accent) {
-            setColor(Color.WHITE)
-            cornerRadius = dp(20).toFloat()
-        } else {
-            setColor(EditorStyle.CARD)
-            setStroke(dp(1), EditorStyle.BORDER)
-            cornerRadius = dp(12).toFloat()
-        }
+    val bg = if (accent) EditorStyle.accentGradient(dp(20).toFloat()) else GradientDrawable().apply {
+        setColor(EditorStyle.CARD)
+        setStroke(dp(1), EditorStyle.BORDER)
+        cornerRadius = dp(12).toFloat()
     }
     background = RippleDrawable(
-        android.content.res.ColorStateList.valueOf(if (accent) 0x33000000 else 0x22FFFFFF),
+        android.content.res.ColorStateList.valueOf(if (accent) 0x33FFFFFF else 0x22FFFFFF),
         bg,
         null,
     )
-    setTextColor(if (accent) Color.BLACK else Color.WHITE)
+    stateListAnimator = null
+    setTextColor(Color.WHITE)
     setOnClickListener { onClick() }
 }
 fun Context.column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 fun Context.row() = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-fun Activity.sheet(title: String, body: LinearLayout): Dialog {
+/**
+ * Bottom sheet used by every editor tool. [dim] is the scrim behind it; tools that preview their
+ * result on the video (effects, transitions) pass a low value and a smaller [maxHeightRatio] so
+ * the preview stays visible while choosing.
+ */
+fun Activity.sheet(title: String, body: LinearLayout, dim: Float = .42f, maxHeightRatio: Float = .7f): Dialog {
     val dialog = Dialog(this)
     val root = column().apply {
         setPadding(dp(16), dp(12), dp(16), dp(20))
@@ -80,7 +92,7 @@ fun Activity.sheet(title: String, body: LinearLayout): Dialog {
         addView(heading)
         addView(object : ScrollView(context) {
             override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-                val limit = resources.displayMetrics.heightPixels * 7 / 10
+                val limit = (resources.displayMetrics.heightPixels * maxHeightRatio).toInt()
                 val available = View.MeasureSpec.getSize(heightMeasureSpec).takeIf { it > 0 } ?: limit
                 super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(minOf(limit, available), View.MeasureSpec.AT_MOST))
             }
@@ -92,15 +104,36 @@ fun Activity.sheet(title: String, body: LinearLayout): Dialog {
         setGravity(Gravity.BOTTOM)
         setLayout(-1, -2)
         setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        if (dim <= 0f) clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        else { addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND); setDimAmount(dim.coerceAtMost(.8f)) }
+        setWindowAnimations(0)
     }
     dialog.show()
     dialog.window?.setLayout(-1, -2)
     installEditorMotion(root)
+    // Rise from below the screen edge with a soft deceleration, children follow slightly later.
     root.alpha = 0f
-    root.translationY = dp(18).toFloat()
+    root.translationY = resources.displayMetrics.heightPixels * .25f
     root.animate().cancel()
-    root.animate().alpha(1f).translationY(0f).setDuration(EditorStyle.MOTION_PANEL).start()
+    root.animate().alpha(1f).translationY(0f).setDuration(EditorStyle.MOTION_PANEL)
+        .setInterpolator(android.view.animation.PathInterpolator(.2f, .9f, .25f, 1f)).start()
+    staggerChildren(body, startDelay = 60L)
     return dialog
+}
+
+/** Fades and lifts the direct children of [group] in sequence (cheap, interruptible). */
+fun staggerChildren(group: ViewGroup, startDelay: Long = 0L, stepMs: Long = 22L, maxItems: Int = 14) {
+    val lift = 10f * group.resources.displayMetrics.density
+    for (index in 0 until group.childCount) {
+        val child = group.getChildAt(index)
+        if (index >= maxItems) { child.alpha = 1f; child.translationY = 0f; continue }
+        child.alpha = 0f
+        child.translationY = lift
+        child.animate().cancel()
+        child.animate().alpha(1f).translationY(0f).setStartDelay(startDelay + index * stepMs)
+            .setDuration(EditorStyle.MOTION_TOOLBAR)
+            .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).start()
+    }
 }
 fun Context.slider(parent: LinearLayout, title: String, initial: Int, maximum: Int, minimum: Int = 0,
     format: (Int) -> String = { it.toString() }, onStop: ((Int) -> Unit)? = null, change: (Int) -> Unit): SeekBar {
