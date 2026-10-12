@@ -1,10 +1,12 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
 }
 
 // Contas (Supabase Auth). Os valores vêm do local.properties (não versionado) ou de -P na linha de
 // comando. A chave anon do Supabase é pública por natureza; a segurança vem das políticas RLS.
-val accountProperties = java.util.Properties().apply {
+val accountProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.isFile) file.inputStream().use { load(it) }
 }

@@ -245,7 +245,7 @@ class EditorLibraryActivity : Activity() {
         shown.chunked(2).forEachIndexed { rowIndex, pair ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
-                baselineAligned = false
+                isBaselineAligned = false
             }
             pair.forEachIndexed { col, project ->
                 val index = rowIndex * 2 + col
