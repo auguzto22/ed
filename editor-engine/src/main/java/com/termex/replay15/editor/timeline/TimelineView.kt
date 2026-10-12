@@ -113,6 +113,21 @@ class TimelineView(context: Context) : View(context) {
 
     private fun dp(v: Float) = v * resources.displayMetrics.density
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val thumbPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+    private val clipPath = Path()
+    private val thumbSrc = Rect()
+    private val thumbDst = RectF()
+    /** Source rectangle that fills a tile of [aspect] (w/h) without distortion. */
+    private fun centerCrop(bitmap: Bitmap, aspect: Float, out: Rect) {
+        val bw = bitmap.width; val bh = bitmap.height
+        if (bw.toFloat() / bh > aspect) {
+            val w = (bh * aspect).toInt().coerceAtLeast(1); val x = (bw - w) / 2
+            out.set(x, 0, x + w, bh)
+        } else {
+            val h = (bw / aspect).toInt().coerceAtLeast(1); val y = (bh - h) / 2
+            out.set(0, y, bw, y + h)
+        }
+    }
     private val thumbs = ThumbnailCache(context) { invalidate() }
     private val waves = com.termex.replay15.editor.audio.WaveformCache(context) { invalidate() }
     private var pixelsPerSecond = dp(56f)
@@ -269,7 +284,7 @@ class TimelineView(context: Context) : View(context) {
     private fun drawMeasured(c: Canvas) {
         // No super.onDraw: TimelineView extends View, whose onDraw is empty, so the call did
         // nothing. Only ViewGroup, whose onDraw skips children unless told otherwise, needs it.
-        val gutter = dp(40f)
+        val gutter = dp(GUTTER_DP)
         c.save(); c.clipRect(gutter, 0f, width.toFloat(), height.toFloat())
         val step = when { pixelsPerSecond >= dp(150f) -> SECOND / 2; pixelsPerSecond >= dp(40f) -> SECOND; pixelsPerSecond >= dp(15f) -> 5 * SECOND; else -> 10 * SECOND }
         var tick = time(gutter) / step * step
@@ -301,18 +316,40 @@ class TimelineView(context: Context) : View(context) {
         project.videos.forEachIndexed { index, clip ->
             val l = x(visualStart(index)); val r = x(visualEnd(index))
             if (r >= gutter && l <= width) {
-                paint.color = 0xFF161616.toInt(); c.drawRoundRect(l, dp(50f), r - dp(2f), dp(116f), dp(8f), dp(8f), paint)
-                c.save(); c.clipRect(l, dp(50f), r - dp(2f), dp(116f))
-                var xx = l + floor(max(0f, gutter - l) / dp(64f)) * dp(64f)
+                // Each clip is a rounded strip of centre-cropped frames (no stretching), with a
+                // small duration pill instead of a black name bar covering the bottom third.
+                val clipRect = RectF(l, dp(50f), r - dp(2f), dp(116f))
+                paint.color = 0xFF17171C.toInt(); c.drawRoundRect(clipRect, dp(9f), dp(9f), paint)
+                c.save()
+                clipPath.reset(); clipPath.addRoundRect(clipRect, dp(9f), dp(9f), Path.Direction.CW)
+                c.clipPath(clipPath)
+                val tileW = dp(56f); val tileH = clipRect.height()
+                var xx = l + floor(max(0f, gutter - l) / tileW) * tileW
                 while (xx < min(r, width.toFloat())) {
-                    val source = sourceAtVisualPosition(index, clip, xx)
+                    val source = sourceAtVisualPosition(index, clip, xx + tileW / 2f)
                     thumbs.get(clip, source.coerceIn(clip.inUs, clip.outUs - 1))?.let { bitmap ->
-                        c.drawBitmap(bitmap, null, RectF(xx, dp(50f), xx + dp(64f), dp(116f)), null)
+                        centerCrop(bitmap, tileW / tileH, thumbSrc)
+                        thumbDst.set(xx, clipRect.top, xx + tileW, clipRect.bottom)
+                        c.drawBitmap(bitmap, thumbSrc, thumbDst, thumbPaint)
                     }
-                    xx += dp(64f)
+                    xx += tileW
                 }
-                paint.color = 0xAA000000.toInt(); c.drawRect(l, dp(96f), r, dp(116f), paint)
-                text(c, clip.name, max(l, gutter) + dp(6f), dp(110f))
+                // Gentle vertical shade keeps badges readable on bright footage.
+                paint.shader = LinearGradient(0f, clipRect.top, 0f, clipRect.bottom,
+                    intArrayOf(0x33000000, 0x00000000, 0x44000000), floatArrayOf(0f, .45f, 1f), Shader.TileMode.CLAMP)
+                c.drawRect(clipRect, paint); paint.shader = null
+                if (r - l > dp(46f)) {
+                    val seconds = clip.durationUs / 1_000_000f
+                    val label = if (seconds < 10f) String.format(java.util.Locale.ROOT, "%.1fs", seconds)
+                        else String.format(java.util.Locale.ROOT, "%d:%02d", (seconds / 60).toInt(), (seconds % 60).toInt())
+                    paint.textSize = dp(9.5f); paint.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+                    val tw = paint.measureText(label)
+                    val px = max(l, gutter) + dp(5f); val py = clipRect.bottom - dp(5f)
+                    paint.color = 0xB3000000.toInt()
+                    c.drawRoundRect(px, py - dp(15f), px + tw + dp(10f), py, dp(7.5f), dp(7.5f), paint)
+                    paint.color = Color.WHITE
+                    c.drawText(label, px + dp(5f), py - dp(4f), paint)
+                }
                 drawSpeedBadge(c, clip.speedBadge, max(l, gutter), min(r, width.toFloat()), dp(50f), dp(96f))
                 clip.keyframes.forEachIndexed { keyIndex, key ->
                     if (key.sourceUs !in clip.inUs..clip.outUs) return@forEachIndexed
@@ -340,7 +377,7 @@ class TimelineView(context: Context) : View(context) {
                 if (index == selected) {
                     val left = l + if (trimSide == -1) delta else 0f; val right = r + if (trimSide == 1) delta else 0f
                     paint.color = Color.WHITE; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f)
-                    c.drawRoundRect(left, dp(48f), right, dp(118f), dp(8f), dp(8f), paint); paint.style = Paint.Style.FILL
+                    c.drawRoundRect(left, dp(48f), right, dp(118f), dp(10f), dp(10f), paint); paint.style = Paint.Style.FILL
                     paint.color = Color.WHITE
                     c.drawRoundRect(left - dp(3.5f), dp(68f), left + dp(4.5f), dp(98f), dp(3.5f), dp(3.5f), paint)
                     paint.color = Color.WHITE
@@ -806,10 +843,20 @@ class TimelineView(context: Context) : View(context) {
         }
         if (lanes.isEmpty()) text(c, "Adicione audio, texto ou uma camada", width / 2f - dp(88f), dp(166f), 0xFF8E8E93.toInt())
         c.restore(); c.restore()
-        paint.color = 0xFF121212.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
-        text(c, "V1", dp(9f), dp(90f), Color.WHITE)
+        paint.color = 0xFF0E0E12.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
+        // No "V1" label on the main track: it is always the large strip. Layer lanes keep a
+        // compact coloured tag so their type stays recognisable.
         c.save(); c.clipRect(0f, dp(130f), gutter, height.toFloat())
-        lanes.forEachIndexed { i, lane -> text(c, lane.label, dp(9f), dp(154f) + i * dp(39f) - vertical, lane.color) }; c.restore()
+        lanes.forEachIndexed { i, lane ->
+            val ly = dp(132f) + i * dp(39f) - vertical
+            paint.color = lane.color
+            c.drawRoundRect(dp(4f), ly + dp(8f), dp(7f), ly + dp(25f), dp(1.5f), dp(1.5f), paint)
+            text(c, lane.label, dp(9.5f), ly + dp(20.5f), lane.color, 8.5f)
+        }; c.restore()
+        // Playhead: soft violet halo behind a crisp white line.
+        paint.color = 0x409B87FF
+        paint.strokeWidth = dp(5f)
+        c.drawLine(width / 2f, dp(43f), width / 2f, height.toFloat(), paint)
         paint.color = Color.WHITE
         paint.strokeWidth = dp(if (isPlayheadGrabbed) 2.5f else 1.8f)
         c.drawLine(width / 2f, dp(43f), width / 2f, height.toFloat(), paint)
@@ -852,7 +899,7 @@ class TimelineView(context: Context) : View(context) {
                     height = height.toFloat(),
                     density = resources.displayMetrics.density,
                     verticalScroll = vertical,
-                    gutterWidth = dp(40f),
+                    gutterWidth = dp(GUTTER_DP),
                     timeToX = ::x,
                     xToTime = ::time,
                     visualStart = ::visualStart,
@@ -1422,4 +1469,8 @@ class TimelineView(context: Context) : View(context) {
     override fun performClick(): Boolean { super.performClick(); return true }
     fun clearThumbnails() { thumbs.clear() }
     fun release() { thumbs.close(); waves.close() }
+    private companion object {
+        /** Left gutter: narrow, only for layer tags and the main-track header tap. */
+        const val GUTTER_DP = 26f
+    }
 }

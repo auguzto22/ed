@@ -243,7 +243,7 @@ object FilterGallery {
 
         body.addView(footer)
 
-        dialog = sheet("Galeria de filtros", body)
+        dialog = sheet("Galeria de filtros", body, dim = .1f, maxHeightRatio = .5f)
         if (activity.isEditorDebuggable()) {
             android.util.Log.d("ReclyPerf", "FILTER_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
         }

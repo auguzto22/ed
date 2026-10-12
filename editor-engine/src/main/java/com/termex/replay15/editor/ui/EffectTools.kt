@@ -15,7 +15,10 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     private val seek: (Long) -> Unit, private val apply: (Project) -> Unit,
     private val previewApply: (Project) -> Unit,
     private val pickPackage: () -> Unit,
-    private val openFilters: ((String) -> Unit)? = null) : AutoCloseable {
+    private val openFilters: ((String) -> Unit)? = null,
+    /** Plays a short window of the clip on repeat while a look is being previewed. */
+    private val loopPreview: (clipId: String) -> Unit = {},
+    private val stopLoop: () -> Unit = {}) : AutoCloseable {
     private val repository = AssetRepository(activity)
     private val worker = Executors.newSingleThreadExecutor()
     @Volatile private var closed = false
@@ -297,8 +300,10 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                     )
                 }
                 previewApply(project().mapVideo(clipId) { it.copy(effects = it.effects + added) })
+                loopPreview(clipId)
             },
             onRestore = {
+                stopLoop()
                 previewApply(project())
             },
             onApply = { preset, intensity ->

@@ -47,6 +47,18 @@ object EffectPresetGallery {
         }
 
         val presetCardMap = mutableMapOf<String, CardViews>()
+        // Thumbnails are rendered on a frame of the user's own clip (generic atlas art only as a
+        // placeholder), so each card shows what the preset does to *this* video.
+        val ownFrames = runCatching {
+            com.termex.replay15.editor.preview.EffectPreviewController(activity, onPresetThumbnailReady = { preset, bitmap ->
+                presetCardMap[preset.id]?.let { views ->
+                    views.image.setImageBitmap(bitmap)
+                    views.placeholder.visibility = View.GONE
+                    views.image.alpha = 0f
+                    views.image.animate().alpha(1f).setDuration(EditorStyle.MOTION_SELECTION).start()
+                }
+            }).also { it.startSession(clip, targetTimestampUs) }
+        }.getOrNull()
 
         // Categories horizontal strip
         val tabs = row()
@@ -167,11 +179,12 @@ object EffectPresetGallery {
                 }
                 thumbStripContainer.addView(cardContainer, params)
 
-                // Load pre-rendered thumbnail directly from atlas
+                // Atlas art first (instant), then the preset rendered on the user's frame.
                 AtlasPreviewManager.getEffectPresetPreview(activity, preset.id) { drawable ->
-                    imageView.setImageDrawable(drawable)
+                    if (imageView.drawable == null) imageView.setImageDrawable(drawable)
                     placeholder.visibility = View.GONE
                 }
+                ownFrames?.requestPresetThumbnail(preset)
             }
         }
 
@@ -247,11 +260,13 @@ object EffectPresetGallery {
 
         body.addView(bottomRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
-        dialogRef = sheet("Presets de Efeitos", body)
+        // Low scrim and half height: the chosen preset plays on the video above the sheet.
+        dialogRef = sheet("Presets de Efeitos", body, dim = .1f, maxHeightRatio = .5f)
         if (activity.isEditorDebuggable()) {
             android.util.Log.d("ReclyPerf", "EFFECT_PRESET_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
         }
         dialogRef?.setOnDismissListener {
+            ownFrames?.close()
             onRestore()
         }
     }

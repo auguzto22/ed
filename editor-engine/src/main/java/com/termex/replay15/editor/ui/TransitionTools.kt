@@ -98,15 +98,19 @@ class TransitionTools(
             }
             setPadding(dp(12), dp(8), dp(12), dp(8))
         }
-        body.addView(searchBox, LinearLayout.LayoutParams(-1, dp(40)).apply { bottomMargin = dp(8) })
+        body.addView(searchBox, LinearLayout.LayoutParams(-1, dp(38)).apply { bottomMargin = dp(8) })
 
         val tabsScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
         val tabsRow = row()
         tabsScroll.addView(tabsRow)
         body.addView(tabsScroll, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
 
-        val catalogContainer = column()
-        body.addView(catalogContainer)
+        // One horizontal strip of cards (like CapCut) keeps the sheet short, so the transition
+        // plays on the preview above while browsing.
+        val catalogScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; clipToPadding = false }
+        val catalogContainer = row().apply { gravity = Gravity.TOP }
+        catalogScroll.addView(catalogContainer)
+        body.addView(catalogScroll, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(4) })
 
         val configContainer = column()
         body.addView(configContainer)
@@ -220,7 +224,7 @@ class TransitionTools(
             configContainer.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         }
 
-        fun renderCatalog() {
+        fun renderCatalog(animate: Boolean = true) {
             catalogContainer.removeAllViews()
 
             val recentIds = TransitionCatalog.getRecents(this)
@@ -232,88 +236,83 @@ class TransitionTools(
                 return
             }
 
-            // Grid: 2 columns
-            for (i in filtered.indices step 2) {
-                val rowLayout = row()
-                val itemA = filtered[i]
-                val itemB = filtered.getOrNull(i + 1)
-
-                fun buildCard(item: TransitionDefinition): View {
-                    val card = column().apply {
-                        setPadding(dp(10), dp(8), dp(10), dp(8))
-                        val isChosen = item.id == selectedDef.id
-                        background = GradientDrawable().apply {
-                            setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                            cornerRadius = dp(12).toFloat()
-                            setStroke(dp(1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
-                        }
+            var chosenView: View? = null
+            fun buildCard(item: TransitionDefinition): View {
+                val card = column().apply {
+                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    val isChosen = item.id == selectedDef.id
+                    background = GradientDrawable().apply {
+                        setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
+                        cornerRadius = dp(12).toFloat()
+                        setStroke(dp(1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
                     }
-
-                    val header = row()
-                    val isFav = TransitionCatalog.isFavorite(this, item.id)
-                    val star = ImageView(this).apply {
-                        setImageResource(if (isFav) R.drawable.ic_recly_star_filled else R.drawable.ic_recly_star_outline)
-                        val pad = dp(3)
-                        setPadding(pad, pad, pad, pad)
-                        setOnClickListener {
-                            TransitionCatalog.toggleFavorite(this@with, item.id)
-                            renderCatalog()
-                        }
-                    }
-                    header.addView(star, LinearLayout.LayoutParams(dp(22), dp(22)))
-                    header.addView(label(item.category, 10.5f, EditorStyle.MUTED).apply { setPadding(dp(4), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
-                    card.addView(header)
-
-                    val imageFrame = FrameLayout(this).apply {
-                        outlineProvider = object : android.view.ViewOutlineProvider() {
-                            override fun getOutline(view: View, outline: android.graphics.Outline) {
-                                outline.setRoundRect(0, 0, view.width, view.height, dp(8).toFloat())
-                            }
-                        }
-                        clipToOutline = true
-                    }
-                    val placeholder = View(this).apply {
-                        background = GradientDrawable().apply {
-                            setColor(0xFF222226.toInt())
-                            cornerRadius = dp(8).toFloat()
-                        }
-                    }
-                    imageFrame.addView(placeholder, FrameLayout.LayoutParams(-1, dp(64)))
-                    val imageView = ImageView(this).apply {
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                    }
-                    imageFrame.addView(imageView, FrameLayout.LayoutParams(-1, dp(64)))
-                    card.addView(imageFrame, LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(4); bottomMargin = dp(6) })
-
-                    AtlasPreviewManager.getTransitionPreview(this@with, item.id) { drawable ->
-                        imageView.setImageDrawable(drawable)
-                        placeholder.visibility = View.GONE
-                    }
-
-                    card.addView(label(item.name, 13f, Color.WHITE).apply {
-                        setTypeface(typeface, android.graphics.Typeface.BOLD)
-                        maxLines = 1
-                    })
-
-                    card.setOnClickListener {
-                        selectedDef = item
-                        TransitionCatalog.recordUsed(this, item.id)
-                        applyCurrent(preview = true, play = true)
-                        renderCatalog()
-                        renderConfig()
-                    }
-
-                    return card
                 }
 
-                rowLayout.addView(buildCard(itemA), LinearLayout.LayoutParams(0, -2, 1f))
-                if (itemB != null) {
-                    rowLayout.addView(buildCard(itemB), LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(6) })
-                } else {
-                    rowLayout.addView(View(this), LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(6) })
+                val header = row()
+                val isFav = TransitionCatalog.isFavorite(this, item.id)
+                val star = ImageView(this).apply {
+                    setImageResource(if (isFav) R.drawable.ic_recly_star_filled else R.drawable.ic_recly_star_outline)
+                    val pad = dp(3)
+                    setPadding(pad, pad, pad, pad)
+                    setOnClickListener {
+                        TransitionCatalog.toggleFavorite(this@with, item.id)
+                        renderCatalog(animate = false)
+                    }
                 }
-                catalogContainer.addView(rowLayout, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+                header.addView(star, LinearLayout.LayoutParams(dp(22), dp(22)))
+                header.addView(label(item.category, 10.5f, EditorStyle.MUTED).apply { setPadding(dp(4), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
+                card.addView(header)
+
+                val imageFrame = FrameLayout(this).apply {
+                    outlineProvider = object : android.view.ViewOutlineProvider() {
+                        override fun getOutline(view: View, outline: android.graphics.Outline) {
+                            outline.setRoundRect(0, 0, view.width, view.height, dp(8).toFloat())
+                        }
+                    }
+                    clipToOutline = true
+                }
+                val placeholder = View(this).apply {
+                    background = GradientDrawable().apply {
+                        setColor(0xFF222226.toInt())
+                        cornerRadius = dp(8).toFloat()
+                    }
+                }
+                imageFrame.addView(placeholder, FrameLayout.LayoutParams(-1, dp(64)))
+                val imageView = ImageView(this).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                }
+                imageFrame.addView(imageView, FrameLayout.LayoutParams(-1, dp(64)))
+                card.addView(imageFrame, LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(4); bottomMargin = dp(6) })
+
+                AtlasPreviewManager.getTransitionPreview(this@with, item.id) { drawable ->
+                    imageView.setImageDrawable(drawable)
+                    placeholder.visibility = View.GONE
+                }
+
+                card.addView(label(item.name, 13f, Color.WHITE).apply {
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    maxLines = 1
+                })
+
+                card.setOnClickListener {
+                    selectedDef = item
+                    TransitionCatalog.recordUsed(this, item.id)
+                    applyCurrent(preview = true, play = true)
+                    renderCatalog()
+                    renderConfig()
+                }
+
+                return card
             }
+
+            filtered.forEach { item ->
+                val card = buildCard(item)
+                if (item.id == selectedDef.id) chosenView = card
+                catalogContainer.addView(card, LinearLayout.LayoutParams(dp(104), -2).apply { marginEnd = dp(8) })
+            }
+            if (animate) staggerChildren(catalogContainer, stepMs = 14L)
+            // Keep the chosen transition in view.
+            chosenView?.let { view -> catalogScroll.post { catalogScroll.smoothScrollTo((view.left - dp(24)).coerceAtLeast(0), 0) } }
         }
 
         fun renderTabs() {
@@ -354,7 +353,8 @@ class TransitionTools(
         renderCatalog()
         renderConfig()
 
-        dialog = sheet("Transições", body)
+        // Docked low on the screen with a light scrim: the cut stays visible and plays above.
+        dialog = sheet("Transições", body, dim = .12f, maxHeightRatio = .56f)
         if (isEditorDebuggable()) {
             android.util.Log.d("ReclyPerf", "TRANSITIONS_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
         }

@@ -50,23 +50,38 @@ class ReferenceStylePanel(
 
     fun analyze(uri: Uri) {
         val token = ReferenceAnalysisCancellation().also { cancellation = it }
-        processing(true)
+        // Analysing a reference never touches the project, so it always runs beside the editor.
+        val card = EditorOverlayHost.task("Analisando referência") { token.cancel() }
         val progressText = activity.label(ReferenceAnalysisStage.PREPARING.label, 15f)
-        val progressDialog = AlertDialog.Builder(activity).setTitle("Analisando referencia").setView(progressText)
-            .setNegativeButton("Cancelar") { _, _ -> token.cancel() }.setOnCancelListener { token.cancel() }.show()
+        val progressDialog = if (card != null) null else {
+            processing(true)
+            AlertDialog.Builder(activity).setTitle("Analisando referencia").setView(progressText)
+                .setNegativeButton("Cancelar") { _, _ -> token.cancel() }.setOnCancelListener { token.cancel() }.show()
+        }
+        val stages = ReferenceAnalysisStage.entries
+        card?.update(ReferenceAnalysisStage.PREPARING.label, 0f)
         worker.execute {
             val result = runCatching {
                 val info = ReferenceMediaProbe.probe(activity, uri)
                 store.findValid(info.fingerprint) ?: ReferenceStyleAnalyzer(activity).analyze(uri, token) { stage ->
-                    activity.runOnUiThread { if (!activity.isDestroyed) progressText.text = stage.label }
+                    activity.runOnUiThread {
+                        if (activity.isDestroyed) return@runOnUiThread
+                        card?.update(stage.label, (stages.indexOf(stage) + .5f) / stages.size) ?: run { progressText.text = stage.label }
+                    }
                 }.also(store::save)
             }
             activity.runOnUiThread {
                 if (activity.isDestroyed) return@runOnUiThread
-                progressDialog.dismiss(); processing(false)
-                result.fold(::showProfile) { error ->
-                    if (error is InterruptedException) Toast.makeText(activity, "Analise cancelada", Toast.LENGTH_SHORT).show()
-                    else AlertDialog.Builder(activity).setTitle("Video de referencia").setMessage("Nao foi possivel analisar: ${error.message ?: "arquivo ou codec indisponivel"}").setPositiveButton("OK", null).show()
+                if (progressDialog != null) { progressDialog.dismiss(); processing(false) }
+                result.fold({ profile ->
+                    if (card != null) card.succeed("Estilo \"${profile.name}\" extraído", "Ver estilo") { showProfile(profile) }
+                    else showProfile(profile)
+                }) { error ->
+                    val message = if (error is InterruptedException) "Análise cancelada"
+                        else "Não foi possível analisar: ${error.message ?: "arquivo ou codec indisponível"}"
+                    if (card != null) card.fail(message)
+                    else if (error is InterruptedException) Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+                    else AlertDialog.Builder(activity).setTitle("Video de referencia").setMessage(message).setPositiveButton("OK", null).show()
                 }
             }
         }
@@ -95,27 +110,50 @@ class ReferenceStylePanel(
     private fun applyProfile(profile: ReferenceStyleProfile) {
         val snapshot = project(); val index = selectedIndex(); val clip = snapshot.videos.getOrNull(index) ?: return
         val words = ClipAnalyzer.wordsFromCaptions(snapshot.texts, snapshot.startOf(index), clip.durationUs)
-        val token = ReferenceAnalysisCancellation().also { cancellation = it }; processing(true)
+        val token = ReferenceAnalysisCancellation().also { cancellation = it }
+        val card = EditorOverlayHost.task("Aplicando estilo") { token.cancel() }
         val progressText = activity.label("Analisando o novo clipe", 15f)
-        val progressDialog = AlertDialog.Builder(activity).setTitle("Aplicando estilo").setView(progressText)
-            .setNegativeButton("Cancelar") { _, _ -> token.cancel() }.setOnCancelListener { token.cancel() }.show()
+        val progressDialog = if (card != null) null else {
+            processing(true)
+            AlertDialog.Builder(activity).setTitle("Aplicando estilo").setView(progressText)
+                .setNegativeButton("Cancelar") { _, _ -> token.cancel() }.setOnCancelListener { token.cancel() }.show()
+        }
+        fun stage(label: String, progress: Float) = activity.runOnUiThread {
+            if (!activity.isDestroyed) card?.update(label, progress) ?: run { progressText.text = label }
+        }
+        stage("Analisando o novo clipe", .05f)
         worker.execute {
             val result = runCatching {
                 val autoToken = com.termex.replay15.editor.autoedit.AutoEditCancellation()
                 token.check()
-                val analysis = ClipAnalyzer.analyze(activity, clip, words, autoToken) { stage ->
-                    token.check(); activity.runOnUiThread { if (!activity.isDestroyed) progressText.text = stage.label }
+                val analysis = ClipAnalyzer.analyze(activity, clip, words, autoToken) { progress ->
+                    token.check(); stage(progress.label, .4f)
                 }
-                token.check(); activity.runOnUiThread { if (!activity.isDestroyed) progressText.text = "Criando plano editavel" }
-                val plan = ReferenceStylePlanner.plan(profile, analysis)
-                token.check(); plan to ReferenceStyleExecutor.execute(snapshot, index, plan, profile)
+                token.check(); stage("Criando plano editável", .85f)
+                ReferenceStylePlanner.plan(profile, analysis)
             }
             activity.runOnUiThread {
                 if (activity.isDestroyed) return@runOnUiThread
-                progressDialog.dismiss(); processing(false)
-                result.fold({ (plan, edited) -> showPreview(snapshot, profile, plan, edited) }, { error ->
-                    if (error is InterruptedException) Toast.makeText(activity, "Aplicacao cancelada", Toast.LENGTH_SHORT).show()
-                    else AlertDialog.Builder(activity).setTitle("Reference Style").setMessage("Nao foi possivel criar o plano: ${error.message}").setPositiveButton("OK", null).show()
+                if (progressDialog != null) { progressDialog.dismiss(); processing(false) }
+                result.fold({ plan ->
+                    // Apply to the project as it is now (edits made meanwhile are kept).
+                    val current = project()
+                    val currentIndex = current.videos.indexOfFirst { it.id == clip.id }
+                    if (currentIndex < 0 || current.videos[currentIndex] != clip) {
+                        card?.fail("O clipe mudou durante a análise. Aplique de novo.")
+                            ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
+                        return@fold
+                    }
+                    val edited = runCatching { ReferenceStyleExecutor.execute(current, currentIndex, plan, profile) }.getOrElse { error ->
+                        card?.fail("Não foi possível criar o plano: ${error.message}"); return@fold
+                    }
+                    if (card != null) card.succeed("Estilo pronto para revisar", "Ver resultado") { showPreview(current, profile, plan, edited) }
+                    else showPreview(current, profile, plan, edited)
+                }, { error ->
+                    val message = if (error is InterruptedException) "Aplicação cancelada" else "Não foi possível criar o plano: ${error.message}"
+                    if (card != null) card.fail(message)
+                    else if (error is InterruptedException) Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+                    else AlertDialog.Builder(activity).setTitle("Reference Style").setMessage(message).setPositiveButton("OK", null).show()
                 })
             }
         }
