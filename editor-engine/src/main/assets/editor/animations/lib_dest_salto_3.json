@@ -1,0 +1,1 @@
+{"id":"lib_dest_salto_3","type":"ANIMATION","version":1,"engineVersion":1,"name":"Salto 3%","category":"EMPHASIS","license":"Recly original presets","premium":false,"points":[{"time":0},{"time":0.3,"y":-0.06,"easing":"EASE_OUT"},{"time":0.6,"y":0.0,"easing":"BOUNCE"},{"time":0.8,"y":-0.015},{"time":1}]}

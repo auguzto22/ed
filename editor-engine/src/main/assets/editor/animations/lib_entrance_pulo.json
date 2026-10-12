@@ -1,0 +1,1 @@
+{"id":"lib_entrance_pulo","type":"ANIMATION","version":1,"engineVersion":1,"name":"Entrada pulo","category":"ENTRANCE","license":"Recly original presets","premium":false,"points":[{"time":0,"y":0.3,"zoom":0.8,"opacity":0.0,"easing":"EASE_OUT"},{"time":0.6,"y":-0.04,"zoom":1.06,"easing":"SMOOTH"},{"time":1}]}

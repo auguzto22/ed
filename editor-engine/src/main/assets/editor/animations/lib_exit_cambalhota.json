@@ -1,0 +1,1 @@
+{"id":"lib_exit_cambalhota","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída cambalhota","category":"EXIT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"EASE_IN"},{"time":1,"rotation":-360.0,"zoom":0.3,"opacity":0.0}]}

@@ -1,0 +1,1 @@
+{"id":"lib_dest_pop_15","type":"ANIMATION","version":1,"engineVersion":1,"name":"Pop 15%","category":"EMPHASIS","license":"Recly original presets","premium":false,"points":[{"time":0},{"time":0.25,"zoom":1.15,"easing":"EASE_OUT"},{"time":0.5,"zoom":0.95},{"time":0.75,"zoom":1.0188},{"time":1}]}

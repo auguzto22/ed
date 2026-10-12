@@ -187,10 +187,11 @@ class ResourceLibraryIntegrationTest {
         }
         // Every sticker the catalog advertises must actually resolve to a shipped file, so a
         // curated entry can never point at a missing or empty animation.
-        val shipped = files!!.map { it.name }.toSet()
+        val shipped = lottieDir.walkTopDown().filter { it.isFile && it.extension == "json" }
+            .map { it.relativeTo(lottieDir).invariantSeparatorsPath }.toSet()
         val advertised = StickerCatalog.all()
             .filter { it.uri.startsWith("asset:///editor/lottie/") }
-            .map { it.uri.substringAfterLast('/') }
+            .map { it.uri.removePrefix("asset:///editor/lottie/") }
         assertTrue("Lottie stickers advertised", advertised.isNotEmpty())
         assertEquals("Lottie stickers without a shipped file", emptySet<String>(), advertised.filterNot { it in shipped }.toSet())
     }

@@ -9,11 +9,24 @@ class AtlasPreviewTest {
 
     @Test
     fun testAll32VideoFiltersHavePreviewMapping() {
-        val allFilters = VideoFilter.entries
-        assertEquals(32, allFilters.size)
+        val atlasFilters = VideoFilter.entries.take(AtlasPreviewManager.ATLAS_FILTER_COUNT)
+        assertEquals(32, atlasFilters.size)
 
-        for (filter in allFilters) {
+        for (filter in atlasFilters) {
             assertTrue("Filter $filter must have an atlas preview", AtlasPreviewManager.hasFilterPreview(filter))
+        }
+    }
+
+    @Test
+    fun testLibraryFiltersAreAppendedAndRenderTheirOwnThumbnails() {
+        val library = VideoFilter.entries.drop(AtlasPreviewManager.ATLAS_FILTER_COUNT)
+        assertTrue("Expected 300+ library filters, found ${library.size}", library.size >= 300)
+        assertTrue("Library filters must name a gallery group", library.all { it.group.isNotEmpty() })
+        // Saved projects store the ordinal: the original constants must keep their positions.
+        assertEquals(0, VideoFilter.ORIGINAL.ordinal)
+        assertEquals(31, VideoFilter.CLEAN.ordinal)
+        for (filter in library) {
+            assertFalse("Library filter $filter has no atlas cell", AtlasPreviewManager.hasFilterPreview(filter))
         }
     }
 

@@ -1,0 +1,1 @@
+{"id":"lib_mov_dolly_50","type":"ANIMATION","version":1,"engineVersion":1,"name":"Dolly 50%","category":"MOTION","license":"Recly original presets","premium":false,"points":[{"time":0},{"time":0.5,"zoom":1.5,"easing":"SMOOTH"},{"time":1,"zoom":1.75,"easing":"SMOOTH"}]}

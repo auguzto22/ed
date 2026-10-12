@@ -1,0 +1,1 @@
+{"id":"lib_mov_passada_cima_20","type":"ANIMATION","version":1,"engineVersion":1,"name":"Passada cima 20%","category":"MOTION","license":"Recly original presets","premium":false,"points":[{"time":0,"x":0.0,"y":0.2,"opacity":0.0,"easing":"EASE_OUT"},{"time":0.3,"opacity":1.0},{"time":0.7,"opacity":1.0,"easing":"EASE_IN"},{"time":1,"x":0.0,"y":-0.2,"opacity":0.0}]}

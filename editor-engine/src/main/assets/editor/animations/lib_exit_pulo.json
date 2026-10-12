@@ -1,0 +1,1 @@
+{"id":"lib_exit_pulo","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída pulo","category":"EXIT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"EASE_IN"},{"time":0.4,"y":-0.04,"zoom":1.06,"easing":"EASE_IN"},{"time":1,"y":0.3,"zoom":0.8,"opacity":0.0}]}

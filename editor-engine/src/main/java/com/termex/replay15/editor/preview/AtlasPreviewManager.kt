@@ -62,9 +62,12 @@ object AtlasPreviewManager {
     }
 
     // 1. Static coordinates for 32 VideoFilters
+    /** The shipped atlases only cover the original filters; later (library) filters render their own thumbnails. */
+    const val ATLAS_FILTER_COUNT = 32
+
     private val filterCoordinates: Map<VideoFilter, AtlasCoordinate> = buildMap {
         val entries = VideoFilter.entries
-        for (i in entries.indices) {
+        for (i in 0 until minOf(entries.size, ATLAS_FILTER_COUNT)) {
             val atlasName = if (i < 16) "filters_atlas_01" else "filters_atlas_02"
             val localIdx = i % 16
             put(entries[i], AtlasCoordinate(atlasName, localIdx % 4, localIdx / 4))

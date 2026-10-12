@@ -1,0 +1,1 @@
+{"id":"lib_mov_gira_zoom_15","type":"ANIMATION","version":1,"engineVersion":1,"name":"Girar e aproximar 15°","category":"MOTION","license":"Recly original presets","premium":false,"points":[{"time":0,"rotation":-15.0},{"time":1,"rotation":15.0,"zoom":1.12,"easing":"SMOOTH"}]}

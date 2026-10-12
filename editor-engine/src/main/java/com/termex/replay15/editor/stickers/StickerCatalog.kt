@@ -21,6 +21,10 @@ enum class StickerCategory(val label: String) {
     LIKE_SHARE("Curtir & Compartilhar"),
     CELEBRATION("Celebração"),
     BADGES("Selos"),
+    SPARKLES("Brilhos"),
+    FRAMES("Molduras"),
+    NATURE("Natureza"),
+    DOODLES("Rabiscos"),
 }
 
 /**
@@ -138,7 +142,7 @@ object StickerCatalog {
 
         definitions.clear()
         byId.clear()
-        list.forEach { def ->
+        (list + GeneratedStickers.all).forEach { def ->
             definitions.add(def)
             byId[def.id] = def
             ResourceCreditsRegistry.register(

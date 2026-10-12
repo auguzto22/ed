@@ -2400,48 +2400,23 @@ class EditorActivity : Activity() {
     private fun lottieStickersPanel() {
         if (project.durationUs <= 0) { error("Adicione um vídeo antes do sticker"); return }
         if (project.stickers.size >= 24) { error("Limite de 24 camadas visuais atingido"); return }
-        val lottieItems = listOf(
-            Triple("like_heart.json", "Coração / Like ❤️", "Animação vibrante de coração e like"),
-            Triple("fire_flame.json", "Fogo / Em Alta 🔥", "Chama ardente para momentos épicos"),
-            Triple("confetti_blast.json", "Confete / Festa 🎉", "Explosão festiva de confetes coloridos"),
-            Triple("star_burst.json", "Estrela / Brilho ⭐", "Estrela estourando com brilho e energia"),
-            Triple("arrow_bounce.json", "Seta Animada ⬇️", "Seta saltitante para chamar atenção"),
-        )
-        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(6)) }
-        body.addView(sectionTitle("Stickers Animados", "Escolha um elemento animado em vetor para sobrepor no vídeo."))
-        lateinit var dialog: Dialog
-        val grid = GridLayout(this).apply { columnCount = 2 }
-        lottieItems.forEach { (filename, title, desc) ->
-            grid.addView(editorToolCard(title, desc) {
-                dialog.dismiss()
-                val targetFile = File(filesDir, "lottie_$filename")
-                if (!targetFile.exists()) {
-                    assets.open("editor/lottie/$filename").use { input ->
-                        targetFile.outputStream().use { output -> input.copyTo(output) }
-                    }
-                }
-                val start = position.coerceIn(0L, (project.durationUs - SECOND).coerceAtLeast(0L))
-                val end = (start + 3 * SECOND).coerceAtMost(project.durationUs)
-                val newSticker = StickerClip(
-                    id = newId(),
-                    uri = Uri.fromFile(targetFile).toString(),
-                    name = title,
-                    startUs = start,
-                    endUs = end,
-                    size = 0.35f,
-                    x = 0.5f,
-                    y = 0.5f,
-                )
-                edit(project.copy(stickers = project.stickers + newSticker))
-                stickerHandles.selected = newSticker.id
-                feedback("Sticker '$title' adicionado!")
-            }, GridLayout.LayoutParams().apply {
-                width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                setMargins(dp(3), dp(3), dp(3), dp(3))
-            })
+        StickerLibrary.show(this) { def ->
+            val start = position.coerceIn(0L, (project.durationUs - SECOND).coerceAtLeast(0L))
+            val end = (start + def.defaultDurationUs).coerceAtMost(project.durationUs)
+            val newSticker = StickerClip(
+                id = newId(),
+                uri = def.uri,
+                name = def.name,
+                startUs = start,
+                endUs = end,
+                size = (def.defaultSize + .08f).coerceAtMost(.5f),
+                x = 0.5f,
+                y = 0.5f,
+            )
+            edit(project.copy(stickers = project.stickers + newSticker))
+            stickerHandles.selected = newSticker.id
+            feedback("Sticker '${def.name}' adicionado!")
         }
-        body.addView(grid)
-        dialog = sheet("Stickers Animados", body)
     }
 
     private fun editTools() {

@@ -1,0 +1,1 @@
+{"id":"lib_dest_pop_40","type":"ANIMATION","version":1,"engineVersion":1,"name":"Pop 40%","category":"EMPHASIS","license":"Recly original presets","premium":false,"points":[{"time":0},{"time":0.25,"zoom":1.4,"easing":"EASE_OUT"},{"time":0.5,"zoom":0.8667},{"time":0.75,"zoom":1.05},{"time":1}]}

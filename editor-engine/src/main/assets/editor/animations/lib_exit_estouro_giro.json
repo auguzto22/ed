@@ -1,0 +1,1 @@
+{"id":"lib_exit_estouro_giro","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída estouro giro","category":"EXIT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"EASE_IN"},{"time":1,"zoom":0.2,"rotation":-120.0,"opacity":0.0}]}

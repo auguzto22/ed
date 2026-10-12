@@ -1,0 +1,1 @@
+{"id":"lib_out_elastico_baixo_curta_fade","type":"ANIMATION","version":1,"engineVersion":1,"name":"Saída Elástico baixo curta · fade","category":"OUT","license":"Recly original presets","premium":false,"points":[{"time":0,"easing":"ELASTIC"},{"time":1,"x":0.0,"y":0.12,"opacity":0.0}]}
