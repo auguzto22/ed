@@ -1,0 +1,21 @@
+{
+  "id": "recly_swing_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Balanço de entrada",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "rotation": -25,
+      "opacity": 0,
+      "easing": "ELASTIC"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

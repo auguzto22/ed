@@ -1,0 +1,34 @@
+{
+  "id": "recly_jelly",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Gelatina",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.2,
+      "zoom": 1.08
+    },
+    {
+      "time": 0.4,
+      "zoom": 0.95
+    },
+    {
+      "time": 0.6,
+      "zoom": 1.04
+    },
+    {
+      "time": 0.8,
+      "zoom": 0.98
+    },
+    {
+      "time": 1
+    }
+  ]
+}

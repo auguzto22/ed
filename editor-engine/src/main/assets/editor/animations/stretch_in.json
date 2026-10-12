@@ -1,0 +1,21 @@
+{
+  "id": "recly_stretch_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Esticar",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "zoom": 0.3,
+      "opacity": 0,
+      "easing": "ELASTIC"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

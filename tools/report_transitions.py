@@ -1,7 +1,7 @@
 import json
 import os
 
-catalog_path = "app/src/main/assets/editor/transitions.json"
+catalog_path = "editor-engine/src/main/assets/editor/transitions.json"
 if not os.path.exists(catalog_path):
     catalog_path = "src/main/assets/editor/transitions.json"
 
@@ -26,7 +26,7 @@ print("\n--- By Category ---")
 for cat, ids in sorted(by_category.items()):
     print(f"{cat} ({len(ids)}): {', '.join(ids[:5])}...")
 
-shaders_dir = "app/src/main/assets/editor/transitions"
+shaders_dir = "editor-engine/src/main/assets/editor/transitions"
 if not os.path.exists(shaders_dir):
     shaders_dir = "src/main/assets/editor/transitions"
 

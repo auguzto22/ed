@@ -1,0 +1,22 @@
+{
+  "id": "recly_spin_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Girar para fora",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "easing": "EASE_IN"
+    },
+    {
+      "time": 1,
+      "zoom": 0.2,
+      "rotation": 360,
+      "opacity": 0
+    }
+  ]
+}

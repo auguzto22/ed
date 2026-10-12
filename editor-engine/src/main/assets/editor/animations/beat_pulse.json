@@ -1,0 +1,27 @@
+{
+  "id": "recly_beat_pulse",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Pulso na batida",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.1,
+      "zoom": 1.12,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 0.5,
+      "zoom": 1.0
+    },
+    {
+      "time": 1
+    }
+  ]
+}

@@ -13,7 +13,7 @@ android {
         versionCode = 64
         versionName = "4.1.0"
 
-        testInstrumentationRunner = "android.test.InstrumentationTestRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -52,7 +52,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     implementation("androidx.media3:media3-exoplayer:1.11.1")
     implementation("androidx.media3:media3-ui:1.11.1")
@@ -61,7 +61,7 @@ dependencies {
     implementation("androidx.media3:media3-common:1.11.1")
 
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     testImplementation("junit:junit:4.13.2")
 }

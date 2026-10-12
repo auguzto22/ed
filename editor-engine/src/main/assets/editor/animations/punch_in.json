@@ -1,0 +1,26 @@
+{
+  "id": "recly_punch_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Soco de zoom",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "zoom": 2.2,
+      "opacity": 0,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 0.6,
+      "zoom": 0.94,
+      "easing": "SPRING"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

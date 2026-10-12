@@ -1,6 +1,6 @@
 import json
 
-with open("app/src/main/assets/editor/effects.json") as f:
+with open("editor-engine/src/main/assets/editor/effects.json") as f:
     effects = json.load(f)
 
 print(f"Total effects in catalog: {len(effects)}")

@@ -29305,5 +29305,5569 @@
         "default": 1.0
       }
     ]
+  },
+  {
+    "id": "color_teal_orange",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Teal & Orange",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.52
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.08
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.7
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_cinema_cold",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Cinema Frio",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.15
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.45
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.58
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      }
+    ]
+  },
+  {
+    "id": "color_cinema_warm",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Cinema Quente",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.45
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      }
+    ]
+  },
+  {
+    "id": "color_golden_hour",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Hora Dourada",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.07
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.12
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      }
+    ]
+  },
+  {
+    "id": "color_blue_hour",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Hora Azul",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.55
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.62
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.58
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_vintage_70s",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Anos 70",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.15
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.14
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      }
+    ]
+  },
+  {
+    "id": "color_faded_film",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Filme Lavado",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.2
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.25
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      }
+    ]
+  },
+  {
+    "id": "color_kodak_like",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Retrato Kodak",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.09
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_fuji_like",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Verde Fuji",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.2
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.45
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_moody",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Moody",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.2
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.3
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 0.95
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.45
+      }
+    ]
+  },
+  {
+    "id": "color_noir",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Noir",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.45
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ]
+  },
+  {
+    "id": "color_mono_soft",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "P&B Suave",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_mono_warm",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "P&B Quente",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.08
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_vibrant",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Vibrante",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      }
+    ]
+  },
+  {
+    "id": "color_pastel",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Pastel",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.15
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.25
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.15
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.85
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      }
+    ]
+  },
+  {
+    "id": "color_cyberpunk",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Cyberpunk",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.2
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.75
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.52
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      }
+    ]
+  },
+  {
+    "id": "color_miami",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Miami",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.85
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      }
+    ]
+  },
+  {
+    "id": "color_matrix",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Código Verde",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.4
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.6
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.33
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.7
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.33
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      }
+    ]
+  },
+  {
+    "id": "color_desert",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Deserto",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.07
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      }
+    ]
+  },
+  {
+    "id": "color_arctic",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Ártico",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.3
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.6
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.57
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_forest",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Floresta",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.3
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.38
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      }
+    ]
+  },
+  {
+    "id": "color_sunset_pop",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Pôr do Sol",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.9
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.08
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_rose",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Rosé",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.92
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.95
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_lavender",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Lavanda",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.15
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.75
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_food",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Comida",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      }
+    ]
+  },
+  {
+    "id": "color_portrait",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Retrato Suave",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.08
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.08
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      }
+    ]
+  },
+  {
+    "id": "color_street",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Rua",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.35
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.05
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 0.95
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      }
+    ]
+  },
+  {
+    "id": "color_bleach_soft",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Prata Suave",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.45
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_analog_summer",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Verão Analógico",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.45
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.12
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      }
+    ]
+  },
+  {
+    "id": "color_night_city",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Cidade à Noite",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.1
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.35
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 0.95
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.7
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      }
+    ]
+  },
+  {
+    "id": "color_dramatic",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Dramático",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.15
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 0.95
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ]
+  },
+  {
+    "id": "color_clean_bright",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Limpo e Claro",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.2
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.05
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      }
+    ]
+  },
+  {
+    "id": "color_cross_film",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Película Cruzada",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.1
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.15
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_sepia_soft",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Sépia Suave",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.7
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.05
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.08
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      }
+    ]
+  },
+  {
+    "id": "color_cold_steel",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Aço",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": -0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.5
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.35
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.58
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.55
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      }
+    ]
+  },
+  {
+    "id": "color_gaming_neon",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Neon Gamer",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.15
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.25
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.78
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.48
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      }
+    ]
+  },
+  {
+    "id": "color_lofi",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Lo-fi",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.15
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": -0.2
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 1.1
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.12
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.25
+      }
+    ]
+  },
+  {
+    "id": "color_hdr_pop",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "HDR Pop",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_grade.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "exposure",
+        "name": "Exposição",
+        "type": "float",
+        "min": -2,
+        "max": 2,
+        "default": 0.05
+      },
+      {
+        "id": "contrast",
+        "name": "Contraste",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "saturation",
+        "name": "Saturação",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "vibrance",
+        "name": "Vibrância",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0.45
+      },
+      {
+        "id": "temperature",
+        "name": "Temperatura",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "tint",
+        "name": "Tinta",
+        "type": "float",
+        "min": -1,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "gamma",
+        "name": "Gama",
+        "type": "float",
+        "min": 0.4,
+        "max": 2.2,
+        "default": 0.95
+      },
+      {
+        "id": "shadow_hue",
+        "name": "Matiz das sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "shadow_tint",
+        "name": "Cor nas sombras",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_hue",
+        "name": "Matiz das luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "highlight_tint",
+        "name": "Cor nas luzes",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "fade",
+        "name": "Desbotar",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      }
+    ]
+  },
+  {
+    "id": "style_duotone_blue_pink",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Duotone Azul e Rosa",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 0.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.62
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.92
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_duotone_purple_lime",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Duotone Roxo e Lima",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 0.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.78
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.22
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_duotone_red_cream",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Duotone Vermelho",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 0.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.12
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_posterize",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Posterizar",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 1.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 5.0
+      }
+    ]
+  },
+  {
+    "id": "style_sepia",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Sépia",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 2.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_color_splash_red",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Só o Vermelho",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 3.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_color_splash_blue",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Só o Azul",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 3.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_halftone",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Retícula",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 4.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.58
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.4
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_sketch",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Esboço",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 5.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_infrared",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Infravermelho",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 6.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_thermal",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Câmera Térmica",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 7.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_cross_process",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Revelação Cruzada",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 8.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_bleach_bypass",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Bleach Bypass",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 9.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_night_vision",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Visão Noturna",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 10.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_cyanotype",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Cianótipo",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 11.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_pop_art",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Pop Art",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 12.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.95
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_neon_edges",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Bordas Neon",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 13.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.85
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_gradient_map_sunset",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Mapa Pôr do Sol",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 14.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.9
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.12
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_gradient_map_ocean",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Mapa Oceano",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 14.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.66
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.45
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
+  },
+  {
+    "id": "style_high_contrast_bw",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "P&B Alto Contraste",
+    "category": "Color",
+    "engine": "COMPOSITOR",
+    "shader": "recly_color_style.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "mode",
+        "name": "Estilo",
+        "type": "float",
+        "min": 0,
+        "max": 15,
+        "default": 15.0
+      },
+      {
+        "id": "hue_a",
+        "name": "Cor A",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "hue_b",
+        "name": "Cor B",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "levels",
+        "name": "Níveis",
+        "type": "float",
+        "min": 2,
+        "max": 16,
+        "default": 6.0
+      }
+    ]
   }
 ]

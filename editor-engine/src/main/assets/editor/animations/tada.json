@@ -1,0 +1,43 @@
+{
+  "id": "recly_tada",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Tcharam",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.1,
+      "zoom": 0.92,
+      "rotation": -4
+    },
+    {
+      "time": 0.3,
+      "zoom": 1.1,
+      "rotation": 4
+    },
+    {
+      "time": 0.5,
+      "zoom": 1.1,
+      "rotation": -4
+    },
+    {
+      "time": 0.7,
+      "zoom": 1.1,
+      "rotation": 4
+    },
+    {
+      "time": 0.9,
+      "zoom": 1.0,
+      "rotation": 0
+    },
+    {
+      "time": 1
+    }
+  ]
+}

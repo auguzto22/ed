@@ -1,0 +1,28 @@
+{
+  "id": "recly_spin_loop",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Girar sem parar",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.5,
+      "rotation": 180,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.999,
+      "rotation": 359.6,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

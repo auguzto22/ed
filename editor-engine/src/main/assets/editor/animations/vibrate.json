@@ -1,0 +1,63 @@
+{
+  "id": "recly_vibrate",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Vibrar",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.1,
+      "x": -0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.2,
+      "x": 0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.3,
+      "x": -0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.4,
+      "x": 0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.5,
+      "x": -0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.6,
+      "x": 0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.7,
+      "x": -0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.8,
+      "x": 0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 0.9,
+      "x": -0.008,
+      "easing": "LINEAR"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

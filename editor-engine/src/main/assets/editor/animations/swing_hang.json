@@ -1,0 +1,32 @@
+{
+  "id": "recly_swing_hang",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Pendurado",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.25,
+      "rotation": 10,
+      "easing": "SMOOTH"
+    },
+    {
+      "time": 0.5,
+      "easing": "SMOOTH"
+    },
+    {
+      "time": 0.75,
+      "rotation": -10,
+      "easing": "SMOOTH"
+    },
+    {
+      "time": 1
+    }
+  ]
+}
