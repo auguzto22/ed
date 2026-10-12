@@ -26,6 +26,9 @@ import com.recly.editor.R
 import com.termex.replay15.editor.domain.Project
 import com.termex.replay15.editor.media.MediaSourceAccess
 import com.termex.replay15.editor.project.ProjectStore
+import com.termex.replay15.account.AccountGate
+import com.termex.replay15.account.AccountManager
+import com.termex.replay15.account.AuthActivity
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -64,6 +67,8 @@ class EditorLibraryActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Primeira abertura: sem conta, vai para o cadastro e volta para cá depois.
+        if (!AccountGate.ensure(this)) return
         setContentView(R.layout.activity_editor_library)
         store = ProjectStore(File(filesDir, "editor-projects"))
         pendingTool = savedInstanceState?.getString(EXTRA_OPEN_TOOL)
@@ -87,20 +92,36 @@ class EditorLibraryActivity : Activity() {
         findViewById<View>(R.id.btnAutoEdit).setOnClickListener { openVideoPicker(TOOL_AUTO_EDIT) }
         findViewById<View>(R.id.cardAnalyze).setOnClickListener { openVideoPicker(TOOL_ANALYZE) }
         findViewById<View>(R.id.navPresets).setOnClickListener { openVideoPicker(TOOL_AUTO_EDIT) }
-        findViewById<View>(R.id.navSettings).setOnClickListener { showAbout() }
-        findViewById<View>(R.id.btnProfile).setOnClickListener { showAbout() }
+        findViewById<View>(R.id.navSettings).setOnClickListener { showAccountSheet() }
+        findViewById<View>(R.id.btnProfile).setOnClickListener { showAccountSheet() }
         findViewById<View>(R.id.navProjects).setOnClickListener {
             findViewById<android.widget.ScrollView>(R.id.libraryScroll).smoothScrollTo(0, 0)
         }
         btnSeeAll.setOnClickListener { expanded = !expanded; renderProjects() }
 
         installEditorMotion(findViewById(R.id.libraryRoot))
+        showAccountInitial()
         intro()
+    }
+
+    /** O botão de perfil mostra a inicial do nome da conta, como no protótipo. */
+    private fun showAccountInitial() {
+        val session = AccountManager.session(this) ?: return
+        val initial = session.displayName.firstOrNull()?.uppercaseChar() ?: return
+        findViewById<View>(R.id.profileIcon).visibility = View.GONE
+        findViewById<TextView>(R.id.profileInitial).apply {
+            text = initial.toString()
+            typeface = ReclyType.body(context, 700)
+            visibility = View.VISIBLE
+        }
+        findViewById<View>(R.id.btnProfile).contentDescription = "Conta de ${session.displayName}"
     }
 
     override fun onResume() {
         super.onResume()
         loadProjects()
+        // Renova o token em segundo plano; só desloga se o servidor recusar a sessão.
+        AccountManager.refreshIfNeeded(this) { AccountGate.openAuth(this, null, AuthActivity.MODE_SIGN_IN, expired = true) }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -373,6 +394,80 @@ class EditorLibraryActivity : Activity() {
                 io.execute {
                     runCatching { store.delete(project.id) }
                     loadProjects()
+                }
+            }
+            .show()
+    }
+
+    /** Ajustes: conta (nome, e-mail, sair, excluir) e informações do app. */
+    private fun showAccountSheet() {
+        val session = AccountManager.session(this)
+        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(8)) }
+        if (session != null) {
+            body.addView(row().apply {
+                background = reclySurface(EditorStyle.CARD, EditorStyle.BORDER)
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+                addView(TextView(context).apply {
+                    text = (session.displayName.firstOrNull()?.uppercaseChar() ?: '?').toString()
+                    gravity = Gravity.CENTER
+                    textSize = 18f
+                    setTextColor(EditorStyle.ON_ACCENT)
+                    typeface = ReclyType.body(context, 700)
+                    background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(EditorStyle.PRIMARY) }
+                }, LinearLayout.LayoutParams(dp(44), dp(44)))
+                addView(column().apply {
+                    setPadding(dp(12), 0, 0, 0)
+                    addView(TextView(context).apply {
+                        text = session.name.ifBlank { session.displayName }
+                        textSize = 16f; setTextColor(EditorStyle.INK); typeface = ReclyType.body(context, 700)
+                        maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                    })
+                    addView(TextView(context).apply {
+                        text = session.email
+                        textSize = 13f; setTextColor(EditorStyle.MUTED); typeface = ReclyType.body(context, 500)
+                        maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                    })
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            })
+        }
+        lateinit var dialog: android.app.Dialog
+        body.addView(action("Sobre o Recly") { dialog.dismiss(); showAbout() },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)).apply { topMargin = dp(14) })
+        if (session != null) {
+            body.addView(action("Sair da conta") {
+                dialog.dismiss()
+                AccountManager.signOut(this) { AccountGate.openAuth(this, null, AuthActivity.MODE_SIGN_IN) }
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)).apply { topMargin = dp(8) })
+            body.addView(TextView(this).apply {
+                text = "Excluir conta"
+                gravity = Gravity.CENTER
+                textSize = 14f
+                setTextColor(EditorStyle.PRIMARY_SOFT)
+                typeface = ReclyType.body(context, 600)
+                isClickable = true; isFocusable = true
+                setOnClickListener { dialog.dismiss(); confirmDeleteAccount() }
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(6) })
+        }
+        dialog = sheet("Ajustes", body)
+    }
+
+    private fun confirmDeleteAccount() {
+        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Excluir sua conta?")
+            .setMessage("A conta e o login são apagados para sempre. Os projetos e vídeos que estão neste aparelho continuam aqui.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Excluir") { _, _ ->
+                AccountManager.deleteAccount(this) { result ->
+                    result.onSuccess {
+                        Toast.makeText(this, "Conta excluída.", Toast.LENGTH_LONG).show()
+                        AccountGate.openAuth(this, null, AuthActivity.MODE_SIGN_UP)
+                    }.onFailure { error ->
+                        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                            .setTitle("Não foi possível excluir")
+                            .setMessage(error.message ?: "Tente de novo.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
                 }
             }
             .show()

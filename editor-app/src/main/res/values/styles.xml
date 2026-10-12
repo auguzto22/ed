@@ -40,4 +40,36 @@
         <item name="android:gravity">center</item>
         <item name="android:background">@drawable/recly_card_dark</item>
     </style>
+
+    <!-- Campos da tela de conta -->
+    <style name="Recly.FieldLabel" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">14dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textColor">@color/recly_text_secondary</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="Recly.Field" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:background">@drawable/rc_input</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textColor">@color/recly_text_primary</item>
+        <item name="android:textColorHint">@color/recly_text_disabled</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:importantForAutofill">yes</item>
+    </style>
+
+    <style name="Recly.FieldError" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:textColor">@color/recly_coral_soft</item>
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:visibility">gone</item>
+    </style>
 </resources>

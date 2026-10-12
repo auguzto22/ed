@@ -219,8 +219,14 @@ class EditorActivity : Activity() {
         return if (handled) true else super.dispatchKeyEvent(event)
     }
 
+    /** False quando o portão de conta fechou esta tela no onCreate (nada foi montado). */
+    private var built = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Aberto por outro app (compartilhar/editar vídeo) sem conta: cadastro primeiro, depois volta.
+        if (!com.termex.replay15.account.AccountGate.ensure(this)) return
+        built = true
         if (isEditorDebuggable()) {
             System.setProperty("recly.preview.transitionMode", intent.getStringExtra("transition_debug") ?: "NORMAL")
             System.setProperty("recly.preview.traceTransitions", intent.getBooleanExtra("trace_transitions", false).toString())
@@ -1564,6 +1570,7 @@ class EditorActivity : Activity() {
         preview.pause(); super.onStop()
     }
     override fun onDestroy() {
+        if (!built) { super.onDestroy(); return }
         captionSession.cancel()
         captionJob?.cancel()
         captionScope.cancel()
