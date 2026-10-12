@@ -81,13 +81,21 @@ class EditorPreviewEngine(
             }
         }
 
-    private val tick=object:Runnable{override fun run(){
-        if(closed||!clock.isPlaying())return
-        val position=clock.positionUs()
-        if(position>=project.durationUs){pause();return}
-        if (!seekScheduled) renderAt(position,SeekMailbox.Mode.PRECISE,false)
-        main.postDelayed(this,FRAME_TICK_MS)
-    }}
+    // Tique de reprodução preso ao vsync da tela (Choreographer). O postDelayed(16 ms) antigo
+    // escorregava contra os 16,67 ms reais e contra 90/120 Hz, e o vídeo saía em degraus.
+    private val tick=object:Choreographer.FrameCallback{
+        var scheduled=false
+        override fun doFrame(frameTimeNanos:Long){
+            scheduled=false
+            if(closed||!clock.isPlaying())return
+            val position=clock.positionUs()
+            if(position>=project.durationUs){pause();return}
+            if (!seekScheduled) renderAt(position,SeekMailbox.Mode.PRECISE,false)
+            scheduleTick()
+        }
+    }
+    private fun scheduleTick(){if(!tick.scheduled){tick.scheduled=true;Choreographer.getInstance().postFrameCallback(tick)}}
+    private fun cancelTick(){tick.scheduled=false;Choreographer.getInstance().removeFrameCallback(tick)}
 
     fun load(project:Project,positionUs:Long,playWhenReady:Boolean=false){
         checkMain();if(closed)return
@@ -135,9 +143,9 @@ class EditorPreviewEngine(
     }
     fun beginScrub(){checkMain();if(scrubbing)return;scrubbing=true;pause();audio.beginScrub()}
     fun endScrub(finalPositionUs:Long,resumePlayback:Boolean?=null){checkMain();scrubbing=false;val target=finalPositionUs.coerceIn(0,project.durationUs);clock.seek(target);audio.endScrub();request(clock.positionUs(),SeekMailbox.Mode.PRECISE,true);if(resumePlayback==true)play() else if(resumePlayback==false)pause()}
-    fun play(){checkMain();if(closed||project.allVideos.isEmpty())return;if(clock.positionUs()>=project.durationUs)clock.seek(0);diagnostics.playRequested();audio.play(clock.positionUs());clock.start();state=State.PLAYING;main.removeCallbacks(tick);main.post(tick)}
+    fun play(){checkMain();if(closed||project.allVideos.isEmpty())return;if(clock.positionUs()>=project.durationUs)clock.seek(0);diagnostics.playRequested();audio.play(clock.positionUs());clock.start();state=State.PLAYING;cancelTick();scheduleTick()}
     fun pause(){pause(false)}
-    private fun pause(keepPreparing:Boolean){checkMain();clock.pause();audio.pause();main.removeCallbacks(tick);if(!keepPreparing&&state!=State.EMPTY&&state!=State.ERROR)state=if(hasPresentedFrame)State.PAUSED else State.PREPARING_SOURCE}
+    private fun pause(keepPreparing:Boolean){checkMain();clock.pause();audio.pause();cancelTick();if(!keepPreparing&&state!=State.EMPTY&&state!=State.ERROR)state=if(hasPresentedFrame)State.PAUSED else State.PREPARING_SOURCE}
     fun toggle(durationUs:Long){if(isPlaying)pause()else{if(positionUs>=durationUs-50_000)seek(0);play()}}
     fun redraw(){
         checkMain();if(closed || redrawScheduled)return
@@ -181,7 +189,7 @@ class EditorPreviewEngine(
     }
     private fun chosenQuality():Int{if(quality!=0)return quality;val am=context.getSystemService(ActivityManager::class.java);return PreviewQualityPolicy.choose(PreviewQualityPolicy.Inputs(am?.memoryClass?:256,am?.isLowRamDevice?:false,minOf(renderer.width,renderer.height),resolver.resolve(clock.positionUs()).videos.size,project.export.fps))}
     private fun checkMain(){check(Looper.myLooper()==Looper.getMainLooper()){ "Preview API must run on main thread" }}
-    override fun close(){checkMain();if(closed)return;closed=true;cancelScheduledSeek();cancelScheduledRedraw();main.removeCallbacks(tick);clock.pause();mailbox.close();audio.close();decoders.close { renderer.close() };state=State.EMPTY;diagnostics.event("PREVIEW_RELEASE ${diagnostics.summary()}")}
+    override fun close(){checkMain();if(closed)return;closed=true;cancelScheduledSeek();cancelScheduledRedraw();cancelTick();clock.pause();mailbox.close();audio.close();decoders.close { renderer.close() };state=State.EMPTY;diagnostics.event("PREVIEW_RELEASE ${diagnostics.summary()}")}
     fun release()=close()
-    companion object{private const val FRAME_TICK_MS=16L;private const val PREWARM_US=800_000L;private const val IMAGE_PREFETCH_US=1_500_000L}
+    companion object{private const val PREWARM_US=800_000L;private const val IMAGE_PREFETCH_US=1_500_000L}
 }

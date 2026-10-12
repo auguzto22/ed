@@ -472,12 +472,21 @@ class GpuPreviewRenderer(
             bindTexture(overlayProgram, "uTexture", GLES20.GL_TEXTURE_2D, sceneTarget!!.textures[0], 0)
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         }
+        // Custo real do quadro, medido ANTES do swap: eglSwapBuffers bloqueia esperando o vsync
+        // (~16 ms a 60 Hz). Contar essa espera fazia o controle de qualidade achar o aparelho
+        // lento e derrubar a prévia para 540p/480p, deixando a imagem áspera.
+        val workMs = (System.nanoTime() - started) / 1_000_000.0
         // Do not publish a draw superseded by a newer seek during GPU work.
         if (!isGenerationCurrent(render.generation)) return
         // Safe swap: window may have been invalidated between draw start and swap.
         if (window != EGL14.EGL_NO_SURFACE && !EGL14.eglSwapBuffers(display, window)) {
             diagnostics.event("EGL_SWAP_FAILED error=0x${Integer.toHexString(EGL14.eglGetError())}")
             return
+        }
+        // Quadro perdido de verdade (trabalho + swap passou de ~2 vsyncs): isso sim é aparelho
+        // sem fôlego, e entra como queda de quadro no controle de qualidade.
+        if ((System.nanoTime() - started) / 1_000_000.0 > MISSED_FRAME_MS) {
+            com.termex.replay15.editor.core.PreviewPerformanceController.recordDroppedFrames(1)
         }
         lastRenderedState = render
         // A retained texture can be drawn during seek, but must not report seek completion.
@@ -486,7 +495,7 @@ class GpuPreviewRenderer(
             else slots[layer.key]?.let { it.hasFrame && it.frameGeneration == render.generation } == true
         }
         if (currentFrames) {
-            diagnostics.frameRendered((System.nanoTime() - started) / 1_000_000.0, render.timeUs)
+            diagnostics.frameRendered(workMs, render.timeUs)
             main.post { if (!released.get() && isGenerationCurrent(render.generation)) onFramePresented(render.timeUs) }
         }
     }
@@ -983,6 +992,8 @@ class GpuPreviewRenderer(
     }
 
     companion object {
+        /** Acima disso (trabalho + swap) o quadro passou de dois vsyncs a 60 Hz: perdido. */
+        private const val MISSED_FRAME_MS = 34.0
         /** Longest time a seek/transition may keep the previous frame on screen before drawing partially. */
         private const val MAX_HOLD_NS = 400_000_000L
         private val IDENTITY=floatArrayOf(1f,0f,0f,0f,0f,1f,0f,0f,0f,0f,1f,0f,0f,0f,0f,1f)
