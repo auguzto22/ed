@@ -349,31 +349,39 @@ class EditorGlyph(
 
 fun Context.toolAction(name: String, click: () -> Unit): LinearLayout = column().apply {
     gravity = Gravity.CENTER
-    minimumWidth = dp(76)
-    minimumHeight = dp(74)
+    minimumWidth = dp(66)
+    minimumHeight = dp(58)
     contentDescription = name
     tooltipText = name
     isClickable = true
     isFocusable = true
-    setPadding(dp(8), dp(8), dp(8), dp(6))
+    setPadding(dp(6), dp(6), dp(6), dp(4))
     val value = android.util.TypedValue()
     theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
     setBackgroundResource(value.resourceId)
 
     val iconView = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, if (name == "+ Midia") EditorStyle.WHITE else 0xFFE4E4E7.toInt(), context))
+        setImageDrawable(EditorGlyph(name, if (name == "+ Midia") EditorStyle.ACCENT else 0xFFE8E8EE.toInt(), context))
         importantForAccessibility = 2
     }
-    addView(iconView, LinearLayout.LayoutParams(dp(26), dp(26)))
+    addView(iconView, LinearLayout.LayoutParams(dp(22), dp(22)))
 
-    val labelView = label(name, 11.5f, 0xFFD4D4D8.toInt()).apply {
+    val labelView = label(name, 10.5f, 0xFFC9C9D3.toInt()).apply {
         gravity = Gravity.CENTER
         importantForAccessibility = 2
-        setPadding(0, dp(4), 0, 0)
+        setPadding(0, dp(3), 0, 0)
+        maxLines = 1
     }
     addView(labelView)
 
-    setOnClickListener { click() }
+    setOnClickListener {
+        // Small "pop" on the glyph so every tap is acknowledged before the panel opens.
+        iconView.animate().cancel()
+        iconView.scaleX = .8f; iconView.scaleY = .8f
+        iconView.animate().scaleX(1f).scaleY(1f).setDuration(240)
+            .setInterpolator(android.view.animation.OvershootInterpolator(3f)).start()
+        click()
+    }
 }
 
 fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).apply {

@@ -1025,7 +1025,9 @@ class EditorActivity : Activity() {
         effectTools = EffectTools(this, { project }, { position }, ::seek, ::edit, ::previewEdit, {
             runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), 709) }
                 .onFailure { error("Seletor de pacotes indisponivel") }
-        }, openFilters = { filters() })
+        }, openFilters = { filters() },
+            loopPreview = { clipId -> loopWindowFor(clipId).let { startPreviewLoop(it.first, it.last) } },
+            stopLoop = { stopPreviewLoop() })
         backgroundRemovalTools = BackgroundRemovalTools(this, { project }, ::edit, ::previewEdit)
         transitionTools = TransitionTools(this, { project }, { position }, ::seek, ::edit, ::previewEdit) { startUs, endUs ->
             seek(startUs)
@@ -1088,6 +1090,7 @@ class EditorActivity : Activity() {
         installEditorMotion(root)
     }
 
+    private var lastToolSignature = ""
     private fun updateContextualTools() {
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
@@ -1197,9 +1200,14 @@ class EditorActivity : Activity() {
             )
         }
         items.forEach { (name, click) -> contextualTools.addView(toolAction(name, click)) }
-        contextualTools.alpha = 0f
-        contextualTools.animate().cancel()
-        contextualTools.animate().alpha(1f).setDuration(EditorStyle.MOTION_TOOLBAR).start()
+        // Only animate when the tool set actually changes (selection change), not on every refresh.
+        val signature = items.joinToString("|") { it.first }
+        if (signature != lastToolSignature) {
+            lastToolSignature = signature
+            contextualTools.alpha = 1f
+            staggerChildren(contextualTools, stepMs = 18L)
+            installEditorMotion(contextualTools)
+        }
     }
 
     private fun selectMainClip(index: Int) {
@@ -1426,6 +1434,51 @@ class EditorActivity : Activity() {
         if (!EditorOverlayHost.feedback(message, kind)) Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
+    // ── Looping preview used while browsing effects / filters ─────────────────────────────
+    private var loopRange: LongRange? = null
+    private val loopTick = object : Runnable {
+        override fun run() {
+            val range = loopRange ?: return
+            if (!::preview.isInitialized || isDestroyed) return
+            if (!preview.isPlaying || preview.positionUs >= range.last || preview.positionUs < range.first - 50_000L) {
+                seek(range.first)
+                if (!preview.isPlaying) preview.toggle(project.durationUs)
+            }
+            main.postDelayed(this, 120L)
+        }
+    }
+
+    /** Plays [startUs, endUs) on repeat so the chosen look is seen in motion on the real video. */
+    private fun startPreviewLoop(startUs: Long, endUs: Long) {
+        if (busy || project.allVideos.isEmpty()) return
+        val start = startUs.coerceIn(0L, project.durationUs)
+        val end = endUs.coerceIn(start + 300_000L, project.durationUs.coerceAtLeast(start + 300_000L))
+        val changed = loopRange?.let { it.first != start || it.last != end } ?: true
+        loopRange = start..end
+        main.removeCallbacks(loopTick)
+        if (changed) seek(start)
+        if (!preview.isPlaying) preview.toggle(project.durationUs)
+        main.postDelayed(loopTick, 120L)
+    }
+
+    private fun stopPreviewLoop() {
+        if (loopRange == null) return
+        loopRange = null
+        main.removeCallbacks(loopTick)
+        if (::preview.isInitialized && preview.isPlaying) preview.pause()
+    }
+
+    /** Clip-local loop window around the playhead for the clip being styled. */
+    private fun loopWindowFor(clipId: String): LongRange {
+        val index = project.videos.indexOfFirst { it.id == clipId }
+        val (start, duration) = if (index >= 0) project.startOf(index) to project.videos[index].durationUs
+            else project.videoTracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.clip.id == clipId }
+                ?.let { it.startUs to it.clip.durationUs } ?: (0L to project.durationUs)
+        val window = minOf(2_500_000L, duration)
+        val from = position.coerceIn(start, (start + duration - window).coerceAtLeast(start))
+        return from..(from + window)
+    }
+
     private fun looksLikeProblem(message: String): Boolean {
         val lower = message.lowercase()
         return listOf("não foi possível", "nao foi possivel", "falha", "aguarde", "insuficiente", "nada a gerar",
@@ -1521,6 +1574,8 @@ class EditorActivity : Activity() {
         preview.pause(); super.onStop()
     }
     override fun onDestroy() {
+        if (::previewBox.isInitialized) EditorOverlayHost.detach(previewBox)
+        stopPreviewLoop()
         captionSession.cancel()
         captionJob?.cancel()
         captionScope.cancel()
@@ -2862,8 +2917,12 @@ class EditorActivity : Activity() {
         val sourceTimeUs = clip.timeMap.sourceAt(timeInClipUs)
         FilterGallery.show(this, clip,
             sessionTimestampUs = sourceTimeUs,
-            preview = { filter, strength -> previewEdit(project.mapVideo(clip.id) { it.copy(filter = filter, filterStrength = strength) }) },
-            restore = { previewEdit(project) }) { filter, strength, all ->
+            preview = { filter, strength ->
+                previewEdit(project.mapVideo(clip.id) { it.copy(filter = filter, filterStrength = strength) })
+                loopWindowFor(clip.id).let { startPreviewLoop(it.first, it.last) }
+            },
+            restore = { stopPreviewLoop(); previewEdit(project) }) { filter, strength, all ->
+            stopPreviewLoop()
             edit(project.copy(videos = project.videos.map { if (all || it.id == clip.id) it.copy(filter = filter, filterStrength = strength) else it }))
         }
     }
@@ -3631,6 +3690,7 @@ class EditorActivity : Activity() {
             }.show()
     }
 
+    private var captionRunning = false
     private fun automaticCaptionsDialog() {
         val body = column()
         val languageNames = listOf("Português (Brasil)", "Inglês", "Automático")
@@ -3685,16 +3745,15 @@ class EditorActivity : Activity() {
                 .show()
             return
         }
+        if (captionRunning) { feedback("As legendas já estão sendo geradas"); return }
         val generationId = captionSession.begin()
         val cancellation = captionSession.cancellation(generationId)
-        busy = true
-        preview.pause()
-        info.text = "Preparando áudio..."
-        val progressDialog = AlertDialog.Builder(this)
-            .setTitle("Legendas automáticas")
-            .setMessage("Preparando áudio...")
-            .setNegativeButton("Cancelar") { _, _ -> captionSession.cancel(); captionJob?.cancel(); info.text = "Cancelando legendas..." }
-            .create().apply { setCancelable(false); show() }
+        captionRunning = true
+        // Runs beside the editor: the card docks on the preview and editing stays enabled.
+        val card = EditorOverlayHost.task("Legendas automáticas") {
+            captionSession.cancel(); captionJob?.cancel()
+        }
+        card?.update("Preparando áudio...")
         captionJob = captionScope.launch {
             val result = runCatching {
                 withContext(Dispatchers.IO) {
@@ -3705,30 +3764,30 @@ class EditorActivity : Activity() {
                         val clipLabel = "Clipe ${ordinal + 1}/${clips.size}"
                         updated = generator.generate(updated, index, options, { event ->
                             main.post {
-                                if (!isDestroyed && progressDialog.isShowing) {
-                                    val message = "$clipLabel • ${event.stage}"
-                                    progressDialog.setMessage(message); info.text = message
-                                }
+                                if (!isDestroyed) card?.update("$clipLabel • ${event.stage}", (ordinal + .5f) / clips.size)
                             }
                         }, { cancellation.check() }).first
                     }
                     cancellation.check(); updated
                 }
             }
+            captionRunning = false
             if (isDestroyed) return@launch
-            progressDialog.dismiss(); busy = false
             result.fold({ updated ->
-                if (runCatching { cancellation.check() }.isFailure) { info.text = "Geração cancelada"; return@fold }
-                val count = updated.texts.size - snapshot.texts.size
-                edit(updated)
-                info.text = "$count legendas geradas com Gemini."
-                AlertDialog.Builder(this@EditorActivity).setTitle("Legendas criadas")
-                    .setMessage("$count legendas foram inseridas na timeline. Texto, fonte, estilo, animação, posição e duração continuam editáveis.")
-                    .setPositiveButton("Editar") { _, _ -> textMenu() }
-                    .setNegativeButton("Depois", null).show()
+                if (runCatching { cancellation.check() }.isFailure) { card?.fail("Geração cancelada"); return@fold }
+                // Merge only the new captions into whatever the project is now, so edits made
+                // while the captions were being generated are kept.
+                val known = snapshot.texts.mapTo(HashSet()) { it.id }
+                val added = updated.texts.filter { it.id !in known }
+                if (added.isEmpty()) { card?.fail("Nenhuma fala encontrada"); return@fold }
+                val timelineChanged = project.videos.map { it.id to it.durationUs } != snapshot.videos.map { it.id to it.durationUs }
+                edit(project.copy(texts = project.texts + added, captionLanguage = updated.captionLanguage))
+                val note = if (timelineChanged) " Confira o sincronismo: a timeline mudou durante a geração." else ""
+                card?.succeed("${added.size} legendas na timeline.$note", "Editar legendas") { textMenu() }
+                    ?: feedback("${added.size} legendas criadas")
             }, { failure ->
-                if (failure is CancellationException) info.text = "Geração cancelada"
-                else error(captionErrorMessage(failure))
+                if (failure is CancellationException) card?.fail("Geração cancelada")
+                else { card?.fail(captionErrorMessage(failure)) ?: error(captionErrorMessage(failure)) }
             })
         }
     }

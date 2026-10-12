@@ -82,36 +82,67 @@ class AutoEditPanel(
     private fun generate(snapshot: Project, index: Int, words: List<TimedWord>, options: AutoEditOptions) {
         cancellation?.cancel()
         val token = AutoEditCancellation().also { cancellation = it }
-        processing(true)
-        val progressText = activity.label(AutoEditProgress.Inspecting.label, 15f)
-        progressDialog = AlertDialog.Builder(activity)
-            .setTitle("Analisando clipe")
-            .setView(progressText)
-            .setNegativeButton("Cancelar") { _, _ -> token.cancel() }
-            .setOnCancelListener { token.cancel() }
-            .show()
+        // The analysis runs beside the editor in a floating card; editing stays available.
+        val card = EditorOverlayHost.task("Analisando clipe") { token.cancel() }
+        val fallbackText = activity.label(AutoEditProgress.Inspecting.label, 15f)
+        if (card == null) {
+            processing(true)
+            progressDialog = AlertDialog.Builder(activity)
+                .setTitle("Analisando clipe")
+                .setView(fallbackText)
+                .setNegativeButton("Cancelar") { _, _ -> token.cancel() }
+                .setOnCancelListener { token.cancel() }
+                .show()
+        }
+        fun stage(label: String, progress: Float) = activity.runOnUiThread {
+            if (activity.isDestroyed) return@runOnUiThread
+            card?.update(label, progress) ?: run { fallbackText.text = label }
+        }
+        stage(AutoEditProgress.Inspecting.label, .05f)
+        val clip = snapshot.videos[index]
         worker.execute {
             val result = runCatching {
-                val clip = snapshot.videos[index]
-                val analysis = ClipAnalyzer.analyze(activity, clip, words, token) { stage ->
-                    activity.runOnUiThread { if (!activity.isDestroyed) progressText.text = stage.label }
+                val analysis = ClipAnalyzer.analyze(activity, clip, words, token) { progress ->
+                    stage(progress.label, when (progress) {
+                        AutoEditProgress.Audio -> .25f
+                        AutoEditProgress.Visuals -> .55f
+                        else -> .1f
+                    })
                 }
-                activity.runOnUiThread { if (!activity.isDestroyed) progressText.text = AutoEditProgress.Planning.label }
+                stage(AutoEditProgress.Planning.label, .8f)
                 token.check()
                 val plan = AutoEditPlanner.plan(analysis, options)
                 token.check()
-                activity.runOnUiThread { if (!activity.isDestroyed) progressText.text = AutoEditProgress.Validating.label }
+                stage(AutoEditProgress.Validating.label, .92f)
                 AutoEditPlanner.validate(plan)
                 token.check()
-                plan to AutoEditExecutor.execute(snapshot, index, plan)
+                plan
             }
             activity.runOnUiThread {
                 if (activity.isDestroyed) return@runOnUiThread
-                progressDialog?.dismiss(); progressDialog = null; processing(false)
+                if (card == null) { progressDialog?.dismiss(); progressDialog = null; processing(false) }
                 result.fold(
-                    onSuccess = { (plan, edited) -> showPreview(snapshot, index, words, options, plan, edited) },
+                    onSuccess = { plan ->
+                        // The user may have kept editing: apply the plan to the project as it is now,
+                        // as long as the analysed clip itself was not changed.
+                        val current = project()
+                        val currentIndex = current.videos.indexOfFirst { it.id == clip.id }
+                        if (currentIndex < 0 || current.videos[currentIndex] != clip) {
+                            card?.fail("O clipe mudou durante a análise. Analise de novo.")
+                                ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
+                            return@fold
+                        }
+                        val edited = runCatching { AutoEditExecutor.execute(current, currentIndex, plan) }.getOrElse { error ->
+                            card?.fail("Não foi possível montar a edição: ${error.message}"); return@fold
+                        }
+                        if (card != null) card.succeed(plan.summary().lineSequence().firstOrNull().orEmpty().ifBlank { "Edição pronta" }, "Ver resultado") {
+                            showPreview(current, currentIndex, words, options, plan, edited)
+                        } else showPreview(current, currentIndex, words, options, plan, edited)
+                    },
                     onFailure = { error ->
-                        if (error is InterruptedException) Toast.makeText(activity, "Auto Edit cancelado", Toast.LENGTH_SHORT).show()
+                        if (error is InterruptedException) {
+                            card?.fail("Análise cancelada") ?: Toast.makeText(activity, "Auto Edit cancelado", Toast.LENGTH_SHORT).show()
+                        } else if (card != null) card.fail("Não foi possível analisar: ${error.message}")
                         else AlertDialog.Builder(activity).setTitle("Auto Edit").setMessage("Nao foi possivel analisar o clipe: ${error.message}").setPositiveButton("OK", null).show()
                     },
                 )

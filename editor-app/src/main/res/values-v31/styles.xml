@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ system splash: graphite background with the Recly rings, no white flash.
+         The in-app BootSplashView continues the same motif after the first frame. -->
+    <style name="Theme.Replay15" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/recly_bg_main</item>
+        <item name="android:navigationBarColor">@color/recly_bg_main</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:colorAccent">@color/recly_accent_white</item>
+        <item name="android:windowBackground">@color/recly_bg_main</item>
+        <item name="android:windowSplashScreenBackground">#FF09090C</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF09090C</item>
+        <item name="android:windowSplashScreenAnimationDuration">600</item>
+    </style>
+
+    <style name="Theme.Replay15.Editor" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">@color/recly_bg_main</item>
+        <item name="android:navigationBarColor">@color/recly_bg_main</item>
+        <item name="android:colorAccent">@color/recly_accent_white</item>
+        <item name="android:windowBackground">@color/recly_bg_main</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowSplashScreenBackground">#FF09090C</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF09090C</item>
+        <item name="android:windowSplashScreenAnimationDuration">600</item>
+    </style>
+</resources>
