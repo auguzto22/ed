@@ -486,6 +486,53 @@ class EditorActivity : Activity() {
         addView(bar, FrameLayout.LayoutParams(-2, -1, Gravity.CENTER_HORIZONTAL))
     }
 
+    /**
+     * Amostra "Aa" de um estilo de texto: a letra desenhada na fonte, cor, fundo e contorno
+     * que o estilo aplica, com o nome embaixo. Usada em todo lugar onde se escolhe estilo.
+     */
+    private fun styleSampleTile(
+        name: String,
+        fontId: String?,
+        color: Int,
+        background: Int,
+        outline: Int?,
+        click: () -> Unit,
+    ): LinearLayout = column().apply {
+        gravity = Gravity.CENTER_HORIZONTAL
+        isClickable = true
+        isFocusable = true
+        contentDescription = "Estilo $name"
+        val box = FrameLayout(this@EditorActivity).apply {
+            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                setColor(EditorStyle.CARD_ELEVATED)
+                setStroke(dp(1.5f), EditorStyle.BORDER)
+                cornerRadius = dp(10).toFloat()
+            }, null)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        }
+        val sample = TextView(this@EditorActivity).apply {
+            text = "Aa"
+            textSize = 22f
+            includeFontPadding = false
+            setTextColor(color)
+            typeface = if (fontId != null) EditorFonts.get(this@EditorActivity, fontId) else
+                android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL)
+            if (background != Color.TRANSPARENT) {
+                setBackgroundColor(background)
+                setPadding(dp(5), dp(1), dp(5), dp(2))
+            }
+            if (outline != null) setShadowLayer(dp(2).toFloat(), 0f, 0f, outline)
+        }
+        box.addView(sample, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+        addView(box, LinearLayout.LayoutParams(-1, dp(56)))
+        addView(label(name, 10f, EditorStyle.MUTED).apply {
+            gravity = Gravity.CENTER
+            maxLines = 1
+            setPadding(0, dp(4), 0, 0)
+        }, LinearLayout.LayoutParams(-1, -2))
+        setOnClickListener { click() }
+    }
+
     /** Moldura do estilo escolhido em amarelo, as outras em cinza, como no canvas. */
     private fun paintCaptionStyleChips() {
         captionStyleChips.forEachIndexed { index, chip ->
@@ -3996,7 +4043,10 @@ class EditorActivity : Activity() {
         body.addView(sectionTitle("Estilo", "A prévia é atualizada enquanto você arrasta. Desfazer será uma única ação ao aplicar."))
         val presets = row()
         fun preset(name: String, next: SubtitleStylePatch) {
-            presets.addView(action(name) { update(next) }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginEnd = dp(3) })
+            val outline = if ((next.outlineWidth ?: 0f) > 0f) next.outlineColor ?: Color.BLACK else null
+            presets.addView(styleSampleTile(name, next.fontId, next.color ?: Color.WHITE,
+                next.backgroundColor ?: Color.TRANSPARENT, outline) { update(next) },
+                LinearLayout.LayoutParams(dp(76), -2).apply { marginEnd = dp(8) })
         }
         preset("Minimal", SubtitleStylePatch(fontId = "poppins_regular", fontWeight = 600, color = Color.WHITE,
             backgroundColor = Color.TRANSPARENT, outlineWidth = 0f, shadow = false))
@@ -4074,11 +4124,20 @@ class EditorActivity : Activity() {
         fun update(fontId: String) { patch = patch.plus(SubtitleStylePatch(fontId = fontId)); subtitlePatchPreview(id, patch) }
         val current = CaptionStyleResolver.resolve(project, text).fontId
         body.addView(sectionTitle("Fonte", "Cada legenda conserva cor, posição, tamanho e demais propriedades."))
-        val selected = label(FontCatalog.requireOrDefault(current).displayName, 16f, EditorStyle.ACCENT)
-        body.addView(selected)
+        // Fonte atual como "Aa" grande na própria fonte, com o nome ao lado.
+        val selectedRow = row().apply { setPadding(dp(4), dp(6), dp(4), dp(10)) }
+        val selectedSample = label("Aa", 34f, EditorStyle.TEXT).apply {
+            typeface = EditorFonts.get(this@EditorActivity, current)
+            includeFontPadding = false
+        }
+        val selected = label(FontCatalog.requireOrDefault(current).displayName, 15f, EditorStyle.TEXT)
+        selectedRow.addView(selectedSample, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(14) })
+        selectedRow.addView(selected, LinearLayout.LayoutParams(0, -2, 1f))
+        body.addView(selectedRow)
         body.addView(action("Abrir galeria de fontes", true) {
             StudioPanels.fonts(this, current) { fontId ->
                 selected.text = FontCatalog.requireOrDefault(fontId).displayName
+                selectedSample.typeface = EditorFonts.get(this, fontId)
                 update(fontId)
             }
         })
@@ -4264,7 +4323,7 @@ class EditorActivity : Activity() {
                 TextAlignment.RIGHT -> Gravity.END
             }
             val fontAsset = com.termex.replay15.editor.font.FontCatalog.requireOrDefault(fontId)
-            fontButton.text = "Fonte: ${fontAsset.displayName}"
+            fontButton.text = "Aa   ${fontAsset.displayName}"
             fontButton.typeface = EditorFonts.get(this, fontId)
             alignmentButton.text = "Alinhamento: ${when (alignment) {
                 TextAlignment.LEFT -> "Esquerda"; TextAlignment.CENTER -> "Centro"; TextAlignment.RIGHT -> "Direita"
@@ -4279,23 +4338,25 @@ class EditorActivity : Activity() {
 
         section("Estilos rapidos")
         val presets = row()
-        fun preset(name: String, apply: () -> Unit) = action(name) { apply(); updatePreview() }
-        presets.addView(preset("Limpo") {
+        // Cada estilo rápido aparece como "Aa" já na fonte, cor, fundo e contorno dele.
+        fun preset(name: String, sampleFont: String, sampleColor: Int, sampleBg: Int, sampleOutline: Int?, apply: () -> Unit) =
+            styleSampleTile(name, sampleFont, sampleColor, sampleBg, sampleOutline) { apply(); updatePreview() }
+        presets.addView(preset("Limpo", TextFont.MODERNA.id, Color.WHITE, Color.TRANSPARENT, Color.BLACK) {
             fontId = TextFont.MODERNA.id; boldValue = true; italicValue = false; color = Color.WHITE
             backgroundColor = Color.TRANSPARENT; outlineColor = Color.BLACK; outlineWidth = 3
-        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginEnd = dp(3) })
-        presets.addView(preset("Impacto") {
+        }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
+        presets.addView(preset("Impacto", TextFont.IMPACTO.id, 0xFFFFCF5A.toInt(), Color.TRANSPARENT, Color.BLACK) {
             fontId = TextFont.IMPACTO.id; boldValue = true; italicValue = false; color = 0xFFFFCF5A.toInt()
             backgroundColor = Color.TRANSPARENT; outlineColor = Color.BLACK; outlineWidth = 12
-        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
-        presets.addView(preset("Legenda") {
+        }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(4); marginEnd = dp(4) })
+        presets.addView(preset("Legenda", TextFont.MODERNA.id, Color.WHITE, 0xCC000000.toInt(), null) {
             fontId = TextFont.MODERNA.id; boldValue = true; italicValue = false; color = Color.WHITE
             backgroundColor = 0xCC000000.toInt(); outlineWidth = 0; boxWidth = 80
-        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginStart = dp(3) })
+        }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(4) })
         body.addView(presets)
 
         section("Fonte e formato")
-        fontButton = action("Fonte: ${com.termex.replay15.editor.font.FontCatalog.requireOrDefault(fontId).displayName}") {
+        fontButton = action("Aa   ${com.termex.replay15.editor.font.FontCatalog.requireOrDefault(fontId).displayName}") {
             StudioPanels.fonts(this, fontId) { selectedFontId -> fontId = selectedFontId; updatePreview() }
         }.apply { typeface = EditorFonts.get(this@EditorActivity, fontId) }
         body.addView(fontButton, LinearLayout.LayoutParams(-1, dp(54)))
