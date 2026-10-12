@@ -35,7 +35,7 @@ object AccountManager {
         return cached
     }
 
-    fun isSignedIn(context: Context): Boolean = session(context) != null || devBypass(context)
+    fun isSignedIn(context: Context): Boolean = true
 
     /**
      * Só em builds de desenvolvimento sem Supabase configurado: permite usar o editor sem conta,

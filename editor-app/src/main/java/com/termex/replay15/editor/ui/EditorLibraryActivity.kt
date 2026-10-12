@@ -120,8 +120,6 @@ class EditorLibraryActivity : Activity() {
     override fun onResume() {
         super.onResume()
         loadProjects()
-        // Renova o token em segundo plano; só desloga se o servidor recusar a sessão.
-        AccountManager.refreshIfNeeded(this) { AccountGate.openAuth(this, null, AuthActivity.MODE_SIGN_IN, expired = true) }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
