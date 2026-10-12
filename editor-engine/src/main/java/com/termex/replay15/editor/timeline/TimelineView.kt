@@ -276,6 +276,7 @@ class TimelineView(context: Context) : View(context) {
         paint.color = Color.WHITE
         c.drawText(value, badgeLeft + (badgeRight - badgeLeft - textWidth) / 2f, badgeBottom - dp(5f), paint)
     }
+    private val rulerTypeface: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     override fun onDraw(c: Canvas) {
         val started = PreviewPacingProbe.begin("Recly.TimelineView.draw")
         try { drawMeasured(c) }
@@ -286,13 +287,35 @@ class TimelineView(context: Context) : View(context) {
         // nothing. Only ViewGroup, whose onDraw skips children unless told otherwise, needs it.
         val gutter = dp(GUTTER_DP)
         c.save(); c.clipRect(gutter, 0f, width.toFloat(), height.toFloat())
-        val step = when { pixelsPerSecond >= dp(150f) -> SECOND / 2; pixelsPerSecond >= dp(40f) -> SECOND; pixelsPerSecond >= dp(15f) -> 5 * SECOND; else -> 10 * SECOND }
-        var tick = time(gutter) / step * step
-        while (tick <= project.durationUs && x(tick) <= width) {
-            val xx = x(tick)
-            text(c, java.lang.String.format(java.util.Locale.ROOT, "%02d:%02d", tick / SECOND / 60, tick / SECOND % 60), xx + dp(3f), dp(16f), 0xFF9A968C.toInt(), 9f)
-            tick += step
+        // Régua estilo Edits: "0:01  ·  0:02  ·  0:03", rótulo centralizado na marca e um
+        // pontinho no meio de cada intervalo. O passo cresce com o zoom para nunca encavalar.
+        val labelStep = when {
+            pixelsPerSecond >= dp(56f) -> SECOND
+            pixelsPerSecond >= dp(28f) -> 2 * SECOND
+            pixelsPerSecond >= dp(12f) -> 5 * SECOND
+            pixelsPerSecond >= dp(6f) -> 10 * SECOND
+            else -> 30 * SECOND
         }
+        val dotStep = labelStep / 2
+        paint.style = Paint.Style.FILL
+        paint.textAlign = Paint.Align.CENTER
+        paint.textSize = dp(10f)
+        paint.typeface = rulerTypeface
+        val rulerY = dp(15f)
+        var tick = (time(gutter - dp(24f)) / dotStep) * dotStep
+        while (tick <= project.durationUs && x(tick) <= width + dp(24f)) {
+            val xx = x(tick)
+            if (tick % labelStep == 0L) {
+                paint.color = 0xB3FFFFFF.toInt()
+                val secs = tick / SECOND
+                c.drawText(String.format(java.util.Locale.ROOT, "%d:%02d", secs / 60, secs % 60), xx, rulerY, paint)
+            } else {
+                paint.color = 0x59FFFFFF
+                c.drawCircle(xx, rulerY - dp(3.5f), dp(1.5f), paint)
+            }
+            tick += dotStep
+        }
+        paint.textAlign = Paint.Align.LEFT
         project.camera.keyframes.forEach { key ->
             val xx = x(key.timeUs)
             if (xx >= gutter && xx <= width) text(c, "◆", xx - dp(4f), dp(30f),

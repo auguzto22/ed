@@ -94,6 +94,10 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 /** Beats closer than this are the same moment, not two marks. */
 private const val MARKER_MERGE_US = 200_000L
+/** Máximo que o contador/cursor avança sozinho entre dois blocos do relógio de áudio. */
+private const val MAX_EXTRAPOLATION_US = 50_000L
+/** Salto acima disso é seek ou loop: o cursor vai direto, sem suavizar. */
+private const val SEEK_JUMP_US = 150_000L
 
 
 @android.annotation.SuppressLint("GestureBackNavigation")
@@ -172,7 +176,6 @@ class EditorActivity : Activity() {
     } else null
     private val tick = object : Runnable {
         override fun run() {
-            if (preview.isPlaying) { position = preview.positionUs.coerceIn(0, project.durationUs); updatePosition() }
             val isPlaying = preview.isPlaying
             val controlVisibility = if (isPlaying) View.GONE else View.VISIBLE
             handles.visibility = controlVisibility
@@ -198,6 +201,52 @@ class EditorActivity : Activity() {
                 }
             }
             main.postDelayed(this, 200)
+        }
+    }
+
+    private var lastClockKey = Long.MIN_VALUE
+
+    /**
+     * Atualiza cursor, régua e contador a cada quadro da tela (60/90/120 Hz) em vez de a cada
+     * 200 ms. O relógio de áudio avança em blocos do buffer; aqui a posição exibida é
+     * extrapolada pelo tempo do quadro entre um bloco e outro, sem nunca voltar para trás
+     * (a não ser num seek real), para a timeline deslizar sem degraus.
+     */
+    private val frameSync = object : android.view.Choreographer.FrameCallback {
+        var running = false
+        private var lastReportedUs = Long.MIN_VALUE
+        private var lastReportedAtNs = 0L
+        private var shownUs = Long.MIN_VALUE
+
+        fun start() {
+            if (running) return
+            running = true; shownUs = Long.MIN_VALUE; lastReportedUs = Long.MIN_VALUE
+            android.view.Choreographer.getInstance().postFrameCallback(this)
+        }
+
+        fun stop() {
+            running = false
+            android.view.Choreographer.getInstance().removeFrameCallback(this)
+        }
+
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!running) return
+            if (::preview.isInitialized && loaded && preview.isPlaying && !isDestroyed) {
+                val duration = project.durationUs
+                val reported = preview.positionUs.coerceIn(0, duration)
+                if (reported != lastReportedUs) { lastReportedUs = reported; lastReportedAtNs = frameTimeNanos }
+                val extrapolated = reported + ((frameTimeNanos - lastReportedAtNs) / 1_000L).coerceIn(0L, MAX_EXTRAPOLATION_US)
+                val target = when {
+                    shownUs == Long.MIN_VALUE -> reported
+                    kotlin.math.abs(extrapolated - shownUs) > SEEK_JUMP_US -> reported // seek / loop
+                    else -> maxOf(shownUs, extrapolated)
+                }.coerceIn(0, duration)
+                shownUs = target
+                if (target != position) { position = target; updatePosition() }
+            } else {
+                shownUs = Long.MIN_VALUE
+            }
+            android.view.Choreographer.getInstance().postFrameCallback(this)
         }
     }
 
@@ -624,42 +673,46 @@ class EditorActivity : Activity() {
             setOnClickListener { callback() }
         }
 
-        // Clock: current time bright, total muted, tabular digits so it never jitters.
-        clock = TextView(this@EditorActivity).apply {
-            text = clockText(0L, 0L)
-            textSize = 13f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            typeface = android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD)
-            fontFeatureSettings = "tnum"
-            letterSpacing = .02f
-        }
-        addView(clock, LinearLayout.LayoutParams(0, -1, 1f))
-
-        // Play / pause: disco branco de 48dp, como no canvas.
+        // Layout estilo Edits: play à esquerda, tempo centralizado, desfazer/refazer à direita.
+        // As laterais têm o mesmo peso, então o contador fica no centro exato da tela.
+        val left = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.START }
         play = FrameLayout(this@EditorActivity).apply {
             contentDescription = "Reproduzir"
             tooltipText = "Reproduzir"
             isClickable = true
             isFocusable = true
-            background = RippleDrawable(ColorStateList.valueOf(0x33000000),
-                GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) }, null)
-            elevation = dp(3).toFloat()
+            background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), null,
+                GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) })
             addView(ImageView(context).apply {
                 id = R.id.recly_transport_icon
                 setImageResource(R.drawable.ic_recly_play)
-                imageTintList = ColorStateList.valueOf(Color.BLACK)
+                imageTintList = ColorStateList.valueOf(Color.WHITE)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
-            }, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
+            }, FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER))
             setOnClickListener {
                 preview.endScrub(position)
                 if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
                 animate().cancel()
-                scaleX = .86f; scaleY = .86f
-                animate().scaleX(1f).scaleY(1f).setDuration(260).setInterpolator(android.view.animation.OvershootInterpolator(2.4f)).start()
+                scaleX = .82f; scaleY = .82f
+                animate().scaleX(1f).scaleY(1f).setDuration(240).setInterpolator(android.view.animation.OvershootInterpolator(2.6f)).start()
             }
         }
-        addView(play, LinearLayout.LayoutParams(dp(48), dp(48)))
+        left.addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
+        addView(left, LinearLayout.LayoutParams(0, -1, 1f))
+
+        // Contador "0:03 / 0:09": atual em destaque, total apagado, dígitos tabulares (não "pulam").
+        clock = TextView(this@EditorActivity).apply {
+            text = clockText(0L, 0L)
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+            maxLines = 1
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            fontFeatureSettings = "tnum"
+            letterSpacing = .01f
+        }
+        addView(clock, LinearLayout.LayoutParams(-2, -2))
 
         val right = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END }
         undo = iconBtn("Desfazer", R.drawable.ic_recly_undo) {
@@ -674,25 +727,24 @@ class EditorActivity : Activity() {
         addView(right, LinearLayout.LayoutParams(0, -1, 1f))
     }
 
-    /** "00:03 / 00:15" with the elapsed part emphasised; sub-10-second projects show tenths. */
+    /** Formato do Instagram Edits: "0:03 / 0:09" (h:mm:ss acima de uma hora), atual em destaque. */
     private fun clockText(positionUs: Long, durationUs: Long): CharSequence {
-        fun format(us: Long, tenths: Boolean): String {
-            val safe = us.coerceAtLeast(0L)
-            val totalSec = safe / 1_000_000L
-            val base = String.format(java.util.Locale.ROOT, "%02d:%02d", totalSec / 60, totalSec % 60)
-            return if (tenths) "$base.${(safe % 1_000_000L) / 100_000L}" else base
-        }
-        val tenths = durationUs in 1 until 10_000_000L
-        val current = format(positionUs, tenths)
-        val total = format(durationUs, tenths)
+        val current = editsTime(positionUs)
+        val total = editsTime(durationUs)
         return android.text.SpannableStringBuilder().apply {
             append(current)
-            setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             val from = length
-            append("  /  $total")
-            setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            setSpan(android.text.style.RelativeSizeSpan(.92f), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            append(" / $total")
+            setSpan(android.text.style.ForegroundColorSpan(0x8CFFFFFF.toInt()), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
+    }
+
+    private fun editsTime(us: Long): String {
+        val totalSec = us.coerceAtLeast(0L) / 1_000_000L
+        val h = totalSec / 3600; val m = (totalSec % 3600) / 60; val sec = totalSec % 60
+        return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, sec)
+        else String.format(java.util.Locale.ROOT, "%d:%02d", m, sec)
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
@@ -1681,8 +1733,12 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
-        clock.text = clockText(position, project.durationUs)
-        clock.contentDescription = timeLabelCapCut(position, project.durationUs)
+        val clockKey = (position / 1_000_000L) * 1_000_003L + project.durationUs / 1_000_000L
+        if (clockKey != lastClockKey) {
+            lastClockKey = clockKey
+            clock.text = clockText(position, project.durationUs)
+            clock.contentDescription = timeLabelCapCut(position, project.durationUs)
+        }
     }
     /** Animated confirmation over the preview (falls back to a toast before the screen exists). */
     private fun feedback(message: String, error: Boolean = looksLikeProblem(message)) {
@@ -1818,9 +1874,10 @@ class EditorActivity : Activity() {
         super.onResume(); resumed = true
         if (loaded && !busy && !EditorExportService.state.active) preview.resume(position)
         main.post(tick)
+        frameSync.start()
     }
     override fun onPause() {
-        resumed = false; preview.pause(); main.removeCallbacks(tick)
+        resumed = false; preview.pause(); main.removeCallbacks(tick); frameSync.stop()
         if (voiceRecorder != null) finishVoiceover(true)
         super.onPause()
     }
