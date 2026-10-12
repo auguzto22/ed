@@ -170,7 +170,9 @@ object ProjectComposition {
                 )
             }
             val audioFadeIn = maxOf(clip.audioFadeInUs, transIn?.durationUs ?: 0L)
-            val audioFadeOut = maxOf(clip.audioFadeOutUs, transOut?.durationUs ?: 0L)
+            // Same envelope as preview: the outgoing clip is not faded across the whole transition
+            // (that left a silent dip at every cut), only a short tail to avoid a click.
+            val audioFadeOut = maxOf(clip.audioFadeOutUs, transOut?.durationUs?.coerceAtMost(TRANSITION_AUDIO_TAIL_US) ?: 0L)
             val audioEffects = gain(clip.volume, audioFadeIn, audioFadeOut, clip.durationUs) +
                 if (clip.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(clip.enhance))
             val item = EditedMediaItem.Builder(media.build())

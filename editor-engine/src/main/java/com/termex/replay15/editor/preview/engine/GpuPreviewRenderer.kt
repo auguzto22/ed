@@ -69,7 +69,8 @@ class GpuPreviewRenderer(
     )
     private data class EffectTarget(val width:Int,val height:Int,val textures:IntArray,val fbos:IntArray)
     private data class EffectProgram(val id:Int,val defaults:Map<String,Float>)
-    private data class TransitionProgram(val id:Int,val defaults:Map<String,Float>,val supplemental:Set<String>)
+    private data class TransitionProgram(val id:Int,val defaults:Map<String,Float>,val supplemental:Set<String>,
+        val ranges:Map<String,ClosedFloatingPointRange<Float>> = emptyMap())
 
     private val thread = HandlerThread("PreviewRender").apply { start() }
     private val handler = Handler(thread.looper)
@@ -83,6 +84,8 @@ class GpuPreviewRenderer(
     private val effectTargets = HashMap<ActiveClipResolver.ClipKey,EffectTarget>()
     private val effectPrograms = HashMap<String,EffectProgram>()
     private val transitionPrograms=HashMap<String,TransitionProgram>()
+    /** Shaders that failed to compile on this device; retried only after the GL context is rebuilt. */
+    private val failedTransitionPrograms=HashSet<String>()
     private val failedEffects = HashSet<String>()
     private var transitionTarget:EffectTarget?=null
     private var transitionCompositeTarget:EffectTarget?=null
@@ -550,7 +553,9 @@ class GpuPreviewRenderer(
         val mode = diagnostics.transitionDebugMode
         val shaderTransition = if (mode == PreviewDiagnostics.TransitionDebugMode.CROSSFADE)
             transition.copy(assetId = "cross_dissolve", parameters = mapOf("mode" to 0f, "softness" to 0f)) else transition
-        val compiled = transitionProgram(shaderTransition)
+        // A shader that cannot compile degrades to a clean cut (the fallback path in draw), the
+        // same thing export does, instead of raising a preview error on every frame.
+        val compiled = transitionProgram(shaderTransition) ?: return null
         val w = outputWidth.coerceAtLeast(2)
         val h = outputHeight.coerceAtLeast(2)
         fun target(old: EffectTarget?): EffectTarget = if (old?.width == w && old.height == h) old
@@ -585,10 +590,12 @@ class GpuPreviewRenderer(
         bindTexture(compiled.id, "uTexB", GLES20.GL_TEXTURE_2D, inputs.textures[1], 1)
         uniform2(compiled.id, "uResolution", w.toFloat(), h.toFloat())
         uniform1(compiled.id, "uProgress", transition.progress)
-        compiled.defaults.forEach { (name, value) -> uniform1(compiled.id, "p_$name", shaderTransition.parameters[name] ?: value) }
-        compiled.supplemental.forEach { name -> uniform1(compiled.id, "p_$name", when (name) {
-            "perspective" -> 1f; "radius" -> 16f; "softness" -> .1f; else -> 1f
-        }) }
+        // Same values export uses: user values clamped to the definition, shared supplemental defaults.
+        compiled.defaults.forEach { (name, value) ->
+            val raw = shaderTransition.parameters[name] ?: value
+            uniform1(compiled.id, "p_$name", compiled.ranges[name]?.let { raw.coerceIn(it) } ?: raw)
+        }
+        compiled.supplemental.forEach { name -> uniform1(compiled.id, "p_$name", TransitionShaderBuilder.supplementalDefault(name)) }
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         if (diagnostics.traceTransitionAt(render.projectTimeUs)) {
             diagnostics.event("TRANSITION_FRAME t=${render.projectTimeUs} startUs=${transition.startUs} endUs=${transition.endUs} progress=${transition.progress} " +
@@ -612,15 +619,22 @@ class GpuPreviewRenderer(
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
     }
 
-    private fun transitionProgram(transition:PreviewRenderState.Transition):TransitionProgram{
+    private fun transitionProgram(transition:PreviewRenderState.Transition):TransitionProgram?{
         transitionPrograms[transition.assetId]?.let{return it}
+        if (transition.assetId in failedTransitionPrograms) return null
         return runCatching{
-            val definition=requireNotNull(TransitionCatalog.findById(context,transition.assetId)) { "Unknown transition ${transition.assetId}" }
+            // Unknown ids resolve exactly like export (first built-in definition), so a removed
+            // package never makes preview and the exported file disagree.
+            val definition=TransitionCatalog.findById(context,transition.assetId) ?: BuiltInTransitions.definitions(context).first()
             val body=BuiltInTransitions.shader(context,definition.shaderFile)
             val fragment=TransitionShaderBuilder.buildFragmentShader(TransitionShaderHeaders.getFragmentHeader(context),body,TransitionShaderHeaders.getFragmentFooter(context),definition)
             val declared=definition.parameters.map{it.id}.toSet();val supplemental=TransitionShaderBuilder.findBodyParamUniforms(body)-declared
-            TransitionProgram(program(VERTEX,fragment),definition.parameters.associate{it.id to it.default},supplemental).also{transitionPrograms[transition.assetId]=it}
-        }.onFailure{diagnostics.shaderFailure(transition.assetId, it)}.getOrThrow()
+            TransitionProgram(program(VERTEX,fragment),definition.parameters.associate{it.id to it.default},supplemental,
+                definition.parameters.associate{it.id to (it.min..it.max)}).also{transitionPrograms[transition.assetId]=it}
+        }.onFailure{
+            failedTransitionPrograms += transition.assetId
+            diagnostics.shaderFailure(transition.assetId, it)
+        }.getOrNull()
     }
 
     private fun drawLayer(
@@ -981,7 +995,7 @@ class GpuPreviewRenderer(
             layerMaskPass?.close();layerMaskPass = null
             sceneTarget?.let(::deleteEffectTarget);sceneTarget=null
             transitionTarget?.let(::deleteEffectTarget);transitionTarget=null
-            transitionCompositeTarget?.let(::deleteEffectTarget);transitionCompositeTarget=null;transitionPrograms.values.forEach{GLES20.glDeleteProgram(it.id)};transitionPrograms.clear()
+            transitionCompositeTarget?.let(::deleteEffectTarget);transitionCompositeTarget=null;transitionPrograms.values.forEach{GLES20.glDeleteProgram(it.id)};transitionPrograms.clear();failedTransitionPrograms.clear()
             if(overlayTexture!=0)GLES20.glDeleteTextures(1,intArrayOf(overlayTexture),0)
             textRenderer?.release();textRenderer=null
             overlayWorkBitmap?.recycle();overlayWorkBitmap=null;overlayStickerBitmaps.values.forEach(Bitmap::recycle);overlayStickerBitmaps.clear();overlayTextLayouts.clear()

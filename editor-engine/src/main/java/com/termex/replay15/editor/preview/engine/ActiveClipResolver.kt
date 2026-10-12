@@ -34,9 +34,12 @@ class ActiveClipResolver(val project: Project, private val timeMapper: ClipTimeM
     val durationUs = project.durationUs
     private val main = project.videos.mapIndexed { index, clip ->
         val start = project.startOf(index)
-        val outgoing = project.videos.getOrNull(index + 1)?.let { project.transitionBetween(clip.id, it.id) }
-        Video(ClipKey(MAIN_TRACK, clip.id), start, clip, timeMapper,
-            start + clip.durationUs + (outgoing?.durationUs ?: 0L))
+        val next = project.videos.getOrNull(index + 1)
+        val outgoing = next?.let { project.transitionBetween(clip.id, it.id) }
+        // The outgoing clip stays on screen exactly as long as the transition window below,
+        // never past the end of the clip that receives the transition.
+        val hold = if (outgoing == null || next == null) 0L else minOf(outgoing.durationUs, next.durationUs)
+        Video(ClipKey(MAIN_TRACK, clip.id), start, clip, timeMapper, start + clip.durationUs + hold)
     }
     private val layers = project.videoTracks.map { track ->
         track.clips.map { Video(ClipKey(track.id, it.clip.id), it.startUs, it.clip, timeMapper) }

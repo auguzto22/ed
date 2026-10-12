@@ -178,7 +178,10 @@ object ProjectCodec {
         val sourced = if (schema < 28) compounded else MediaSourceCodec.read(compounded, i)
         val worded = if (schema < 29) sourced else CaptionWordFxCodec.read(sourced, i)
         // Schema 30 changed video mask/track space (y up -> y down); older files are converted.
-        if (schema < 30) LegacyMaskSpaceMigration.migrate(worded) else worded
+        val migrated = if (schema < 30) LegacyMaskSpaceMigration.migrate(worded) else worded
+        // Files written before transitions were re-validated on every edit may hold orphaned or
+        // over-long transitions; repair them on read so preview and export agree.
+        migrated.withSanitizedTransitions()
     }
 }
 
@@ -215,8 +218,22 @@ class ProjectStore(private val directory: File) {
         } finally { temporary.delete() }
     }
     fun load(id: String): Project = ProjectCodec.read(file(id).inputStream())
-    fun list(): List<Project> = directory.listFiles()?.filter { it.extension == "r15" }
-        ?.sortedByDescending { it.lastModified() }?.mapNotNull { runCatching { ProjectCodec.read(it.inputStream()) }.getOrNull() } ?: emptyList()
+    fun list(): List<Project> = listWithFailures().projects
+
+    data class Listing(val projects: List<Project>, val unreadable: List<File>)
+
+    /** Like [list], but reports the files that could not be decoded instead of hiding them. */
+    fun listWithFailures(): Listing {
+        val files = directory.listFiles()?.filter { it.extension == "r15" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+        val projects = mutableListOf<Project>()
+        val unreadable = mutableListOf<File>()
+        files.forEach { file ->
+            runCatching { ProjectCodec.read(file.inputStream()) }
+                .onSuccess { projects += it }
+                .onFailure { unreadable += file }
+        }
+        return Listing(projects, unreadable)
+    }
     @Synchronized fun delete(id: String) {
         val target = file(id)
         target.delete()

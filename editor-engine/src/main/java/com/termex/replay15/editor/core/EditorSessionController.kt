@@ -5,8 +5,11 @@ import com.termex.replay15.editor.history.ProjectHistory
 
 class EditorSessionController(var history: ProjectHistory = ProjectHistory(Project())) {
     val project get() = history.current
-    fun apply(next: Project): Boolean {
+    fun apply(proposed: Project): Boolean {
         val current = project
+        // Every edit path (trim, speed, duplicate, insert, AI tools) lands here, so transitions
+        // are re-validated once instead of trusting each caller to remember.
+        val next = proposed.withSanitizedTransitions()
         if (next == current) return false
         require(!current.trackState(MAIN_TRACK).locked || current.videos == next.videos) { "Desbloqueie a faixa principal" }
         current.videoTracks.filter { current.trackState(it.id).locked }.forEach { track ->
