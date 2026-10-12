@@ -127,7 +127,7 @@ class EditorExportService : Service() {
                 val values = ContentValues().apply {
                     put(MediaStore.Video.Media.DISPLAY_NAME, "Editado_${System.currentTimeMillis()}.mp4")
                     put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/GravadorDeTela/Editados")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Recly")
                     put(MediaStore.Video.Media.IS_PENDING, 1)
                 }
                 val created = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)

@@ -60,6 +60,7 @@ class EditorLibraryActivity : Activity() {
     private var projects: List<Project> = emptyList()
     private var expanded = false
     private var pendingTool: String? = null
+    private var warnedUnreadable = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -187,12 +188,21 @@ class EditorLibraryActivity : Activity() {
 
     private fun loadProjects() {
         io.execute {
-            val loaded = runCatching { store.list() }.getOrDefault(emptyList())
-                .sortedByDescending { it.modifiedAt }
+            val listing = runCatching { store.listWithFailures() }.getOrNull()
+            val loaded = listing?.projects.orEmpty().sortedByDescending { it.modifiedAt }
+            val unreadable = listing?.unreadable?.size ?: 0
             runOnUiThread {
                 if (isDestroyed || isFinishing) return@runOnUiThread
                 projects = loaded
                 renderProjects()
+                // A file that no longer decodes used to vanish silently; say so once per session.
+                if (unreadable > 0 && !warnedUnreadable) {
+                    warnedUnreadable = true
+                    Toast.makeText(this,
+                        if (unreadable == 1) "1 projeto não pôde ser aberto e foi ocultado."
+                        else "$unreadable projetos não puderam ser abertos e foram ocultados.",
+                        Toast.LENGTH_LONG).show()
+                }
             }
         }
     }

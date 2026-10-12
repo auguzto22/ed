@@ -52,6 +52,10 @@ class TransitionTools(
 
         val body = column()
         lateinit var dialog: Dialog
+        // Nothing is committed while the panel is open: sliders and cards only update the preview.
+        // "Aplicar" writes one undo step; closing the panel any other way restores the project.
+        val transitionInstanceId = existing?.id ?: newId()
+        var committed = false
 
         // Trigger preview region
         fun triggerPreview(newProject: Project) {
@@ -65,24 +69,25 @@ class TransitionTools(
             }
         }
 
-        // Apply change helper
+        fun draft(): Project = project().withTransition(TransitionInstance(
+            id = transitionInstanceId,
+            transitionId = selectedDef.id,
+            leftClipId = leftClipId,
+            rightClipId = rightClipId,
+            durationUs = currentDurationUs,
+            parameters = currentParams.toMap(),
+            easing = currentEasing,
+        ))
+
+        // preview = true only redraws; preview = false ("Aplicar") is the single history write.
         fun applyCurrent(preview: Boolean, play: Boolean = false) {
-            val trans = TransitionInstance(
-                id = existing?.id ?: newId(),
-                transitionId = selectedDef.id,
-                leftClipId = leftClipId,
-                rightClipId = rightClipId,
-                durationUs = currentDurationUs,
-                parameters = currentParams.toMap(),
-                easing = currentEasing,
-            )
-            val updated = project().withTransition(trans)
-            apply(updated)
-            if (play) {
-                triggerPreview(updated)
-            } else {
-                previewApply(updated)
+            val updated = draft()
+            if (!preview) {
+                committed = true
+                apply(updated)
+                return
             }
+            if (play) triggerPreview(updated) else previewApply(updated)
         }
 
         // Search and category tabs container
@@ -206,8 +211,8 @@ class TransitionTools(
             if (project().transitionBetween(leftClipId, rightClipId) != null) {
                 actions.addView(action("Remover") {
                     val updatedProject = project().withoutTransition(leftClipId, rightClipId)
+                    committed = true
                     apply(updatedProject)
-                    previewApply(updatedProject)
                     dialog.dismiss()
                 }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginStart = dp(6) })
             }
@@ -296,6 +301,9 @@ class TransitionTools(
                     })
 
                     card.setOnClickListener {
+                        // Parameters belong to one definition: "mode" means a different variant in
+                        // each shader, so carrying it over showed the previous transition.
+                        if (selectedDef.id != item.id) currentParams.clear()
                         selectedDef = item
                         TransitionCatalog.recordUsed(this, item.id)
                         applyCurrent(preview = true, play = true)
@@ -360,6 +368,7 @@ class TransitionTools(
         }
         dialog.setOnDismissListener {
             activeDialog = null
+            if (!committed) previewApply(project())
         }
         activeDialog = dialog
     }

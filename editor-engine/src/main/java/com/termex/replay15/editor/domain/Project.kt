@@ -484,6 +484,27 @@ data class Project(
         return transitions.filter { (it.leftClipId to it.rightClipId) in pairs }
     }
 
+    /**
+     * The one rule every edit must respect: a transition exists only on a real cut between two
+     * adjacent main clips, at most once per cut, and it plays entirely inside the right clip.
+     * Trims, speed changes, duplicates, inserts and old project files can all break that, so
+     * [EditorSessionController] and [ProjectCodec] run every snapshot through here.
+     */
+    fun withSanitizedTransitions(): Project {
+        if (transitions.isEmpty()) return this
+        val rightOf = videos.zipWithNext().associate { (left, right) -> (left.id to right.id) to right }
+        val seen = HashSet<Pair<String, String>>()
+        val sanitized = transitions.mapNotNull { transition ->
+            val key = transition.leftClipId to transition.rightClipId
+            val right = rightOf[key] ?: return@mapNotNull null
+            if (!seen.add(key)) return@mapNotNull null
+            val maximum = minOf(right.durationUs, 5_000_000L)
+            if (maximum < 100_000L) return@mapNotNull null
+            if (transition.durationUs <= maximum) transition else transition.copy(durationUs = maximum)
+        }
+        return if (sanitized == transitions) this else copy(transitions = sanitized)
+    }
+
     fun startOf(index: Int): Long {
         var start = 0L
         for (i in 0 until index.coerceAtMost(videos.size)) {
@@ -538,17 +559,20 @@ data class Project(
             transitionOut = ClipTransition.NONE,
             keyframes = leftKeys,
         )
+        val rightId = newId()
         result.add(
             index + 1,
             clip.copy(
-                id = newId(),
+                id = rightId,
                 inUs = cut,
                 transitionIn = ClipTransition.NONE,
                 keyframes = rightKeys,
             ),
         )
+        // The outgoing transition belongs to the cut after the clip, which is now the right half's.
+        val moved = transitions.map { if (it.leftClipId == clip.id) it.copy(leftClipId = rightId) else it }
         // Groups survive a split; a group that would lose a child is dropped by the sanitizer.
-        return CompoundEditing.withVideos(this, result)
+        return CompoundEditing.withVideos(copy(transitions = moved), result).withSanitizedTransitions()
     }
     fun splitAt(playheadUs: Long): Project = split(indexAt(playheadUs), playheadUs)
     /**
@@ -567,6 +591,9 @@ data class Project(
         return CompoundEditing.withVideos(this, list)
     }
 }
+
+/** Anti-click fade on the outgoing clip's audio at a transition cut; shared by preview and export. */
+const val TRANSITION_AUDIO_TAIL_US = 60_000L
 
 fun TransitionInstance.startUs(project: Project): Long {
     val rightIdx = project.videos.indexOfFirst { it.id == rightClipId }

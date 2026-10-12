@@ -49,7 +49,10 @@ class ActiveAudioSourceResolver(
                 val clip = video.clip
                 val sourceTime = mapper.projectToSource(clip, video.startUs, time)
                 val entering = project.transitions.firstOrNull { it.rightClipId == clip.id }?.durationUs ?: 0L
-                val leaving = project.transitions.firstOrNull { it.leftClipId == clip.id }?.durationUs ?: 0L
+                // The picture transition plays after the cut, inside the next clip, so the outgoing
+                // audio runs to the cut and only gets a short anti-click fade (see TRANSITION_AUDIO_TAIL_US).
+                val leaving = project.transitions.firstOrNull { it.leftClipId == clip.id }
+                    ?.durationUs?.coerceAtMost(TRANSITION_AUDIO_TAIL_US) ?: 0L
                 ResolvedAudioSource(
                     id = "video:${clip.id}:audio", key = video.key, uri = clip.uri,
                     projectStartUs = video.startUs, projectEndUs = video.endUs,

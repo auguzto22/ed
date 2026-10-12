@@ -1515,7 +1515,11 @@ class EditorActivity : Activity() {
         if (!loaded) { if (exit) finish(); return }
         val snapshot = project
         io.execute {
-            val result = runCatching { store.save(snapshot) }
+            // Opening the editor and leaving without adding anything must not leave an empty
+            // "Novo projeto" in the library. An existing project emptied by the user still saves.
+            val untouchedEmpty = snapshot.allVideos.isEmpty() && snapshot.audio.isEmpty() &&
+                snapshot.texts.isEmpty() && snapshot.stickers.isEmpty() && !store.file(snapshot.id).exists()
+            val result = runCatching { if (!untouchedEmpty) store.save(snapshot) }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 result.fold({ if (exit) finish() else if (project == snapshot) info.text = "Projeto salvo no aparelho" },
@@ -1730,12 +1734,19 @@ class EditorActivity : Activity() {
                 } else {
                     val clips = uris.map { MediaImport.video(this, it) }
                     val list = snapshot.videos.toMutableList()
+                    val replacedId = list.getOrNull(replace)?.id
                     if (replace in list.indices) list[replace] = clips.first() else list.addAll(clips)
                     val firstMedia = snapshot.allVideos.isEmpty() && replace < 0
                     val automaticExport = if (firstMedia) ExportSettings.forSource(clips.first(), snapshot.export.audioBitrate) else snapshot.export
+                    // A replaced clip gets a new id; groups and transitions that pointed at the old
+                    // one follow it, otherwise Project validation rejected the whole replacement.
+                    val replacementId = clips.first().id
+                    fun follow(id: String) = if (id == replacedId) replacementId else id
                     snapshot.copy(videos = list,
                         name = if (snapshot.videos.isEmpty()) clips.first().name.substringBeforeLast('.').take(100) else snapshot.name,
-                        export = automaticExport)
+                        export = automaticExport,
+                        compounds = snapshot.compounds.map { it.copy(childIds = it.childIds.map(::follow)) },
+                        transitions = snapshot.transitions.map { it.copy(leftClipId = follow(it.leftClipId), rightClipId = follow(it.rightClipId)) })
                 }
             }
             runOnUiThread {
@@ -2088,7 +2099,7 @@ class EditorActivity : Activity() {
                 } finally { bitmap.recycle() }
                 val split = snapshot.split(index, at)
                 val insertion = if (at <= snapshot.startOf(index)) index else index + 1
-                split.copy(videos = split.videos.toMutableList().apply { add(insertion, still) })
+                CompoundEditing.withVideos(split, split.videos.toMutableList().apply { add(insertion, still) })
             }
             runOnUiThread { if (!isDestroyed) { busy = false; result.fold({ edit(it) }, { refresh(); error("Nao foi possivel congelar: ${it.message}") }) } }
         }
@@ -2507,10 +2518,13 @@ class EditorActivity : Activity() {
 
     private fun duplicateSelected() {
         if (project.videos.size >= 200) { error("Limite de 200 clipes por projeto"); return }
-        val list = project.videos.toMutableList()
-        list.add(selected + 1, list[selected].copy(id = newId()))
+        val original = project.videos.getOrNull(selected) ?: return
+        val duplicate = original.copy(id = newId())
+        val list = project.videos.toMutableList().apply { add(selected + 1, duplicate) }
+        // The cut after the original now sits after the copy, so its transition moves with it.
+        val moved = project.transitions.map { if (it.leftClipId == original.id) it.copy(leftClipId = duplicate.id) else it }
         selected += 1
-        edit(project.copy(videos = list))
+        edit(CompoundEditing.withVideos(project.copy(transitions = moved), list))
     }
 
     private fun copyClipStyle() {
@@ -4435,7 +4449,7 @@ class EditorActivity : Activity() {
             }
         }.getOrNull() ?: "Vídeo MP4"
         AlertDialog.Builder(this).setTitle("Video exportado")
-            .setMessage("$savedName\nMovies/GravadorDeTela/Editados")
+            .setMessage("$savedName\nMovies/Recly")
             .setPositiveButton("Abrir") { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), "video/mp4").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
                     .onFailure { error("Nenhum player de video instalado") }

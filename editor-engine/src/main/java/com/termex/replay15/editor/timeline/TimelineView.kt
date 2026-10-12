@@ -191,12 +191,13 @@ class TimelineView(context: Context) : View(context) {
     private fun maxScroll() = max(0f, lanes.size * dp(39f) - (height - dp(140f)))
     private fun x(time: Long) = width / 2f + (time - positionUs) / SECOND.toFloat() * pixelsPerSecond
     private fun time(xx: Float) = (positionUs + (xx - width / 2f) / pixelsPerSecond * SECOND).toLong().coerceIn(0, project.durationUs)
+    /**
+     * Clip edges are drawn at the real cut. A transition plays inside the right clip, so shifting
+     * the edge by half its length made selection, split and trim disagree with what was drawn.
+     */
     private fun transitionBoundaryAfter(index: Int): Long {
         if (index !in 0 until project.videos.lastIndex) return project.durationUs
-        val left = project.videos[index]
-        val right = project.videos[index + 1]
-        val transitionUs = project.transitionBetween(left.id, right.id)?.durationUs ?: 0L
-        return project.startOf(index + 1) + transitionUs / 2
+        return project.startOf(index + 1)
     }
     private fun visualStart(index: Int): Long =
         if (index <= 0) 0L else transitionBoundaryAfter(index - 1)

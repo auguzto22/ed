@@ -153,6 +153,18 @@ object TransitionShaderBuilder {
         }
     }
 
+    /**
+     * Value for a `p_*` uniform a shader reads but its catalog entry does not declare. Preview and
+     * export must agree: wipes treat 0 as "centre" and blurs treat 0 as a horizontal angle.
+     */
+    fun supplementalDefault(id: String): Float = when (id) {
+        "perspective" -> 1.0f
+        "radius" -> 16.0f
+        "softness" -> 0.1f
+        "intensity", "strength", "blur" -> 1.0f
+        else -> 0.0f
+    }
+
     fun findBodyParamUniforms(body: String): Set<String> {
         return BODY_PARAM_REGEX.findAll(body).map { it.groupValues[1] }.toSet()
     }
@@ -293,15 +305,7 @@ class TransitionRenderEffect(
         }
         private val supplementalUniforms = bodyUniformsNeeded
             .filterNot { id -> definition.parameters.any { it.id == id } }
-            .map { id ->
-                id to when (id) {
-                    "perspective" -> 1.0f
-                    "radius" -> 16.0f
-                    "softness" -> 0.1f
-                    "intensity", "strength", "blur" -> 1.0f
-                    else -> 0.0f
-                }
-            }
+            .map { id -> id to TransitionShaderBuilder.supplementalDefault(id) }
         private var missingCaptureLogged = false
 
         init {

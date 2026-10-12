@@ -39,21 +39,11 @@ class TrackCompositor(
             presentationTimeUs >= trans.startUs(snapshot) &&
             presentationTimeUs < trans.endUs(snapshot)
         }
-        val alpha = when {
-            transition == null -> 1f
-            transitionBridgeKeys[transition.id]?.let(TransitionBridge::isReady) == true ->
-                if (transition.leftClipId == active.clip.id) 0f else 1f
-            else -> {
-                // Fallback when transition is not ready (missing capture or shader error):
-                // Clean midpoint cut so the preview NEVER goes black.
-                val midUs = transition.startUs(snapshot) + transition.durationUs / 2
-                if (presentationTimeUs < midUs) {
-                    if (transition.leftClipId == active.clip.id) 1f else 0f
-                } else {
-                    if (transition.rightClipId == active.clip.id) 1f else 0f
-                }
-            }
-        }
+        // Inside the window only the right clip is placed on the main track; its own effect chain
+        // draws the transition when the captured outgoing frame is ready, and plays the right
+        // clip unchanged (a clean cut) when it is not. Hiding it would put the canvas on screen.
+        val alpha = if (transition != null && transition.leftClipId == active.clip.id &&
+            transitionBridgeKeys[transition.id]?.let(TransitionBridge::isReady) == true) 0f else 1f
         return if (alpha == 0f) hidden else visible
     }
 }
