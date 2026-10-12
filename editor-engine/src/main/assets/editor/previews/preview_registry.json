@@ -1,633 +1,1373 @@
 {
-  "filters": {
-    "ORIGINAL": {
-      "atlas": "filters_atlas_01",
-      "col": 0,
-      "row": 0
-    },
-    "MONO": {
-      "atlas": "filters_atlas_01",
-      "col": 1,
-      "row": 0
-    },
-    "NEGATIVE": {
-      "atlas": "filters_atlas_01",
-      "col": 2,
-      "row": 0
-    },
-    "CINEMA": {
-      "atlas": "filters_atlas_01",
-      "col": 3,
-      "row": 0
-    },
-    "VIBRANT": {
-      "atlas": "filters_atlas_01",
-      "col": 0,
-      "row": 1
-    },
-    "WARM": {
-      "atlas": "filters_atlas_01",
-      "col": 1,
-      "row": 1
-    },
-    "COOL": {
-      "atlas": "filters_atlas_01",
-      "col": 2,
-      "row": 1
-    },
-    "VINTAGE": {
-      "atlas": "filters_atlas_01",
-      "col": 3,
-      "row": 1
-    },
-    "GOLDEN": {
-      "atlas": "filters_atlas_01",
-      "col": 0,
-      "row": 2
-    },
-    "ROSE": {
-      "atlas": "filters_atlas_01",
-      "col": 1,
-      "row": 2
-    },
-    "TEAL_ORANGE": {
-      "atlas": "filters_atlas_01",
-      "col": 2,
-      "row": 2
-    },
-    "NIGHT": {
-      "atlas": "filters_atlas_01",
-      "col": 3,
-      "row": 2
-    },
-    "FADE": {
-      "atlas": "filters_atlas_01",
-      "col": 0,
-      "row": 3
-    },
-    "MATTE": {
-      "atlas": "filters_atlas_01",
-      "col": 1,
-      "row": 3
-    },
-    "RETRO": {
-      "atlas": "filters_atlas_01",
-      "col": 2,
-      "row": 3
-    },
-    "DREAM": {
-      "atlas": "filters_atlas_01",
-      "col": 3,
-      "row": 3
-    },
-    "TROPICAL": {
-      "atlas": "filters_atlas_02",
-      "col": 0,
-      "row": 0
-    },
-    "URBAN": {
-      "atlas": "filters_atlas_02",
-      "col": 1,
-      "row": 0
-    },
-    "FOOD": {
-      "atlas": "filters_atlas_02",
-      "col": 2,
-      "row": 0
-    },
-    "PORTRAIT": {
-      "atlas": "filters_atlas_02",
-      "col": 3,
-      "row": 0
-    },
-    "AUTUMN": {
-      "atlas": "filters_atlas_02",
-      "col": 0,
-      "row": 1
-    },
-    "ICE": {
-      "atlas": "filters_atlas_02",
-      "col": 1,
-      "row": 1
-    },
-    "NEON": {
-      "atlas": "filters_atlas_02",
-      "col": 2,
-      "row": 1
-    },
-    "DOCUMENTARY": {
-      "atlas": "filters_atlas_02",
-      "col": 3,
-      "row": 1
-    },
-    "SUNSET": {
-      "atlas": "filters_atlas_02",
-      "col": 0,
-      "row": 2
-    },
-    "LAVENDER": {
-      "atlas": "filters_atlas_02",
-      "col": 1,
-      "row": 2
-    },
-    "EMERALD": {
-      "atlas": "filters_atlas_02",
-      "col": 2,
-      "row": 2
-    },
-    "NOIR": {
-      "atlas": "filters_atlas_02",
-      "col": 3,
-      "row": 2
-    },
-    "SOFT": {
-      "atlas": "filters_atlas_02",
-      "col": 0,
-      "row": 3
-    },
-    "DRAMA": {
-      "atlas": "filters_atlas_02",
-      "col": 1,
-      "row": 3
-    },
-    "LOW_LIGHT": {
-      "atlas": "filters_atlas_02",
-      "col": 2,
-      "row": 3
-    },
-    "CLEAN": {
-      "atlas": "filters_atlas_02",
-      "col": 3,
-      "row": 3
-    }
+ "filters": {
+  "ORIGINAL": {
+   "atlas": "filters_atlas_01",
+   "col": 0,
+   "row": 0
   },
-  "effects": {
-    "cyber_signal": {
-      "atlas": "effects_atlas_01",
-      "col": 0,
-      "row": 0
-    },
-    "impact_combo": {
-      "atlas": "effects_atlas_01",
-      "col": 1,
-      "row": 0
-    },
-    "soft_dream": {
-      "atlas": "effects_atlas_01",
-      "col": 2,
-      "row": 0
-    },
-    "broken_tape": {
-      "atlas": "effects_atlas_01",
-      "col": 3,
-      "row": 0
-    },
-    "neon_arcade": {
-      "atlas": "effects_atlas_01",
-      "col": 0,
-      "row": 1
-    },
-    "liquid_lens": {
-      "atlas": "effects_atlas_01",
-      "col": 1,
-      "row": 1
-    },
-    "clean_film": {
-      "atlas": "effects_atlas_01",
-      "col": 2,
-      "row": 1
-    },
-    "film_35mm": {
-      "atlas": "effects_atlas_01",
-      "col": 3,
-      "row": 1
-    },
-    "vintage_film": {
-      "atlas": "effects_atlas_01",
-      "col": 0,
-      "row": 2
-    },
-    "dark_cinema": {
-      "atlas": "effects_atlas_01",
-      "col": 1,
-      "row": 2
-    },
-    "warm_cinema": {
-      "atlas": "effects_atlas_01",
-      "col": 2,
-      "row": 2
-    },
-    "cold_cinema": {
-      "atlas": "effects_atlas_01",
-      "col": 3,
-      "row": 2
-    },
-    "kill_impact": {
-      "atlas": "effects_atlas_01",
-      "col": 0,
-      "row": 3
-    },
-    "headshot": {
-      "atlas": "effects_atlas_01",
-      "col": 1,
-      "row": 3
-    },
-    "damage": {
-      "atlas": "effects_atlas_01",
-      "col": 2,
-      "row": 3
-    },
-    "explosion": {
-      "atlas": "effects_atlas_01",
-      "col": 3,
-      "row": 3
-    },
-    "speed": {
-      "atlas": "effects_atlas_02",
-      "col": 0,
-      "row": 0
-    },
-    "beat_zoom": {
-      "atlas": "effects_atlas_02",
-      "col": 1,
-      "row": 0
-    },
-    "victory": {
-      "atlas": "effects_atlas_02",
-      "col": 2,
-      "row": 0
-    },
-    "film_look": {
-      "atlas": "effects_atlas_02",
-      "col": 3,
-      "row": 0
-    }
+  "MONO": {
+   "atlas": "filters_atlas_01",
+   "col": 1,
+   "row": 0
   },
-  "transitions": {
-    "cross_dissolve": {
-      "atlas": "transitions_atlas_01",
-      "col": 0,
-      "row": 0
-    },
-    "fade": {
-      "atlas": "transitions_atlas_01",
-      "col": 1,
-      "row": 0
-    },
-    "dip_to_black": {
-      "atlas": "transitions_atlas_01",
-      "col": 2,
-      "row": 0
-    },
-    "dip_to_white": {
-      "atlas": "transitions_atlas_01",
-      "col": 3,
-      "row": 0
-    },
-    "fade_through_black": {
-      "atlas": "transitions_atlas_01",
-      "col": 0,
-      "row": 1
-    },
-    "fade_through_white": {
-      "atlas": "transitions_atlas_01",
-      "col": 1,
-      "row": 1
-    },
-    "slide_left": {
-      "atlas": "transitions_atlas_01",
-      "col": 2,
-      "row": 1
-    },
-    "slide_right": {
-      "atlas": "transitions_atlas_01",
-      "col": 3,
-      "row": 1
-    },
-    "slide_up": {
-      "atlas": "transitions_atlas_01",
-      "col": 0,
-      "row": 2
-    },
-    "slide_down": {
-      "atlas": "transitions_atlas_01",
-      "col": 1,
-      "row": 2
-    },
-    "push_left": {
-      "atlas": "transitions_atlas_01",
-      "col": 2,
-      "row": 2
-    },
-    "push_right": {
-      "atlas": "transitions_atlas_01",
-      "col": 3,
-      "row": 2
-    },
-    "push_up": {
-      "atlas": "transitions_atlas_01",
-      "col": 0,
-      "row": 3
-    },
-    "push_down": {
-      "atlas": "transitions_atlas_01",
-      "col": 1,
-      "row": 3
-    },
-    "wipe_left": {
-      "atlas": "transitions_atlas_01",
-      "col": 2,
-      "row": 3
-    },
-    "wipe_right": {
-      "atlas": "transitions_atlas_01",
-      "col": 3,
-      "row": 3
-    },
-    "wipe_up": {
-      "atlas": "transitions_atlas_02",
-      "col": 0,
-      "row": 0
-    },
-    "wipe_down": {
-      "atlas": "transitions_atlas_02",
-      "col": 1,
-      "row": 0
-    },
-    "diagonal_wipe": {
-      "atlas": "transitions_atlas_02",
-      "col": 2,
-      "row": 0
-    },
-    "circle_wipe": {
-      "atlas": "transitions_atlas_02",
-      "col": 3,
-      "row": 0
-    },
-    "radial_wipe": {
-      "atlas": "transitions_atlas_02",
-      "col": 0,
-      "row": 1
-    },
-    "soft_wipe": {
-      "atlas": "transitions_atlas_02",
-      "col": 1,
-      "row": 1
-    },
-    "zoom_in": {
-      "atlas": "transitions_atlas_02",
-      "col": 2,
-      "row": 1
-    },
-    "zoom_out": {
-      "atlas": "transitions_atlas_02",
-      "col": 3,
-      "row": 1
-    },
-    "zoom_through": {
-      "atlas": "transitions_atlas_02",
-      "col": 0,
-      "row": 2
-    },
-    "punch_zoom": {
-      "atlas": "transitions_atlas_02",
-      "col": 1,
-      "row": 2
-    },
-    "smooth_zoom": {
-      "atlas": "transitions_atlas_02",
-      "col": 2,
-      "row": 2
-    },
-    "zoom_blur": {
-      "atlas": "transitions_atlas_02",
-      "col": 3,
-      "row": 2
-    },
-    "zoom_rotate": {
-      "atlas": "transitions_atlas_02",
-      "col": 0,
-      "row": 3
-    },
-    "whip_left": {
-      "atlas": "transitions_atlas_02",
-      "col": 1,
-      "row": 3
-    },
-    "whip_right": {
-      "atlas": "transitions_atlas_02",
-      "col": 2,
-      "row": 3
-    },
-    "whip_up": {
-      "atlas": "transitions_atlas_02",
-      "col": 3,
-      "row": 3
-    },
-    "whip_down": {
-      "atlas": "transitions_atlas_03",
-      "col": 0,
-      "row": 0
-    },
-    "motion_swipe": {
-      "atlas": "transitions_atlas_03",
-      "col": 1,
-      "row": 0
-    },
-    "fast_pan": {
-      "atlas": "transitions_atlas_03",
-      "col": 2,
-      "row": 0
-    },
-    "blur_dissolve": {
-      "atlas": "transitions_atlas_03",
-      "col": 3,
-      "row": 0
-    },
-    "gaussian_blur_trans": {
-      "atlas": "transitions_atlas_03",
-      "col": 0,
-      "row": 1
-    },
-    "directional_blur_trans": {
-      "atlas": "transitions_atlas_03",
-      "col": 1,
-      "row": 1
-    },
-    "radial_blur_trans": {
-      "atlas": "transitions_atlas_03",
-      "col": 2,
-      "row": 1
-    },
-    "white_flash": {
-      "atlas": "transitions_atlas_03",
-      "col": 3,
-      "row": 1
-    },
-    "color_flash": {
-      "atlas": "transitions_atlas_03",
-      "col": 0,
-      "row": 2
-    },
-    "light_leak": {
-      "atlas": "transitions_atlas_03",
-      "col": 1,
-      "row": 2
-    },
-    "film_burn": {
-      "atlas": "transitions_atlas_03",
-      "col": 2,
-      "row": 2
-    },
-    "glow_flash": {
-      "atlas": "transitions_atlas_03",
-      "col": 3,
-      "row": 2
-    },
-    "digital_glitch": {
-      "atlas": "transitions_atlas_03",
-      "col": 0,
-      "row": 3
-    },
-    "rgb_glitch": {
-      "atlas": "transitions_atlas_03",
-      "col": 1,
-      "row": 3
-    },
-    "signal_glitch": {
-      "atlas": "transitions_atlas_03",
-      "col": 2,
-      "row": 3
-    },
-    "vhs_glitch": {
-      "atlas": "transitions_atlas_03",
-      "col": 3,
-      "row": 3
-    },
-    "luma_fade": {
-      "atlas": "transitions_atlas_04",
-      "col": 0,
-      "row": 0
-    },
-    "luma_wipe": {
-      "atlas": "transitions_atlas_04",
-      "col": 1,
-      "row": 0
-    },
-    "ripple": {
-      "atlas": "transitions_atlas_04",
-      "col": 2,
-      "row": 0
-    },
-    "wave": {
-      "atlas": "transitions_atlas_04",
-      "col": 3,
-      "row": 0
-    },
-    "fisheye_trans": {
-      "atlas": "transitions_atlas_04",
-      "col": 0,
-      "row": 1
-    },
-    "warp_trans": {
-      "atlas": "transitions_atlas_04",
-      "col": 1,
-      "row": 1
-    },
-    "lens_distortion_trans": {
-      "atlas": "transitions_atlas_04",
-      "col": 2,
-      "row": 1
-    },
-    "spin": {
-      "atlas": "transitions_atlas_04",
-      "col": 3,
-      "row": 1
-    },
-    "spin_zoom": {
-      "atlas": "transitions_atlas_04",
-      "col": 0,
-      "row": 2
-    },
-    "rotate_push": {
-      "atlas": "transitions_atlas_04",
-      "col": 1,
-      "row": 2
-    },
-    "flip_horizontal": {
-      "atlas": "transitions_atlas_04",
-      "col": 2,
-      "row": 2
-    },
-    "flip_vertical": {
-      "atlas": "transitions_atlas_04",
-      "col": 3,
-      "row": 2
-    },
-    "cube_left": {
-      "atlas": "transitions_atlas_04",
-      "col": 0,
-      "row": 3
-    },
-    "cube_right": {
-      "atlas": "transitions_atlas_04",
-      "col": 1,
-      "row": 3
-    },
-    "page_turn": {
-      "atlas": "transitions_atlas_04",
-      "col": 2,
-      "row": 3
-    },
-    "perspective_slide": {
-      "atlas": "transitions_atlas_04",
-      "col": 3,
-      "row": 3
-    },
-    "split_reveal": {
-      "atlas": "transitions_atlas_05",
-      "col": 0,
-      "row": 0
-    },
-    "split_horizontal": {
-      "atlas": "transitions_atlas_05",
-      "col": 1,
-      "row": 0
-    },
-    "split_vertical": {
-      "atlas": "transitions_atlas_05",
-      "col": 2,
-      "row": 0
-    },
-    "mosaic_reveal": {
-      "atlas": "transitions_atlas_05",
-      "col": 3,
-      "row": 0
-    },
-    "pixel_dissolve": {
-      "atlas": "transitions_atlas_05",
-      "col": 0,
-      "row": 1
-    },
-    "prism_trans": {
-      "atlas": "transitions_atlas_05",
-      "col": 1,
-      "row": 1
-    },
-    "mirror_trans": {
-      "atlas": "transitions_atlas_05",
-      "col": 2,
-      "row": 1
-    },
-    "kaleidoscope_trans": {
-      "atlas": "transitions_atlas_05",
-      "col": 3,
-      "row": 1
-    },
-    "glass_trans": {
-      "atlas": "transitions_atlas_05",
-      "col": 0,
-      "row": 2
-    }
+  "NEGATIVE": {
+   "atlas": "filters_atlas_01",
+   "col": 2,
+   "row": 0
+  },
+  "CINEMA": {
+   "atlas": "filters_atlas_01",
+   "col": 3,
+   "row": 0
+  },
+  "VIBRANT": {
+   "atlas": "filters_atlas_01",
+   "col": 0,
+   "row": 1
+  },
+  "WARM": {
+   "atlas": "filters_atlas_01",
+   "col": 1,
+   "row": 1
+  },
+  "COOL": {
+   "atlas": "filters_atlas_01",
+   "col": 2,
+   "row": 1
+  },
+  "VINTAGE": {
+   "atlas": "filters_atlas_01",
+   "col": 3,
+   "row": 1
+  },
+  "GOLDEN": {
+   "atlas": "filters_atlas_01",
+   "col": 0,
+   "row": 2
+  },
+  "ROSE": {
+   "atlas": "filters_atlas_01",
+   "col": 1,
+   "row": 2
+  },
+  "TEAL_ORANGE": {
+   "atlas": "filters_atlas_01",
+   "col": 2,
+   "row": 2
+  },
+  "NIGHT": {
+   "atlas": "filters_atlas_01",
+   "col": 3,
+   "row": 2
+  },
+  "FADE": {
+   "atlas": "filters_atlas_01",
+   "col": 0,
+   "row": 3
+  },
+  "MATTE": {
+   "atlas": "filters_atlas_01",
+   "col": 1,
+   "row": 3
+  },
+  "RETRO": {
+   "atlas": "filters_atlas_01",
+   "col": 2,
+   "row": 3
+  },
+  "DREAM": {
+   "atlas": "filters_atlas_01",
+   "col": 3,
+   "row": 3
+  },
+  "TROPICAL": {
+   "atlas": "filters_atlas_02",
+   "col": 0,
+   "row": 0
+  },
+  "URBAN": {
+   "atlas": "filters_atlas_02",
+   "col": 1,
+   "row": 0
+  },
+  "FOOD": {
+   "atlas": "filters_atlas_02",
+   "col": 2,
+   "row": 0
+  },
+  "PORTRAIT": {
+   "atlas": "filters_atlas_02",
+   "col": 3,
+   "row": 0
+  },
+  "AUTUMN": {
+   "atlas": "filters_atlas_02",
+   "col": 0,
+   "row": 1
+  },
+  "ICE": {
+   "atlas": "filters_atlas_02",
+   "col": 1,
+   "row": 1
+  },
+  "NEON": {
+   "atlas": "filters_atlas_02",
+   "col": 2,
+   "row": 1
+  },
+  "DOCUMENTARY": {
+   "atlas": "filters_atlas_02",
+   "col": 3,
+   "row": 1
+  },
+  "SUNSET": {
+   "atlas": "filters_atlas_02",
+   "col": 0,
+   "row": 2
+  },
+  "LAVENDER": {
+   "atlas": "filters_atlas_02",
+   "col": 1,
+   "row": 2
+  },
+  "EMERALD": {
+   "atlas": "filters_atlas_02",
+   "col": 2,
+   "row": 2
+  },
+  "NOIR": {
+   "atlas": "filters_atlas_02",
+   "col": 3,
+   "row": 2
+  },
+  "SOFT": {
+   "atlas": "filters_atlas_02",
+   "col": 0,
+   "row": 3
+  },
+  "DRAMA": {
+   "atlas": "filters_atlas_02",
+   "col": 1,
+   "row": 3
+  },
+  "LOW_LIGHT": {
+   "atlas": "filters_atlas_02",
+   "col": 2,
+   "row": 3
+  },
+  "CLEAN": {
+   "atlas": "filters_atlas_02",
+   "col": 3,
+   "row": 3
   }
+ },
+ "effects": {
+  "cyber_signal": {
+   "atlas": "effects_atlas_01",
+   "col": 0,
+   "row": 0
+  },
+  "impact_combo": {
+   "atlas": "effects_atlas_01",
+   "col": 1,
+   "row": 0
+  },
+  "soft_dream": {
+   "atlas": "effects_atlas_01",
+   "col": 2,
+   "row": 0
+  },
+  "broken_tape": {
+   "atlas": "effects_atlas_01",
+   "col": 3,
+   "row": 0
+  },
+  "neon_arcade": {
+   "atlas": "effects_atlas_01",
+   "col": 0,
+   "row": 1
+  },
+  "liquid_lens": {
+   "atlas": "effects_atlas_01",
+   "col": 1,
+   "row": 1
+  },
+  "clean_film": {
+   "atlas": "effects_atlas_01",
+   "col": 2,
+   "row": 1
+  },
+  "film_35mm": {
+   "atlas": "effects_atlas_01",
+   "col": 3,
+   "row": 1
+  },
+  "vintage_film": {
+   "atlas": "effects_atlas_01",
+   "col": 0,
+   "row": 2
+  },
+  "dark_cinema": {
+   "atlas": "effects_atlas_01",
+   "col": 1,
+   "row": 2
+  },
+  "warm_cinema": {
+   "atlas": "effects_atlas_01",
+   "col": 2,
+   "row": 2
+  },
+  "cold_cinema": {
+   "atlas": "effects_atlas_01",
+   "col": 3,
+   "row": 2
+  },
+  "kill_impact": {
+   "atlas": "effects_atlas_01",
+   "col": 0,
+   "row": 3
+  },
+  "headshot": {
+   "atlas": "effects_atlas_01",
+   "col": 1,
+   "row": 3
+  },
+  "damage": {
+   "atlas": "effects_atlas_01",
+   "col": 2,
+   "row": 3
+  },
+  "explosion": {
+   "atlas": "effects_atlas_01",
+   "col": 3,
+   "row": 3
+  },
+  "speed": {
+   "atlas": "effects_atlas_02",
+   "col": 0,
+   "row": 0
+  },
+  "beat_zoom": {
+   "atlas": "effects_atlas_02",
+   "col": 1,
+   "row": 0
+  },
+  "victory": {
+   "atlas": "effects_atlas_02",
+   "col": 2,
+   "row": 0
+  },
+  "film_look": {
+   "atlas": "effects_atlas_02",
+   "col": 3,
+   "row": 0
+  }
+ },
+ "transitions": {
+  "cross_dissolve": {
+   "atlas": "transitions_atlas_01",
+   "col": 0,
+   "row": 0
+  },
+  "fade": {
+   "atlas": "transitions_atlas_01",
+   "col": 1,
+   "row": 0
+  },
+  "dip_to_black": {
+   "atlas": "transitions_atlas_01",
+   "col": 2,
+   "row": 0
+  },
+  "dip_to_white": {
+   "atlas": "transitions_atlas_01",
+   "col": 3,
+   "row": 0
+  },
+  "fade_through_black": {
+   "atlas": "transitions_atlas_01",
+   "col": 0,
+   "row": 1
+  },
+  "fade_through_white": {
+   "atlas": "transitions_atlas_01",
+   "col": 1,
+   "row": 1
+  },
+  "slide_left": {
+   "atlas": "transitions_atlas_01",
+   "col": 2,
+   "row": 1
+  },
+  "slide_right": {
+   "atlas": "transitions_atlas_01",
+   "col": 3,
+   "row": 1
+  },
+  "slide_up": {
+   "atlas": "transitions_atlas_01",
+   "col": 0,
+   "row": 2
+  },
+  "slide_down": {
+   "atlas": "transitions_atlas_01",
+   "col": 1,
+   "row": 2
+  },
+  "push_left": {
+   "atlas": "transitions_atlas_01",
+   "col": 2,
+   "row": 2
+  },
+  "push_right": {
+   "atlas": "transitions_atlas_01",
+   "col": 3,
+   "row": 2
+  },
+  "push_up": {
+   "atlas": "transitions_atlas_01",
+   "col": 0,
+   "row": 3
+  },
+  "push_down": {
+   "atlas": "transitions_atlas_01",
+   "col": 1,
+   "row": 3
+  },
+  "wipe_left": {
+   "atlas": "transitions_atlas_01",
+   "col": 2,
+   "row": 3
+  },
+  "wipe_right": {
+   "atlas": "transitions_atlas_01",
+   "col": 3,
+   "row": 3
+  },
+  "wipe_up": {
+   "atlas": "transitions_atlas_02",
+   "col": 0,
+   "row": 0
+  },
+  "wipe_down": {
+   "atlas": "transitions_atlas_02",
+   "col": 1,
+   "row": 0
+  },
+  "diagonal_wipe": {
+   "atlas": "transitions_atlas_02",
+   "col": 2,
+   "row": 0
+  },
+  "circle_wipe": {
+   "atlas": "transitions_atlas_02",
+   "col": 3,
+   "row": 0
+  },
+  "radial_wipe": {
+   "atlas": "transitions_atlas_02",
+   "col": 0,
+   "row": 1
+  },
+  "soft_wipe": {
+   "atlas": "transitions_atlas_02",
+   "col": 1,
+   "row": 1
+  },
+  "zoom_in": {
+   "atlas": "transitions_atlas_02",
+   "col": 2,
+   "row": 1
+  },
+  "zoom_out": {
+   "atlas": "transitions_atlas_02",
+   "col": 3,
+   "row": 1
+  },
+  "zoom_through": {
+   "atlas": "transitions_atlas_02",
+   "col": 0,
+   "row": 2
+  },
+  "punch_zoom": {
+   "atlas": "transitions_atlas_02",
+   "col": 1,
+   "row": 2
+  },
+  "smooth_zoom": {
+   "atlas": "transitions_atlas_02",
+   "col": 2,
+   "row": 2
+  },
+  "zoom_blur": {
+   "atlas": "transitions_atlas_02",
+   "col": 3,
+   "row": 2
+  },
+  "zoom_rotate": {
+   "atlas": "transitions_atlas_02",
+   "col": 0,
+   "row": 3
+  },
+  "whip_left": {
+   "atlas": "transitions_atlas_02",
+   "col": 1,
+   "row": 3
+  },
+  "whip_right": {
+   "atlas": "transitions_atlas_02",
+   "col": 2,
+   "row": 3
+  },
+  "whip_up": {
+   "atlas": "transitions_atlas_02",
+   "col": 3,
+   "row": 3
+  },
+  "whip_down": {
+   "atlas": "transitions_atlas_03",
+   "col": 0,
+   "row": 0
+  },
+  "motion_swipe": {
+   "atlas": "transitions_atlas_03",
+   "col": 1,
+   "row": 0
+  },
+  "fast_pan": {
+   "atlas": "transitions_atlas_03",
+   "col": 2,
+   "row": 0
+  },
+  "blur_dissolve": {
+   "atlas": "transitions_atlas_03",
+   "col": 3,
+   "row": 0
+  },
+  "gaussian_blur_trans": {
+   "atlas": "transitions_atlas_03",
+   "col": 0,
+   "row": 1
+  },
+  "directional_blur_trans": {
+   "atlas": "transitions_atlas_03",
+   "col": 1,
+   "row": 1
+  },
+  "radial_blur_trans": {
+   "atlas": "transitions_atlas_03",
+   "col": 2,
+   "row": 1
+  },
+  "white_flash": {
+   "atlas": "transitions_atlas_03",
+   "col": 3,
+   "row": 1
+  },
+  "color_flash": {
+   "atlas": "transitions_atlas_03",
+   "col": 0,
+   "row": 2
+  },
+  "light_leak": {
+   "atlas": "transitions_atlas_03",
+   "col": 1,
+   "row": 2
+  },
+  "film_burn": {
+   "atlas": "transitions_atlas_03",
+   "col": 2,
+   "row": 2
+  },
+  "glow_flash": {
+   "atlas": "transitions_atlas_03",
+   "col": 3,
+   "row": 2
+  },
+  "digital_glitch": {
+   "atlas": "transitions_atlas_03",
+   "col": 0,
+   "row": 3
+  },
+  "rgb_glitch": {
+   "atlas": "transitions_atlas_03",
+   "col": 1,
+   "row": 3
+  },
+  "signal_glitch": {
+   "atlas": "transitions_atlas_03",
+   "col": 2,
+   "row": 3
+  },
+  "vhs_glitch": {
+   "atlas": "transitions_atlas_03",
+   "col": 3,
+   "row": 3
+  },
+  "luma_fade": {
+   "atlas": "transitions_atlas_04",
+   "col": 0,
+   "row": 0
+  },
+  "luma_wipe": {
+   "atlas": "transitions_atlas_04",
+   "col": 1,
+   "row": 0
+  },
+  "ripple": {
+   "atlas": "transitions_atlas_04",
+   "col": 2,
+   "row": 0
+  },
+  "wave": {
+   "atlas": "transitions_atlas_04",
+   "col": 3,
+   "row": 0
+  },
+  "fisheye_trans": {
+   "atlas": "transitions_atlas_04",
+   "col": 0,
+   "row": 1
+  },
+  "warp_trans": {
+   "atlas": "transitions_atlas_04",
+   "col": 1,
+   "row": 1
+  },
+  "lens_distortion_trans": {
+   "atlas": "transitions_atlas_04",
+   "col": 2,
+   "row": 1
+  },
+  "spin": {
+   "atlas": "transitions_atlas_04",
+   "col": 3,
+   "row": 1
+  },
+  "spin_zoom": {
+   "atlas": "transitions_atlas_04",
+   "col": 0,
+   "row": 2
+  },
+  "rotate_push": {
+   "atlas": "transitions_atlas_04",
+   "col": 1,
+   "row": 2
+  },
+  "flip_horizontal": {
+   "atlas": "transitions_atlas_04",
+   "col": 2,
+   "row": 2
+  },
+  "flip_vertical": {
+   "atlas": "transitions_atlas_04",
+   "col": 3,
+   "row": 2
+  },
+  "cube_left": {
+   "atlas": "transitions_atlas_04",
+   "col": 0,
+   "row": 3
+  },
+  "cube_right": {
+   "atlas": "transitions_atlas_04",
+   "col": 1,
+   "row": 3
+  },
+  "page_turn": {
+   "atlas": "transitions_atlas_04",
+   "col": 2,
+   "row": 3
+  },
+  "perspective_slide": {
+   "atlas": "transitions_atlas_04",
+   "col": 3,
+   "row": 3
+  },
+  "split_reveal": {
+   "atlas": "transitions_atlas_05",
+   "col": 0,
+   "row": 0
+  },
+  "split_horizontal": {
+   "atlas": "transitions_atlas_05",
+   "col": 1,
+   "row": 0
+  },
+  "split_vertical": {
+   "atlas": "transitions_atlas_05",
+   "col": 2,
+   "row": 0
+  },
+  "mosaic_reveal": {
+   "atlas": "transitions_atlas_05",
+   "col": 3,
+   "row": 0
+  },
+  "pixel_dissolve": {
+   "atlas": "transitions_atlas_05",
+   "col": 0,
+   "row": 1
+  },
+  "prism_trans": {
+   "atlas": "transitions_atlas_05",
+   "col": 1,
+   "row": 1
+  },
+  "mirror_trans": {
+   "atlas": "transitions_atlas_05",
+   "col": 2,
+   "row": 1
+  },
+  "kaleidoscope_trans": {
+   "atlas": "transitions_atlas_05",
+   "col": 3,
+   "row": 1
+  },
+  "glass_trans": {
+   "atlas": "transitions_atlas_05",
+   "col": 0,
+   "row": 2
+  },
+  "smooth_fade": {
+   "atlas": "transitions_atlas_05",
+   "col": 1,
+   "row": 2
+  },
+  "color_fade_dip": {
+   "atlas": "transitions_atlas_05",
+   "col": 2,
+   "row": 2
+  },
+  "cross_fade_soft": {
+   "atlas": "transitions_atlas_05",
+   "col": 3,
+   "row": 2
+  },
+  "rgb_split": {
+   "atlas": "transitions_atlas_05",
+   "col": 0,
+   "row": 3
+  },
+  "rgb_shift": {
+   "atlas": "transitions_atlas_05",
+   "col": 1,
+   "row": 3
+  },
+  "chromatic_drift": {
+   "atlas": "transitions_atlas_05",
+   "col": 2,
+   "row": 3
+  },
+  "channel_shear": {
+   "atlas": "transitions_atlas_05",
+   "col": 3,
+   "row": 3
+  },
+  "prism_wipe": {
+   "atlas": "transitions_atlas_06",
+   "col": 0,
+   "row": 0
+  },
+  "film_roll": {
+   "atlas": "transitions_atlas_06",
+   "col": 1,
+   "row": 0
+  },
+  "leader_flash": {
+   "atlas": "transitions_atlas_06",
+   "col": 2,
+   "row": 0
+  },
+  "sprocket_slip": {
+   "atlas": "transitions_atlas_06",
+   "col": 3,
+   "row": 0
+  },
+  "burn_dissolve": {
+   "atlas": "transitions_atlas_06",
+   "col": 0,
+   "row": 1
+  },
+  "anamorphic_streak": {
+   "atlas": "transitions_atlas_06",
+   "col": 1,
+   "row": 1
+  },
+  "letterbox_reveal": {
+   "atlas": "transitions_atlas_06",
+   "col": 2,
+   "row": 1
+  },
+  "flare_sweep": {
+   "atlas": "transitions_atlas_06",
+   "col": 3,
+   "row": 1
+  },
+  "cine_shutter": {
+   "atlas": "transitions_atlas_06",
+   "col": 0,
+   "row": 2
+  },
+  "social_swipe_up": {
+   "atlas": "transitions_atlas_06",
+   "col": 1,
+   "row": 2
+  },
+  "stories_flip": {
+   "atlas": "transitions_atlas_06",
+   "col": 2,
+   "row": 2
+  },
+  "heart_iris": {
+   "atlas": "transitions_atlas_06",
+   "col": 3,
+   "row": 2
+  },
+  "bubble_pop_wipe": {
+   "atlas": "transitions_atlas_06",
+   "col": 0,
+   "row": 3
+  },
+  "notification_slide": {
+   "atlas": "transitions_atlas_06",
+   "col": 1,
+   "row": 3
+  },
+  "pixel_dissolve_arcade": {
+   "atlas": "transitions_atlas_06",
+   "col": 2,
+   "row": 3
+  },
+  "scanline_wipe": {
+   "atlas": "transitions_atlas_06",
+   "col": 3,
+   "row": 3
+  },
+  "energy_blast": {
+   "atlas": "transitions_atlas_07",
+   "col": 0,
+   "row": 0
+  },
+  "level_clear_wipe": {
+   "atlas": "transitions_atlas_07",
+   "col": 1,
+   "row": 0
+  },
+  "cyber_grid_reveal": {
+   "atlas": "transitions_atlas_07",
+   "col": 2,
+   "row": 0
+  },
+  "gl_advanced_mosaic": {
+   "atlas": "transitions_atlas_07",
+   "col": 3,
+   "row": 0
+  },
+  "gl_block_dissolve": {
+   "atlas": "transitions_atlas_07",
+   "col": 0,
+   "row": 1
+  },
+  "gl_book_flip": {
+   "atlas": "transitions_atlas_07",
+   "col": 1,
+   "row": 1
+  },
+  "gl_bounce": {
+   "atlas": "transitions_atlas_07",
+   "col": 2,
+   "row": 1
+  },
+  "gl_bow_tie_horizontal": {
+   "atlas": "transitions_atlas_07",
+   "col": 3,
+   "row": 1
+  },
+  "gl_bow_tie_vertical": {
+   "atlas": "transitions_atlas_07",
+   "col": 0,
+   "row": 2
+  },
+  "gl_bow_tie_with_parameter": {
+   "atlas": "transitions_atlas_07",
+   "col": 1,
+   "row": 2
+  },
+  "gl_box": {
+   "atlas": "transitions_atlas_07",
+   "col": 2,
+   "row": 2
+  },
+  "gl_butterfly_wave_scrawler": {
+   "atlas": "transitions_atlas_07",
+   "col": 3,
+   "row": 2
+  },
+  "gl_circle_crop": {
+   "atlas": "transitions_atlas_07",
+   "col": 0,
+   "row": 3
+  },
+  "gl_colour_distance": {
+   "atlas": "transitions_atlas_07",
+   "col": 1,
+   "row": 3
+  },
+  "gl_crazy_parametric_fun": {
+   "atlas": "transitions_atlas_07",
+   "col": 2,
+   "row": 3
+  },
+  "gl_cross_zoom": {
+   "atlas": "transitions_atlas_07",
+   "col": 3,
+   "row": 3
+  },
+  "gl_defocus_blur": {
+   "atlas": "transitions_atlas_08",
+   "col": 0,
+   "row": 0
+  },
+  "gl_directional": {
+   "atlas": "transitions_atlas_08",
+   "col": 1,
+   "row": 0
+  },
+  "gl_directional_scaled": {
+   "atlas": "transitions_atlas_08",
+   "col": 2,
+   "row": 0
+  },
+  "gl_doom_screen_transition": {
+   "atlas": "transitions_atlas_08",
+   "col": 3,
+   "row": 0
+  },
+  "gl_dreamy": {
+   "atlas": "transitions_atlas_08",
+   "col": 0,
+   "row": 1
+  },
+  "gl_dreamy_zoom": {
+   "atlas": "transitions_atlas_08",
+   "col": 1,
+   "row": 1
+  },
+  "gl_drop_zone_flicker": {
+   "atlas": "transitions_atlas_08",
+   "col": 2,
+   "row": 1
+  },
+  "gl_edge_transition": {
+   "atlas": "transitions_atlas_08",
+   "col": 3,
+   "row": 1
+  },
+  "gl_film_burn": {
+   "atlas": "transitions_atlas_08",
+   "col": 0,
+   "row": 2
+  },
+  "gl_fold": {
+   "atlas": "transitions_atlas_08",
+   "col": 1,
+   "row": 2
+  },
+  "gl_glitch_displace": {
+   "atlas": "transitions_atlas_08",
+   "col": 2,
+   "row": 2
+  },
+  "gl_glitch_memories": {
+   "atlas": "transitions_atlas_08",
+   "col": 3,
+   "row": 2
+  },
+  "gl_grid_flip": {
+   "atlas": "transitions_atlas_08",
+   "col": 0,
+   "row": 3
+  },
+  "gl_hsvfade": {
+   "atlas": "transitions_atlas_08",
+   "col": 1,
+   "row": 3
+  },
+  "gl_horizontal_close": {
+   "atlas": "transitions_atlas_08",
+   "col": 2,
+   "row": 3
+  },
+  "gl_horizontal_open": {
+   "atlas": "transitions_atlas_08",
+   "col": 3,
+   "row": 3
+  },
+  "gl_inverted_page_curl": {
+   "atlas": "transitions_atlas_09",
+   "col": 0,
+   "row": 0
+  },
+  "gl_left_right": {
+   "atlas": "transitions_atlas_09",
+   "col": 1,
+   "row": 0
+  },
+  "gl_linear_blur": {
+   "atlas": "transitions_atlas_09",
+   "col": 2,
+   "row": 0
+  },
+  "gl_mosaic": {
+   "atlas": "transitions_atlas_09",
+   "col": 3,
+   "row": 0
+  },
+  "gl_overexposure": {
+   "atlas": "transitions_atlas_09",
+   "col": 0,
+   "row": 1
+  },
+  "gl_polka_dots_curtain": {
+   "atlas": "transitions_atlas_09",
+   "col": 1,
+   "row": 1
+  },
+  "gl_puzzle_right": {
+   "atlas": "transitions_atlas_09",
+   "col": 2,
+   "row": 1
+  },
+  "gl_radial": {
+   "atlas": "transitions_atlas_09",
+   "col": 3,
+   "row": 1
+  },
+  "gl_rectangle": {
+   "atlas": "transitions_atlas_09",
+   "col": 0,
+   "row": 2
+  },
+  "gl_rectangle_crop": {
+   "atlas": "transitions_atlas_09",
+   "col": 1,
+   "row": 2
+  },
+  "gl_revolve_left": {
+   "atlas": "transitions_atlas_09",
+   "col": 2,
+   "row": 2
+  },
+  "gl_rolls": {
+   "atlas": "transitions_atlas_09",
+   "col": 3,
+   "row": 2
+  },
+  "gl_rotate_scale_vanish": {
+   "atlas": "transitions_atlas_09",
+   "col": 0,
+   "row": 3
+  },
+  "gl_simple_flip": {
+   "atlas": "transitions_atlas_09",
+   "col": 1,
+   "row": 3
+  },
+  "gl_simple_zoom": {
+   "atlas": "transitions_atlas_09",
+   "col": 2,
+   "row": 3
+  },
+  "gl_simple_zoom_out": {
+   "atlas": "transitions_atlas_09",
+   "col": 3,
+   "row": 3
+  },
+  "gl_slides": {
+   "atlas": "transitions_atlas_10",
+   "col": 0,
+   "row": 0
+  },
+  "gl_star_wipe": {
+   "atlas": "transitions_atlas_10",
+   "col": 1,
+   "row": 0
+  },
+  "gl_static_fade": {
+   "atlas": "transitions_atlas_10",
+   "col": 2,
+   "row": 0
+  },
+  "gl_stereo_viewer": {
+   "atlas": "transitions_atlas_10",
+   "col": 3,
+   "row": 0
+  },
+  "gl_strip_datamosh_glitch": {
+   "atlas": "transitions_atlas_10",
+   "col": 0,
+   "row": 1
+  },
+  "gl_swirl": {
+   "atlas": "transitions_atlas_10",
+   "col": 1,
+   "row": 1
+  },
+  "gl_tvstatic": {
+   "atlas": "transitions_atlas_10",
+   "col": 2,
+   "row": 1
+  },
+  "gl_tiles_wave": {
+   "atlas": "transitions_atlas_10",
+   "col": 3,
+   "row": 1
+  },
+  "gl_top_bottom": {
+   "atlas": "transitions_atlas_10",
+   "col": 0,
+   "row": 2
+  },
+  "gl_vertical_close": {
+   "atlas": "transitions_atlas_10",
+   "col": 1,
+   "row": 2
+  },
+  "gl_vertical_open": {
+   "atlas": "transitions_atlas_10",
+   "col": 2,
+   "row": 2
+  },
+  "gl_water_drop": {
+   "atlas": "transitions_atlas_10",
+   "col": 3,
+   "row": 2
+  },
+  "gl_zoom_in_circles": {
+   "atlas": "transitions_atlas_10",
+   "col": 0,
+   "row": 3
+  },
+  "gl_zoom_left_wipe": {
+   "atlas": "transitions_atlas_10",
+   "col": 1,
+   "row": 3
+  },
+  "gl_zoom_rigth_wipe": {
+   "atlas": "transitions_atlas_10",
+   "col": 2,
+   "row": 3
+  },
+  "gl_angular": {
+   "atlas": "transitions_atlas_10",
+   "col": 3,
+   "row": 3
+  },
+  "gl_burn": {
+   "atlas": "transitions_atlas_11",
+   "col": 0,
+   "row": 0
+  },
+  "gl_burn0": {
+   "atlas": "transitions_atlas_11",
+   "col": 1,
+   "row": 0
+  },
+  "gl_chessboard": {
+   "atlas": "transitions_atlas_11",
+   "col": 2,
+   "row": 0
+  },
+  "gl_circle": {
+   "atlas": "transitions_atlas_11",
+   "col": 3,
+   "row": 0
+  },
+  "gl_circleopen": {
+   "atlas": "transitions_atlas_11",
+   "col": 0,
+   "row": 1
+  },
+  "gl_colorphase": {
+   "atlas": "transitions_atlas_11",
+   "col": 1,
+   "row": 1
+  },
+  "gl_coord_from_in": {
+   "atlas": "transitions_atlas_11",
+   "col": 2,
+   "row": 1
+  },
+  "gl_crosshatch": {
+   "atlas": "transitions_atlas_11",
+   "col": 3,
+   "row": 1
+  },
+  "gl_crosswarp": {
+   "atlas": "transitions_atlas_11",
+   "col": 0,
+   "row": 2
+  },
+  "gl_cube": {
+   "atlas": "transitions_atlas_11",
+   "col": 1,
+   "row": 2
+  },
+  "gl_directional_easing": {
+   "atlas": "transitions_atlas_11",
+   "col": 2,
+   "row": 2
+  },
+  "gl_directionalwarp": {
+   "atlas": "transitions_atlas_11",
+   "col": 3,
+   "row": 2
+  },
+  "gl_directionalwipe": {
+   "atlas": "transitions_atlas_11",
+   "col": 0,
+   "row": 3
+  },
+  "gl_dissolve": {
+   "atlas": "transitions_atlas_11",
+   "col": 1,
+   "row": 3
+  },
+  "gl_doorway": {
+   "atlas": "transitions_atlas_11",
+   "col": 2,
+   "row": 3
+  },
+  "gl_fade": {
+   "atlas": "transitions_atlas_11",
+   "col": 3,
+   "row": 3
+  },
+  "gl_fadecolor": {
+   "atlas": "transitions_atlas_12",
+   "col": 0,
+   "row": 0
+  },
+  "gl_fadegrayscale": {
+   "atlas": "transitions_atlas_12",
+   "col": 1,
+   "row": 0
+  },
+  "gl_flyeye": {
+   "atlas": "transitions_atlas_12",
+   "col": 2,
+   "row": 0
+  },
+  "gl_fragment": {
+   "atlas": "transitions_atlas_12",
+   "col": 3,
+   "row": 0
+  },
+  "gl_heart": {
+   "atlas": "transitions_atlas_12",
+   "col": 0,
+   "row": 1
+  },
+  "gl_hexagonalize": {
+   "atlas": "transitions_atlas_12",
+   "col": 1,
+   "row": 1
+  },
+  "gl_kaleidoscope": {
+   "atlas": "transitions_atlas_12",
+   "col": 2,
+   "row": 1
+  },
+  "gl_luminance_melt": {
+   "atlas": "transitions_atlas_12",
+   "col": 3,
+   "row": 1
+  },
+  "gl_morph": {
+   "atlas": "transitions_atlas_12",
+   "col": 0,
+   "row": 2
+  },
+  "gl_mosaic_transition": {
+   "atlas": "transitions_atlas_12",
+   "col": 1,
+   "row": 2
+  },
+  "gl_multiply_blend": {
+   "atlas": "transitions_atlas_12",
+   "col": 2,
+   "row": 2
+  },
+  "gl_old_tv_lost_signal": {
+   "atlas": "transitions_atlas_12",
+   "col": 3,
+   "row": 2
+  },
+  "gl_parametric_glitch": {
+   "atlas": "transitions_atlas_12",
+   "col": 0,
+   "row": 3
+  },
+  "gl_perlin": {
+   "atlas": "transitions_atlas_12",
+   "col": 1,
+   "row": 3
+  },
+  "gl_pinwheel": {
+   "atlas": "transitions_atlas_12",
+   "col": 2,
+   "row": 3
+  },
+  "gl_pixelize": {
+   "atlas": "transitions_atlas_12",
+   "col": 3,
+   "row": 3
+  },
+  "gl_polar_function": {
+   "atlas": "transitions_atlas_13",
+   "col": 0,
+   "row": 0
+  },
+  "gl_power_kaleido": {
+   "atlas": "transitions_atlas_13",
+   "col": 1,
+   "row": 0
+  },
+  "gl_random_noisex": {
+   "atlas": "transitions_atlas_13",
+   "col": 2,
+   "row": 0
+  },
+  "gl_randomsquares": {
+   "atlas": "transitions_atlas_13",
+   "col": 3,
+   "row": 0
+  },
+  "gl_ripple": {
+   "atlas": "transitions_atlas_13",
+   "col": 0,
+   "row": 1
+  },
+  "gl_rotate_transition": {
+   "atlas": "transitions_atlas_13",
+   "col": 1,
+   "row": 1
+  },
+  "gl_rotate_scale_fade": {
+   "atlas": "transitions_atlas_13",
+   "col": 2,
+   "row": 1
+  },
+  "gl_scale_in": {
+   "atlas": "transitions_atlas_13",
+   "col": 3,
+   "row": 1
+  },
+  "gl_split_slide_in_horizontal": {
+   "atlas": "transitions_atlas_13",
+   "col": 0,
+   "row": 2
+  },
+  "gl_split_slide_in_out_horizontal": {
+   "atlas": "transitions_atlas_13",
+   "col": 1,
+   "row": 2
+  },
+  "gl_split_slide_in_out_vertical": {
+   "atlas": "transitions_atlas_13",
+   "col": 2,
+   "row": 2
+  },
+  "gl_split_slide_in_vertical": {
+   "atlas": "transitions_atlas_13",
+   "col": 3,
+   "row": 2
+  },
+  "gl_split_slide_out_horizontal": {
+   "atlas": "transitions_atlas_13",
+   "col": 0,
+   "row": 3
+  },
+  "gl_split_slide_out_vertical": {
+   "atlas": "transitions_atlas_13",
+   "col": 1,
+   "row": 3
+  },
+  "gl_squareswire": {
+   "atlas": "transitions_atlas_13",
+   "col": 2,
+   "row": 3
+  },
+  "gl_squeeze": {
+   "atlas": "transitions_atlas_13",
+   "col": 3,
+   "row": 3
+  },
+  "gl_static_wipe": {
+   "atlas": "transitions_atlas_14",
+   "col": 0,
+   "row": 0
+  },
+  "gl_swap": {
+   "atlas": "transitions_atlas_14",
+   "col": 1,
+   "row": 0
+  },
+  "gl_tangent_motion_blur": {
+   "atlas": "transitions_atlas_14",
+   "col": 2,
+   "row": 0
+  },
+  "gl_undulating_burn_out": {
+   "atlas": "transitions_atlas_14",
+   "col": 3,
+   "row": 0
+  },
+  "gl_wind": {
+   "atlas": "transitions_atlas_14",
+   "col": 0,
+   "row": 1
+  },
+  "gl_windowblinds": {
+   "atlas": "transitions_atlas_14",
+   "col": 1,
+   "row": 1
+  },
+  "gl_windowslice": {
+   "atlas": "transitions_atlas_14",
+   "col": 2,
+   "row": 1
+  },
+  "gl_wipe_down": {
+   "atlas": "transitions_atlas_14",
+   "col": 3,
+   "row": 1
+  },
+  "gl_wipe_left": {
+   "atlas": "transitions_atlas_14",
+   "col": 0,
+   "row": 2
+  },
+  "gl_wipe_right": {
+   "atlas": "transitions_atlas_14",
+   "col": 1,
+   "row": 2
+  },
+  "gl_wipe_up": {
+   "atlas": "transitions_atlas_14",
+   "col": 2,
+   "row": 2
+  },
+  "gl_x_axis_translation": {
+   "atlas": "transitions_atlas_14",
+   "col": 3,
+   "row": 2
+  },
+  "gl_zoom_in_out": {
+   "atlas": "transitions_atlas_14",
+   "col": 0,
+   "row": 3
+  }
+ }
 }

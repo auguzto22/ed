@@ -12,16 +12,19 @@ object BuiltInTransitions {
                 val text = context.assets.open("editor/transitions.json").bufferedReader().use { it.readText() }
                 val catalog = JSONArray(text)
                 val list = List(catalog.length()) { TransitionDefinition.parse(catalog.getJSONObject(it).toString()) }
-                list.forEach { item ->
+                list.forEachIndexed { index, item ->
+                    // Adapted gl-transitions carry their own author/licence (a few are BSD, not MIT).
+                    val raw = catalog.getJSONObject(index)
+                    val license = raw.optString("license", "MIT")
                     com.termex.replay15.editor.licenses.ResourceCreditsRegistry.register(
                         com.termex.replay15.editor.licenses.ResourceLicenseMetadata(
                             id = item.id,
                             name = item.name,
-                            author = "GL Transitions / Recly Community",
-                            source = "GL Transitions (MIT)",
-                            license = "MIT",
-                            licenseUrl = "https://opensource.org/licenses/MIT",
-                            sourceUrl = "https://gl-transitions.com",
+                            author = raw.optString("author", "GL Transitions / Recly Community"),
+                            source = "GL Transitions ($license)",
+                            license = license,
+                            licenseUrl = if (license.startsWith("BSD")) "https://opensource.org/licenses/BSD-3-Clause" else "https://opensource.org/licenses/MIT",
+                            sourceUrl = raw.optString("source", "https://gl-transitions.com"),
                             version = "${item.version}.0",
                             category = "Transition",
                             tags = listOf(item.category),
