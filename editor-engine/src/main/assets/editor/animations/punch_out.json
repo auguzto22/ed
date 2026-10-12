@@ -1,0 +1,21 @@
+{
+  "id": "recly_punch_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Soco de saída",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "easing": "EASE_IN"
+    },
+    {
+      "time": 1,
+      "zoom": 2.4,
+      "opacity": 0
+    }
+  ]
+}

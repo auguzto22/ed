@@ -1,0 +1,21 @@
+{
+  "id": "recly_fly_in_left",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Voar da esquerda",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "x": -0.6,
+      "opacity": 0,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "recly_back_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Recuo e entrada",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "zoom": 0.5,
+      "opacity": 0,
+      "easing": "BACK"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

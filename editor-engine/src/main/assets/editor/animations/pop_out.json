@@ -1,0 +1,26 @@
+{
+  "id": "recly_pop_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Estourar",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "easing": "SMOOTH"
+    },
+    {
+      "time": 0.35,
+      "zoom": 1.15,
+      "easing": "EASE_IN"
+    },
+    {
+      "time": 1,
+      "zoom": 0.1,
+      "opacity": 0
+    }
+  ]
+}

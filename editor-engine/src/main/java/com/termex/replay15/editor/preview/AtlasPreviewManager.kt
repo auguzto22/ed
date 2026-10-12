@@ -95,7 +95,9 @@ object AtlasPreviewManager {
         "film_look" to AtlasCoordinate("effects_atlas_02", 3, 0),
     )
 
-    // 3. Static coordinates for 73 built-in Transitions
+    // 3. Coordinates for every built-in transition, in catalog order (transitions.json).
+    // The atlases and editor/previews/preview_registry.json are generated together with this
+    // list by rendering each shader at mid-progress; keep the three in the same order.
     private val transitionCoordinates: Map<String, AtlasCoordinate> = buildMap {
         val transitionIds = listOf(
             "cross_dissolve", "fade", "dip_to_black", "dip_to_white",
@@ -116,7 +118,44 @@ object AtlasPreviewManager {
             "cube_left", "cube_right", "page_turn", "perspective_slide",
             "split_reveal", "split_horizontal", "split_vertical", "mosaic_reveal",
             "pixel_dissolve", "prism_trans", "mirror_trans", "kaleidoscope_trans",
-            "glass_trans"
+            "glass_trans", "smooth_fade", "color_fade_dip", "cross_fade_soft",
+            "rgb_split", "rgb_shift", "chromatic_drift", "channel_shear",
+            "prism_wipe", "film_roll", "leader_flash", "sprocket_slip",
+            "burn_dissolve", "anamorphic_streak", "letterbox_reveal", "flare_sweep",
+            "cine_shutter", "social_swipe_up", "stories_flip", "heart_iris",
+            "bubble_pop_wipe", "notification_slide", "pixel_dissolve_arcade", "scanline_wipe",
+            "energy_blast", "level_clear_wipe", "cyber_grid_reveal", "gl_advanced_mosaic",
+            "gl_block_dissolve", "gl_book_flip", "gl_bounce", "gl_bow_tie_horizontal",
+            "gl_bow_tie_vertical", "gl_bow_tie_with_parameter", "gl_box", "gl_butterfly_wave_scrawler",
+            "gl_circle_crop", "gl_colour_distance", "gl_crazy_parametric_fun", "gl_cross_zoom",
+            "gl_defocus_blur", "gl_directional", "gl_directional_scaled", "gl_doom_screen_transition",
+            "gl_dreamy", "gl_dreamy_zoom", "gl_drop_zone_flicker", "gl_edge_transition",
+            "gl_film_burn", "gl_fold", "gl_glitch_displace", "gl_glitch_memories",
+            "gl_grid_flip", "gl_hsvfade", "gl_horizontal_close", "gl_horizontal_open",
+            "gl_inverted_page_curl", "gl_left_right", "gl_linear_blur", "gl_mosaic",
+            "gl_overexposure", "gl_polka_dots_curtain", "gl_puzzle_right", "gl_radial",
+            "gl_rectangle", "gl_rectangle_crop", "gl_revolve_left", "gl_rolls",
+            "gl_rotate_scale_vanish", "gl_simple_flip", "gl_simple_zoom", "gl_simple_zoom_out",
+            "gl_slides", "gl_star_wipe", "gl_static_fade", "gl_stereo_viewer",
+            "gl_strip_datamosh_glitch", "gl_swirl", "gl_tvstatic", "gl_tiles_wave",
+            "gl_top_bottom", "gl_vertical_close", "gl_vertical_open", "gl_water_drop",
+            "gl_zoom_in_circles", "gl_zoom_left_wipe", "gl_zoom_rigth_wipe", "gl_angular",
+            "gl_burn", "gl_burn0", "gl_chessboard", "gl_circle",
+            "gl_circleopen", "gl_colorphase", "gl_coord_from_in", "gl_crosshatch",
+            "gl_crosswarp", "gl_cube", "gl_directional_easing", "gl_directionalwarp",
+            "gl_directionalwipe", "gl_dissolve", "gl_doorway", "gl_fade",
+            "gl_fadecolor", "gl_fadegrayscale", "gl_flyeye", "gl_fragment",
+            "gl_heart", "gl_hexagonalize", "gl_kaleidoscope", "gl_luminance_melt",
+            "gl_morph", "gl_mosaic_transition", "gl_multiply_blend", "gl_old_tv_lost_signal",
+            "gl_parametric_glitch", "gl_perlin", "gl_pinwheel", "gl_pixelize",
+            "gl_polar_function", "gl_power_kaleido", "gl_random_noisex", "gl_randomsquares",
+            "gl_ripple", "gl_rotate_transition", "gl_rotate_scale_fade", "gl_scale_in",
+            "gl_split_slide_in_horizontal", "gl_split_slide_in_out_horizontal", "gl_split_slide_in_out_vertical", "gl_split_slide_in_vertical",
+            "gl_split_slide_out_horizontal", "gl_split_slide_out_vertical", "gl_squareswire", "gl_squeeze",
+            "gl_static_wipe", "gl_swap", "gl_tangent_motion_blur", "gl_undulating_burn_out",
+            "gl_wind", "gl_windowblinds", "gl_windowslice", "gl_wipe_down",
+            "gl_wipe_left", "gl_wipe_right", "gl_wipe_up", "gl_x_axis_translation",
+            "gl_zoom_in_out",
         )
         for (i in transitionIds.indices) {
             val atlasNum = (i / 16) + 1

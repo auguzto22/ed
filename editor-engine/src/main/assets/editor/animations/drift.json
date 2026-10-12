@@ -1,0 +1,24 @@
+{
+  "id": "recly_drift",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Deriva lenta",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.5,
+      "x": 0.03,
+      "y": -0.02,
+      "zoom": 1.04
+    },
+    {
+      "time": 1
+    }
+  ]
+}

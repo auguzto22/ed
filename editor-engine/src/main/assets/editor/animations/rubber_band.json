@@ -1,0 +1,34 @@
+{
+  "id": "recly_rubber_band",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Elástico",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.3,
+      "zoom": 1.15
+    },
+    {
+      "time": 0.45,
+      "zoom": 0.88
+    },
+    {
+      "time": 0.6,
+      "zoom": 1.06
+    },
+    {
+      "time": 0.75,
+      "zoom": 0.97
+    },
+    {
+      "time": 1
+    }
+  ]
+}

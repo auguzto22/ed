@@ -1,0 +1,24 @@
+{
+  "id": "recly_ken_burns",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Ken Burns",
+  "category": "LOOP",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0
+    },
+    {
+      "time": 0.5,
+      "zoom": 1.12,
+      "x": 0.04,
+      "y": -0.02
+    },
+    {
+      "time": 1
+    }
+  ]
+}

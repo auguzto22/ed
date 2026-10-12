@@ -1,0 +1,47 @@
+// Bounce — adaptado de gl-transitions (Bounce.glsl)
+// Autor: Adrian Purser · Licença: MIT
+// https://github.com/gl-transitions/gl-transitions
+vec4 getFromColor(vec2 uv) { return texture2D(uTexA, uv); }
+vec4 getToColor(vec2 uv) { return texture2D(uTexB, uv); }
+float progress;
+float ratio;
+const vec4 shadow_colour = vec4(0.,0.,0.,.6);
+// Author: Adrian Purser
+// License: MIT
+// Description: The outgoing image drops out of the frame with a few p_bounces, revealing the incoming one
+// Tags: bounce, slide, vertical, shadow
+
+// @color Color of the shadow cast on the incoming image
+
+// @range(0.01, 0.5) Height of the shadow, relative to the image height
+
+// @range(1, 10, 1) Number of p_bounces before settling
+
+const float PI = 3.14159265358;
+
+vec4 transition (vec2 uv) {
+  float time = progress;
+  float stime = sin(time * PI / 2.);
+  float phase = time * PI * p_bounces;
+  float y = (abs(cos(phase))) * (1.0 - stime);
+  float d = uv.y - y;
+  return mix(
+    mix(
+      getToColor(uv),
+      shadow_colour,
+      step(d, p_shadow_height) * (1. - mix(
+        ((d / p_shadow_height) * shadow_colour.a) + (1.0 - shadow_colour.a),
+        1.0,
+        smoothstep(0.95, 1., progress) // fade-out the shadow at the end
+      ))
+    ),
+    getFromColor(vec2(uv.x, uv.y + (1.0 - y))),
+    step(d, 0.0)
+  );
+}
+
+vec4 reclyTransition(vec2 uv, float reclyProgress) {
+    progress = clamp(reclyProgress, 0.0, 1.0);
+    ratio = uResolution.x / max(uResolution.y, 1.0);
+    return transition(uv);
+}

@@ -1,0 +1,22 @@
+{
+  "id": "recly_fall_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Cair",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "easing": "EASE_IN"
+    },
+    {
+      "time": 1,
+      "y": 0.7,
+      "rotation": 18,
+      "opacity": 0
+    }
+  ]
+}

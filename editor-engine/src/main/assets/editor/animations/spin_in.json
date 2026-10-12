@@ -1,0 +1,22 @@
+{
+  "id": "recly_spin_in",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Girar para dentro",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "zoom": 0.2,
+      "rotation": -360,
+      "opacity": 0,
+      "easing": "EASE_OUT"
+    },
+    {
+      "time": 1
+    }
+  ]
+}

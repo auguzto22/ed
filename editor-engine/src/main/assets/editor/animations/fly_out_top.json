@@ -1,0 +1,21 @@
+{
+  "id": "recly_fly_out_top",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Subir e sumir",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "easing": "EASE_IN"
+    },
+    {
+      "time": 1,
+      "y": -0.6,
+      "opacity": 0
+    }
+  ]
+}

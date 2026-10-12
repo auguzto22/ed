@@ -1,0 +1,21 @@
+{
+  "id": "recly_fade_zoom_out",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Afastar e sumir",
+  "category": "OUT",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "easing": "SMOOTH"
+    },
+    {
+      "time": 1,
+      "zoom": 0.75,
+      "opacity": 0
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "recly_drop_bounce",
+  "type": "ANIMATION",
+  "version": 1,
+  "engineVersion": 1,
+  "name": "Queda com quique",
+  "category": "IN",
+  "license": "Recly original presets",
+  "premium": false,
+  "points": [
+    {
+      "time": 0,
+      "y": -0.5,
+      "easing": "BOUNCE"
+    },
+    {
+      "time": 1
+    }
+  ]
+}
