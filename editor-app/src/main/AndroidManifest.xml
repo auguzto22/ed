@@ -49,6 +49,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Conta (Supabase): cadastro na primeira abertura, login, recuperar senha -->
+        <activity
+            android:name="com.termex.replay15.account.AuthActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Recly.Editor"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Main Studio Editor Activity -->
         <activity
             android:name="com.termex.replay15.editor.ui.EditorActivity"

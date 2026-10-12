@@ -58,4 +58,9 @@
     <color name="recording_red">#C50022</color>
     <color name="success">#D4D4D8</color>
     <color name="warning">#E4E4E7</color>
+    <!-- Tela de conta, na paleta do canvas -->
+    <color name="recly_blue_light">#FAFAF6</color>
+    <color name="recly_on_accent">#FFFFFF</color>
+    <color name="recly_yellow">#FAFAF6</color>
+    <color name="recly_coral_soft">#E5304F</color>
 </resources>

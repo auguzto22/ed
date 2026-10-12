@@ -24,6 +24,7 @@ import android.widget.Toast
 import com.recly.editor.R
 import com.termex.replay15.editor.domain.Project
 import com.termex.replay15.editor.project.ProjectStore
+import com.termex.replay15.account.AccountGate
 import com.termex.replay15.ui.DockNavigationHelper
 import com.termex.replay15.ui.DockTab
 import com.termex.replay15.ui.GlassEffectHelper
@@ -63,6 +64,8 @@ class EditorLibraryActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Primeira abertura: sem conta, vai para o cadastro e volta para cá depois.
+        if (!AccountGate.ensure(this)) return
         setContentView(R.layout.activity_editor_library)
         if (savedInstanceState == null) BootSplashView.showOnce(this)
 
