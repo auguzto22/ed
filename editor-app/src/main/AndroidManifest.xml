@@ -14,6 +14,9 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Android 14+: acesso parcial ("só estas fotos") no seletor de mídia do Recly -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
 
     <application
         android:name="android.app.Application"
@@ -26,6 +29,13 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Replay15">
+
+        <!-- Seletor de fotos e vídeos do Recly (folha inferior) -->
+        <activity
+            android:name="com.termex.replay15.editor.media.GalleryPickerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Replay15.Picker" />
 
         <!-- Launcher Activity: Editor Library (Estúdio) -->
         <activity

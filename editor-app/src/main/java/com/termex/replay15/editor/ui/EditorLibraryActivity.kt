@@ -7,7 +7,9 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.Uri
+import com.termex.replay15.editor.media.GalleryPickerActivity
 import com.termex.replay15.editor.media.MediaSourceAccess
+import com.termex.replay15.editor.media.MediaSourceStatus
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -156,22 +158,25 @@ class EditorLibraryActivity : Activity() {
     }
 
     private fun openVideoPicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "video/*"
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        // Seletor próprio do Recly no lugar do seletor de documentos do sistema.
+        val title = when (pendingOpenTool) {
+            "auto_edit" -> "Vídeo para o Auto Edit"
+            "analyze" -> "Vídeo para analisar"
+            else -> "Novo projeto"
         }
-        runCatching { startActivityForResult(intent, REQ_PICK_VIDEO) }
-            .onFailure {
-                Toast.makeText(this, "Seletor de vídeos indisponível", Toast.LENGTH_SHORT).show()
-            }
+        val mode = if (pendingOpenTool == null) GalleryPickerActivity.MODE_ANY else GalleryPickerActivity.MODE_VIDEOS
+        startActivityForResult(GalleryPickerActivity.intent(this, mode, title = title), REQ_PICK_VIDEO)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQ_PICK_VIDEO && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
-            val persisted = runCatching { MediaSourceAccess.persistReadPermission(contentResolver, uri, data.flags) }.getOrDefault(false)
+            val persisted = if (GalleryPickerActivity.isGalleryResult(data)) {
+                MediaSourceAccess.verify(contentResolver, uri) == MediaSourceStatus.Available
+            } else {
+                runCatching { MediaSourceAccess.persistReadPermission(contentResolver, uri, data.flags) }.getOrDefault(false)
+            }
             if (!persisted) {
                 Toast.makeText(this, "Não foi possível manter acesso a este vídeo", Toast.LENGTH_LONG).show()
                 return

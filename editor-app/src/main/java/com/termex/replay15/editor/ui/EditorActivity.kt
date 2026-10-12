@@ -1,5 +1,8 @@
 package com.termex.replay15.editor.ui
 
+import com.termex.replay15.editor.media.GalleryPickerActivity
+import com.termex.replay15.editor.media.MediaSourceStatus
+
 import com.termex.replay15.editor.core.PreviewPacingProbe
 import android.Manifest
 import android.app.*
@@ -1883,19 +1886,21 @@ class EditorActivity : Activity() {
     }
     private fun pickVideoLayer() {
         if (busy) return
-        runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-            .setType("video/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION), 708) }
-            .onFailure { error("Seletor de videos indisponivel") }
+        startActivityForResult(GalleryPickerActivity.intent(this, GalleryPickerActivity.MODE_VIDEOS, title = "Vídeo em camada"), 708)
     }
     private fun pickReferenceVideo() {
         if (busy) return
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("video/*")
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        runCatching { startActivityForResult(intent, 711) }.onFailure { error("Seletor de videos indisponivel") }
+        startActivityForResult(GalleryPickerActivity.intent(this, GalleryPickerActivity.MODE_VIDEOS, title = "Vídeo de referência"), 711)
     }
     private fun pick(audio: Boolean, replace: Int = -1) {
         if (busy) return
         replaceIndex = replace
+        if (!audio) {
+            // Fotos e vídeos: seletor próprio do Recly (folha com álbuns e seleção numerada).
+            val title = if (replace >= 0) "Substituir clipe" else "Adicionar mídia"
+            startActivityForResult(GalleryPickerActivity.intent(this, GalleryPickerActivity.MODE_ANY, multiple = replace < 0, title = title), 700)
+            return
+        }
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType(if (audio) "audio/*" else "*/*")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
@@ -1908,10 +1913,8 @@ class EditorActivity : Activity() {
         if (project.durationUs <= 0) { error("Adicione um video antes da camada de imagem"); return }
         if (replaceId == null && project.stickers.size >= 24) { error("Limite de 24 camadas de imagem"); return }
         replaceStickerId = replaceId
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-            .setType("image/*")
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        runCatching { startActivityForResult(intent, 702) }.onFailure { error("Seletor de imagens indisponivel") }
+        startActivityForResult(GalleryPickerActivity.intent(this, GalleryPickerActivity.MODE_IMAGES,
+            title = if (replaceId != null) "Trocar imagem" else "Imagem em camada"), 702)
     }
     private fun pickSubtitles() {
         if (busy || project.durationUs <= 0) return
@@ -1973,9 +1976,16 @@ class EditorActivity : Activity() {
     }
 
     private fun persistPickedAccess(result: Intent, uris: List<Uri>): Boolean = try {
-        val ok = uris.all { uri -> uri.scheme != "content" || MediaSourceAccess.persistReadPermission(contentResolver, uri, result.flags) }
-        if (!ok) error("Este provedor não ofereceu acesso persistente. Escolha o arquivo pelo armazenamento do aparelho.")
-        ok
+        if (GalleryPickerActivity.isGalleryResult(result)) {
+            // Itens da galeria (MediaStore) ficam legíveis enquanto a permissão de mídia existir.
+            val readable = uris.all { MediaSourceAccess.verify(contentResolver, it) == MediaSourceStatus.Available }
+            if (!readable) error("Não foi possível abrir este arquivo da galeria.")
+            readable
+        } else {
+            val ok = uris.all { uri -> uri.scheme != "content" || MediaSourceAccess.persistReadPermission(contentResolver, uri, result.flags) }
+            if (!ok) error("Este provedor não ofereceu acesso persistente. Escolha o arquivo pelo armazenamento do aparelho.")
+            ok
+        }
     } catch (_: SecurityException) {
         error("O Recly não conseguiu manter acesso ao arquivo. Escolha-o novamente pelo armazenamento do aparelho.")
         false
