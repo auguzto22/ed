@@ -3934,7 +3934,8 @@ class EditorActivity : Activity() {
         result.highlights.sortedBy { it.startMs }.forEachIndexed { index, highlight ->
             val timeLabel = "${timeLabel(highlight.startMs * 1_000L)} — ${timeLabel(highlight.endMs * 1_000L)}"
             val scoreStars = "★".repeat((highlight.score * 5).toInt().coerceIn(1, 5))
-            val text = "$scoreStars  $timeLabel\n${highlight.reason}"
+            val heading = highlight.title.takeIf(String::isNotBlank)?.let { "\n$it" }.orEmpty()
+            val text = "$scoreStars  $timeLabel$heading\n${highlight.reason}"
             body.addView(action(text) {
                 // Navigate to the highlight start
                 seek(highlight.startMs * 1_000L)
