@@ -49,7 +49,6 @@ import com.termex.replay15.editor.captions.CaptionCorrectionService
 import com.termex.replay15.editor.captions.CaptionTranslationFailed
 import com.termex.replay15.editor.captions.CaptionTranslationService
 import com.termex.replay15.editor.captions.CorrectionFailed
-import com.termex.replay15.editor.captions.GeminiCaptionGenerator
 import com.termex.replay15.editor.highlights.HighlightDetector
 import com.termex.replay15.editor.highlights.HighlightResult
 import com.termex.replay15.editor.highlights.Highlight
@@ -4149,7 +4148,8 @@ class EditorActivity : Activity() {
             setSelection(languageCodes.indexOf(project.captionLanguage).coerceAtLeast(0))
         }
         body.addView(label("Idioma", 12f, EditorStyle.MUTED)); body.addView(language)
-        body.addView(label("Modelo: Gemini 3.5 Transcribe · modo Exata", 12f, EditorStyle.MUTED))
+        body.addView(label(if (com.termex.replay15.editor.captions.CaptionProviderFactory.isCloudConfigured()) "Modelo: Gemini 3.5 Transcribe · modo Exata"
+            else "Modelo: reconhecimento no aparelho (Gemini não configurado neste build)", 12f, EditorStyle.MUTED))
         val maxWords = Spinner(this).apply {
             adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item,
                 (2..12).map { count -> "$count palavras" })
@@ -4208,12 +4208,12 @@ class EditorActivity : Activity() {
         captionJob = captionScope.launch {
             val result = runCatching {
                 withContext(Dispatchers.IO) {
-                    val generator = GeminiCaptionGenerator(this@EditorActivity)
                     var updated = snapshot
                     for ((ordinal, index) in clips.withIndex()) {
                         cancellation.check()
                         val clipLabel = "Clipe ${ordinal + 1}/${clips.size}"
-                        updated = generator.generate(updated, index, options, { event ->
+                        // Gemini when configured; otherwise on-device recognition instead of failing.
+                        updated = com.termex.replay15.editor.captions.AutoCaptionRunner.generate(this@EditorActivity, updated, index, options, { event ->
                             main.post {
                                 if (!isDestroyed) card?.update("$clipLabel • ${event.stage}", (ordinal + .5f) / clips.size)
                             }
@@ -4254,7 +4254,8 @@ class EditorActivity : Activity() {
         is com.termex.replay15.editor.captions.AudioExtractionFailed -> error.message.orEmpty()
         is com.termex.replay15.editor.captions.UploadFailed -> error.message.orEmpty()
         is com.termex.replay15.editor.captions.CaptionBackendNotConfigured -> error.message.orEmpty()
-        else -> "Não foi possível gerar legendas. Tente novamente mais tarde."
+        else -> error.message?.takeIf(String::isNotBlank)?.let { "Não foi possível gerar legendas: $it" }
+            ?: "Não foi possível gerar legendas. Tente novamente mais tarde."
     }
 
     private fun openSubtitleOrTextTools(id: String) {
@@ -4967,14 +4968,18 @@ class EditorActivity : Activity() {
     private fun beginExport() {
         if (busy || EditorExportService.state.active) return
         val snapshot = project
-        busy = true; preview.suspendSources(); info.text = "Preparando exportacao..."
+        // Empty reference slots ("Seu titulo aqui", "+ Sua imagem") are editing guides, not content.
+        val skippedSlots = com.termex.replay15.editor.reference.ReferenceSlots.unfilledCount(snapshot)
+        val exportSnapshot = com.termex.replay15.editor.reference.ReferenceSlots.withoutUnfilled(snapshot)
+        busy = true; preview.suspendSources()
+        info.text = if (skippedSlots > 0) "Preparando exportacao... $skippedSlots espaco(s) vazio(s) da referencia ficam de fora" else "Preparando exportacao..."
         main.removeCallbacks(autosave)
         io.execute {
             val result = runCatching {
-                require(MediaImport.missing(this, snapshot).isEmpty()) { "Arquivo de midia nao encontrado" }
-                EditorExportService.activeProjectSnapshot = snapshot
+                require(MediaImport.missing(this, exportSnapshot).isEmpty()) { "Arquivo de midia nao encontrado" }
+                EditorExportService.activeProjectSnapshot = exportSnapshot
                 store.save(snapshot)
-                ProjectStore(File(filesDir, "editor-export")).save(snapshot)
+                ProjectStore(File(filesDir, "editor-export")).save(exportSnapshot)
             }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread

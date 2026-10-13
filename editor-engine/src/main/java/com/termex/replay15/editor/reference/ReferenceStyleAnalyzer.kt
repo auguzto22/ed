@@ -166,7 +166,14 @@ object ReferenceStyleProfileBuilder {
             captionStyle = captions, beatAlignment = if (aligned.isEmpty()) 0f else aligned.count { it }.toFloat() / aligned.size,
             effectCombinations = combinations, colorSaturation = frames.map { it.saturation }.median(), colorContrast = frames.map { it.edgeEnergy }.median(),
             colorTemperature = frames.map { it.temperature }.median(), overallConfidence = confidence, warnings = warnings,
-            layout = layout.take(60), semanticAnalysis = semantic, styleNotes = notes.take(400))
+            layout = layout.take(60), semanticAnalysis = semantic, styleNotes = notes.take(400),
+            aspect = displayedAspect(media))
+    }
+
+    private fun displayedAspect(media: ReferenceMediaInfo): Float {
+        if (media.width <= 0 || media.height <= 0) return 0f
+        val ratio = if (media.rotation % 180 == 0) media.width.toFloat() / media.height else media.height.toFloat() / media.width
+        return ratio.takeIf { it in .2f..5f } ?: 0f
     }
 
     private fun removeOutliers(events: List<ReferenceEvent>): List<ReferenceEvent> = events.filter { it.confidence >= .25f }.groupBy { it.type }.flatMap { (_, group) ->
