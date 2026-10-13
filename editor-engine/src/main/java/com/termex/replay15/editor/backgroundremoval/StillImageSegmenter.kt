@@ -132,7 +132,9 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         val pixels = IntArray(width * height).also { bitmap.getPixels(it, 0, width, 0, 0, width, height) }
         val radius = (maxOf(width, height) / EDGE_RADIUS_DIVISOR).coerceAtLeast(2)
         val refined = GuidedMatteFilter.filter(GuidedMatteFilter.luminance(pixels), matte, width, height, radius, EDGE_EPSILON)
-        return result.copy(width = width, height = height, mask = refined)
+        // Straighten the pixel-to-pixel wobble of the contour (serrated hems and sleeves).
+        val sigma = (maxOf(width, height) / CONTOUR_SIGMA_DIVISOR).coerceIn(1f, 2f)
+        return result.copy(width = width, height = height, mask = GuidedMatteFilter.gaussianBlur(refined, width, height, sigma))
     }
 
     override fun close() {
@@ -149,5 +151,7 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         /** Guided-filter window radius = longest side / this (6 px on a 1536 px photo). */
         const val EDGE_RADIUS_DIVISOR = 256
         const val EDGE_EPSILON = 1e-3f
+        /** Contour smoothing sigma = longest side / this, clamped to 1..2 px (1.5 px on a 1536 px photo). */
+        const val CONTOUR_SIGMA_DIVISOR = 1000f
     }
 }

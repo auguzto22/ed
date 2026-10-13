@@ -49,6 +49,36 @@ object GuidedMatteFilter {
         return FloatArray(n) { (meanA[it] * guide[it] + meanB[it]).coerceIn(0f, 1f) }
     }
 
+    /**
+     * Separable Gaussian blur of a matte. Run after the guided filter on photos: the subject
+     * model's contour wobbles by a pixel from one pixel to the next, and once the shader turns
+     * the matte into a hard cut that wobble shows as a serrated edge ("rebarba"). A blur of about
+     * one output pixel straightens the contour without moving it noticeably.
+     */
+    fun gaussianBlur(values: FloatArray, width: Int, height: Int, sigma: Float): FloatArray {
+        require(width > 0 && height > 0 && values.size == width * height)
+        if (sigma <= 0f) return values.copyOf()
+        val radius = kotlin.math.ceil(sigma * 3f).toInt().coerceAtLeast(1)
+        val kernel = FloatArray(2 * radius + 1) { i -> val d = (i - radius).toFloat(); kotlin.math.exp(-d * d / (2f * sigma * sigma)) }
+        val total = kernel.sum(); for (i in kernel.indices) kernel[i] /= total
+        val horizontal = FloatArray(values.size)
+        for (y in 0 until height) {
+            val row = y * width
+            for (x in 0 until width) {
+                var sum = 0f
+                for (k in -radius..radius) sum += values[row + (x + k).coerceIn(0, width - 1)] * kernel[k + radius]
+                horizontal[row + x] = sum
+            }
+        }
+        val out = FloatArray(values.size)
+        for (y in 0 until height) for (x in 0 until width) {
+            var sum = 0f
+            for (k in -radius..radius) sum += horizontal[(y + k).coerceIn(0, height - 1) * width + x] * kernel[k + radius]
+            out[y * width + x] = sum.coerceIn(0f, 1f)
+        }
+        return out
+    }
+
     /** Converts ARGB pixels to 0..1 luminance (Rec. 601). */
     fun luminance(argb: IntArray): FloatArray = FloatArray(argb.size) { i ->
         val c = argb[i]

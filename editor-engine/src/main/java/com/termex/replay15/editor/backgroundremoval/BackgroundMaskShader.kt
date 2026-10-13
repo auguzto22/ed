@@ -55,9 +55,23 @@ object BackgroundMaskShader {
             vec3 ignored;
             return reclyRefine(uv, ignored);
         }
+        // Anti-aliasing for full-resolution (photo) masks. Their matte is sharp, so a fixed
+        // feather turned the edge into a 1-pixel on/off cut whose stair steps read as burrs.
+        // The feather is widened to the local slope of the mask so the edge always spans about
+        // one and a half pixels. Low-resolution video masks (<= 512 px) are left unchanged.
+        float reclyEdgeFeather(vec2 uv) {
+            float hiRes = step(640.0, max(1.0 / uMaskTexel.x, 1.0 / uMaskTexel.y));
+            if (hiRes < 0.5) return max(uFeather, 0.001);
+            vec2 dx = vec2(uMaskTexel.x, 0.0);
+            vec2 dy = vec2(0.0, uMaskTexel.y);
+            float gx = texture2D($maskSampler, clamp(uv + dx, 0.0, 1.0)).r - texture2D($maskSampler, clamp(uv - dx, 0.0, 1.0)).r;
+            float gy = texture2D($maskSampler, clamp(uv + dy, 0.0, 1.0)).r - texture2D($maskSampler, clamp(uv - dy, 0.0, 1.0)).r;
+            float slope = 0.5 * (abs(gx) + abs(gy));
+            return max(max(uFeather, 0.001), min(slope * 0.75, 0.3));
+        }
         float reclyMatteAlpha(vec2 uv) {
             float mask = reclyRefinedMask(uv);
-            float feather = max(uFeather, 0.001);
+            float feather = reclyEdgeFeather(uv);
             return smoothstep(uThreshold - feather, uThreshold + feather, mask);
         }
         // Premultiply-free cut-out: alpha from the refined mask, and edge pixels (confidence
@@ -66,7 +80,7 @@ object BackgroundMaskShader {
         vec4 reclyCutout(vec2 uv, vec4 source) {
             vec3 foreground;
             float mask = reclyRefine(uv, foreground);
-            float feather = max(uFeather, 0.001);
+            float feather = reclyEdgeFeather(uv);
             float alpha = smoothstep(uThreshold - feather, uThreshold + feather, mask);
             // edge1 must stay above edge0 (GLSL leaves smoothstep undefined otherwise), also for
             // projects saved with the old raw slider at 100 % (threshold 1.0).

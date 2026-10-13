@@ -57,4 +57,19 @@ class GuidedMatteFilterTest {
         assertEquals(1f, l[0], 1e-3f)
         assertEquals(0f, l[1], 1e-3f)
     }
+
+    @Test
+    fun gaussianBlurStraightensASerratedContourWithoutMovingIt() {
+        val w = 40; val h = 40
+        // Bottom edge of a subject that zig-zags by 2 px between neighbouring columns.
+        val edge = IntArray(w) { x -> 20 + if (x % 2 == 0) 1 else -1 }
+        val matte = FloatArray(w * h) { i -> if (i / w < edge[i % w]) 1f else 0f }
+        val smoothed = GuidedMatteFilter.gaussianBlur(matte, w, h, 1.5f)
+        val boundary = (5 until w - 5).map { x -> (0 until h).last { y -> smoothed[y * w + x] >= .5f } + 1 }
+        assertTrue("serration left: $boundary", boundary.max() - boundary.min() <= 1)
+        assertEquals(20.0, boundary.average(), .6)
+        // Flat regions keep full confidence.
+        assertEquals(1f, smoothed[5 * w + 20], 1e-4f)
+        assertEquals(0f, smoothed[35 * w + 20], 1e-4f)
+    }
 }
