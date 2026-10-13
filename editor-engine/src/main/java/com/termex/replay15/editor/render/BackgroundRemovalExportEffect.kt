@@ -216,7 +216,7 @@ class BackgroundRemovalExportEffect(
     }
 
     private companion object {
-        private const val STILL_LONGEST_SIDE = 1024
+        private const val STILL_LONGEST_SIDE = 1536
         private const val MAX_STILL_ATTEMPTS = 3
         private const val VERTEX = "attribute vec4 aFramePosition; varying vec2 vUv; void main(){ gl_Position=aFramePosition; vUv=(aFramePosition.xy+1.0)*0.5; }"
         private const val CAPTURE = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
@@ -233,7 +233,7 @@ class BackgroundRemovalExportEffect(
             ${BackgroundMaskShader.functions("uTexSampler", "uMaskTexture")}
             void main() {
                 vec4 source = texture2D(uTexSampler, vUv);
-                gl_FragColor = vec4(source.rgb, source.a * reclyMatteAlpha(vUv));
+                gl_FragColor = reclyCutout(vUv, source);
             }
         """
     }

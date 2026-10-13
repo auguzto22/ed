@@ -100,17 +100,39 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
                 StillMaskCombiner.Subject(subject.startX, subject.startY, subject.width, subject.height, values)
             }
 
-        if (subjects != null) {
+        val result = (if (subjects != null) {
             val combined = StillMaskCombiner.combine(
                 imageWidth, imageHeight, subjects,
                 person?.mask, person?.width ?: 0, person?.height ?: 0,
             )
-            if (combined != null) return SegmentationResult(imageWidth, imageHeight, timestampUs, combined)
-            // The subject model ran fine but found nothing worth keeping: the person mask (if any)
-            // is the final answer, not something to retry.
-            return person
-        }
-        return person?.copy(provisional = true)
+            // When the subject model found nothing worth keeping, the person mask (if any) is the
+            // final answer, not something to retry.
+            if (combined != null) SegmentationResult(imageWidth, imageHeight, timestampUs, combined) else person
+        } else {
+            person?.copy(provisional = true)
+        }) ?: return null
+        return if (rotationDegrees % 360 == 0) refineEdges(result, bitmap) else result
+    }
+
+    /**
+     * Snaps the matte onto the photo's own edges with a guided filter at the photo's resolution.
+     * Removes the stair-stepping of upscaled masks and weakens halos of wall/background glued to
+     * hair and shoulders. Cheap enough to run once per photo (linear in pixel count).
+     */
+    private fun refineEdges(result: SegmentationResult, bitmap: Bitmap): SegmentationResult {
+        val width = bitmap.width
+        val height = bitmap.height
+        val matte = if (result.width == width && result.height == height) result.mask else
+            FloatArray(width * height) { i ->
+                StillMaskCombiner.sampleBilinear(
+                    result.mask, result.width, result.height,
+                    (i % width + .5f) / width, (i / width + .5f) / height,
+                )
+            }
+        val pixels = IntArray(width * height).also { bitmap.getPixels(it, 0, width, 0, 0, width, height) }
+        val radius = (maxOf(width, height) / EDGE_RADIUS_DIVISOR).coerceAtLeast(2)
+        val refined = GuidedMatteFilter.filter(GuidedMatteFilter.luminance(pixels), matte, width, height, radius, EDGE_EPSILON)
+        return result.copy(width = width, height = height, mask = refined)
     }
 
     override fun close() {
@@ -124,5 +146,8 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
     private companion object {
         const val TAG = "StillSegmentation"
         const val TIMEOUT_S = 20L
+        /** Guided-filter window radius = longest side / this (6 px on a 1536 px photo). */
+        const val EDGE_RADIUS_DIVISOR = 256
+        const val EDGE_EPSILON = 1e-3f
     }
 }

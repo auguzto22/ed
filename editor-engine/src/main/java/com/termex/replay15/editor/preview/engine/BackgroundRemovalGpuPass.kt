@@ -305,7 +305,7 @@ internal class BackgroundRemovalGpuPass(
     private companion object {
         val IDENTITY = floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f)
         const val MAX_MASK_DISTANCE_US = 250_000L
-        const val STILL_LONGEST_SIDE = 1024
+        const val STILL_LONGEST_SIDE = 1536
         const val VERTEX = "attribute vec2 aPosition; attribute vec2 aUv; uniform mat4 uMvp; uniform mat4 uTexMatrix; varying vec2 vUv; void main(){ gl_Position=uMvp*vec4(aPosition,0.,1.); vUv=(uTexMatrix*vec4(aUv,0.,1.)).xy; }"
         const val CAPTURE_FRAGMENT = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
         val FRAGMENT = """
@@ -320,7 +320,7 @@ internal class BackgroundRemovalGpuPass(
             ${BackgroundMaskShader.functions("uTexture", "uMaskTexture")}
             void main() {
                 vec4 video = texture2D(uTexture, vUv);
-                gl_FragColor = vec4(video.rgb, video.a * reclyMatteAlpha(vUv));
+                gl_FragColor = reclyCutout(vUv, video);
             }
         """
     }
