@@ -17,6 +17,7 @@ import com.recly.editor.engine.R
 import com.termex.replay15.editor.backgroundremoval.BackgroundMaskShader
 import com.termex.replay15.editor.backgroundremoval.SegmentationMaskTexture
 import com.termex.replay15.editor.backgroundremoval.SegmentationResult
+import com.termex.replay15.editor.backgroundremoval.StillImageSegmenter
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
 import com.termex.replay15.editor.domain.SegmentationQuality
 import java.nio.ByteBuffer
@@ -28,18 +29,23 @@ import kotlin.math.roundToInt
 /**
  * Synchronous Media3 export pass. Export has no playback deadline, so it waits for one ML Kit
  * result per frame and feeds the same real confidence mask into the GPU alpha shader.
+ *
+ * Photo clips ([stillImage]) are different: every frame is the same picture, so the mask is
+ * computed once, at high resolution, with [StillImageSegmenter], and reused for every frame.
  */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class BackgroundRemovalExportEffect(
     private val settings: BackgroundRemovalEffect,
+    private val stillImage: Boolean = false,
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): BaseGlShaderProgram =
-        Program(context, useHdr, settings)
+        Program(context, useHdr, settings, stillImage)
 
     private class Program(
         context: Context,
         hdr: Boolean,
         private val settings: BackgroundRemovalEffect,
+        private val stillImage: Boolean,
     ) : BaseGlShaderProgram(hdr, 1) {
         private val segmenter = Segmentation.getClient(
             SelfieSegmenterOptions.Builder()
@@ -51,6 +57,9 @@ class BackgroundRemovalExportEffect(
         private val outputGl = GlProgram(VERTEX, OUTPUT)
         private val originalGl = GlProgram(VERTEX, ORIGINAL)
         private val maskTexture = SegmentationMaskTexture()
+        private val stillSegmenter: StillImageSegmenter? = if (stillImage) StillImageSegmenter(context) else null
+        private var stillMask: SegmentationResult? = null
+        private var stillAttempts = 0
         private var captureTexture = 0
         private var captureFbo = 0
         private var captureWidth = 1
@@ -61,6 +70,7 @@ class BackgroundRemovalExportEffect(
         private var argb = IntArray(1)
         private var bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         private val previousFramebuffer = IntArray(1)
+        private val previousViewport = IntArray(4)
 
         init {
             listOf(captureGl, outputGl, originalGl).forEach {
@@ -90,16 +100,20 @@ class BackgroundRemovalExportEffect(
 
         override fun drawFrame(inputTexId: Int, presentationTimeUs: Long) {
             try {
-                capture(inputTexId)
-                val mlMask = Tasks.await(
-                    segmenter.process(InputImage.fromBitmap(bitmap, 0)),
-                    10L,
-                    TimeUnit.SECONDS,
-                )
-                val mask = mlMask.buffer.duplicate().order(ByteOrder.nativeOrder()).apply { rewind() }
-                val values = FloatArray(mlMask.width * mlMask.height)
-                for (index in values.indices) values[index] = mask.float.coerceIn(0f, 1f)
-                maskTexture.upload(SegmentationResult(mlMask.width, mlMask.height, presentationTimeUs, values))
+                if (stillSegmenter != null) {
+                    prepareStillMask(stillSegmenter, inputTexId, presentationTimeUs)
+                } else {
+                    capture(inputTexId)
+                    val mlMask = Tasks.await(
+                        segmenter.process(InputImage.fromBitmap(bitmap, 0)),
+                        10L,
+                        TimeUnit.SECONDS,
+                    )
+                    val mask = mlMask.buffer.duplicate().order(ByteOrder.nativeOrder()).apply { rewind() }
+                    val values = FloatArray(mlMask.width * mlMask.height)
+                    for (index in values.indices) values[index] = mask.float.coerceIn(0f, 1f)
+                    maskTexture.upload(SegmentationResult(mlMask.width, mlMask.height, presentationTimeUs, values))
+                }
                 outputGl.use()
                 outputGl.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
                 outputGl.setSamplerTexIdUniform("uMaskTexture", maskTexture.id, 1)
@@ -116,8 +130,29 @@ class BackgroundRemovalExportEffect(
             }
         }
 
+        /**
+         * Computes the photo's mask on the first frame (and retries a few frames while only the
+         * provisional selfie stand-in is available), then leaves the uploaded texture untouched.
+         * Throws when there is no mask at all so drawFrame keeps the original photo.
+         */
+        private fun prepareStillMask(segmenter: StillImageSegmenter, inputTexId: Int, presentationTimeUs: Long) {
+            val current = stillMask
+            // Bounded: a photo the models cannot handle must not be re-segmented on every frame.
+            if (stillAttempts < MAX_STILL_ATTEMPTS && (current == null || current.provisional)) {
+                stillAttempts++
+                capture(inputTexId)
+                val result = segmenter.segmentBlocking(bitmap, presentationTimeUs)
+                if (result != null && (current == null || !result.provisional)) {
+                    stillMask = result
+                    maskTexture.upload(result)
+                }
+            }
+            checkNotNull(stillMask) { "Sem máscara para a imagem" }
+        }
+
         private fun capture(inputTexId: Int) {
             GLES20.glGetIntegerv(GLES20.GL_FRAMEBUFFER_BINDING, previousFramebuffer, 0)
+            GLES20.glGetIntegerv(GLES20.GL_VIEWPORT, previousViewport, 0)
             try {
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, captureFbo)
                 GLES20.glViewport(0, 0, captureWidth, captureHeight)
@@ -142,7 +177,11 @@ class BackgroundRemovalExportEffect(
                 }
                 bitmap.setPixels(argb, 0, captureWidth, 0, 0, captureWidth, captureHeight)
             } finally {
+                // The capture pass renders into a small (<=512 px) FBO. Media3 already focused the
+                // full-size output framebuffer and viewport before drawFrame; if the viewport is
+                // not restored, the masked frame is drawn shrunk into the bottom-left corner.
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, previousFramebuffer[0])
+                GLES20.glViewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3])
             }
         }
 
@@ -155,6 +194,7 @@ class BackgroundRemovalExportEffect(
 
         override fun release() {
             runCatching { segmenter.close() }
+            runCatching { stillSegmenter?.close() }
             maskTexture.release()
             if (captureTexture != 0) GlResourcePool.releaseTexture(captureTexture, captureWidth, captureHeight)
             if (captureFbo != 0) GlResourcePool.releaseFramebuffer(captureFbo)
@@ -164,7 +204,8 @@ class BackgroundRemovalExportEffect(
         }
 
         private fun inputSize(width: Int, height: Int): Pair<Int, Int> {
-            val longest = when (settings.quality) {
+            // A photo is segmented once, so it can afford a large capture (never upscaled).
+            val longest = if (stillImage) minOf(STILL_LONGEST_SIDE, max(width, height)) else when (settings.quality) {
                 SegmentationQuality.FAST -> 256
                 SegmentationQuality.BALANCED -> 384
                 SegmentationQuality.HIGH -> 512
@@ -175,6 +216,8 @@ class BackgroundRemovalExportEffect(
     }
 
     private companion object {
+        private const val STILL_LONGEST_SIDE = 1024
+        private const val MAX_STILL_ATTEMPTS = 3
         private const val VERTEX = "attribute vec4 aFramePosition; varying vec2 vUv; void main(){ gl_Position=aFramePosition; vUv=(aFramePosition.xy+1.0)*0.5; }"
         private const val CAPTURE = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
         private const val ORIGINAL = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"

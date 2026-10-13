@@ -111,7 +111,7 @@ object ProjectComposition {
             if (clip.rotation != 0 || clip.flip) effects += ScaleAndRotateTransformation.Builder()
                 .setRotationDegrees(clip.rotation.toFloat()).setScale(if (clip.flip) -1f else 1f, 1f).build()
             if (clip.backgroundRemoval.enabled && clip.backgroundRemoval.mode == BackgroundMode.REMOVE) {
-                effects += BackgroundRemovalExportEffect(clip.backgroundRemoval)
+                effects += BackgroundRemovalExportEffect(clip.backgroundRemoval, stillImage = clip.image)
             }
             if (clip.brightness != 0f) effects += Brightness(clip.brightness)
             if (clip.contrast != 0f) effects += Contrast(clip.contrast)
