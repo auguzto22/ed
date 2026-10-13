@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import com.termex.replay15.editor.domain.BackgroundMode
+import com.termex.replay15.editor.domain.BackgroundPrecision
 import com.termex.replay15.editor.domain.BackgroundRemovalEffect
 import com.termex.replay15.editor.domain.BackgroundRemovalProvider
 import com.termex.replay15.editor.domain.Project
@@ -56,8 +57,10 @@ class BackgroundRemovalTools(
             }
             body.addView(qualities)
 
-            slider(body, "Precisão / limiar (%)", (effect.threshold * 100).toInt(), 100) {
-                effect = effect.copy(threshold = it / 100f); preview()
+            // Linear 0..100 % over the usable threshold range: 100 % is the tightest cut that still
+            // keeps the subject (see BackgroundPrecision), not "erase everything".
+            slider(body, "Precisão (%)", BackgroundPrecision.percentFor(effect.threshold), 100) {
+                effect = effect.copy(threshold = BackgroundPrecision.thresholdFor(it)); preview()
             }
             slider(body, "Suavizar bordas (%)", (effect.feather * 1000).toInt(), 500) {
                 effect = effect.copy(feather = it / 1000f); preview()

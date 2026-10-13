@@ -48,3 +48,23 @@ data class BackgroundRemovalEffect(
     }
 }
 
+
+/**
+ * Linear mapping between the "Precisão" slider (0..100 %) and the matte threshold.
+ *
+ * The slider used to be the raw threshold, so 100 % meant threshold 1.0: only pixels with
+ * absolute certainty survived and the subject practically disappeared. The usable range of the
+ * threshold is roughly 0.25 (loose: keeps shadows/halos) to 0.75 (tight: trims every uncertain
+ * edge), so the slider now covers exactly that, linearly. 50 % is still threshold 0.5, so
+ * existing projects look the same.
+ */
+object BackgroundPrecision {
+    const val MIN_THRESHOLD = 0.25f
+    const val MAX_THRESHOLD = 0.75f
+
+    fun thresholdFor(percent: Int): Float =
+        MIN_THRESHOLD + (MAX_THRESHOLD - MIN_THRESHOLD) * percent.coerceIn(0, 100) / 100f
+
+    fun percentFor(threshold: Float): Int =
+        ((threshold - MIN_THRESHOLD) / (MAX_THRESHOLD - MIN_THRESHOLD) * 100f).let { kotlin.math.round(it).toInt() }.coerceIn(0, 100)
+}
