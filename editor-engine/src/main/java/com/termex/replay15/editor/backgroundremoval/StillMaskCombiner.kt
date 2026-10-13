@@ -28,12 +28,28 @@ object StillMaskCombiner {
     const val PERSON_PRESENCE_FRACTION = 0.02f
     /** A subject is kept when at least this share of its (confident) pixels lies on the person mask. */
     const val PERSON_OVERLAP_TO_KEEP = 0.35f
+    /** Subjects whose confident core is already this sure are left untouched. */
+    const val CONFIDENT_CORE = 0.9f
+    /** Below this the "core" is noise, not a weakly detected subject. */
+    const val MIN_CORE = 0.35f
+    /** A photo where the merged matte keeps less than this share is treated as a failed cut. */
+    const val MIN_KEPT_FRACTION = 0.005f
+
+    /** True when the matte keeps almost nothing: removing the background would erase the photo. */
+    fun keepsAlmostNothing(mask: FloatArray, threshold: Float = .5f): Boolean =
+        mask.isEmpty() || mask.count { it >= threshold } < mask.size * MIN_KEPT_FRACTION
+
+    /** A selfie mask is trusted alone only when it is a sizeable, confident person. */
+    fun isConfidentPerson(mask: FloatArray): Boolean {
+        val inside = mask.filter { it > .5f }
+        return inside.size >= mask.size * 0.03f && inside.average() >= 0.85
+    }
 
     /**
      * @param person selfie confidence mask ([personWidth] x [personHeight]) covering the whole image,
      *   or null when the person model failed.
-     * @return a row-major [imageWidth] x [imageHeight] matte, or null when nothing should be kept
-     *   (the caller then falls back to the person mask alone).
+     * @return a row-major [imageWidth] x [imageHeight] matte, or null when there are no subjects
+     *   (the caller then decides between the person mask and leaving the photo untouched).
      */
     fun combine(
         imageWidth: Int,
@@ -49,13 +65,15 @@ object StillMaskCombiner {
         val hasPerson = personMask != null &&
             personMask.count { it > 0.5f } >= PERSON_PRESENCE_FRACTION * personMask.size
 
-        val kept = if (!hasPerson) subjects else subjects.filter { subject ->
+        val overlapping = if (!hasPerson) subjects else subjects.filter { subject ->
             personOverlap(subject, imageWidth, imageHeight, personMask!!, personWidth, personHeight) >= PERSON_OVERLAP_TO_KEEP
         }
-        if (kept.isEmpty()) return null
-
+        // The selfie model "sees" people in dark shapes (black clothes, bags, shoes). When none of
+        // the subjects is that person, the person is the hallucination, not the subjects: dropping
+        // them all erased dark product photos entirely. Keep every subject instead.
+        val kept = overlapping.ifEmpty { subjects }
         val out = FloatArray(imageWidth * imageHeight)
-        for (subject in kept) {
+        for (subject in kept.map(::normalized)) {
             for (sy in 0 until subject.height) {
                 val y = subject.startY + sy
                 if (y !in 0 until imageHeight) continue
@@ -69,6 +87,26 @@ object StillMaskCombiner {
             }
         }
         return out
+    }
+
+    /**
+     * Dark and low-contrast subjects come back with confidence around 0.5 even where the model
+     * clearly found them, so the "Precisão" threshold (0.65 by default) cut them away. Each
+     * subject is rescaled so its own confident core reaches 1; background inside its box stays
+     * low (it is far below the core), so the threshold still trims it.
+     */
+    internal fun normalized(subject: Subject): Subject {
+        val core = subject.mask.filter { it > .2f }.sorted()
+        if (core.size < 4) return subject
+        val p90 = core[((core.size - 1) * .9f).toInt()]
+        if (p90 >= CONFIDENT_CORE || p90 < MIN_CORE) return subject
+        // Only a mask with a clear inside/outside is a weak detection worth boosting; a flat,
+        // uniformly unsure box is not evidence of a subject.
+        val all = subject.mask.sorted()
+        if (all[((all.size - 1) * .1f).toInt()] > p90 * .4f) return subject
+        val gain = 1f / p90
+        return Subject(subject.startX, subject.startY, subject.width, subject.height,
+            FloatArray(subject.mask.size) { (subject.mask[it] * gain).coerceIn(0f, 1f) })
     }
 
     /** Confidence-weighted share of the subject's confident pixels that the person model also claims. */

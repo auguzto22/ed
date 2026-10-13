@@ -105,14 +105,25 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
                 imageWidth, imageHeight, subjects,
                 person?.mask, person?.width ?: 0, person?.height ?: 0,
             )
-            // When the subject model found nothing worth keeping, the person mask (if any) is the
-            // final answer, not something to retry.
-            if (combined != null) SegmentationResult(imageWidth, imageHeight, timestampUs, combined) else person
+            // No subject at all: the selfie mask is the answer only when it is clearly a person.
+            // On dark product photos it is a hallucination that erased the whole picture.
+            if (combined != null) SegmentationResult(imageWidth, imageHeight, timestampUs, combined)
+            else person?.takeIf { StillMaskCombiner.isConfidentPerson(it.mask) } ?: keepWholePhoto(timestampUs)
         } else {
             person?.copy(provisional = true)
         }) ?: return null
-        return if (rotationDegrees % 360 == 0) refineEdges(result, bitmap) else result
+        val refined = if (rotationDegrees % 360 == 0) refineEdges(result, bitmap) else result
+        // Never hand back a cut that removes (almost) the entire photo: that is a failed
+        // segmentation, and showing the untouched photo is far less wrong than an empty frame.
+        if (StillMaskCombiner.keepsAlmostNothing(refined.mask)) {
+            Log.w(TAG, "Máscara quase vazia; mantendo a foto inteira")
+            return keepWholePhoto(timestampUs).copy(provisional = refined.provisional)
+        }
+        return refined
     }
+
+    /** A 1x1 fully-opaque mask: the photo stays as it is and is not re-segmented every second. */
+    private fun keepWholePhoto(timestampUs: Long) = SegmentationResult(1, 1, timestampUs, floatArrayOf(1f))
 
     /**
      * Snaps the matte onto the photo's own edges with a guided filter at the photo's resolution.
