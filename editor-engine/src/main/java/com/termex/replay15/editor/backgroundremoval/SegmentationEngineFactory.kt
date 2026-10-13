@@ -15,11 +15,15 @@ object SegmentationEngineFactory {
         provider: BackgroundRemovalProvider = BackgroundRemovalProvider.AUTO,
     ): SegmentationEngine {
         return when (provider) {
-            BackgroundRemovalProvider.MLKIT -> MlKitHumanSegmenter(context, streamMode)
+            // Photos only need one mask, so they get the full-resolution subject model (with the
+            // selfie model as a person guide and fallback) instead of the 256 px live model.
+            BackgroundRemovalProvider.MLKIT -> if (streamMode) MlKitHumanSegmenter(context, true) else StillImageSegmenter(context)
             // Automatic mode on video uses the per-pixel on-device model. The Gemini path returns
             // coarse polygons several seconds later and at a few frames per second, which left
             // moving subjects with a blocky, lagging matte (or none at all) in the preview.
-            BackgroundRemovalProvider.AUTO -> if (streamMode) MlKitHumanSegmenter(context, true) else gemini(context, streamMode)
+            // Gemini polygons were also the automatic choice for photos, which made photo cut-outs
+            // look faceted; the per-pixel subject model is used instead.
+            BackgroundRemovalProvider.AUTO -> if (streamMode) MlKitHumanSegmenter(context, true) else StillImageSegmenter(context)
             BackgroundRemovalProvider.GEMINI -> gemini(context, streamMode)
         }
     }

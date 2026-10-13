@@ -59,6 +59,8 @@ dependencies {
     implementation("androidx.media3:media3-effect:1.11.1")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
+    // Full-resolution per-subject masks for photo clips (Google Play services, model on demand).
+    implementation("com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1")
     implementation("com.google.mlkit:face-detection:16.1.7")
     // ML Kit has no stable pose-detection release; 18.0.0-beta5 is the newest published.
     implementation("com.google.mlkit:pose-detection:18.0.0-beta5")

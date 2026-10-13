@@ -22,6 +22,11 @@ data class SegmentationResult(
      * reframe, tracking, style transfer) can refuse the approximated form explicitly.
      */
     val origin: SegmentationOrigin = SegmentationOrigin.MEASURED,
+    /**
+     * True when a better model was expected but unavailable (e.g. still being downloaded) and this
+     * is a lower-quality stand-in. Callers that compute a mask only once (photos) retry later.
+     */
+    val provisional: Boolean = false,
 ) {
     init {
         require(width > 0 && height > 0 && mask.size == width * height)

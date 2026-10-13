@@ -20,6 +20,7 @@ import java.nio.FloatBuffer
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -90,7 +91,9 @@ internal class BackgroundRemovalGpuPass(
                 entry.mask.upload(cached)
                 entry.uploadedTimestampUs = cached.timestampUs
             }
-            captureForInference(entry, sourceTexture, sourceTimestampUs)
+            // A photo never changes, so once its definitive mask exists there is nothing left to
+            // infer. Re-running the (heavier) still model every second would only burn battery.
+            if (!image || cached.provisional) captureForInference(entry, sourceTexture, sourceTimestampUs)
             return drawMasked(entry, sourceTexture, effect)
         }
         captureForInference(entry, sourceTexture, sourceTimestampUs)
@@ -108,7 +111,7 @@ internal class BackgroundRemovalGpuPass(
         val existing = entries[key]
         if (existing != null && existing.sourceWidth == sourceWidth && existing.sourceHeight == sourceHeight && existing.quality == quality && existing.provider == provider) return existing
         existing?.let(::releaseEntry)
-        val (captureWidth, captureHeight) = inputSize(sourceWidth, sourceHeight, quality)
+        val (captureWidth, captureHeight) = inputSize(sourceWidth, sourceHeight, quality, image)
         val captureTexture = texture2d(captureWidth, captureHeight)
         val outputTexture = texture2d(sourceWidth.coerceAtLeast(2), sourceHeight.coerceAtLeast(2))
         val engine = SegmentationEngineFactory.createEngine(context, streamMode = !image, provider = provider)
@@ -197,8 +200,10 @@ internal class BackgroundRemovalGpuPass(
         return entry.output.texture
     }
 
-    private fun inputSize(width: Int, height: Int, quality: SegmentationQuality): Pair<Int, Int> {
-        val longest = when (quality) {
+    private fun inputSize(width: Int, height: Int, quality: SegmentationQuality, image: Boolean): Pair<Int, Int> {
+        // Photos are segmented once by the full-resolution subject model, so they get a much
+        // larger capture (never upscaled past the source).
+        val longest = if (image) min(STILL_LONGEST_SIDE, max(width, height)) else when (quality) {
             SegmentationQuality.FAST -> 256
             SegmentationQuality.BALANCED -> 384
             SegmentationQuality.HIGH -> 512
@@ -300,6 +305,7 @@ internal class BackgroundRemovalGpuPass(
     private companion object {
         val IDENTITY = floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f)
         const val MAX_MASK_DISTANCE_US = 250_000L
+        const val STILL_LONGEST_SIDE = 1024
         const val VERTEX = "attribute vec2 aPosition; attribute vec2 aUv; uniform mat4 uMvp; uniform mat4 uTexMatrix; varying vec2 vUv; void main(){ gl_Position=uMvp*vec4(aPosition,0.,1.); vUv=(uTexMatrix*vec4(aUv,0.,1.)).xy; }"
         const val CAPTURE_FRAGMENT = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
         val FRAGMENT = """
