@@ -14,6 +14,14 @@ data class FrameAnalysisConfig(
     val sampleWidth: Int = 160, val sampleHeight: Int = 90, val maxCoarseFrames: Int = 2_400,
 ) {
     init { require(coarseStepUs in 100_000L..250_000L && refinementStepUs in 16_000L..50_000L && sampleWidth in 64..320 && sampleHeight in 36..240) }
+    /**
+     * Sampling box in the media's own orientation. [sampleWidth]x[sampleHeight] describe a
+     * landscape box; a vertical video gets the transposed box. Fitting a 9:16 frame into a
+     * 16:9 box used to shrink it to ~50x90 px, too small to measure framing changes.
+     */
+    fun boxFor(mediaWidth: Int, mediaHeight: Int): Pair<Int, Int> =
+        if (mediaHeight > mediaWidth) sampleHeight to sampleWidth else sampleWidth to sampleHeight
+
     fun coarseTimestamps(durationUs: Long): List<Long> {
         require(durationUs > 0)
         val step = ((durationUs + maxCoarseFrames - 1) / maxCoarseFrames).coerceAtLeast(coarseStepUs)
@@ -25,6 +33,8 @@ data class FrameFeatures(
     val timeUs: Long, val width: Int, val height: Int, val luma: ByteArray, val histogram: FloatArray,
     val meanLuma: Float, val edgeEnergy: Float, val sharpness: Float, val saturation: Float,
     val temperature: Float, val rgbSeparation: Float,
+    /** [ReferenceLayoutDetector.GRID_ROWS] x [ReferenceLayoutDetector.GRID_COLUMNS] mean luma, then the same grid of chroma (0..1). */
+    val cells: FloatArray = FloatArray(0),
 )
 
 data class FrameDelta(
@@ -57,8 +67,9 @@ class ReferenceFrameSampler(private val context: Context, private val config: Fr
         // One sequential decode instead of a sync-frame seek + GOP decode per timestamp.
         val ordered = timesUs.zipWithNext().all { (a, b) -> a <= b }
         var sizeW = 0; var sizeH = 0
+        val (boxW, boxH) = config.boxFor(info.width, info.height)
         val handled = if (!ordered) 0 else com.termex.replay15.editor.media.SequentialFrameReader.read(
-            context, info.uri, timesUs, config.sampleWidth, config.sampleHeight, cancellation::check,
+            context, info.uri, timesUs, boxW, boxH, cancellation::check,
         ) { time, bitmap ->
             sizeW = bitmap.width; sizeH = bitmap.height
             try { consume(extract(time, bitmap)) } finally { bitmap.recycle() }
@@ -69,7 +80,7 @@ class ReferenceFrameSampler(private val context: Context, private val config: Fr
             retriever.setDataSource(context, Uri.parse(info.uri))
             for (time in timesUs.subList(handled, timesUs.size)) {
                 cancellation.check()
-                val decoded = retriever.getScaledFrameAtTime(time, MediaMetadataRetriever.OPTION_CLOSEST, config.sampleWidth, config.sampleHeight) ?: continue
+                val decoded = retriever.getScaledFrameAtTime(time, MediaMetadataRetriever.OPTION_CLOSEST, boxW, boxH) ?: continue
                 // Consecutive frames are compared pixel by pixel; keep the size of a partial fast pass.
                 val bitmap = if (sizeW > 0 && (decoded.width != sizeW || decoded.height != sizeH))
                     Bitmap.createScaledBitmap(decoded, sizeW, sizeH, true).also { if (it !== decoded) decoded.recycle() } else decoded
@@ -104,7 +115,25 @@ class ReferenceFrameSampler(private val context: Context, private val config: Fr
             val count = pixels.size.toFloat().coerceAtLeast(1f)
             return FrameFeatures(timeUs, width, height, luma, histogram, (sum / count / 255.0).toFloat(),
                 (edge / count / 64.0).toFloat(), (laplace / count / 96.0).toFloat(), (saturation / count).toFloat(),
-                (temperature / count).toFloat(), (rgbEdges / count / 96.0).toFloat())
+                (temperature / count).toFloat(), (rgbEdges / count / 96.0).toFloat(), cellGrid(pixels, width, height))
+        }
+
+        /** Coarse per-region luma/chroma, used to find graphics that pop in and out of one area. */
+        fun cellGrid(pixels: IntArray, width: Int, height: Int): FloatArray {
+            val rows = ReferenceLayoutDetector.GRID_ROWS; val cols = ReferenceLayoutDetector.GRID_COLUMNS; val n = rows * cols
+            val sums = DoubleArray(n * 2); val counts = IntArray(n)
+            if (width <= 0 || height <= 0) return FloatArray(n * 2)
+            for (y in 0 until height) {
+                val row = (y * rows / height).coerceAtMost(rows - 1)
+                for (x in 0 until width) {
+                    val c = row * cols + (x * cols / width).coerceAtMost(cols - 1)
+                    val color = pixels[y * width + x]; val r = color ushr 16 and 255; val g = color ushr 8 and 255; val b = color and 255
+                    sums[c] += ((r * 54 + g * 183 + b * 19) ushr 8) / 255.0
+                    sums[n + c] += (max(r, max(g, b)) - min(r, min(g, b))) / 255.0
+                    counts[c]++
+                }
+            }
+            return FloatArray(n * 2) { i -> (sums[i] / counts[i % n].coerceAtLeast(1)).toFloat() }
         }
     }
 }
@@ -140,7 +169,8 @@ object GlobalMotionEstimator {
     }
 
     private fun estimateScale(a: FrameFeatures, b: FrameFeatures): Float {
-        val candidates = floatArrayOf(.94f, .97f, 1f, 1.03f, 1.06f)
+        // Wide range: jump-cut punch-ins are usually 10-40%, far beyond a smooth zoom's per-frame step.
+        val candidates = floatArrayOf(.72f, .8f, .87f, .91f, .94f, .97f, 1f, 1.03f, 1.06f, 1.1f, 1.15f, 1.25f, 1.38f)
         val cx = (a.width - 1) / 2f; val cy = (a.height - 1) / 2f
         return candidates.minBy { scale ->
             var error = 0L; var count = 0; var y = 9

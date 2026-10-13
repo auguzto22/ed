@@ -5,7 +5,12 @@ import com.termex.replay15.editor.domain.*
 
 /** Applies only normal editor primitives; the returned Project is one ProjectHistory transaction. */
 object ReferenceStyleExecutor {
-    fun execute(project: Project, clipIndex: Int, plan: ReferenceStyleEditPlan, profile: ReferenceStyleProfile): Project {
+    /**
+     * @param placeholder returns the URI of a neutral "drop your image here" picture with the given
+     * width/height ratio, or null when none can be made (image slots then become timeline markers only).
+     */
+    fun execute(project: Project, clipIndex: Int, plan: ReferenceStyleEditPlan, profile: ReferenceStyleProfile,
+        placeholder: ((aspect: Float) -> String?)? = null): Project {
         val source = project.videos.getOrNull(clipIndex) ?: error("Clipe nao encontrado")
         val originalTextIds = project.texts.mapTo(hashSetOf()) { it.id }
         var edited = AutoEditExecutor.execute(project, clipIndex, plan.base)
@@ -17,7 +22,8 @@ object ReferenceStyleExecutor {
                     size = style.relativeHeight.coerceIn(.025f, .14f), color = style.fillColor, bold = style.bold,
                     italic = style.italic, fontId = style.closestFont.id, outlineColor = style.outlineColor,
                     outlineWidth = if (style.confidence >= .45f) .008f else text.outlineWidth,
-                    backgroundColor = if (style.hasBackground) 0x99000000.toInt() else 0, shadow = true, animation = style.animation)
+                    backgroundColor = if (style.hasBackground) 0x99000000.toInt() else 0, shadow = true, animation = style.animation,
+                    wordStyle = if (style.uppercase) text.wordStyle.copy(uppercase = true) else text.wordStyle)
             })
         }
         if (plan.base.cuts.isNotEmpty() && profile.dominantCutType == ReferenceEventType.FADE) {
@@ -51,6 +57,61 @@ object ReferenceStyleExecutor {
                 edited = edited.copy(videos = edited.videos.map { if (it.id == clip.id) it.copy(speedCurve = bounded, preservePitch = true) else it })
             }
         }
-        return edited
+        return applyLayout(project, edited, clipIndex, plan.layout, placeholder)
+    }
+
+    /** Layout slots become ordinary text, sticker and marker items over the edited clip span. */
+    internal fun applyLayout(original: Project, edited: Project, clipIndex: Int, layout: List<ReferenceLayoutDecision>,
+        placeholder: ((Float) -> String?)?): Project {
+        if (layout.isEmpty()) return edited
+        val pieces = (edited.videos.size - original.videos.size + 1).coerceAtLeast(1)
+        val spanStart = edited.startOf(clipIndex)
+        val spanDuration = edited.videos.subList(clipIndex, (clipIndex + pieces).coerceAtMost(edited.videos.size)).sumOf { it.durationUs }
+        if (spanDuration < MIN_TEXT_DURATION_US) return edited
+        val (canvasW, canvasH) = edited.dimensions()
+        fun at(fraction: Float) = spanStart + (spanDuration * fraction.toDouble()).toLong()
+        val texts = mutableListOf<TextClip>(); val stickers = mutableListOf<StickerClip>(); val markers = mutableListOf<TimelineMarker>()
+        layout.forEach { slot ->
+            val start = at(slot.start)
+            val end = maxOf(at(slot.end), start + MIN_STICKER_DURATION_US).coerceAtMost(spanStart + spanDuration)
+            if (end - start < MIN_TEXT_DURATION_US) return@forEach
+            val box = slot.box.clamped()
+            when (slot.kind) {
+                ReferenceLayoutKind.TITLE, ReferenceLayoutKind.CARD -> {
+                    val card = slot.kind == ReferenceLayoutKind.CARD
+                    val background = when { slot.style.backgroundColor != 0 -> slot.style.backgroundColor; card -> 0xF2FFFFFF.toInt(); else -> 0 }
+                    val color = if (card && slot.style.backgroundColor == 0) 0xFF111111.toInt() else slot.style.textColor
+                    val text = if (card) "Texto do card" else "Seu titulo aqui"
+                    if (edited.texts.size + texts.size < MAX_TEXTS) texts += TextClip(
+                        text = if (slot.style.uppercase) text.uppercase() else text, startUs = start, endUs = end,
+                        x = box.x.coerceIn(0f, 1f), y = box.y.coerceIn(0f, 1f),
+                        size = (if (card) box.height * .35f else box.height * .8f).coerceIn(.03f, .1f),
+                        color = color, bold = slot.style.bold,
+                        fontId = ReferenceGeminiParser.textFont(slot.style.font, slot.style.bold).id,
+                        boxWidth = if (box.width >= .2f) box.width.coerceIn(.2f, .95f) else 0f,
+                        backgroundColor = background, outlineWidth = if (slot.style.outline && background == 0) .008f else 0f,
+                        shadow = background == 0, animation = TextAnimation.POP,
+                    )
+                }
+                ReferenceLayoutKind.OVERLAY_IMAGE, ReferenceLayoutKind.STICKER, ReferenceLayoutKind.BROLL -> {
+                    val broll = slot.kind == ReferenceLayoutKind.BROLL
+                    val target = if (broll) LayoutBox.FULL else box
+                    val aspect = (target.width * canvasW / (target.height * canvasH).coerceAtLeast(1f)).coerceIn(.1f, 10f)
+                    val uri = placeholder?.invoke(aspect)
+                    if (uri != null && edited.stickers.size + stickers.size < 24) stickers += StickerClip(
+                        uri = uri, name = if (broll) "Espaco: B-roll" else "Espaco: imagem", startUs = start, endUs = end,
+                        x = target.x.coerceIn(0f, 1f), y = target.y.coerceIn(0f, 1f), size = target.height.coerceIn(.03f, 1.5f),
+                        opacity = if (broll) 1f else .9f,
+                    )
+                    markers += TimelineMarker(timeUs = start, name = if (broll) "B-roll aqui" else "Imagem aqui")
+                }
+                ReferenceLayoutKind.CAPTION -> Unit
+            }
+        }
+        return edited.copy(
+            texts = (edited.texts + texts).sortedBy { it.startUs }.take(MAX_TEXTS),
+            stickers = edited.stickers + stickers,
+            markers = (edited.markers + markers).sortedBy { it.timeUs }.take(500),
+        )
     }
 }
