@@ -55,3 +55,22 @@ JVM coverage includes determinism, silence margins, caption segmentation, effect
 execution, one-step undo, `.r15` round-trip, and 5/15/30/60/90 second clips at 24/30/60 fps. Codec,
 visual quality, A/V sync and hardware export still require the Android device matrix described in
 `docs/editor-v3-status.md`; a desktop unit build cannot honestly replace those checks.
+
+## Punch-ins, captions and reference slots (algorithm v3)
+
+- **Punch-ins.** Podcast and Shorts (and Reference Style when the reference has cuts or punch-ins)
+  zoom at phrase starts taken from caption word timing: the framing jumps to ~1.15x (`Easing.HOLD`),
+  holds until the next phrase in the rhythm, and jumps back. The interval comes from the intensity
+  (4 / 2.8 / 1.9 s) or from the reference's median cut interval. The earlier 5-10% pulses that eased
+  out within 0.26 s, centred on the frame, were rendered but practically invisible.
+- **Face focus.** `ClipAnalyzer.analyze(detectFaces = true)` samples ML Kit faces about once a second
+  (max 45 frames). A zoom keeps the face in place by shifting `(0.5 - focus) * extraZoom`, which never
+  exposes the frame edge. Without a face it keeps the upper-middle of the frame.
+- **Cuts inside a punch-in.** The edge keys of each kept piece are read from the planned keys, so a
+  piece that starts after a removed pause is still zoomed in.
+- **Captions first.** When the clip has no captions, Auto Edit and Reference Style generate them with
+  `AutoCaptionRunner` before analysing (Gemini when a key or the backend is configured, otherwise the
+  on-device Vosk model). Failures are reported, and the edit continues without captions.
+- **Reference slots.** Untouched "Seu titulo aqui", "Texto do card" and "+ Sua imagem" slots are left
+  out of the export (`ReferenceSlots`) and are never taken for captions. A vertical reference sets the
+  project to its proportions when the clip has the same orientation.

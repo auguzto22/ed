@@ -137,34 +137,58 @@ class ReferenceStylePanel(
         }
         stage("Analisando o novo clipe", .05f)
         worker.execute {
+            var styleProfile = profile
+            var addedCaptions = emptyList<com.termex.replay15.editor.domain.TextClip>()
             val result = runCatching {
                 val autoToken = com.termex.replay15.editor.autoedit.AutoEditCancellation()
                 token.check()
-                val analysis = ClipAnalyzer.analyze(activity, clip, words, autoToken) { progress ->
-                    token.check(); stage(progress.label, .4f)
+                // Profiles analysed before the aspect was stored get it from the reference file.
+                if (styleProfile.aspect == 0f) {
+                    val ratio = runCatching {
+                        val info = ReferenceMediaProbe.probe(activity, Uri.parse(styleProfile.sourceUri))
+                        if (info.rotation % 180 == 0) info.width.toFloat() / info.height else info.height.toFloat() / info.width
+                    }.getOrNull()
+                    if (ratio != null && ratio in .2f..5f) {
+                        styleProfile = styleProfile.copy(aspect = ratio)
+                        runCatching { store.save(styleProfile) }
+                    }
+                }
+                // Captions first: they are what the reference's captions are copied onto, and their
+                // phrase starts are where the punch-ins land.
+                val prepared = com.termex.replay15.editor.autoedit.CaptionPrep.ensure(activity, snapshot, index,
+                    progress = { label -> stage(label, .15f) }) { token.check(); autoToken.check() }
+                addedCaptions = prepared.added
+                val captionWords = if (prepared.added.isEmpty()) words
+                    else ClipAnalyzer.wordsFromCaptions(prepared.project.texts, prepared.project.startOf(index), clip.durationUs)
+                token.check()
+                val analysis = ClipAnalyzer.analyze(activity, clip, captionWords, autoToken, detectFaces = true) { progress ->
+                    token.check(); stage(progress.label, .5f)
                 }
                 token.check(); stage("Criando plano editável", .85f)
-                ReferenceStylePlanner.plan(profile, analysis)
+                val plan = ReferenceStylePlanner.plan(styleProfile, analysis)
+                prepared.note?.let { note -> plan.copy(skipped = listOf(note) + plan.skipped.filterNot { it.startsWith("Legendas:") }) } ?: plan
             }
             activity.runOnUiThread {
                 if (activity.isDestroyed) return@runOnUiThread
                 if (progressDialog != null) { progressDialog.dismiss(); processing(false) }
                 result.fold({ plan ->
                     // Apply to the project as it is now (edits made meanwhile are kept).
-                    val current = project()
-                    val currentIndex = current.videos.indexOfFirst { it.id == clip.id }
-                    if (currentIndex < 0 || current.videos[currentIndex] != clip) {
+                    val live = project()
+                    val currentIndex = live.videos.indexOfFirst { it.id == clip.id }
+                    if (currentIndex < 0 || live.videos[currentIndex] != clip) {
                         card?.fail("O clipe mudou durante a análise. Aplique de novo.")
                             ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
                         return@fold
                     }
+                    // The new captions are part of the edit: "Original" and "Cancelar" leave the project without them.
+                    val current = com.termex.replay15.editor.autoedit.CaptionPrep.merge(live, addedCaptions)
                     val edited = runCatching {
-                        ReferenceStyleExecutor.execute(current, currentIndex, plan, profile) { aspect -> ReferencePlaceholders.uri(activity, aspect) }
+                        ReferenceStyleExecutor.execute(current, currentIndex, plan, styleProfile) { aspect -> ReferencePlaceholders.uri(activity, aspect) }
                     }.getOrElse { error ->
                         card?.fail("Não foi possível criar o plano: ${error.message}"); return@fold
                     }
-                    if (card != null) card.succeed("Estilo pronto para revisar", "Ver resultado") { showPreview(current, profile, plan, edited) }
-                    else showPreview(current, profile, plan, edited)
+                    if (card != null) card.succeed("Estilo pronto para revisar", "Ver resultado") { showPreview(live, styleProfile, plan, edited) }
+                    else showPreview(live, styleProfile, plan, edited)
                 }, { error ->
                     val message = if (error is InterruptedException) "Aplicação cancelada" else "Não foi possível criar o plano: ${error.message}"
                     if (card != null) card.fail(message)

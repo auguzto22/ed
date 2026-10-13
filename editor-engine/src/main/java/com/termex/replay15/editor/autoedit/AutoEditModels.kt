@@ -2,7 +2,7 @@ package com.termex.replay15.editor.autoedit
 
 import com.termex.replay15.editor.domain.SECOND
 
-const val AUTO_EDIT_ALGORITHM_VERSION = 2
+const val AUTO_EDIT_ALGORITHM_VERSION = 3
 
 enum class AutoEditStyle(val label: String) {
     CLEAN("Clean"), DYNAMIC("Dynamic"), GAMING("Gaming"), CINEMATIC("Cinematic"), PODCAST("Podcast"), SHORTS("Shorts")
@@ -40,6 +40,11 @@ data class MotionSample(val timeUs: Long, val amount: Float, val focusX: Float =
     init { require(timeUs >= 0 && amount >= 0f && focusX in 0f..1f && focusY in 0f..1f) }
 }
 
+/** One detected face at [timeUs], normalized to 0..1 of the frame as displayed. */
+data class FaceSample(val timeUs: Long, val centerX: Float, val centerY: Float, val height: Float) {
+    init { require(timeUs >= 0 && centerX in 0f..1f && centerY in 0f..1f && height in 0f..1f) }
+}
+
 data class ClipAnalysis(
     val clipId: String,
     val durationUs: Long,
@@ -50,6 +55,8 @@ data class ClipAnalysis(
     val warnings: List<String> = emptyList(),
     /** Displayed width / height of the clip (0 = unknown). Used to skip reframing a clip already vertical. */
     val sourceAspect: Float = 0f,
+    /** Faces sampled along the clip (empty when detection was not requested or found nobody). */
+    val faces: List<FaceSample> = emptyList(),
 ) {
     init {
         require(durationUs > 0)
@@ -57,7 +64,12 @@ data class ClipAnalysis(
         require(audio.zipWithNext().all { (a, b) -> a.startUs <= b.startUs })
         require(motion.zipWithNext().all { (a, b) -> a.timeUs <= b.timeUs })
         require(words.zipWithNext().all { (a, b) -> a.startUs <= b.startUs })
+        require(faces.zipWithNext().all { (a, b) -> a.timeUs <= b.timeUs })
     }
+
+    /** Where the face is around [timeUs] (nearest sample within 1.5 s), or null when unknown. */
+    fun faceAt(timeUs: Long): FaceSample? =
+        faces.minByOrNull { kotlin.math.abs(it.timeUs - timeUs) }?.takeIf { kotlin.math.abs(it.timeUs - timeUs) <= 1_500_000L }
 }
 
 enum class EditDecisionType { CUT, CAPTION, ZOOM, REFRAME, EFFECT, AUDIO }
@@ -71,9 +83,25 @@ data class CaptionDecision(
     val confidence: Float = 1f, val reason: String = "transcricao temporizada",
 ) { init { require(startUs >= 0 && endUs > startUs && text.isNotBlank() && confidence in 0f..1f) } }
 
+/**
+ * A zoom on the clip. A short pulse ([hold] = false) eases in and back out within 0.9 s. A punch-in
+ * ([hold] = true) jumps to [scale] like a jump cut and holds that framing for [durationUs], then
+ * jumps back. [focusX]/[focusY] (0..1 of the frame) is the point kept in place, normally the face.
+ */
 data class ZoomDecision(
     val timeUs: Long, val durationUs: Long, val scale: Float, val confidence: Float, val reason: String,
-) { init { require(timeUs >= 0 && durationUs in 80_000L..900_000L && scale in 1.03f..1.25f && confidence in 0f..1f) } }
+    val hold: Boolean = false, val focusX: Float = .5f, val focusY: Float = .5f,
+) {
+    init {
+        require(timeUs >= 0 && durationUs >= 80_000L && durationUs <= (if (hold) MAX_PUNCH_HOLD_US else MAX_PULSE_US))
+        require(scale in 1.03f..MAX_ZOOM_SCALE && confidence in 0f..1f && focusX in 0f..1f && focusY in 0f..1f)
+    }
+    companion object {
+        const val MAX_PULSE_US = 900_000L
+        const val MAX_PUNCH_HOLD_US = 6_000_000L
+        const val MAX_ZOOM_SCALE = 1.35f
+    }
+}
 
 data class ReframeDecision(
     val timeUs: Long, val x: Float, val y: Float, val confidence: Float, val reason: String,

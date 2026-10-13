@@ -211,6 +211,10 @@ object CaptionProviderFactory {
     private fun resolvedKey(): String =
         BuildConfig.GEMINI_API_KEY.takeIf(String::isNotBlank) ?: com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey()
 
+    /** True when captions can reach Gemini (local key in debug) or the Recly caption backend. */
+    fun isCloudConfigured(): Boolean =
+        resolvedKey().isNotBlank() || BuildConfig.RECLY_CAPTION_BACKEND_URL.startsWith("https://")
+
     fun transcriptionProvider(): TranscriptionProvider {
         val key = resolvedKey()
         return if (key.isNotBlank()) GeminiTranscriptionProvider(key)
