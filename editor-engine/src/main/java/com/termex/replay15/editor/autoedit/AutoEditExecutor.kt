@@ -62,14 +62,22 @@ object AutoEditExecutor {
             removeAt(clipIndex)
             addAll(clipIndex, pieces)
         }
-        val captionCandidates = if (plan.captions.isEmpty()) emptySet() else project.texts.filter { text ->
-            text.startUs < clipEnd && text.endUs > clipStart && text.y >= .6f && text.endUs - text.startUs <= 6 * SECOND
-        }.toSet()
+        val existingCaptions = project.texts.filter { ClipAnalyzer.isCaptionOf(it, clipStart, clipEnd) }
+        // Captions made by the caption engine carry measured word timing, karaoke/word styles and
+        // the user's look. Re-segmenting them into plain text threw all of that away, so they are
+        // kept (and moved through the cuts like any other text). Only captions without word timing
+        // (an imported SRT with long lines) are re-split, and the new lines copy their look.
+        val resegment = plan.captions.isNotEmpty() && existingCaptions.none { it.wordCues.isNotEmpty() }
+        val captionCandidates = if (resegment) existingCaptions.toSet() else emptySet()
         val keptTexts = project.texts.filterNot { it in captionCandidates }.mapNotNull { text -> remapText(text, clipStart, mapAbsolute) }
-        val captions = plan.captions.mapNotNull { caption ->
+        val template = existingCaptions.firstOrNull()
+        val captions = if (!resegment) emptyList() else plan.captions.mapNotNull { caption ->
             val start = clipStart + mapLocal(caption.startUs)
             val end = clipStart + mapLocal(caption.endUs)
-            if (end - start < 80_000L || start >= clipStart + newDuration) null else TextClip(
+            if (end - start < 80_000L || start >= clipStart + newDuration) null
+            else template?.copy(id = newId(), text = caption.text, startUs = start, endUs = minOf(end, clipStart + newDuration),
+                isCaption = true, wordCues = emptyList(), transformKeyframes = emptyList(), mask = null)
+                ?: TextClip(
                 text = caption.text,
                 startUs = start,
                 endUs = minOf(end, clipStart + newDuration),
@@ -81,6 +89,7 @@ object AutoEditExecutor {
                 outlineWidth = if (plan.options.style in setOf(AutoEditStyle.GAMING, AutoEditStyle.DYNAMIC, AutoEditStyle.SHORTS)) .009f else .004f,
                 shadow = true,
                 animation = when (plan.options.style) { AutoEditStyle.DYNAMIC, AutoEditStyle.GAMING, AutoEditStyle.SHORTS -> TextAnimation.POP; else -> TextAnimation.FADE },
+                isCaption = true,
             )
         }
 
@@ -90,7 +99,8 @@ object AutoEditExecutor {
             audio = project.audio.map { audio -> audio.copy(startUs = mapAbsolute(audio.startUs)) },
             stickers = project.stickers.mapNotNull { sticker ->
                 val start = mapAbsolute(sticker.startUs); val end = mapAbsolute(sticker.endUs)
-                if (end <= start) null else sticker.copy(startUs = start, endUs = end)
+                if (end <= start) null else sticker.copy(startUs = start, endUs = end,
+                    mask = sticker.mask?.let { mask -> mask.copy(keyframes = mask.keyframes.filter { it.timeUs <= end - start }) })
             },
             markers = project.markers.map { it.copy(timeUs = mapAbsolute(it.timeUs)) },
             videoTracks = project.videoTracks.map { track ->
@@ -152,9 +162,21 @@ object AutoEditExecutor {
             .distinctBy { it.sourceUs }.sortedBy { it.sourceUs }.take(200)
     }
 
+    /**
+     * Moves a text through the cuts. Word timing moves with it: cues left in place broke the
+     * TextClip invariant (cues inside the text) whenever a cut fell inside a caption, which made
+     * the whole Auto Edit fail, or showed the karaoke out of sync.
+     */
     private fun remapText(text: TextClip, clipStart: Long, map: (Long) -> Long): TextClip? {
         if (text.endUs <= clipStart) return text
         val start = map(text.startUs); val end = map(text.endUs)
-        return if (end <= start) null else text.copy(startUs = start, endUs = end)
+        if (end - start < MIN_TEXT_DURATION_US.coerceAtMost(text.durationUs)) return null
+        val cues = text.wordCues.mapNotNull { cue ->
+            val cueStart = map(cue.startUs).coerceIn(start, end); val cueEnd = map(cue.endUs).coerceIn(start, end)
+            if (cueEnd > cueStart) SubtitleWordCue(cue.text, cueStart, cueEnd) else null
+        }.sortedBy { it.startUs }
+        // Mask keyframes must fit the (possibly shorter) text, or TextClip rejects it.
+        val mask = text.mask?.let { mask -> mask.copy(keyframes = mask.keyframes.filter { it.timeUs <= end - start }) }
+        return text.copy(startUs = start, endUs = end, wordCues = cues, mask = mask)
     }
 }

@@ -39,7 +39,8 @@ object ClipAnalyzer {
         memoryCache[key]?.let { return it.copy(clipId = clip.id) }
         progress(AutoEditProgress.Inspecting)
         cancellation.check()
-        if (clip.image) return ClipAnalysis(clip.id, clip.durationUs, words = captionWords).also { memoryCache[key] = it }
+        val aspect = displayedAspect(clip)
+        if (clip.image) return ClipAnalysis(clip.id, clip.durationUs, words = captionWords, sourceAspect = aspect).also { memoryCache[key] = it }
         val warnings = mutableListOf<String>()
         progress(AutoEditProgress.Audio)
         val audio = runCatching { analyzeAudio(context, clip, cancellation) }.getOrElse {
@@ -52,18 +53,40 @@ object ClipAnalyzer {
             emptyList()
         }
         val result = ClipAnalysis(clip.id, clip.durationUs, audio, motion, captionWords,
-            hasAudio = audio.isNotEmpty(), warnings = warnings)
+            hasAudio = audio.isNotEmpty(), warnings = warnings, sourceAspect = aspect)
         memoryCache[key] = result
         return result
     }
 
-    /** Reuses imported/manual timed captions as transcript evidence; it never fabricates words. */
+    /** Width / height as shown (rotation and crop applied). */
+    fun displayedAspect(clip: VideoClip): Float {
+        if (clip.width <= 0 || clip.height <= 0) return 0f
+        val w = clip.width * (clip.crop.right - clip.crop.left); val h = clip.height * (clip.crop.bottom - clip.crop.top)
+        if (w <= 0f || h <= 0f) return 0f
+        return if (clip.rotation % 180 == 0) w / h else h / w
+    }
+
+    /** Captions on the clip: generated ones are flagged; imported/manual ones are recognised by place and length. */
+    fun isCaptionOf(text: TextClip, clipStartUs: Long, clipEndUs: Long): Boolean =
+        text.startUs < clipEndUs && text.endUs > clipStartUs &&
+            (text.isCaption || text.wordCues.isNotEmpty() || (text.y >= .6f && text.endUs - text.startUs <= 6 * SECOND))
+
+    /**
+     * Reuses timed captions as transcript evidence; it never fabricates words. Generated captions
+     * carry measured word timing ([TextClip.wordCues]) which is used as is; only captions without
+     * it fall back to spreading the words over the caption by length.
+     */
     fun wordsFromCaptions(texts: List<TextClip>, clipStartUs: Long, clipDurationUs: Long): List<TimedWord> {
         val clipEnd = clipStartUs + clipDurationUs
         return texts.asSequence()
-            .filter { it.startUs < clipEnd && it.endUs > clipStartUs && it.y >= .6f && it.endUs - it.startUs <= 6 * SECOND }
+            .filter { isCaptionOf(it, clipStartUs, clipEnd) }
             .sortedBy { it.startUs }
             .flatMap { caption ->
+                if (caption.wordCues.isNotEmpty()) return@flatMap caption.wordCues.asSequence().mapNotNull { cue ->
+                    val start = (cue.startUs - clipStartUs).coerceIn(0, clipDurationUs)
+                    val end = (cue.endUs - clipStartUs).coerceIn(0, clipDurationUs)
+                    if (end > start) TimedWord(cue.text, start, end, 1f) else null
+                }
                 val tokens = caption.text.trim().split(Regex("\\s+")).filter(String::isNotBlank)
                 if (tokens.isEmpty()) return@flatMap emptySequence()
                 val start = (caption.startUs - clipStartUs).coerceAtLeast(0)
@@ -75,7 +98,7 @@ object ClipAnalyzer {
                     val tokenEnd = if (index == tokens.lastIndex) end else cursor + (end - start) * weights[index] / total
                     TimedWord(token, cursor, tokenEnd.coerceAtLeast(cursor + 1), 1f).also { cursor = tokenEnd }
                 }.asSequence()
-            }.toList()
+            }.sortedBy { it.startUs }.toList()
     }
 
     fun analyzeAudio(context: Context, clip: AudioClip, cancellation: AutoEditCancellation): List<AudioSample> =
@@ -172,6 +195,8 @@ object ClipAnalyzer {
         val timelineTimes = generateSequence(0L) { it + FRAME_STEP_US }.takeWhile { it <= clip.durationUs }.toList()
         val sourceTimes = timelineTimes.map(clip.timeMap::sourceAt)
         val result = mutableListOf<MotionSample>()
+        // Sample box in the clip's own orientation: a 9:16 clip fitted into 160x90 became ~50x90 px.
+        val (boxW, boxH) = if (displayedAspect(clip) in 0.01f..0.99f) 90 to 160 else 160 to 90
         var previous: IntArray? = null
         var previousWidth = 0
         fun accept(timelineUs: Long, bitmap: Bitmap) {
@@ -202,7 +227,7 @@ object ClipAnalyzer {
         if (sourceTimes.zipWithNext().all { (a, b) -> a <= b }) {
             var cursor = 0
             handled = com.termex.replay15.editor.media.SequentialFrameReader.read(
-                context, clip.uri, sourceTimes, 160, 90, cancellation::check,
+                context, clip.uri, sourceTimes, boxW, boxH, cancellation::check,
             ) { requestedUs, bitmap ->
                 while (cursor < sourceTimes.size && sourceTimes[cursor] != requestedUs) cursor++
                 accept(timelineTimes[cursor.coerceAtMost(timelineTimes.lastIndex)], bitmap)
@@ -215,7 +240,7 @@ object ClipAnalyzer {
             retriever.setDataSource(context, Uri.parse(clip.uri))
             for (index in handled until timelineTimes.size) {
                 cancellation.check()
-                val bitmap = retriever.getScaledFrameAtTime(sourceTimes[index], MediaMetadataRetriever.OPTION_CLOSEST, 160, 90) ?: continue
+                val bitmap = retriever.getScaledFrameAtTime(sourceTimes[index], MediaMetadataRetriever.OPTION_CLOSEST, boxW, boxH) ?: continue
                 accept(timelineTimes[index], bitmap)
             }
             return result
