@@ -29,6 +29,7 @@ import com.termex.replay15.editor.media.CubeLut
 import com.termex.replay15.editor.media.SubtitleDocument
 import com.termex.replay15.editor.audio.AudioEnhance
 import com.termex.replay15.editor.autoedit.AutoEditCancellation
+import com.termex.replay15.editor.autoedit.AudioSample
 import com.termex.replay15.editor.autoedit.ClipAnalyzer
 import com.termex.replay15.editor.beat.BeatMap
 import com.termex.replay15.editor.beat.BeatDetector
@@ -52,6 +53,10 @@ import com.termex.replay15.editor.captions.GeminiCaptionGenerator
 import com.termex.replay15.editor.highlights.HighlightDetector
 import com.termex.replay15.editor.highlights.HighlightResult
 import com.termex.replay15.editor.highlights.Highlight
+import com.termex.replay15.editor.highlights.HighlightProjectBuilder
+import com.termex.replay15.editor.highlights.SceneCutDetector
+import com.termex.replay15.editor.reframe.AutoReframeAnalyzer
+import com.termex.replay15.editor.reframe.ReframeAspect
 import com.termex.replay15.editor.render.EditorFonts
 import com.termex.replay15.editor.render.GlResourcePool
 import com.termex.replay15.editor.render.RenderPlan
@@ -3859,23 +3864,35 @@ class EditorActivity : Activity() {
                 withContext(Dispatchers.IO) {
                     // Collect audio energy from all clips (skip images)
                     val audioToken = AutoEditCancellation()
-                    val audioSamples = snapshot.videos.filter { !it.image }.flatMap { clip ->
+                    val audioSamples = mutableListOf<AudioSample>()
+                    val sceneCutsUs = mutableListOf<Long>()
+                    snapshot.videos.forEachIndexed { index, clip ->
+                        if (clip.image) return@forEachIndexed
                         cancellation.check()
+                        // A análise é local ao clipe; a transcrição está no tempo do projeto.
+                        val offsetUs = snapshot.startOf(index)
                         runCatching {
-                            val analysis = ClipAnalyzer.analyze(
+                            ClipAnalyzer.analyze(
                                 this@EditorActivity, clip,
                                 emptyList(), // no words needed for energy analysis
                                 audioToken,
                             ) { _ -> }
-                            analysis.audio
-                        }.getOrDefault(emptyList())
+                        }.getOrNull()?.let { analysis ->
+                            analysis.audio.mapTo(audioSamples) {
+                                it.copy(startUs = it.startUs + offsetUs, endUs = it.endUs + offsetUs)
+                            }
+                            SceneCutDetector.detect(analysis.motion).mapTo(sceneCutsUs) { it + offsetUs }
+                            // Fronteira entre clipes da timeline também é troca de cena.
+                            if (index > 0) sceneCutsUs += offsetUs
+                        }
                     }
 
                     val detector = HighlightDetector()
                     detector.detect(
                         project = snapshot,
-                        audioSamples = audioSamples,
+                        audioSamples = audioSamples.take(50_000),
                         maxHighlights = 10,
+                        sceneCutsUs = sceneCutsUs.distinct().sorted(),
                         checkCancelled = { cancellation.check() },
                         progress = { stage, completed, total ->
                             main.post {
@@ -3920,7 +3937,7 @@ class EditorActivity : Activity() {
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
         body.addView(label(
-            "${result.highlights.size} destaques encontrados. Toque para navegar, confirme para criar marcadores.",
+            "${result.highlights.size} destaques encontrados. Toque para navegar, crie um corte 9:16 editável ou adicione marcadores.",
             12f, EditorStyle.MUTED
         ))
 
@@ -3939,6 +3956,10 @@ class EditorActivity : Activity() {
             body.addView(action(text) {
                 // Navigate to the highlight start
                 seek(highlight.startMs * 1_000L)
+            })
+            body.addView(action("Criar corte 9:16 editável") {
+                dialog.dismiss()
+                createHighlightProject(snapshot, highlight)
             })
         }
 
@@ -3964,6 +3985,92 @@ class EditorActivity : Activity() {
         // "Select a specific range" button
         body.addView(action("Fechar") { dialog.dismiss() })
         dialog = sheet("Melhores momentos", body)
+    }
+
+    /**
+     * Fase 3 da integração com o ClipStudio: o momento vira um projeto 9:16 novo e editável.
+     * O projeto atual não é alterado. Cada clipe do trecho passa pelo Auto Reframe (rosto/corpo
+     * via ML Kit, com salto nas trocas de cena); sem sujeito detectado, fica o corte central.
+     */
+    private fun createHighlightProject(snapshot: Project, highlight: Highlight) {
+        if (busy) return
+        busy = true
+        preview.pause()
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
+        val progressText = label("Montando o corte...", 15f)
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("Criar corte 9:16")
+            .setView(progressText)
+            .setNegativeButton("Cancelar") { _, _ -> cancelled.set(true) }
+            .create().apply { setCancelable(false); show() }
+
+        fun status(text: String) {
+            main.post { if (!isDestroyed && progressDialog.isShowing) progressText.text = text }
+        }
+
+        fun checkCancelled() {
+            if (cancelled.get()) throw CancellationException("Corte cancelado")
+        }
+
+        captionScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    var moment = HighlightProjectBuilder.build(
+                        source = snapshot,
+                        startUs = highlight.startMs * 1_000L,
+                        endUs = highlight.endMs * 1_000L,
+                        name = highlight.title.ifBlank { "Melhor momento" },
+                        nowMs = System.currentTimeMillis(),
+                    ).project
+                    val reframer = AutoReframeAnalyzer(applicationContext)
+                    var framed = 0
+                    val total = moment.videos.size
+                    for (index in moment.videos.indices) {
+                        checkCancelled()
+                        val clip = moment.videos[index]
+                        if (clip.image) continue
+                        status("Enquadrando ${index + 1}/$total...")
+                        val cuts = runCatching {
+                            val analysis = ClipAnalyzer.analyze(applicationContext, clip, emptyList(), AutoEditCancellation()) { _ -> }
+                            SceneCutDetector.detect(analysis.motion)
+                        }.getOrDefault(emptyList())
+                        checkCancelled()
+                        val framing = runCatching {
+                            reframer.analyze(
+                                clip = clip,
+                                target = ReframeAspect.VERTICAL_9_16,
+                                isCancelled = cancelled::get,
+                                onProgress = { done, of -> status("Enquadrando ${index + 1}/$total: $done/$of quadros") },
+                                sceneCutsUs = cuts,
+                            )
+                        }.getOrNull()
+                        checkCancelled()
+                        if (framing != null && framing.keyframes.isNotEmpty()) {
+                            moment = moment.changeVideo(index) { it.copy(keyframes = framing.keyframes) }
+                            framed++
+                        }
+                    }
+                    checkCancelled()
+                    status("Salvando...")
+                    store.save(moment)
+                    moment to framed
+                }
+            }
+            if (isDestroyed) return@launch
+            progressDialog.dismiss()
+            busy = false
+            result.fold(
+                onSuccess = { (moment, framed) ->
+                    info.text = if (framed > 0) "Corte 9:16 criado com enquadramento automático"
+                    else "Corte 9:16 criado (nenhum rosto detectado: corte central)"
+                    startActivity(Intent(this@EditorActivity, EditorActivity::class.java).putExtra("project", moment.id))
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException || cancelled.get()) info.text = "Corte cancelado"
+                    else error("Não foi possível criar o corte: ${failure.message ?: "erro desconhecido"}")
+                },
+            )
+        }
     }
 
     private fun captionVocabularyDialog() {

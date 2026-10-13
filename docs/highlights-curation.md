@@ -29,15 +29,37 @@ O `Highlight` ganhou `title`, `hook` e `scores` (opcionais); o marcador usa o t�
 
 Testes: `HighlightCurationTest` (JVM).
 
-## Próximas fases
+## Fase 2: trocas de cena e câmera com salto
 
-- **Fase 2: enquadramento por rosto.** Portar a "câmera virtual" do ClipStudio (`reframe.py`: zona
-  morta, velocidade máxima, salto na troca de cena, simplificação Ramer–Douglas–Peucker) usando o
-  ML Kit Face Detection que o Recly já tem, gerando keyframes de transformação em vez de expressões
-  do ffmpeg. Detectar trocas de cena a partir do `MotionSample` do `ClipAnalyzer` e preencher
-  `sceneCutsMs`.
-- **Fase 3: cortes como projetos editáveis.** Cada momento escolhido vira um `Project` 9:16 com o
-  trim no `ClipTimeMap`, os keyframes de reframe e as legendas existentes no trecho, aberto no editor
-  e salvo pelo autosave normal, sem MP4 intermediário.
-- **Fase 4 (opcional): avaliação visual.** Folha de contato 3×3 por candidato enviada ao Gemini para
-  reordenar pelos aspectos visuais, como o passo 2 do ClipStudio.
+- `SceneCutDetector` lê o `MotionSample` que o `ClipAnalyzer` já mede (diferença de luminância a cada
+  500 ms) e marca troca de cena quando há um pico isolado: diferença ≥ 0,30 **e** ≥ 3× a mediana dos
+  3 vizinhos de cada lado, com no mínimo 1 s entre trocas. Movimento contínuo não dispara.
+- "Melhores momentos" passa essas trocas (e as fronteiras entre clipes da timeline) ao Gemini como
+  `✂cena`. A energia e as trocas agora são convertidas para o tempo do projeto (`startOf`); antes, a
+  energia ficava no tempo local de cada clipe e desalinhava em projetos com mais de um clipe.
+- O Auto Reframe já existente (ML Kit rosto → corpo, suavização, zona morta) ganhou o salto do
+  ClipStudio: com `sceneCutsUs`, a câmera segura o enquadramento até ~40 ms antes do corte e salta
+  para o novo sujeito, em vez de deslizar entre duas cenas.
+- Correção no `AutoReframeEngine.toKeyframes`: o lead-in de 180 ms criava, para clipes sem animação
+  do usuário, um keyframe com o transform base (zoom 1, centro) antes de cada ponto, e a câmera
+  "respirava" de volta ao quadro inteiro. Agora o lead-in só é criado quando o clipe já tem keyframes.
+
+## Fase 3: momento → projeto 9:16 editável
+
+- Cada destaque da lista tem o botão **Criar corte 9:16 editável**.
+- `HighlightProjectBuilder` monta um `Project` novo com `splitAt` (as mesmas operações do editor,
+  respeitando `ClipTimeMap`, velocidade e keyframes), mantém só os clipes do trecho e leva as
+  legendas/textos do trecho deslocados para o novo início (com `wordCues`). Sai em 9:16 com
+  preenchimento (corte central).
+- Cada clipe passa pelo Auto Reframe 9:16 com as trocas de cena; sem sujeito, fica o corte central.
+- O projeto é salvo no `ProjectStore` e aberto no editor. O projeto original não muda.
+- Fica de fora, de propósito: trilhas sobrepostas, áudio extra, stickers, ajustes, marcadores e
+  grupos, porque dependem do tempo do projeto original.
+
+Testes: `HighlightProjectTest` (JVM).
+
+## Ainda não feito
+
+- **Avaliação visual (opcional).** Folha de contato 3×3 por candidato enviada ao Gemini para
+  reordenar pelos aspectos visuais, como o passo 2 do ClipStudio. Custa uma chamada a mais e envia
+  imagens; só vale se a avaliação com vídeos reais mostrar ganho.
