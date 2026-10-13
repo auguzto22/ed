@@ -1212,6 +1212,8 @@ class EditorActivity : Activity() {
 
         previewBox = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
+            // Tocar fora do vídeo (faixas pretas) tira a seleção e volta a barra normal.
+            setOnClickListener { if (selected in project.videos.indices) clearSelection() }
         }
         frame = FrameLayout(this)
         val surface = SurfaceView(this)
@@ -1392,27 +1394,52 @@ class EditorActivity : Activity() {
 
     private var lastToolSignature = ""
     /**
-     * Barra de ferramentas do canvas: sempre as mesmas cinco (Dividir, Aparar, Texto, Áudio, Auto Edit).
-     * As demais funções continuam todas no editor, agrupadas dentro destas ferramentas
-     * e no menu do projeto (toque no título), sem um botão para cada uma.
+     * Barra de ferramentas do canvas. Sem nada selecionado: as cinco de sempre (Dividir, Aparar,
+     * Texto, Áudio, Auto Edit). Ao tocar no vídeo (prévia ou timeline) ela vira a barra do clipe,
+     * com as funções mais usadas (filtros, efeitos, stickers...) e "Mais" para o resto; o X volta.
      */
     private fun updateContextualTools() {
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
-        val items: List<Triple<String, String, () -> Unit>> = listOf(
+        val clipSelected = selected in project.videos.indices
+        val items: List<Triple<String, String, () -> Unit>> = if (clipSelected) listOf(
+            Triple("Fechar", "Fechar", { clearSelection() }),
+            Triple("Filtros", "Filtros", { filters() }),
+            Triple("Efeitos", "Efeitos", { selectedClip()?.let { effectTools.open(it.id) } }),
+            Triple("Stickers", "Camada", { lottieStickersPanel() }),
+            Triple("Remover fundo", "Fundo", { selectedClip()?.let { backgroundRemovalTools.open(it.id) } }),
+            Triple("Adicionar", "+ Midia", { addMediaMenu() }),
+            Triple("Camadas", "Camada", { layersMenu() }),
+            Triple("Ajustar", "Ajustar", { adjustmentsPanel() }),
+            Triple("Velocidade", "Velocidade", { speedPanel() }),
+            Triple("Animação", "Transformar", { selectedClip()?.let { animationTools.open(it.id) } }),
+            Triple("Transição", "Transicao", { transitionPanel() }),
+            Triple("Dividir", "Dividir", { splitAtCursor() }),
+            Triple("Volume", "Volume", { volumePanel() }),
+            Triple("Recorte", "Recorte", { cropPanel() }),
+            Triple("Máscara", "Mascaras", { masksPanel() }),
+            Triple("Excluir", "Excluir", { confirmDeleteSelected() }),
+            Triple("Mais", "Mais", { editTools() }),
+        ) else listOf(
+            Triple("Adicionar", "+ Midia", { addMediaMenu() }),
             Triple("Dividir", "canvas:dividir", { splitAtCursor() }),
             Triple("Aparar", "canvas:aparar", { openTrimTool() }),
             Triple("Texto", "canvas:texto", { openTextTool() }),
             Triple("Áudio", "canvas:audio", { openAudioTool() }),
+            Triple("Camadas", "Camada", { layersMenu() }),
             Triple("Auto Edit", "canvas:autoedit", { autoEditPanel.open() }),
         )
+        // Se os itens não cabem na largura da tela: largura fixa e rolagem lateral.
+        val fixedWidth = items.size * dp(66) > resources.displayMetrics.widthPixels
         items.forEach { (name, glyph, click) ->
-            contextualTools.addView(toolAction(name, click, glyph), LinearLayout.LayoutParams(0, -2, 1f))
+            val params = if (fixedWidth) LinearLayout.LayoutParams(dp(66), -2) else LinearLayout.LayoutParams(0, -2, 1f)
+            contextualTools.addView(toolAction(name, click, glyph), params)
         }
         // Only animate when the tool set actually changes (selection change), not on every refresh.
         val signature = items.joinToString("|") { it.first }
         if (signature != lastToolSignature) {
             lastToolSignature = signature
+            bottom.post { bottom.scrollTo(0, 0) }
             contextualTools.alpha = 1f
             staggerChildren(contextualTools, stepMs = 18L)
             installEditorMotion(contextualTools)
@@ -1939,9 +1966,22 @@ class EditorActivity : Activity() {
     }
 
     private fun addMediaMenu() {
-        choose("Adicionar", listOf("Video ou foto", "Musica ou audio", "Gravar narracao", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
-            when (it) { 0 -> pick(false); 1 -> pick(true); 2 -> voiceoverPanel(); 3 -> textPanel(); 4 -> pickSubtitles(); 5 -> pickSticker(); 6 -> addNullObject() }
+        choose("Adicionar", listOf("Video ou foto", "Video em camada (por cima)", "Musica ou audio", "Gravar narracao", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
+            when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject() }
         }
+    }
+
+    /** Camadas por cima do vídeo principal: vídeo, imagem, sticker animado e as imagens já colocadas. */
+    private fun layersMenu() {
+        val options = listOf("Vídeo em camada", "Imagem em camada", "Sticker animado", "Camadas de imagem e stickers")
+        choose("Camadas", options) {
+            when (it) { 0 -> addVideoLayer(); 1 -> pickSticker(); 2 -> lottieStickersPanel(); 3 -> stickerMenu() }
+        }
+    }
+
+    private fun addVideoLayer() {
+        if (project.durationUs <= 0) { error("Adicione um video antes da camada de video"); return }
+        pickVideoLayer()
     }
     private fun addNullObject() {
         if (project.videos.size >= 200) { error("Limite de 200 clipes"); return }
@@ -2791,6 +2831,8 @@ class EditorActivity : Activity() {
         addTool("Câmera 3D", "Perspectiva e visão") { cameraPanel() }
         addTool("Animacoes", "Entrada, saida e loop") { animationTools.open(clip.id) }
         addTool("Mascaras", "Forma e chroma") { masksPanel() }
+        addTool("Remover fundo", "Recorte com IA") { backgroundRemovalTools.open(clip.id) }
+        addTool("Vídeo em camada", "Vídeo por cima") { addVideoLayer() }
         addTool("Rastreamento", "Seguir objeto") { trackingPanel() }
         addTool("Congelar", "Foto do quadro") { freezeFrame() }
         addTool("Transformar", "Zoom e posicao") { transformPanel() }

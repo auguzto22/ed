@@ -54,7 +54,7 @@
             android:name="com.termex.replay15.account.AuthActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.Recly.Editor"
+            android:theme="@style/Theme.Replay15.Editor"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- Main Studio Editor Activity -->
