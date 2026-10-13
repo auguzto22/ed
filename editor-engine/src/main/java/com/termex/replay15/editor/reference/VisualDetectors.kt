@@ -37,7 +37,16 @@ object ReferenceVisualDetectors {
             val flashShape = after != null && current.meanLuma > before.meanLuma + .24f &&
                 abs(after.meanLuma - before.meanLuma) < .14f && similarity(before, after) > .62f
             if (flashShape) return@forEachIndexed
+            // A title or banner popping in/out changes one region only; the shot itself continues.
+            if (ReferenceLayoutDetector.localizedChange(before.cells, current.cells)) return@forEachIndexed
             val confidence = ((delta.difference - adaptive) / (1f - adaptive) * .55f + .43f - delta.continuity * .18f).coerceIn(.35f, .98f)
+            // Same shot, same colors, different framing: a jump-cut punch-in, not a scene change.
+            if (abs(delta.scale - 1f) >= .08f && delta.histogramDifference < .2f && abs(delta.luminanceDifference) < .08f) {
+                result += ReferenceEvent(ReferenceEventType.ZOOM, before.timeUs, delta.timeUs, current.timeUs.coerceAtLeast(before.timeUs + 1),
+                    (abs(delta.scale - 1f) / .3f).coerceIn(0f, 1f), (confidence * .9f).coerceIn(.35f, .9f),
+                    mapOf("scale" to (if (delta.scale >= 1f) delta.scale else 1f / delta.scale), "punch" to 1f), "jump-cut punch-in")
+                return@forEachIndexed
+            }
             if (delta.continuity > .82f && delta.histogramDifference < .22f) return@forEachIndexed
             val type = if (delta.difference > .5f && delta.continuity < .62f) ReferenceEventType.HARD_CUT else ReferenceEventType.MOTION_TRANSITION
             result += ReferenceEvent(type, before.timeUs, delta.timeUs, current.timeUs.coerceAtLeast(before.timeUs + 1), delta.difference, confidence)

@@ -14,11 +14,14 @@ class ReferenceAnalysisCancellation {
 
 enum class ReferenceAnalysisStage(val label: String) {
     PREPARING("Preparando"), CUTS("Detectando cortes"), MOTION("Analisando movimento"), EFFECTS("Analisando efeitos"),
-    CAPTIONS("Analisando legendas"), AUDIO("Analisando audio"), STYLE("Criando estilo")
+    CAPTIONS("Analisando legendas e titulos"), LAYOUT("Detectando sobreposicoes e B-roll"), SEMANTIC("Analisando com IA"),
+    AUDIO("Analisando audio"), STYLE("Criando estilo")
 }
 
 class ReferenceStyleAnalyzer(
     private val context: Context, private val config: FrameAnalysisConfig = FrameAnalysisConfig(),
+    /** Optional semantic pass; null keeps the analysis fully on-device. */
+    private val semantic: ReferenceGeminiAnalyzer? = null,
 ) {
     fun analyze(uri: Uri, cancellation: ReferenceAnalysisCancellation, progress: (ReferenceAnalysisStage) -> Unit): ReferenceStyleProfile {
         progress(ReferenceAnalysisStage.PREPARING); cancellation.check()
@@ -50,12 +53,51 @@ class ReferenceStyleAnalyzer(
             events += detectSpeedAndUnknown(deltas, events)
         }
         progress(ReferenceAnalysisStage.CAPTIONS); cancellation.check()
-        val captions = runModule("captions", warnings, CaptionStyleProfile()) { TextStyleAnalyzer.analyze(context, media, cancellation) }
+        val text = runModule("captions", warnings, ReferenceTextAnalysis(CaptionStyleProfile(), emptyList())) { TextStyleAnalyzer.analyzeAll(context, media, cancellation) }
+        progress(ReferenceAnalysisStage.LAYOUT); cancellation.check()
+        val localLayout = runModule("layout", warnings, emptyList()) {
+            val overlays = ReferenceLayoutDetector.staticOverlays(coarseFrames.map { it.timeUs }, coarseFrames.map { it.cells }, media.durationUs)
+            text.titles + overlays + ReferenceLayoutDetector.broll(shots(events, coarseFrames, media.durationUs), media.durationUs)
+        }
+        var captions = text.captions
+        var layout = ReferenceLayoutDetector.merge(localLayout, emptyList())
+        var notes = ""; var semanticUsed = false
+        if (semantic != null) {
+            progress(ReferenceAnalysisStage.SEMANTIC); cancellation.check()
+            runModule("ia", warnings, null) { semantic.analyze(media, cancellation) }?.let { result ->
+                semanticUsed = true; notes = result.notes
+                layout = ReferenceLayoutDetector.merge(localLayout, result.elements)
+                captions = when {
+                    !captions.present && result.captions != null -> result.captions
+                    captions.present && result.captions != null -> captions.copy(uppercase = captions.uppercase || result.captions.uppercase)
+                    else -> captions
+                }
+                val zoomScale = events.filter { it.type == ReferenceEventType.ZOOM }.mapNotNull { it.values["scale"] }.median().takeIf { it > 1f } ?: 1.15f
+                result.punchInsUs.filter { time -> events.none { it.type == ReferenceEventType.ZOOM && abs(it.peakUs - time) < 300_000L } }.forEach { time ->
+                    events += ReferenceEvent(ReferenceEventType.ZOOM, time, time, (time + 1).coerceAtMost(media.durationUs).coerceAtLeast(time + 1),
+                        ((zoomScale - 1f) / .3f).coerceIn(0f, 1f), .6f, mapOf("scale" to zoomScale, "punch" to 1f), "punch-in (IA)")
+                }
+            }
+        }
         progress(ReferenceAnalysisStage.AUDIO); cancellation.check()
         val audio = runModule("audio", warnings, emptyList()) { ReferenceAudioAnalyzer.analyze(context, media, cancellation) }
         val beats = runModule("beats", warnings, emptyList()) { ReferenceAudioAnalyzer.beats(audio) }
         progress(ReferenceAnalysisStage.STYLE); cancellation.check()
-        return ReferenceStyleProfileBuilder.build(media, events.distinctBy { it.type to it.peakUs }.sortedBy { it.startUs }, beats, captions, coarseFrames, warnings)
+        return ReferenceStyleProfileBuilder.build(media, events.distinctBy { it.type to it.peakUs }.sortedBy { it.startUs }, beats, captions, coarseFrames, warnings,
+            layout, semanticUsed, notes)
+    }
+
+    /** Shots between detected scene changes, with their average color histogram. */
+    private fun shots(events: List<ReferenceEvent>, frames: List<FrameFeatures>, durationUs: Long): List<ReferenceLayoutDetector.Shot> {
+        val cuts = events.filter { it.type in setOf(ReferenceEventType.HARD_CUT, ReferenceEventType.FADE, ReferenceEventType.CROSSFADE, ReferenceEventType.MOTION_TRANSITION) }
+            .map { it.peakUs }.sorted()
+        val bounds = (listOf(0L) + cuts + listOf(durationUs)).distinct().sorted()
+        return bounds.zipWithNext().mapNotNull { (start, end) ->
+            val inside = frames.filter { it.timeUs in start until end }
+            if (inside.isEmpty()) null else ReferenceLayoutDetector.Shot(start, end,
+                FloatArray(inside.first().histogram.size) { i -> inside.map { it.histogram[i] }.average().toFloat() },
+                FloatArray(inside.minOf { it.cells.size }) { i -> inside.map { it.cells[i] }.average().toFloat() })
+        }
     }
 
     private fun mergeRefined(base: MutableList<ReferenceEvent>, refined: List<ReferenceEvent>) {
@@ -97,7 +139,8 @@ class ReferenceStyleAnalyzer(
 
 object ReferenceStyleProfileBuilder {
     fun build(media: ReferenceMediaInfo, rawEvents: List<ReferenceEvent>, beats: List<BeatEvent>, captions: CaptionStyleProfile,
-        frames: List<FrameFeatures>, warnings: List<String>): ReferenceStyleProfile {
+        frames: List<FrameFeatures>, warnings: List<String>, layout: List<ReferenceLayoutElement> = emptyList(),
+        semantic: Boolean = false, notes: String = ""): ReferenceStyleProfile {
         val events = removeOutliers(rawEvents)
         val cuts = events.filter { it.type in setOf(ReferenceEventType.HARD_CUT, ReferenceEventType.FADE, ReferenceEventType.CROSSFADE, ReferenceEventType.MOTION_TRANSITION) }
         val intervals = cuts.map { it.peakUs }.sorted().zipWithNext().map { (a, b) -> b - a }.filter { it >= 80_000L }
@@ -108,7 +151,7 @@ object ReferenceStyleProfileBuilder {
             beats.minOfOrNull { abs(it.timeUs - event.peakUs) }?.let { it <= 90_000L }
         }
         val combinations = correlate(events)
-        val evidence = (cuts.size * 1.2f + zooms.size + shakes.size + flashes.size + beats.size * .12f + if (captions.present) 2f else 0f)
+        val evidence = (cuts.size * 1.2f + zooms.size + shakes.size + flashes.size + beats.size * .12f + if (captions.present) 2f else 0f) + layout.size * .8f
         val confidence = ((1f - kotlin.math.exp((-evidence / 9f).toDouble()).toFloat()) *
             events.map { it.confidence }.average().takeUnless(Double::isNaN)?.toFloat().orEmpty(.45f).coerceAtLeast(.35f)).coerceIn(.12f, .94f)
         val dominant = cuts.groupingBy { it.type }.eachCount().maxByOrNull { it.value }?.key
@@ -122,7 +165,8 @@ object ReferenceStyleProfileBuilder {
             speedRampUsage = events.count { it.type == ReferenceEventType.SPEED_RAMP } * 60_000_000f / media.durationUs,
             captionStyle = captions, beatAlignment = if (aligned.isEmpty()) 0f else aligned.count { it }.toFloat() / aligned.size,
             effectCombinations = combinations, colorSaturation = frames.map { it.saturation }.median(), colorContrast = frames.map { it.edgeEnergy }.median(),
-            colorTemperature = frames.map { it.temperature }.median(), overallConfidence = confidence, warnings = warnings)
+            colorTemperature = frames.map { it.temperature }.median(), overallConfidence = confidence, warnings = warnings,
+            layout = layout.take(60), semanticAnalysis = semantic, styleNotes = notes.take(400))
     }
 
     private fun removeOutliers(events: List<ReferenceEvent>): List<ReferenceEvent> = events.filter { it.confidence >= .25f }.groupBy { it.type }.flatMap { (_, group) ->
