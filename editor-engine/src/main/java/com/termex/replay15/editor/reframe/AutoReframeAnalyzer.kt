@@ -28,6 +28,8 @@ class AutoReframeAnalyzer(context: Context) {
         target: ReframeAspect,
         isCancelled: () -> Boolean = { false },
         onProgress: (completed: Int, total: Int) -> Unit = { _, _ -> },
+        /** Trocas de cena no tempo local do clipe: a câmera salta em vez de deslizar. */
+        sceneCutsUs: List<Long> = emptyList(),
     ): AutoReframeAnalysis {
         require(!clip.image) { "Auto Reframe requer um clipe de video" }
         require(target != ReframeAspect.ORIGINAL) { "Escolha uma proporcao de destino" }
@@ -90,7 +92,7 @@ class AutoReframeAnalyzer(context: Context) {
             sourceHeight = orientedSize.second,
             target = target,
         )
-        val path = engine.plan(observations, durationUs)
+        val path = engine.plan(observations, durationUs, sceneCutsUs)
         return AutoReframeAnalysis(
             subjectsDetected = observations.size,
             sampledFrames = sampleTimes.size,

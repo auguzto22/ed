@@ -102,7 +102,12 @@ class AutoReframeEngine(
     private val cropHeight: Float get() = if (targetRatio <= sourceRatio) 1f else sourceRatio / targetRatio
     private val cropWidth: Float get() = if (targetRatio <= sourceRatio) targetRatio / sourceRatio else 1f
 
-    fun plan(samples: List<ReframeSubject>, durationUs: Long): List<ReframePoint> {
+    /**
+     * @param sceneCutsUs trocas de cena/câmera (tempo local do clipe). Num corte seco a câmera não
+     * desliza de um enquadramento para o outro: segura o anterior até o corte e salta para o novo,
+     * como a "câmera virtual" do ClipStudio.
+     */
+    fun plan(samples: List<ReframeSubject>, durationUs: Long, sceneCutsUs: List<Long> = emptyList()): List<ReframePoint> {
         if (samples.isEmpty() || durationUs <= 0L) return emptyList()
 
         // Highest-confidence subject wins each moment; a frame with a face and a body tracks
@@ -122,8 +127,26 @@ class AutoReframeEngine(
         var lastEmittedUs = Long.MIN_VALUE / 2
         var started = false
 
+        val cuts = sceneCutsUs.filter { it in 1 until durationUs }.distinct().sorted()
+        var nextCut = 0
+
         for (subject in best) {
             val targetScale = scaleFor(subject.height)
+
+            var cutUs: Long? = null
+            while (nextCut < cuts.size && cuts[nextCut] <= subject.timeUs) cutUs = cuts[nextCut++]
+            if (cutUs != null && started && cutUs > points.last().timeUs) {
+                // Segura o enquadramento da cena anterior até o corte e salta para o novo sujeito.
+                val holdUs = maxOf(cutUs - CUT_HOLD_US, points.last().timeUs + 1)
+                if (holdUs < cutUs) points += ReframePoint(holdUs, smoothedX, smoothedY, smoothedScale)
+                smoothedX = subject.centerX
+                smoothedY = subject.centerY
+                smoothedScale = targetScale
+                points += ReframePoint(cutUs, smoothedX, smoothedY, smoothedScale)
+                lastEmittedUs = cutUs
+                continue
+            }
+
             // Exponential smoothing on all three axes together: the camera turns and zooms
             // as one movement, which is what stops the "shaky crop" look.
             smoothedX += (subject.centerX - smoothedX) * smoothing
@@ -197,7 +220,10 @@ class AutoReframeEngine(
         }
 
         for (point in motionPoints) {
-            if (point.timeUs > 0L) place(point.timeUs - LEAD_IN_US)
+            // O lead-in só existe para preservar uma animação manual do usuário até perto do ponto.
+            // Sem keyframes do usuário, ele criava um keyframe com o transform base do clipe (zoom 1,
+            // centro) 180 ms antes de cada ponto, e a câmera "respirava" de volta ao quadro inteiro.
+            if (point.timeUs > 0L && clip.keyframes.isNotEmpty()) place(point.timeUs - LEAD_IN_US)
             place(point.timeUs, point.scale, offsetFor(point.centerX, point.scale), offsetFor(point.centerY, point.scale))
         }
         motionPoints.lastOrNull()?.let { last ->
@@ -213,5 +239,7 @@ class AutoReframeEngine(
     private companion object {
         const val MAX_KEYFRAMES = 200
         const val LEAD_IN_US = 180_000L
+        /** Antes de um corte de cena, o enquadramento anterior fica até ~1 quadro antes. */
+        const val CUT_HOLD_US = 40_000L
     }
 }
