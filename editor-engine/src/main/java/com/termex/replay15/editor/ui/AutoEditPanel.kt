@@ -62,9 +62,17 @@ class AutoEditPanel(
             }
             clipToOutline = true
         }
+        val clipStart = snapshot.startOf(index)
+        // Generated captions (word timing) are already split and styled: Auto Edit keeps them and
+        // moves them through the cuts. Only untimed captions (imported SRT) get re-split.
+        val timedCaptions = snapshot.texts.any { ClipAnalyzer.isCaptionOf(it, clipStart, clipStart + clip.durationUs) && it.wordCues.isNotEmpty() }
         val captions = optionRow(card, "Legendas automáticas",
-            if (words.isEmpty()) "Importe um SRT temporizado para usar" else "Usa o estilo de legenda do editor",
-            words.isNotEmpty(), words.isNotEmpty())
+            when {
+                words.isEmpty() -> "Gere legendas ou importe um SRT para usar"
+                timedCaptions -> "Mantém suas legendas e o estilo delas"
+                else -> "Divide as legendas em frases curtas no estilo atual"
+            },
+            words.isNotEmpty() && !timedCaptions, words.isNotEmpty() && !timedCaptions)
         val clean = optionRow(card, "Cortar silêncios", "Tira pausas e respirações longas", true)
         val zoom = optionRow(card, "Zoom nos destaques", "Keyframes de zoom nas falas-chave", true)
         val reframe = optionRow(card, "Auto Reframe para 9:16", "Enquadra o sujeito na vertical", true)
