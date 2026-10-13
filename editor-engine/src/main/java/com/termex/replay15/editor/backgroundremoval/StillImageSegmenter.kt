@@ -150,7 +150,11 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         const val TIMEOUT_S = 20L
         /** Guided-filter window radius = longest side / this (6 px on a 1536 px photo). */
         const val EDGE_RADIUS_DIVISOR = 256
-        const val EDGE_EPSILON = 1e-3f
+        /**
+         * Guided-filter regularisation. 1e-3 copied high-contrast fabric texture (stripes, prints)
+         * into the matte next to the edge, which showed up as ripples along the contour.
+         */
+        const val EDGE_EPSILON = 1e-2f
         /** Contour smoothing sigma = longest side / this, clamped to 1..2 px (1.5 px on a 1536 px photo). */
         const val CONTOUR_SIGMA_DIVISOR = 1000f
     }

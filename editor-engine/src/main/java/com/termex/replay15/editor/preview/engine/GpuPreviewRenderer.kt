@@ -708,6 +708,8 @@ class GpuPreviewRenderer(
                 sourceTimestampUs = layer.sourceTimeUs,
                 effect = effect,
                 image = layer.image,
+                targetWidth = outputWidth,
+                targetHeight = outputHeight,
             ) ?: input
         }.onFailure { diagnostics.event("BACKGROUND_REMOVAL_PASS_FAILED ${it.message}") }.getOrDefault(input)
     }

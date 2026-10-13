@@ -13,10 +13,24 @@ package com.termex.replay15.editor.backgroundremoval
  */
 object BackgroundMaskShader {
     /**
+     * How many mask texels one pixel of the final image covers: the mask is cut at the source
+     * resolution and the frame is then fitted (or filled) into [targetWidth] x [targetHeight].
+     * Unknown sizes give 1 (no widening).
+     */
+    fun edgeScale(maskWidth: Int, maskHeight: Int, sourceWidth: Int, sourceHeight: Int,
+        targetWidth: Int, targetHeight: Int, fill: Boolean = false): Float {
+        if (listOf(maskWidth, maskHeight, sourceWidth, sourceHeight, targetWidth, targetHeight).any { it <= 0 }) return 1f
+        val sx = targetWidth.toFloat() / sourceWidth; val sy = targetHeight.toFloat() / sourceHeight
+        val fit = if (fill) maxOf(sx, sy) else minOf(sx, sy)
+        val maskPerSource = maxOf(maskWidth.toFloat() / sourceWidth, maskHeight.toFloat() / sourceHeight)
+        return (maskPerSource / fit).coerceIn(1f, 8f)
+    }
+
+    /**
      * Declares `float reclyRefinedMask(vec2 uv)`, `float reclyMatteAlpha(vec2 uv)` and
      * `vec4 reclyCutout(vec2 uv, vec4 source)` (alpha + edge colour decontamination).
      * Requires uniforms: [videoSampler], [maskSampler], `uMaskTexel`, `uThreshold`, `uFeather`,
-     * `uEdgeSmoothing`.
+     * `uEdgeSmoothing`, `uEdgeScale` (mask texels per final output pixel, see [edgeScale]).
      */
     fun functions(videoSampler: String, maskSampler: String): String = """
         // Refined mask confidence at uv. Also returns, in foreground, the colour of the nearby
@@ -55,24 +69,27 @@ object BackgroundMaskShader {
             vec3 ignored;
             return reclyRefine(uv, ignored);
         }
-        // Anti-aliasing for full-resolution (photo) masks. Their matte is sharp, so a fixed
-        // feather turned the edge into a 1-pixel on/off cut whose stair steps read as burrs.
-        // The feather is widened to the local slope of the mask so the edge always spans about
-        // one and a half pixels. Low-resolution video masks (<= 512 px) are left unchanged.
-        float reclyEdgeFeather(vec2 uv) {
+        // Anti-aliasing for full-resolution (photo) masks. The cut is made at the photo's
+        // resolution and then scaled down (often 2-3x, without mipmaps) to the canvas, so a sharp
+        // matte came out as a 1-pixel on/off edge with visible stair steps and ripples. Here the
+        // alpha is averaged over 4 points spread across one pixel of the FINAL image
+        // (uEdgeScale = mask texels per output pixel), which is the coverage a mipmap would give.
+        // Low-resolution video masks (<= 512 px) keep the single sample.
+        float reclyCoverage(vec2 uv, float refined, float feather) {
+            float lo = uThreshold - feather;
+            float hi = uThreshold + feather;
             float hiRes = step(640.0, max(1.0 / uMaskTexel.x, 1.0 / uMaskTexel.y));
-            if (hiRes < 0.5) return max(uFeather, 0.001);
-            vec2 dx = vec2(uMaskTexel.x, 0.0);
-            vec2 dy = vec2(0.0, uMaskTexel.y);
-            float gx = texture2D($maskSampler, clamp(uv + dx, 0.0, 1.0)).r - texture2D($maskSampler, clamp(uv - dx, 0.0, 1.0)).r;
-            float gy = texture2D($maskSampler, clamp(uv + dy, 0.0, 1.0)).r - texture2D($maskSampler, clamp(uv - dy, 0.0, 1.0)).r;
-            float slope = 0.5 * (abs(gx) + abs(gy));
-            return max(max(uFeather, 0.001), min(slope * 0.75, 0.3));
+            if (hiRes < 0.5) return smoothstep(lo, hi, refined);
+            vec2 o = uMaskTexel * clamp(uEdgeScale, 1.0, 8.0) * 0.375;
+            float base = texture2D($maskSampler, uv).r;
+            float a = smoothstep(lo, hi, refined + texture2D($maskSampler, clamp(uv + vec2(-o.x, -o.y), 0.0, 1.0)).r - base);
+            a += smoothstep(lo, hi, refined + texture2D($maskSampler, clamp(uv + vec2(o.x, -o.y), 0.0, 1.0)).r - base);
+            a += smoothstep(lo, hi, refined + texture2D($maskSampler, clamp(uv + vec2(-o.x, o.y), 0.0, 1.0)).r - base);
+            a += smoothstep(lo, hi, refined + texture2D($maskSampler, clamp(uv + vec2(o.x, o.y), 0.0, 1.0)).r - base);
+            return a * 0.25;
         }
         float reclyMatteAlpha(vec2 uv) {
-            float mask = reclyRefinedMask(uv);
-            float feather = reclyEdgeFeather(uv);
-            return smoothstep(uThreshold - feather, uThreshold + feather, mask);
+            return reclyCoverage(uv, reclyRefinedMask(uv), max(uFeather, 0.001));
         }
         // Premultiply-free cut-out: alpha from the refined mask, and edge pixels (confidence
         // between the threshold and ~0.4 above it) pulled toward the subject's own colour so the
@@ -80,8 +97,8 @@ object BackgroundMaskShader {
         vec4 reclyCutout(vec2 uv, vec4 source) {
             vec3 foreground;
             float mask = reclyRefine(uv, foreground);
-            float feather = reclyEdgeFeather(uv);
-            float alpha = smoothstep(uThreshold - feather, uThreshold + feather, mask);
+            float feather = max(uFeather, 0.001);
+            float alpha = reclyCoverage(uv, mask, feather);
             // edge1 must stay above edge0 (GLSL leaves smoothstep undefined otherwise), also for
             // projects saved with the old raw slider at 100 % (threshold 1.0).
             float keep = smoothstep(uThreshold, max(min(uThreshold + 0.4, 1.0), uThreshold + 0.001), mask);

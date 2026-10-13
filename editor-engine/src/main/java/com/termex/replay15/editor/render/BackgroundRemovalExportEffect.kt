@@ -37,15 +37,22 @@ import kotlin.math.roundToInt
 class BackgroundRemovalExportEffect(
     private val settings: BackgroundRemovalEffect,
     private val stillImage: Boolean = false,
+    /** Export canvas the frame is fitted (or filled) into afterwards; drives edge anti-aliasing. */
+    private val targetWidth: Int = 0,
+    private val targetHeight: Int = 0,
+    private val fill: Boolean = false,
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): BaseGlShaderProgram =
-        Program(context, useHdr, settings, stillImage)
+        Program(context, useHdr, settings, stillImage, targetWidth, targetHeight, fill)
 
     private class Program(
         context: Context,
         hdr: Boolean,
         private val settings: BackgroundRemovalEffect,
         private val stillImage: Boolean,
+        private val targetWidth: Int,
+        private val targetHeight: Int,
+        private val fill: Boolean,
     ) : BaseGlShaderProgram(hdr, 1) {
         private val segmenter = Segmentation.getClient(
             SelfieSegmenterOptions.Builder()
@@ -121,6 +128,8 @@ class BackgroundRemovalExportEffect(
                 outputGl.setFloatUniform("uThreshold", settings.threshold)
                 outputGl.setFloatUniform("uFeather", settings.feather.coerceAtLeast(.001f))
                 outputGl.setFloatUniform("uEdgeSmoothing", settings.edgeSmoothing)
+                outputGl.setFloatUniform("uEdgeScale", BackgroundMaskShader.edgeScale(maskTexture.width, maskTexture.height,
+                    inputWidth, inputHeight, targetWidth, targetHeight, fill))
                 outputGl.bindAttributesAndUniforms()
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
                 GlUtil.checkGlError()
@@ -229,6 +238,7 @@ class BackgroundRemovalExportEffect(
             uniform float uThreshold;
             uniform float uFeather;
             uniform float uEdgeSmoothing;
+            uniform float uEdgeScale;
             varying vec2 vUv;
             ${BackgroundMaskShader.functions("uTexSampler", "uMaskTexture")}
             void main() {

@@ -76,6 +76,9 @@ internal class BackgroundRemovalGpuPass(
         sourceTimestampUs: Long,
         effect: BackgroundRemovalEffect,
         image: Boolean,
+        /** Size of the preview canvas the frame is fitted into (0 = unknown), for edge anti-aliasing. */
+        targetWidth: Int = 0,
+        targetHeight: Int = 0,
     ): Int {
         if (!effect.enabled) return sourceTexture
         // The first shipped mode is transparent removal. Other modes remain persisted in the
@@ -94,7 +97,8 @@ internal class BackgroundRemovalGpuPass(
             // A photo never changes, so once its definitive mask exists there is nothing left to
             // infer. Re-running the (heavier) still model every second would only burn battery.
             if (!image || cached.provisional) captureForInference(entry, sourceTexture, sourceTimestampUs)
-            return drawMasked(entry, sourceTexture, effect)
+            return drawMasked(entry, sourceTexture, effect,
+                BackgroundMaskShader.edgeScale(entry.mask.width, entry.mask.height, sourceWidth, sourceHeight, targetWidth, targetHeight))
         }
         captureForInference(entry, sourceTexture, sourceTimestampUs)
         return sourceTexture
@@ -181,7 +185,7 @@ internal class BackgroundRemovalGpuPass(
         }
     }
 
-    private fun drawMasked(entry: Entry, sourceTexture: Int, effect: BackgroundRemovalEffect): Int {
+    private fun drawMasked(entry: Entry, sourceTexture: Int, effect: BackgroundRemovalEffect, edgeScale: Float): Int {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, entry.output.fbo)
         GLES20.glViewport(0, 0, entry.output.width, entry.output.height)
         GLES20.glDisable(GLES20.GL_BLEND)
@@ -196,6 +200,7 @@ internal class BackgroundRemovalGpuPass(
         uniform1(program, "uThreshold", effect.threshold)
         uniform1(program, "uFeather", effect.feather.coerceAtLeast(.001f))
         uniform1(program, "uEdgeSmoothing", effect.edgeSmoothing)
+        uniform1(program, "uEdgeScale", edgeScale)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         return entry.output.texture
     }
@@ -316,6 +321,7 @@ internal class BackgroundRemovalGpuPass(
             uniform float uThreshold;
             uniform float uFeather;
             uniform float uEdgeSmoothing;
+            uniform float uEdgeScale;
             varying vec2 vUv;
             ${BackgroundMaskShader.functions("uTexture", "uMaskTexture")}
             void main() {
