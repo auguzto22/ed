@@ -3,8 +3,6 @@ package com.termex.replay15.editor.backgroundremoval
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-import com.google.android.gms.common.moduleinstall.ModuleInstall
-import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.Segmentation
@@ -15,7 +13,6 @@ import java.nio.ByteOrder
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * High-quality segmentation for still images (photo clips).
@@ -29,8 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * If the subject model is not available yet (Play services downloads it on demand), the selfie
  * mask is returned marked [SegmentationResult.provisional] so callers can retry later.
  */
-class StillImageSegmenter(context: Context) : SegmentationEngine {
-    private val appContext = context.applicationContext
+class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : SegmentationEngine {
     private val executor: ExecutorService = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "Recly-StillSegmentation").apply { isDaemon = true }
     }
@@ -49,7 +45,6 @@ class StillImageSegmenter(context: Context) : SegmentationEngine {
             .enableRawSizeMask()
             .build()
     )
-    private val installRequested = AtomicBoolean(false)
     @Volatile private var closed = false
 
     override fun process(frame: SegmentationFrame, timestampUs: Long, callback: (SegmentationResult?) -> Unit) {
@@ -90,10 +85,9 @@ class StillImageSegmenter(context: Context) : SegmentationEngine {
             }
 
         val subjects = runCatching { Tasks.await(subjectSegmenter.process(image), TIMEOUT_S, TimeUnit.SECONDS) }
-            .onFailure {
-                Log.w(TAG, "Subject segmentation indisponível; usando o modelo de selfie", it)
-                requestModelInstall()
-            }
+            // Usually the model is still being downloaded by Play services (requested at install
+            // time via the manifest meta-data); the caller retries later.
+            .onFailure { Log.w(TAG, "Subject segmentation indisponível; usando o modelo de selfie", it) }
             .getOrNull()
             ?.subjects
             ?.mapNotNull { subject ->
@@ -117,18 +111,6 @@ class StillImageSegmenter(context: Context) : SegmentationEngine {
             return person
         }
         return person?.copy(provisional = true)
-    }
-
-    private fun requestModelInstall() {
-        if (!installRequested.compareAndSet(false, true)) return
-        runCatching {
-            ModuleInstall.getClient(appContext).installModules(
-                ModuleInstallRequest.newBuilder().addApi(subjectSegmenter).build()
-            )
-        }.onFailure {
-            installRequested.set(false)
-            Log.w(TAG, "Não foi possível pedir o download do modelo de subject segmentation", it)
-        }
     }
 
     override fun close() {
