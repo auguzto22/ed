@@ -13,11 +13,11 @@ import org.json.JSONObject
 private const val HIGHLIGHT_MODEL = "gemini-3.8-flash"
 
 /**
- * Gemini-powered highlight detection.
+ * Gemini-powered highlight detection, com a curadoria do ClipStudio ([HighlightCuration]).
  *
- * Sends the project transcript (text only, not audio) and asks Gemini to identify
- * the most interesting, engaging, or important moments. Timestamps are preserved
- * from the original segments — Gemini does NOT reconstruct them.
+ * Envia a transcrição numerada por frase, com marcas de pausa, energia e troca de cena.
+ * O Gemini devolve só os números das frases de início e fim; os tempos vêm das frases,
+ * então ele não reconstrói nem inventa timestamps.
  *
  * When Gemini is unavailable, the caller falls back to [LocalHighlightAnalyzer].
  *
@@ -34,12 +34,13 @@ class GeminiHighlightAnalyzer(
         request: HighlightRequest,
         checkCancelled: () -> Unit,
     ): HighlightResult = withContext(Dispatchers.IO) {
-        if (request.transcriptSegments.isEmpty()) {
+        val sentences = HighlightCuration.sentences(request.transcriptSegments)
+        if (sentences.isEmpty()) {
             throw HighlightNoTranscript()
         }
         checkCancelled()
 
-        val payload = buildPayload(request)
+        val payload = buildPayload(request, sentences)
         val response = try {
             http.withRetry(checkCancelled) {
                 http.createInteraction(payload, checkCancelled)
@@ -57,60 +58,31 @@ class GeminiHighlightAnalyzer(
         }
 
         checkCancelled()
-        val highlights = parseHighlights(response, request)
-
-        HighlightResult(
-            highlights = highlights.take(request.maxHighlights),
-            source = HighlightSource.GEMINI,
+        val candidates = HighlightCuration.parseCandidates(extractOutputText(response), sentences.size)
+        val highlights = HighlightCuration.refine(
+            candidates, sentences, request.minDurationMs, request.maxDurationMs,
+            request.maxHighlights, request.projectDurationMs,
         )
+        if (highlights.isEmpty()) {
+            // Sem corte válido da IA: o HighlightDetector cai para a análise local.
+            throw HighlightDetectionException("A IA não sugeriu nenhum trecho válido para a duração pedida")
+        }
+        val warnings = if (highlights.size < request.maxHighlights && candidates.size > highlights.size) {
+            listOf("A IA sugeriu ${highlights.size} trecho(s) válido(s) de ${request.maxHighlights} pedidos")
+        } else {
+            emptyList()
+        }
+
+        HighlightResult(highlights = highlights, source = HighlightSource.GEMINI, warnings = warnings)
     }
 
-    private fun buildPayload(request: HighlightRequest): JSONObject {
-        // Build a compact transcript representation with IDs for traceability
-        val segments = JSONArray()
-        request.transcriptSegments.forEach { segment ->
-            segments.put(JSONObject()
-                .put("id", segment.id)
-                .put("text", segment.text)
-                .put("startMs", segment.startMs)
-                .put("endMs", segment.endMs))
-        }
-
-        val languageName = when (request.languageCode) {
-            "pt-BR" -> "português brasileiro"
-            "en-US" -> "inglês"
-            else -> request.languageCode
-        }
-
-        val prompt = """
-            Você é um assistente de edição de vídeo. Analise a transcrição abaixo e identifique os melhores momentos do vídeo.
-
-            Critérios para um bom momento:
-            - Frases impactantes, engraçadas, emocionais ou informativas
-            - Mudanças de assunto ou energia
-            - Momentos-chave de uma narrativa
-            - Trechos com potencial viral ou que funcionariam bem como cortes curtos
-
-            Idioma: $languageName
-            Duração total: ${request.projectDurationMs / 1_000}s
-            Máximo de destaques: ${request.maxHighlights}
-            Duração mínima de cada destaque: ${request.minDurationMs / 1_000}s
-            Duração máxima de cada destaque: ${request.maxDurationMs / 1_000}s
-
-            Regras:
-            - Retorne APENAS JSON válido
-            - Cada destaque deve ter startMs e endMs correspondentes aos segmentos
-            - Não invente texto ou timestamps que não existam na transcrição
-            - A razão deve ser curta (máximo 100 caracteres) e em $languageName
-            - O score é de 0.0 a 1.0, onde 1.0 é extremamente interessante
-
-            Formato de resposta (array JSON):
-            [{"startMs": 1000, "endMs": 15000, "reason": "...", "score": 0.9}]
-
-            Transcrição:
-            $segments
-        """.trimIndent()
-
+    private fun buildPayload(request: HighlightRequest, sentences: List<HighlightCuration.Sentence>): JSONObject {
+        val marks = HighlightCuration.marks(sentences, request.audioEnergy, request.sceneCutsMs)
+        // Pede o dobro: o refine descarta sobreposições e repetições e fica com os melhores.
+        val wanted = (request.maxHighlights * 2).coerceAtMost(50)
+        val prompt = HighlightCuration.prompt(
+            sentences, marks, wanted, request.minDurationMs, request.maxDurationMs, request.languageCode,
+        )
         return JSONObject()
             .put("model", HIGHLIGHT_MODEL)
             .put("store", false)
@@ -118,48 +90,6 @@ class GeminiHighlightAnalyzer(
             .put("response_format", JSONObject()
                 .put("type", "text")
                 .put("mime_type", "application/json"))
-    }
-
-    private fun parseHighlights(response: JSONObject, request: HighlightRequest): List<Highlight> {
-        val text = extractOutputText(response).trim()
-        val json = text
-            .removePrefix("```").removePrefix("json")
-            .removeSuffix("```").trim()
-
-        val array = when {
-            json.startsWith("[") -> JSONArray(json)
-            json.startsWith("{") -> {
-                val root = JSONObject(json)
-                root.optJSONArray("highlights")
-                    ?: root.optJSONArray("moments")
-                    ?: root.optJSONArray("results")
-                    ?: throw HighlightDetectionException("Resposta sem destaques")
-            }
-            else -> throw HighlightDetectionException("Resposta não é JSON válido")
-        }
-
-        return (0 until array.length()).mapNotNull { index ->
-            val item = array.optJSONObject(index) ?: return@mapNotNull null
-            val startMs = item.optLong("startMs", -1L).takeIf { it >= 0 } ?: return@mapNotNull null
-            val endMs = item.optLong("endMs", -1L).takeIf { it > startMs } ?: return@mapNotNull null
-            val reason = item.optString("reason").takeIf(String::isNotBlank)
-                ?: item.optString("motivo").takeIf(String::isNotBlank)
-                ?: "Momento de destaque"
-            val score = item.optDouble("score", 0.5).toFloat().coerceIn(0f, 1f)
-
-            // Validate against project bounds and duration limits
-            val clampedStart = startMs.coerceIn(0, request.projectDurationMs)
-            val clampedEnd = endMs.coerceIn(clampedStart + 1, request.projectDurationMs)
-            if (clampedEnd - clampedStart < request.minDurationMs) return@mapNotNull null
-
-            Highlight(
-                startMs = clampedStart,
-                endMs = clampedEnd.coerceAtMost(clampedStart + request.maxDurationMs),
-                reason = reason.take(500),
-                score = score,
-                source = HighlightSource.GEMINI,
-            )
-        }
     }
 
     private fun extractOutputText(response: JSONObject): String {
