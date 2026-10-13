@@ -10,7 +10,9 @@ object AutoEditPlanner {
         val excluded = cuts.map { it.startUs..it.endUs }
         val peaks = meaningfulPeaks(analysis, options).filter { peak -> excluded.none { peak.timeUs in it } }
         val zooms = if (options.smartZoom) planZooms(peaks, options, analysis.durationUs) else emptyList()
-        val reframes = if (options.autoReframe) planReframes(analysis.motion, options) else emptyList()
+        // A clip that is already vertical has nothing to reframe: panning it only shows the canvas edges.
+        val alreadyVertical = analysis.sourceAspect in 0.01f..VERTICAL_ASPECT_MAX
+        val reframes = if (options.autoReframe && !alreadyVertical) planReframes(analysis.motion, options) else emptyList()
         val effects = planEffects(peaks, options, analysis.durationUs)
         val audio = if (options.audioEnhancement && analysis.hasAudio) planAudio(analysis, options) else null
         return validate(AutoEditPlan(
@@ -25,7 +27,7 @@ object AutoEditPlanner {
             audio = audio,
             warnings = analysis.warnings + buildList {
                 if (options.captions && analysis.words.isEmpty()) add("Sem transcricao temporizada: nenhuma legenda nova foi inventada")
-                if (options.autoReframe && reframes.isEmpty()) add("Sem foco visual confiavel: a proporcao original foi preservada")
+                if (options.autoReframe && reframes.isEmpty() && !alreadyVertical) add("Sem foco visual confiavel: a proporcao original foi preservada")
             },
         ))
     }
@@ -100,13 +102,21 @@ object AutoEditPlanner {
         }
     }
 
+    /**
+     * Peaks are measured against the clip itself. The old absolute scale (audio peak x5) saturated
+     * on any loud music and every frame of a dance or gameplay clip passed the motion threshold,
+     * so "highlights" landed everywhere. Now a moment counts only when it stands out from the
+     * clip's own typical level (median) toward its strongest moments (90th percentile).
+     */
     private fun meaningfulPeaks(analysis: ClipAnalysis, options: AutoEditOptions): List<MotionSample> {
         if (analysis.motion.isEmpty()) return emptyList()
         val audioByTime = analysis.audio
+        val motionScale = RelativeScale(analysis.motion.map { it.amount })
+        val audioScale = RelativeScale(audioByTime.map { it.peak })
         val scored = analysis.motion.map { motion ->
             val a = audioByTime.minByOrNull { abs((it.startUs + it.endUs) / 2 - motion.timeUs) }
-            val audio = a?.let { (it.peak * 5f).coerceIn(0f, 1f) } ?: 0f
-            motion to (motion.amount.coerceIn(0f, 1f) * .65f + audio * .35f)
+            val audio = a?.let { audioScale.of(it.peak) } ?: 0f
+            motion to (motionScale.of(motion.amount) * .65f + audio * .35f)
         }
         val variationOffset = when (options.variation % 3) { 1 -> -.035f; 2 -> .035f; else -> 0f }
         val threshold = (when (options.intensity) { AutoEditIntensity.SUBTLE -> .72f; AutoEditIntensity.BALANCED -> .6f; AutoEditIntensity.STRONG -> .5f } + variationOffset)
@@ -171,6 +181,24 @@ object AutoEditPlanner {
         val target = when { average < .035f -> 1.18f; average > .2f -> .88f; else -> 1f }
         val gain = (target * if (options.intensity == AutoEditIntensity.SUBTLE) .96f else 1f).coerceIn(.75f, 1.25f)
         return AudioDecision(gain, 80_000L, 120_000L, "nivel RMS seguro com fades curtos")
+    }
+
+    /** Displayed width/height at or below this is treated as already vertical (9:16 = 0.5625, 4:5 = 0.8). */
+    const val VERTICAL_ASPECT_MAX = .8f
+
+    /** Maps a value to 0..1 relative to a series: median -> 0, 90th percentile (or above) -> 1. */
+    internal class RelativeScale(values: List<Float>) {
+        private val median: Float
+        private val spread: Float
+        init {
+            val sorted = values.filter(Float::isFinite).sorted()
+            median = if (sorted.isEmpty()) 0f else sorted[(sorted.size - 1) / 2]
+            val p90 = if (sorted.isEmpty()) 0f else sorted[((sorted.size - 1) * .9f).toInt()]
+            // A floor keeps tiny jitter in an almost flat series from being blown up into peaks.
+            spread = (p90 - median).coerceAtLeast(MIN_SPREAD)
+        }
+        fun of(value: Float): Float = ((value - median) / spread).coerceIn(0f, 1f)
+        private companion object { const val MIN_SPREAD = .05f }
     }
 
     fun validate(plan: AutoEditPlan): AutoEditPlan {

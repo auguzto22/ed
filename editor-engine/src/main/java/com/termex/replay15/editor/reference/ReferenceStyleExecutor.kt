@@ -7,7 +7,11 @@ import com.termex.replay15.editor.domain.*
 object ReferenceStyleExecutor {
     fun execute(project: Project, clipIndex: Int, plan: ReferenceStyleEditPlan, profile: ReferenceStyleProfile): Project {
         val source = project.videos.getOrNull(clipIndex) ?: error("Clipe nao encontrado")
-        val originalTextIds = project.texts.mapTo(hashSetOf()) { it.id }
+        val clipStart = project.startOf(clipIndex)
+        // Captions already on the clip are restyled too: generated captions are kept (not
+        // recreated) by the Auto Edit executor, so "new texts only" would skip them.
+        val originalTextIds = project.texts.filterNot { com.termex.replay15.editor.autoedit.ClipAnalyzer.isCaptionOf(it, clipStart, clipStart + source.durationUs) }
+            .mapTo(hashSetOf()) { it.id }
         var edited = AutoEditExecutor.execute(project, clipIndex, plan.base)
         if (profile.captionStyle.present) {
             val style = profile.captionStyle; val portrait = edited.dimensions().let { it.second > it.first }

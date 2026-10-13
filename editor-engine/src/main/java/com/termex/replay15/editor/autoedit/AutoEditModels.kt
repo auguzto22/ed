@@ -2,7 +2,7 @@ package com.termex.replay15.editor.autoedit
 
 import com.termex.replay15.editor.domain.SECOND
 
-const val AUTO_EDIT_ALGORITHM_VERSION = 1
+const val AUTO_EDIT_ALGORITHM_VERSION = 2
 
 enum class AutoEditStyle(val label: String) {
     CLEAN("Clean"), DYNAMIC("Dynamic"), GAMING("Gaming"), CINEMATIC("Cinematic"), PODCAST("Podcast"), SHORTS("Shorts")
@@ -48,9 +48,12 @@ data class ClipAnalysis(
     val words: List<TimedWord> = emptyList(),
     val hasAudio: Boolean = false,
     val warnings: List<String> = emptyList(),
+    /** Displayed width / height of the clip (0 = unknown). Used to skip reframing a clip already vertical. */
+    val sourceAspect: Float = 0f,
 ) {
     init {
         require(durationUs > 0)
+        require(sourceAspect >= 0f && sourceAspect.isFinite())
         require(audio.zipWithNext().all { (a, b) -> a.startUs <= b.startUs })
         require(motion.zipWithNext().all { (a, b) -> a.timeUs <= b.timeUs })
         require(words.zipWithNext().all { (a, b) -> a.startUs <= b.startUs })
