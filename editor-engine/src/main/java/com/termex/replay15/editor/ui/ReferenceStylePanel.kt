@@ -35,7 +35,8 @@ class ReferenceStylePanel(
             Toast.makeText(activity, "Selecione um clipe para aplicar um estilo", Toast.LENGTH_SHORT).show(); return
         }
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
-        body.addView(activity.sectionTitle("Estilo de referencia", "Analisa a linguagem de edicao de um unico video. Nenhum frame, audio ou asset e copiado para o projeto."))
+        val aiNote = if (semanticAnalyzer() != null) " O video de referencia e enviado ao Gemini para identificar titulos, cards e B-roll; o arquivo enviado e apagado em seguida." else ""
+        body.addView(activity.sectionTitle("Estilo de referencia", "Analisa a edicao e o layout (titulos, cards, imagens, B-roll) de um unico video. Nenhum frame, audio ou asset e copiado para o projeto: os elementos viram espacos editaveis.$aiNote"))
         body.addView(activity.action("Usar novo video como referencia", true) { dialog?.dismiss(); pickReference() }, LinearLayout.LayoutParams(-1, activity.dp(52)))
         val profiles = store.list()
         if (profiles.isEmpty()) body.addView(activity.label("Nenhum estilo salvo ainda.", 12f, EditorStyle.MUTED))
@@ -48,7 +49,10 @@ class ReferenceStylePanel(
         dialog = activity.sheet("Reference Style", body)
     }
 
-    fun analyze(uri: Uri) {
+    private fun semanticAnalyzer(): ReferenceGeminiAnalyzer? = com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey()
+        .takeIf(String::isNotBlank)?.let { key -> runCatching { ReferenceGeminiAnalyzer(activity, key) }.getOrNull() }
+
+    fun analyze(uri: Uri, force: Boolean = false) {
         val token = ReferenceAnalysisCancellation().also { cancellation = it }
         // Analysing a reference never touches the project, so it always runs beside the editor.
         val card = EditorOverlayHost.task("Analisando referência") { token.cancel() }
@@ -63,7 +67,7 @@ class ReferenceStylePanel(
         worker.execute {
             val result = runCatching {
                 val info = ReferenceMediaProbe.probe(activity, uri)
-                store.findValid(info.fingerprint) ?: ReferenceStyleAnalyzer(activity).analyze(uri, token) { stage ->
+                (if (force) null else store.findValid(info.fingerprint)) ?: ReferenceStyleAnalyzer(activity, semantic = semanticAnalyzer()).analyze(uri, token) { stage ->
                     activity.runOnUiThread {
                         if (activity.isDestroyed) return@runOnUiThread
                         card?.update(stage.label, (stages.indexOf(stage) + .5f) / stages.size) ?: run { progressText.text = stage.label }
@@ -97,6 +101,16 @@ class ReferenceStylePanel(
             add("Confianca: ${(profile.overallConfidence * 100).toInt()}%")
         }
         body.addView(activity.label(details.joinToString(" · "), 11f, EditorStyle.MUTED))
+        val layoutLines = profile.layoutLines()
+        if (layoutLines.isNotEmpty()) {
+            body.addView(activity.sectionTitle("Layout detectado", if (profile.semanticAnalysis) "Analise local + IA" else "Analise local"))
+            body.addView(activity.label(layoutLines.joinToString("\n"), 12f))
+        }
+        if (profile.styleNotes.isNotBlank()) body.addView(activity.label(profile.styleNotes, 11f, EditorStyle.MUTED))
+        if (profile.analysisVersion < REFERENCE_ANALYSIS_VERSION || (layoutLines.isEmpty() && !profile.captionStyle.present)) {
+            body.addView(activity.action("Analisar de novo") { dialog?.dismiss(); analyze(Uri.parse(profile.sourceUri), force = true) },
+                LinearLayout.LayoutParams(-1, activity.dp(48)))
+        }
         val name = EditText(activity).apply { setText(profile.name); hint = "Nome do estilo"; isSingleLine = true; inputType = InputType.TYPE_CLASS_TEXT }
         body.addView(name)
         body.addView(activity.action("Salvar nome") {
@@ -144,7 +158,9 @@ class ReferenceStylePanel(
                             ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
                         return@fold
                     }
-                    val edited = runCatching { ReferenceStyleExecutor.execute(current, currentIndex, plan, profile) }.getOrElse { error ->
+                    val edited = runCatching {
+                        ReferenceStyleExecutor.execute(current, currentIndex, plan, profile) { aspect -> ReferencePlaceholders.uri(activity, aspect) }
+                    }.getOrElse { error ->
                         card?.fail("Não foi possível criar o plano: ${error.message}"); return@fold
                     }
                     if (card != null) card.succeed("Estilo pronto para revisar", "Ver resultado") { showPreview(current, profile, plan, edited) }
@@ -163,7 +179,15 @@ class ReferenceStylePanel(
         preview(edited)
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
         body.addView(activity.sectionTitle("Preview do estilo", plan.base.summary()))
-        if (plan.unsupportedEffects.isNotEmpty()) body.addView(activity.label("Nao suportado: ${plan.unsupportedEffects.joinToString { it.name.lowercase() }}", 11f, 0xFFFAFAF6.toInt()))
+        if (plan.applied.isNotEmpty()) {
+            body.addView(activity.sectionTitle("Aplicado"))
+            body.addView(activity.label(plan.applied.joinToString("\n") { "• $it" }, 12f))
+        }
+        if (plan.skipped.isNotEmpty()) {
+            body.addView(activity.sectionTitle("Nao aplicado"))
+            body.addView(activity.label(plan.skipped.joinToString("\n") { "• $it" }, 12f, 0xFFFAFAF6.toInt()))
+        }
+        if (plan.applied.isEmpty()) body.addView(activity.label("Nada da referencia pode ser aplicado a este clipe.", 12f, EditorStyle.MUTED))
         val compare = activity.row()
         compare.addView(activity.action("Original") { preview(original) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))
         compare.addView(activity.action("Reference Style", true) { preview(edited) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))

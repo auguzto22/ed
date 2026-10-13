@@ -9,7 +9,39 @@ data class ReferenceSpeedChange(val timeUs: Long, val durationUs: Long, val peak
 data class ReferenceStyleEditPlan(
     val profileId: String, val base: AutoEditPlan, val speedChanges: List<ReferenceSpeedChange>,
     val unsupportedEffects: List<ReferenceEventType>, val warnings: List<String>,
+    /** Editable slots copied from the reference's layout (titles, cards, image and B-roll slots). */
+    val layout: List<ReferenceLayoutDecision> = emptyList(),
+    /** What the user gets, and what could not be carried over and why, in plain language. */
+    val applied: List<String> = emptyList(),
+    val skipped: List<String> = emptyList(),
 )
+
+/** A layout slot placed proportionally on the edited clip: [start]/[end] are fractions (0..1) of it. */
+data class ReferenceLayoutDecision(
+    val kind: ReferenceLayoutKind, val start: Float, val end: Float, val box: LayoutBox, val style: LayoutStyle, val label: String,
+) {
+    init { require(start in 0f..1f && end in 0f..1f && end > start) }
+}
+
+object ReferenceLayoutPlanner {
+    private const val MAX_TEXT_SLOTS = 10
+    private const val MAX_IMAGE_SLOTS = 8
+
+    fun plan(profile: ReferenceStyleProfile): List<ReferenceLayoutDecision> {
+        val duration = profile.sourceDurationUs.toFloat()
+        val decisions = profile.layout.filter { it.kind != ReferenceLayoutKind.CAPTION && it.confidence >= .3f }.mapNotNull { element ->
+            var start = element.startUs / duration; var end = element.endUs / duration
+            // Hooks that open the video and endings that close it keep that role on any length.
+            if (start < .03f) start = 0f
+            if (end > .97f) end = 1f
+            if (end - start < .04f) end = (start + .04f).coerceAtMost(1f)
+            if (end <= start) null else ReferenceLayoutDecision(element.kind, start.coerceIn(0f, 1f), end.coerceIn(0f, 1f), element.box.clamped(), element.style, element.label)
+        }
+        val texts = decisions.filter { it.kind in setOf(ReferenceLayoutKind.TITLE, ReferenceLayoutKind.CARD) }.take(MAX_TEXT_SLOTS)
+        val images = decisions.filter { it.kind in setOf(ReferenceLayoutKind.OVERLAY_IMAGE, ReferenceLayoutKind.STICKER, ReferenceLayoutKind.BROLL) }.take(MAX_IMAGE_SLOTS)
+        return (texts + images).sortedBy { it.start }
+    }
+}
 
 object ReferenceEffectMapper {
     private val assets = mapOf(
@@ -42,9 +74,12 @@ object ReferenceStylePlanner {
             return result.sortedBy { it.timeUs }
         }
         val zoomStrength = ((profile.medianZoomScale.takeIf { it > 1f } ?: 1.08f) - 1f) * factor
+        val zoomEvents = profile.events.filter { it.type == ReferenceEventType.ZOOM }
+        // Jump-cut punch-ins hold the new framing; smooth zooms last as long as they were measured.
+        val punchStyle = zoomEvents.isNotEmpty() && zoomEvents.count { (it.values["punch"] ?: 0f) > 0f } * 2 >= zoomEvents.size
         val zooms = selected(ReferenceEventType.ZOOM).mapNotNull { target ->
-            val duration = minOf(profile.events.filter { it.type == ReferenceEventType.ZOOM }.map { it.endUs - it.startUs }.medianLong().takeIf { it >= 80_000L } ?: 240_000L,
-                analysis.durationUs - target.timeUs).coerceAtMost(900_000L)
+            val measured = if (punchStyle) 900_000L else zoomEvents.map { it.endUs - it.startUs }.medianLong().takeIf { it >= 80_000L } ?: 240_000L
+            val duration = minOf(measured, analysis.durationUs - target.timeUs).coerceAtMost(900_000L)
             if (duration < 80_000L) null else ZoomDecision(target.timeUs, duration, 1f + zoomStrength.coerceIn(.03f, .25f), target.score, target.reason)
         }
         val effectDecisions = mutableListOf<EffectDecision>()
@@ -75,8 +110,36 @@ object ReferenceStylePlanner {
             if (profile.overallConfidence < .4f) add("A referencia contem pouca evidencia; a aplicacao foi conservadora")
             if (ReferenceEffectMapper.unsupported(profile).isNotEmpty()) add("Elementos desconhecidos foram preservados no perfil, mas nao aplicados")
         }
-        val plan = foundation.copy(zooms = zooms, effects = boundedEffects, warnings = warnings)
-        return ReferenceStyleEditPlan(profile.id, AutoEditPlanner.validate(plan), speed, ReferenceEffectMapper.unsupported(profile), warnings)
+        val plan = AutoEditPlanner.validate(foundation.copy(zooms = zooms, effects = boundedEffects, warnings = warnings))
+        val layout = ReferenceLayoutPlanner.plan(profile)
+        val unsupported = ReferenceEffectMapper.unsupported(profile)
+        val applied = buildList {
+            if (plan.zooms.isNotEmpty()) add(if (punchStyle) "Punch-in zoom em ${plan.zooms.size} momento(s)" else "Zoom em ${plan.zooms.size} momento(s)")
+            if (plan.effects.isNotEmpty()) add("Efeitos de impacto: ${plan.effects.size}")
+            if (plan.cuts.isNotEmpty()) add("Cortes: ${plan.cuts.size}")
+            if (speed.isNotEmpty()) add("Rampa de velocidade")
+            if (plan.captions.isNotEmpty()) add("Legendas no estilo da referencia")
+            layout.groupingBy { it.kind }.eachCount().forEach { (kind, count) ->
+                add(when (kind) {
+                    ReferenceLayoutKind.TITLE -> "Titulos: $count (edite o texto)"
+                    ReferenceLayoutKind.CARD -> "Cards: $count (edite o texto)"
+                    ReferenceLayoutKind.BROLL -> "Espacos de B-roll: $count (troque pela sua imagem/video)"
+                    else -> "Espacos de imagem: $count (troque pela sua imagem)"
+                })
+            }
+        }
+        val skipped = buildList {
+            if (profile.captionStyle.present && analysis.words.isEmpty())
+                add("Legendas: o clipe ainda nao tem legendas. Gere as legendas automaticas e aplique o estilo de novo para copiar o visual delas.")
+            if (profile.cutCount > 0 && plan.cuts.isEmpty())
+                add("Ritmo de cortes: os cortes automaticos removem pausas de fala, e este clipe nao tem fala detectada.")
+            if (zoomEvents.isNotEmpty() && plan.zooms.isEmpty())
+                add("Zoom: nao houve picos de audio ou movimento no clipe para posicionar os zooms.")
+            if (unsupported.isNotEmpty()) add("Efeitos sem equivalente no Recly: ${unsupported.joinToString { it.name.lowercase() }}")
+            if (!profile.semanticAnalysis && profile.layout.isEmpty())
+                add("Nenhum titulo, card ou sobreposicao foi detectado na referencia.")
+        }
+        return ReferenceStyleEditPlan(profile.id, plan, speed, unsupported, warnings, layout, applied, skipped)
     }
 
     private data class TargetCandidate(val timeUs: Long, val score: Float, val reason: String)

@@ -319,6 +319,12 @@ class GeminiHttpClient(private val apiKey: String) {
             .also { require(it.name.isNotBlank() && it.uri.isNotBlank()) { "Upload sem URI" } }
     }
 
+    /** Metadata of an uploaded file; video uploads must reach state ACTIVE before use. */
+    fun getFile(name: String, checkCancelled: () -> Unit = {}): JSONObject {
+        require(name.matches(Regex("files/[a-zA-Z0-9_-]{1,120}"))) { "Nome de arquivo invalido" }
+        return JSONObject(readChecked(open("$GEMINI_BASE_URL/v1beta/$name", "GET"), checkCancelled))
+    }
+
     fun createInteraction(payload: JSONObject, checkCancelled: () -> Unit): JSONObject {
         val connection = open("$GEMINI_BASE_URL/v1beta/interactions", "POST")
         connection.setRequestProperty("Content-Type", "application/json")
