@@ -48,10 +48,16 @@ class SegmentationMaskTexture {
         }
         bytes.flip()
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, id)
+        // Rows are tightly packed (1 byte per texel). GL's default unpack alignment is 4, so any
+        // mask whose width is not a multiple of 4 (e.g. 461 px for a 720x1600 photo) was read
+        // with padded rows: each row slid a few texels and the matte came out as diagonal bands.
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
         GLES20.glTexSubImage2D(
             GLES20.GL_TEXTURE_2D, 0, 0, 0, width, height,
             GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, bytes,
         )
+        // Restore the GL default so shared contexts (Media3, preview) are unaffected.
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 4)
     }
 
     fun release() {
