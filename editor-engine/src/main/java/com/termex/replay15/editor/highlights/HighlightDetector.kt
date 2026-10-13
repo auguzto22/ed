@@ -31,7 +31,8 @@ class HighlightDetector(
      * Detects highlights in the project.
      *
      * @param project Current project state (read-only)
-     * @param audioSamples Optional audio analysis data from ClipAnalyzer
+     * @param audioSamples Optional audio analysis data from ClipAnalyzer, in project timeline time
+     * @param sceneCutsUs Optional scene/camera changes in project timeline time ([SceneCutDetector])
      * @param maxHighlights Maximum number of highlights to return
      * @param checkCancelled Cancellation check callback
      * @param progress Progress reporting callback
@@ -40,6 +41,7 @@ class HighlightDetector(
         project: Project,
         audioSamples: List<AudioSample> = emptyList(),
         maxHighlights: Int = 10,
+        sceneCutsUs: List<Long> = emptyList(),
         checkCancelled: () -> Unit = {},
         progress: (stage: String, completed: Int, total: Int) -> Unit = { _, _, _ -> },
     ): HighlightResult = withContext(Dispatchers.Default) {
@@ -63,6 +65,7 @@ class HighlightDetector(
             audioEnergy = audioEnergy,
             languageCode = project.captionLanguage,
             maxHighlights = maxHighlights,
+            sceneCutsMs = sceneCutsUs.map { it / 1_000L }.take(50_000),
         )
 
         checkCancelled()
