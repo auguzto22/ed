@@ -27,22 +27,25 @@ object GuidedMatteFilter {
         require(guide.size == width * height && matte.size == width * height)
         require(radius >= 1 && epsilon > 0f)
         val n = width * height
-        val ip = FloatArray(n) { guide[it] * matte[it] }
-        val ii = FloatArray(n) { guide[it] * guide[it] }
-        val meanI = boxMean(guide, width, height, radius)
-        val meanP = boxMean(matte, width, height, radius)
-        val corrIp = boxMean(ip, width, height, radius)
-        val corrII = boxMean(ii, width, height, radius)
-        val a = FloatArray(n)
-        val b = FloatArray(n)
+        // Memory matters on phones (a 1536 px photo is ~1.3 M pixels): one summed-area table and
+        // a handful of float planes are reused instead of allocating fresh buffers per pass.
+        val sat = DoubleArray((width + 1) * (height + 1))
+        val scratch = FloatArray(n)
+        val meanI = boxMean(guide, width, height, radius, sat)
+        val meanP = boxMean(matte, width, height, radius, sat)
+        for (i in 0 until n) scratch[i] = guide[i] * matte[i]
+        val a = boxMean(scratch, width, height, radius, sat) // corr(I, p), becomes a below
+        for (i in 0 until n) scratch[i] = guide[i] * guide[i]
+        val b = boxMean(scratch, width, height, radius, sat) // corr(I, I), becomes b below
         for (i in 0 until n) {
-            val variance = corrII[i] - meanI[i] * meanI[i]
-            val covariance = corrIp[i] - meanI[i] * meanP[i]
-            a[i] = covariance / (variance + epsilon)
-            b[i] = meanP[i] - a[i] * meanI[i]
+            val variance = b[i] - meanI[i] * meanI[i]
+            val covariance = a[i] - meanI[i] * meanP[i]
+            val slope = covariance / (variance + epsilon)
+            a[i] = slope
+            b[i] = meanP[i] - slope * meanI[i]
         }
-        val meanA = boxMean(a, width, height, radius)
-        val meanB = boxMean(b, width, height, radius)
+        val meanA = boxMean(a, width, height, radius, sat, out = meanI)
+        val meanB = boxMean(b, width, height, radius, sat, out = meanP)
         return FloatArray(n) { (meanA[it] * guide[it] + meanB[it]).coerceIn(0f, 1f) }
     }
 
@@ -53,9 +56,20 @@ object GuidedMatteFilter {
     }
 
     /** Mean over a (2r+1)^2 window clamped to the image, via a summed-area table. O(n). */
-    fun boxMean(values: FloatArray, width: Int, height: Int, radius: Int): FloatArray {
+    fun boxMean(
+        values: FloatArray,
+        width: Int,
+        height: Int,
+        radius: Int,
+        sat: DoubleArray = DoubleArray((width + 1) * (height + 1)),
+        out: FloatArray = FloatArray(width * height),
+    ): FloatArray {
+        require(sat.size >= (width + 1) * (height + 1) && out.size >= width * height)
+        require(out !== values)
         val stride = width + 1
-        val sat = DoubleArray(stride * (height + 1))
+        // Row 0 and column 0 of the table must be zero; they are never written below.
+        java.util.Arrays.fill(sat, 0, stride, 0.0)
+        for (y in 1..height) sat[y * stride] = 0.0
         for (y in 0 until height) {
             var row = 0.0
             for (x in 0 until width) {
@@ -63,7 +77,6 @@ object GuidedMatteFilter {
                 sat[(y + 1) * stride + x + 1] = sat[y * stride + x + 1] + row
             }
         }
-        val out = FloatArray(width * height)
         for (y in 0 until height) {
             val y0 = maxOf(0, y - radius); val y1 = minOf(height - 1, y + radius)
             for (x in 0 until width) {

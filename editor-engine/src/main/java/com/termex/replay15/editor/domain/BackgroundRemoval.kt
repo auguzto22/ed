@@ -32,7 +32,8 @@ enum class BackgroundRemovalProvider {
 data class BackgroundRemovalEffect(
     val enabled: Boolean = false,
     val mode: BackgroundMode = BackgroundMode.REMOVE,
-    val threshold: Float = 0.5f,
+    // 80 % on the "Precisão" slider (the old 65 %): trims shadows and wall halos out of the box.
+    val threshold: Float = 0.65f,
     val feather: Float = 0.08f,
     val edgeSmoothing: Float = 0.5f,
     val quality: SegmentationQuality = SegmentationQuality.BALANCED,
@@ -55,8 +56,8 @@ data class BackgroundRemovalEffect(
  * The slider used to be the raw threshold, so 100 % meant threshold 1.0: only pixels with
  * absolute certainty survived and the subject practically disappeared. The usable range of the
  * threshold is roughly 0.25 (loose: keeps shadows/halos) to 0.75 (tight: trims every uncertain
- * edge), so the slider now covers exactly that, linearly. 50 % is still threshold 0.5, so
- * existing projects look the same.
+ * edge), so the slider now covers exactly that, linearly. Stored thresholds are unchanged, so
+ * existing projects look the same (only the number shown on the slider changes).
  */
 object BackgroundPrecision {
     const val MIN_THRESHOLD = 0.25f

@@ -68,7 +68,9 @@ object BackgroundMaskShader {
             float mask = reclyRefine(uv, foreground);
             float feather = max(uFeather, 0.001);
             float alpha = smoothstep(uThreshold - feather, uThreshold + feather, mask);
-            float keep = smoothstep(uThreshold, min(uThreshold + 0.4, 1.0), mask);
+            // edge1 must stay above edge0 (GLSL leaves smoothstep undefined otherwise), also for
+            // projects saved with the old raw slider at 100 % (threshold 1.0).
+            float keep = smoothstep(uThreshold, max(min(uThreshold + 0.4, 1.0), uThreshold + 0.001), mask);
             return vec4(mix(foreground, source.rgb, keep), source.a * alpha);
         }
     """
