@@ -50,7 +50,7 @@ enum class VideoFilter(
     AUTUMN("Outono", .04f, .12f, 22f, 12f, 4f, 1.16f, 1.02f, .78f),
     ICE("Gelo", .06f, .08f, -4f, 5f, 8f, .86f, 1.02f, 1.18f),
     NEON("Neon", -.05f, .25f, 48f, 0f, -4f, .98f, 1.05f, 1.1f),
-    DOCUMENTARY("Documentario", -.04f, .22f, -60f, 0f, -6f),
+    DOCUMENTARY("Documentário", -.04f, .22f, -60f, 0f, -6f),
     SUNSET("Por do sol", .05f, .1f, 28f, -12f, 4f, 1.18f, .96f, .78f),
     LAVENDER("Lavanda", .08f, -.05f, 5f, 8f, 10f, 1.04f, .93f, 1.14f),
     EMERALD("Esmeralda", -.02f, .12f, 24f, -10f, 0f, .9f, 1.12f, 1.02f),
@@ -373,7 +373,7 @@ enum class VideoFilter(
 }
 
 enum class ClipTransition(val label: String) {
-    NONE("Sem transicao"),
+    NONE("Sem transição"),
     FADE_BLACK("Fade escuro"),
     FADE_WHITE("Fade claro"),
 }
@@ -382,8 +382,8 @@ enum class ClipMotion(val label: String) {
     NONE("Sem movimento"),
     ZOOM_IN("Zoom aproximando"),
     ZOOM_OUT("Zoom afastando"),
-    PAN_LEFT("Panoramica esquerda"),
-    PAN_RIGHT("Panoramica direita"),
+    PAN_LEFT("Panorâmica esquerda"),
+    PAN_RIGHT("Panorâmica direita"),
 }
 
 /**
@@ -532,7 +532,7 @@ enum class TextFont(val id: String, val label: String, val family: String, val a
 
 enum class TextAlignment { LEFT, CENTER, RIGHT }
 enum class TextAnimation(val label: String) {
-    NONE("Sem animacao"),
+    NONE("Sem animação"),
     FADE("Suave"),
     POP("Pop"),
     SLIDE_UP("Subir"),
@@ -780,8 +780,8 @@ data class Project(
         require(videos.sumOf { it.durationUs } <= MAX_PROJECT_US)
         require(compounds.size <= MAX_COMPOUNDS && compounds.map { it.id }.distinct().size == compounds.size)
         val owned = compounds.flatMap { it.childIds }
-        require(owned.distinct().size == owned.size) { "Um clipe nao pode pertencer a dois compounds" }
-        require(owned.all { child -> videos.any { it.id == child } }) { "Compound referencia um clipe inexistente" }
+        require(owned.distinct().size == owned.size) { "Um clipe não pode pertencer a dois compounds" }
+        require(owned.all { child -> videos.any { it.id == child } }) { "Compound referência um clipe inexistente" }
     }
 
     /** Transitions are render windows at cuts; they never shorten clip placement. */

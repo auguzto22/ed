@@ -34,7 +34,7 @@ object EffectPresetGallery {
         ))
 
         val allPresets = runCatching { BuiltInEffectPresets.definitions(this) }.getOrDefault(emptyList())
-        val categories = listOf("Todos", "Cinema", "Film", "Gaming", "Retro", "Distorsao")
+        val categories = listOf("Todos", "Cinema", "Film", "Gaming", "Retro", "Distorção")
 
         var selectedPreset: EffectPreset? = null
         var currentIntensity = 1.0f
@@ -98,7 +98,7 @@ object EffectPresetGallery {
 
             val filterCategory = categories[currentCategoryIndex]
             val visiblePresets = allPresets.filter {
-                currentCategoryIndex == 0 || it.category.equals(filterCategory, ignoreCase = true)
+                currentCategoryIndex == 0 || plainCategory(it.category) == plainCategory(filterCategory)
             }
 
             visiblePresets.forEach { preset ->
@@ -155,7 +155,7 @@ object EffectPresetGallery {
                 cardContainer.addView(labelView)
 
                 val tagView = TextView(this).apply {
-                    text = preset.category
+                    text = displayCategory(preset.category)
                     textSize = 9f
                     setTextColor(0xFF9A968C.toInt())
                     gravity = Gravity.CENTER_HORIZONTAL
@@ -280,3 +280,10 @@ object EffectPresetGallery {
         val label: TextView,
     )
 }
+
+/** Category keys in the preset data are unaccented ("Distorsao"); compare without accents or case. */
+private fun plainCategory(value: String): String =
+    java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "").lowercase()
+        .let { if (it == "distorsao") "distorcao" else it }
+
+private fun displayCategory(value: String): String = if (plainCategory(value) == "distorcao") "Distorção" else value

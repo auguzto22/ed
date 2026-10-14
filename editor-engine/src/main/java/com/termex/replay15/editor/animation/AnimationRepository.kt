@@ -23,9 +23,9 @@ class AnimationRepository(context: Context) {
     fun install(input: InputStream): AnimationPreset {
         val text = readBounded(input); val definition = parse(text)
         require(!definition.id.startsWith("recly_")) { "Identificador reservado" }
-        require(directory.listFiles().orEmpty().count { it.extension == "json" } < 256) { "Limite de 256 animacoes importadas" }
+        require(directory.listFiles().orEmpty().count { it.extension == "json" } < 256) { "Limite de 256 animações importadas" }
         val target = File(directory, "${definition.id}-${definition.version}.json")
-        require(!target.exists()) { "Esta versao da animacao ja esta instalada" }
+        require(!target.exists()) { "Esta versão da animação já esta instalada" }
         val temporary = File.createTempFile("animation-", ".tmp", directory)
         try {
             FileOutputStream(temporary).use { it.write(text.toByteArray(Charsets.UTF_8)); it.fd.sync() }
@@ -45,14 +45,14 @@ class AnimationRepository(context: Context) {
         private fun readBounded(input: InputStream): String {
             val output = ByteArrayOutputStream(); val buffer = ByteArray(4096)
             while (true) { val count = input.read(buffer); if (count < 0) break
-                require(output.size() + count <= 65_536) { "Pacote de animacao muito grande" }; output.write(buffer, 0, count) }
+                require(output.size() + count <= 65_536) { "Pacote de animação muito grande" }; output.write(buffer, 0, count) }
             return output.toString("UTF-8")
         }
         fun parse(text: String): AnimationPreset {
             require(text.length <= 65_536)
             val json = JSONObject(text)
             require(json.getString("type") == "ANIMATION" && json.getInt("engineVersion") == 1)
-            require(!json.optBoolean("premium", false)) { "Acesso premium nao configurado" }
+            require(!json.optBoolean("premium", false)) { "Acesso premium não configurado" }
             val keys = json.getJSONArray("points"); require(keys.length() in 2..32)
             val points = List(keys.length()) { index ->
                 val key = keys.getJSONObject(index)

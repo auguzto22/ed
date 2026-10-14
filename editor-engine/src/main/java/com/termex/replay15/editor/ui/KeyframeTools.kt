@@ -38,7 +38,7 @@ object KeyframeTools {
         var selectedParentId = clip.parentId
         val body = column(); lateinit var dialog: Dialog
 
-        body.addView(sectionTitle("Movimento no tempo", "${timeLabel(clip.timeMap.timelineAt(at))} do clipe. A curva controla o movimento ate o proximo ponto."))
+        body.addView(sectionTitle("Movimento no tempo", "${timeLabel(clip.timeMap.timelineAt(at))} do clipe. A curva controla o movimento até o próximo ponto."))
 
         val navigation = row()
         fun navigate(label: String, target: TransformKeyframe?) {
@@ -47,7 +47,7 @@ object KeyframeTools {
             }.apply { isEnabled = target != null; alpha = if (isEnabled) 1f else .4f }, LinearLayout.LayoutParams(0, dp(48), 1f))
         }
         navigate("Ponto anterior", clip.keyframes.lastOrNull { it.sourceUs < at && it.sourceUs >= clip.inUs })
-        navigate("Proximo ponto", clip.keyframes.firstOrNull { it.sourceUs > at && it.sourceUs <= clip.outUs })
+        navigate("Próximo ponto", clip.keyframes.firstOrNull { it.sourceUs > at && it.sourceUs <= clip.outUs })
         body.addView(navigation)
 
         fun draft() = preview(clip.copy(
@@ -67,14 +67,14 @@ object KeyframeTools {
         slider(body, "Zoom (%)", (key.zoom * 100).toInt(), 400, 25) { key = key.copy(zoom = it / 100f); draft() }
         slider(body, "Horizontal (%)", (key.x * 100).toInt(), 50, -50) { key = key.copy(x = it / 100f); draft() }
         slider(body, "Vertical (%)", (key.y * 100).toInt(), 50, -50) { key = key.copy(y = it / 100f); draft() }
-        slider(body, "Rotacao Z (graus)", key.rotation.toInt(), 180, -180) { key = key.copy(rotation = it.toFloat()); draft() }
+        slider(body, "Rotação Z (graus)", key.rotation.toInt(), 180, -180) { key = key.copy(rotation = it.toFloat()); draft() }
         slider(body, "Opacidade (%)", (key.opacity * 100).toInt(), 100) { key = key.copy(opacity = it / 100f); draft() }
 
         // 3D Contextual Controls
         val controls3D = column()
         slider(controls3D, "Profundidade Z", key.z.toInt(), 1000, -1000, { "$it" }) { key = key.copy(z = it.toFloat()); draft() }
-        slider(controls3D, "Rotacao X / Tilt (graus)", key.rotationX.toInt(), 180, -180, { "$it°" }) { key = key.copy(rotationX = it.toFloat()); draft() }
-        slider(controls3D, "Rotacao Y / Pan (graus)", key.rotationY.toInt(), 180, -180, { "$it°" }) { key = key.copy(rotationY = it.toFloat()); draft() }
+        slider(controls3D, "Rotação X / Tilt (graus)", key.rotationX.toInt(), 180, -180, { "$it°" }) { key = key.copy(rotationX = it.toFloat()); draft() }
+        slider(controls3D, "Rotação Y / Pan (graus)", key.rotationY.toInt(), 180, -180, { "$it°" }) { key = key.copy(rotationY = it.toFloat()); draft() }
         slider(controls3D, "Pivo / Ancora X (%)", (key.anchorX * 100).toInt(), 100, -100, { "$it%" }) { key = key.copy(anchorX = it / 100f); draft() }
         slider(controls3D, "Pivo / Ancora Y (%)", (key.anchorY * 100).toInt(), 100, -100, { "$it%" }) { key = key.copy(anchorY = it / 100f); draft() }
         slider(controls3D, "Escala Z (%)", (key.scaleZ * 100).toInt(), 400, 25) { key = key.copy(scaleZ = it / 100f); draft() }
@@ -94,7 +94,7 @@ object KeyframeTools {
                 other.id != clip.id && !Matrix4.detectCycle(clip.id, other.id) { id -> project.videos.find { it.id == id }?.parentId }
             }
             if (eligibleParents.isNotEmpty() || selectedParentId != null) {
-                body.addView(sectionTitle("Parenting / Vinculo hierarquico", "Vincula escala, rotacao e posicao a outra camada."))
+                body.addView(sectionTitle("Parenting / Vínculo hierárquico", "Vincula escala, rotação e posição a outra camada."))
                 val parentSpinner = Spinner(this)
                 val parentOptions = listOf("Nenhum (Camada independente)") + eligibleParents.map { "${if (it.isNullObject) "[Null] " else ""}${it.name}" }
                 parentSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, parentOptions)
@@ -148,7 +148,7 @@ object KeyframeTools {
         }
         fun commit(next: VideoClip) {
             runCatching { apply(next) }.fold({ body.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); dialog.dismiss() }, {
-                Toast.makeText(this, "Nao foi possivel alterar esta faixa.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Não foi possível alterar esta faixa.", Toast.LENGTH_LONG).show()
             })
         }
         body.addView(action(if (nearby == null) "Adicionar keyframe" else "Atualizar keyframe", true) {

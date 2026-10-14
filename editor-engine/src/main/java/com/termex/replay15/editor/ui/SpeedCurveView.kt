@@ -18,7 +18,7 @@ class SpeedCurveView(context: Context, private val sourceUs: Long) : View(contex
     private var dragging = false
     private fun x(time: Long) = pad + (width - 2 * pad) * (time.toDouble() / sourceUs).toFloat()
     private fun y(speed: Float) = height - pad - (height - 2 * pad) * (ln(speed / .1f) / ln(160f))
-    init { isFocusable = true; contentDescription = "Curva de velocidade. Arraste os pontos ou use os controles numericos abaixo." }
+    init { isFocusable = true; contentDescription = "Curva de velocidade. Arraste os pontos ou use os controles numéricos abaixo." }
     override fun onDraw(canvas: Canvas) {
         paint.color = EditorStyle.BG; canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), 18f, 18f, paint)
         paint.textSize = context.dp(11).toFloat()

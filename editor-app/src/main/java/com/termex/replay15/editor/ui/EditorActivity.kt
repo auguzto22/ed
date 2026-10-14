@@ -343,7 +343,7 @@ class EditorActivity : Activity() {
                                 importMedia(uris.map(Uri::parse), savedInstanceState.getBoolean("importAudio"))
                             }
                         },
-                            { error("Nao foi possivel abrir o projeto. Ele nao foi sobrescrito. ${it.message}"); loaded = false })
+                            { error("Não foi possível abrir o projeto. Ele não foi sobrescrito. ${it.message}"); loaded = false })
                     }
                 }
             } else {
@@ -759,7 +759,7 @@ class EditorActivity : Activity() {
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
-        contentDescription = "Redimensionar previa e linha do tempo"
+        contentDescription = "Redimensionar prévia e linha do tempo"
         isFocusable = true
         background = GradientDrawable().apply {
             setColor(EditorStyle.BG)
@@ -995,7 +995,7 @@ class EditorActivity : Activity() {
             setTextColor(Color.WHITE)
             setPadding(dp(10), dp(4), dp(10), dp(4))
             isClickable = true; isFocusable = true
-            contentDescription = "Opcoes do compound"
+            contentDescription = "Opções do compound"
             setOnClickListener { openCompound()?.let(::compoundMenu) }
         })
     }
@@ -1063,7 +1063,7 @@ class EditorActivity : Activity() {
         val clip = selectedClip() ?: return
         val anchor = project.indexAt(position).coerceAtLeast(0)
         val here = project.videos.indexOfFirst { it.id == clip.id }.let { if (it >= 0) it else anchor }
-        if (project.videos.size < 2) { error(" Sao necessarios pelo menos dois clipes na timeline."); return }
+        if (project.videos.size < 2) { error("São necessários pelo menos dois clipes na timeline."); return }
         val previous = (here - 1).takeIf { it >= 0 }?.takeUnless { project.videos[it].let { v -> CompoundEditing.isGrouped(project, v.id) } }
         val next = (here + 1).takeIf { it in project.videos.indices && !CompoundEditing.isGrouped(project, project.videos[it].id) }
         val existing = CompoundEditing.at(project, clipId = clip.id)
@@ -1074,15 +1074,15 @@ class EditorActivity : Activity() {
             actions += { groupRange(previous, here) }
         }
         if (next != null) {
-            options += "Com o proximo clipe (${project.videos[next].name.take(24)})"
+            options += "Com o próximo clipe (${project.videos[next].name.take(24)})"
             actions += { groupRange(here, next) }
         }
         if (previous != null && next != null) {
-            options += "Com os dois vizinhos (${project.videos.size} clipes em sequencia)"
+            options += "Com os dois vizinhos (${project.videos.size} clipes em sequência)"
             actions += { groupRange(previous, next) }
         }
         if (options.isEmpty()) {
-            error("Vizinho indisponivel: os clipes ao lado ja pertencem a outros compounds.")
+            error("Vizinho indisponível: os clipes ao lado já pertencem a outros compounds.")
             return
         }
         val body = column().apply { setPadding(dp(16), 0, dp(16), dp(8)) }
@@ -1108,7 +1108,7 @@ class EditorActivity : Activity() {
 
     private fun groupRange(from: Int, to: Int) {
         val next = CompoundEditing.group(project, from, to)
-        if (next.compounds.size == project.compounds.size) { error("Nao foi possivel criar o compound nessa selecao."); return }
+        if (next.compounds.size == project.compounds.size) { error("Não foi possível criar o compound nessa seleção."); return }
         val created = next.compounds.firstOrNull { it !in project.compounds }
         selected = from
         edit(next)
@@ -1301,7 +1301,7 @@ class EditorActivity : Activity() {
         }
         frame.addView(trackingOverlay, FrameLayout.LayoutParams(-1, -1))
         previewBox.addView(frame, FrameLayout.LayoutParams(-1, -1, Gravity.CENTER))
-        empty = label("Sua proxima historia\ncomeca aqui\n\nToque para importar um video ou uma foto", 19f, EditorStyle.MUTED).apply {
+        empty = label("Sua próxima história\ncomeça aqui\n\nToque para importar um vídeo ou uma foto", 19f, EditorStyle.MUTED).apply {
             gravity = Gravity.CENTER; setOnClickListener { pick(false) }
         }
         previewBox.addView(empty, FrameLayout.LayoutParams(-1, -1))
@@ -1314,7 +1314,7 @@ class EditorActivity : Activity() {
         }
         effectTools = EffectTools(this, { project }, { position }, ::seek, ::edit, ::previewEdit, {
             runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), 709) }
-                .onFailure { error("Seletor de pacotes indisponivel") }
+                .onFailure { error("Seletor de pacotes indisponível") }
         }, openFilters = { filters() },
             loopPreview = { clipId -> loopWindowFor(clipId).let { startPreviewLoop(it.first, it.last) } },
             stopLoop = { stopPreviewLoop() })
@@ -1330,7 +1330,7 @@ class EditorActivity : Activity() {
         }
         animationTools = AnimationTools(this, { project }, ::edit) {
             runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json"), 710) }
-                .onFailure { error("Seletor de animacoes indisponivel") }
+                .onFailure { error("Seletor de animações indisponível") }
         }
         autoEditPanel = AutoEditPanel(
             this,
@@ -1408,20 +1408,20 @@ class EditorActivity : Activity() {
             Triple("Efeitos", "Efeitos", { selectedClip()?.let { effectTools.open(it.id) } }),
             Triple("Stickers", "Camada", { lottieStickersPanel() }),
             Triple("Remover fundo", "Fundo", { selectedClip()?.let { backgroundRemovalTools.open(it.id) } }),
-            Triple("Adicionar", "+ Midia", { addMediaMenu() }),
+            Triple("Adicionar", "+ Mídia", { addMediaMenu() }),
             Triple("Camadas", "Camada", { layersMenu() }),
             Triple("Ajustar", "Ajustar", { adjustmentsPanel() }),
             Triple("Velocidade", "Velocidade", { speedPanel() }),
             Triple("Animação", "Transformar", { selectedClip()?.let { animationTools.open(it.id) } }),
-            Triple("Transição", "Transicao", { transitionPanel() }),
+            Triple("Transição", "Transição", { transitionPanel() }),
             Triple("Dividir", "Dividir", { splitAtCursor() }),
             Triple("Volume", "Volume", { volumePanel() }),
             Triple("Recorte", "Recorte", { cropPanel() }),
-            Triple("Máscara", "Mascaras", { masksPanel() }),
+            Triple("Máscara", "Máscaras", { masksPanel() }),
             Triple("Excluir", "Excluir", { confirmDeleteSelected() }),
             Triple("Mais", "Mais", { editTools() }),
         ) else listOf(
-            Triple("Adicionar", "+ Midia", { addMediaMenu() }),
+            Triple("Adicionar", "+ Mídia", { addMediaMenu() }),
             Triple("Dividir", "canvas:dividir", { splitAtCursor() }),
             Triple("Aparar", "canvas:aparar", { openTrimTool() }),
             Triple("Texto", "canvas:texto", { openTextTool() }),
@@ -1586,7 +1586,7 @@ class EditorActivity : Activity() {
         videoHandles.mainClipIndex = -1
         videoHandles.trackId = null
         videoHandles.clipId = null
-        info.text = "${project.name}  /  ${project.videos.size} clipes  •  ${project.audio.size} audios  •  ${project.texts.size + project.stickers.size} camadas"
+        info.text = "${project.name}  /  ${project.videos.size} clipes  •  ${project.audio.size} áudios  •  ${project.texts.size + project.stickers.size} camadas"
         updateContextualTools()
     }
 
@@ -1627,7 +1627,7 @@ class EditorActivity : Activity() {
                     }
                 }
                 afterEdit(before, resumePlayback)
-            } }, { error(it.message ?: "Nao foi possivel alterar o projeto") })
+            } }, { error(it.message ?: "Não foi possível alterar o projeto") })
     }
     private var previewDraft: Project? = null
     private fun previewEdit(next: Project) {
@@ -1734,7 +1734,7 @@ class EditorActivity : Activity() {
         }
         info.text = "${project.name}  /  ${project.videos.size} clipes" +
             (if (project.compounds.isEmpty()) "" else "  •  ${project.compounds.size} compound${if (project.compounds.size > 1) "s" else ""}") +
-            "  •  ${project.audio.size} audios  •  ${project.texts.size + project.stickers.size} camadas"
+            "  •  ${project.audio.size} áudios  •  ${project.texts.size + project.stickers.size} camadas"
         if (::projectTitleView.isInitialized) {
             projectTitleView.text = project.name
             projectMetaView.text = projectMeta()
@@ -1831,8 +1831,8 @@ class EditorActivity : Activity() {
 
     private fun looksLikeProblem(message: String): Boolean {
         val lower = message.lowercase()
-        return listOf("não foi possível", "nao foi possivel", "falha", "aguarde", "insuficiente", "nada a gerar",
-            "curta demais", "unico clipe", "único clipe", "indisponível", "indisponivel", "erro").any { it in lower }
+        return listOf("não foi possível", "não foi possível", "falha", "aguarde", "insuficiente", "nada a gerar",
+            "curta demais", "único clipe", "único clipe", "indisponível", "indisponivel", "erro").any { it in lower }
     }
 
     private fun error(message: String) {
@@ -1883,7 +1883,7 @@ class EditorActivity : Activity() {
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 result.fold({ if (exit) finish() else if (project == snapshot) info.text = "Projeto salvo no aparelho" },
-                    { error("Nao foi possivel salvar o projeto: ${it.message}") })
+                    { error("Não foi possível salvar o projeto: ${it.message}") })
             }
         }
     }
@@ -1895,14 +1895,14 @@ class EditorActivity : Activity() {
         preview.pause()
         if (!loaded || project == baseline) { finish(); return }
         AlertDialog.Builder(this).setTitle("Fechar editor?")
-            .setMessage("Salvar guarda a edicao para continuar depois. Os videos originais nao mudam.")
+            .setMessage("Salvar guarda a edição para continuar depois. Os vídeos originais não mudam.")
             .setPositiveButton("Salvar projeto") { _, _ -> main.removeCallbacks(autosave); saveAsync(true) }
-            .setNegativeButton("Descartar alteracoes") { _, _ ->
+            .setNegativeButton("Descartar alterações") { _, _ ->
                 main.removeCallbacks(autosave)
                 history = ProjectHistory(baseline)
                 io.execute {
                     val result = runCatching { if (baseline.allVideos.isEmpty() && baseline.audio.isEmpty() && baseline.texts.isEmpty() && baseline.stickers.isEmpty()) store.delete(baseline.id) else store.save(baseline) }
-                    runOnUiThread { if (result.isSuccess) { loaded = false; finish() } else error("Falha ao descartar alteracoes") }
+                    runOnUiThread { if (result.isSuccess) { loaded = false; finish() } else error("Falha ao descartar alterações") }
                 }
             }.setNeutralButton("Cancelar", null).show()
     }
@@ -1966,7 +1966,7 @@ class EditorActivity : Activity() {
     }
 
     private fun addMediaMenu() {
-        choose("Adicionar", listOf("Video ou foto", "Video em camada (por cima)", "Musica ou audio", "Gravar narracao", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
+        choose("Adicionar", listOf("Vídeo ou foto", "Vídeo em camada (por cima)", "Música ou áudio", "Gravar narração", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
             when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject() }
         }
     }
@@ -1980,7 +1980,7 @@ class EditorActivity : Activity() {
     }
 
     private fun addVideoLayer() {
-        if (project.durationUs <= 0) { error("Adicione um video antes da camada de video"); return }
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes da camada de vídeo"); return }
         pickVideoLayer()
     }
     private fun addNullObject() {
@@ -2019,11 +2019,11 @@ class EditorActivity : Activity() {
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         if (!audio) intent.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("video/*", "image/*"))
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, !audio && replace < 0)
-        runCatching { startActivityForResult(intent, if (audio) 701 else 700) }.onFailure { error("Seletor de arquivos indisponivel") }
+        runCatching { startActivityForResult(intent, if (audio) 701 else 700) }.onFailure { error("Seletor de arquivos indisponível") }
     }
     private fun pickSticker(replaceId: String? = null) {
         if (busy) return
-        if (project.durationUs <= 0) { error("Adicione um video antes da camada de imagem"); return }
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes da camada de imagem"); return }
         if (replaceId == null && project.stickers.size >= 24) { error("Limite de 24 camadas de imagem"); return }
         replaceStickerId = replaceId
         startActivityForResult(GalleryPickerActivity.intent(this, GalleryPickerActivity.MODE_IMAGES,
@@ -2036,7 +2036,7 @@ class EditorActivity : Activity() {
             .setType("*/*")
             .putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/x-subrip", "text/plain"))
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        runCatching { startActivityForResult(intent, 704) }.onFailure { error("Seletor de legendas indisponivel") }
+        runCatching { startActivityForResult(intent, 704) }.onFailure { error("Seletor de legendas indisponível") }
     }
     @Deprecated("Platform document picker") override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -2065,7 +2065,7 @@ class EditorActivity : Activity() {
                 val uri = data.data!!; val snapshot = project
                 io.execute {
                     val result = runCatching {
-                        val stream = contentResolver.openOutputStream(uri) ?: throw IllegalArgumentException("Destino indisponivel")
+                        val stream = contentResolver.openOutputStream(uri) ?: throw IllegalArgumentException("Destino indisponível")
                         stream.bufferedWriter(Charsets.UTF_8).use { it.write(SubtitleDocument.write(snapshot.texts, snapshot.durationUs)) }
                     }
                     runOnUiThread { if (!isDestroyed) result.fold({ info.text = "Arquivo SRT exportado" }, { error("Falha ao salvar SRT: ${it.message}") }) }
@@ -2106,14 +2106,14 @@ class EditorActivity : Activity() {
     private fun importMedia(uris: List<Uri>, audio: Boolean) {
         if (busy || uris.isEmpty()) return
         if (!audio && project.videos.size + uris.size > 200) { error("Limite de 200 clipes por projeto"); return }
-        busy = true; preview.suspendSources(); info.text = "Importando midia..."
+        busy = true; preview.suspendSources(); info.text = "Importando mídia..."
         val snapshot = project; val replace = replaceIndex; replaceIndex = -1; val at = position
         importing = ImportRequest(uris.map { it.toString() }, audio, replace)
         io.execute {
             val result = runCatching {
                 if (audio) {
-                    require(snapshot.durationUs > 0) { "Adicione um video antes da musica" }
-                    require(snapshot.audio.size < 8) { "Limite de 8 faixas de audio" }
+                    require(snapshot.durationUs > 0) { "Adicione um vídeo antes da música" }
+                    require(snapshot.audio.size < 8) { "Limite de 8 faixas de áudio" }
                     snapshot.copy(audio = snapshot.audio + MediaImport.audio(this, uris.first(), minOf(at, snapshot.durationUs - 1)))
                 } else {
                     val clips = uris.map { MediaImport.video(this, it) }
@@ -2130,7 +2130,7 @@ class EditorActivity : Activity() {
                 if (isDestroyed) return@runOnUiThread
                 busy = false; importing = null
                 result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next); consumePendingOpenTool() },
-                    { refresh(); error("Nao foi possivel importar: ${it.message}") })
+                    { refresh(); error("Não foi possível importar: ${it.message}") })
             }
         }
     }
@@ -2158,7 +2158,7 @@ class EditorActivity : Activity() {
                     edit(snapshot.copy(stickers = if (previous == null) snapshot.stickers + sticker else
                         snapshot.stickers.map { if (it.id == previous.id) sticker else it }))
                     seek(sticker.startUs)
-                }, { refresh(); error("Nao foi possivel importar a camada: ${it.message}") })
+                }, { refresh(); error("Não foi possível importar a camada: ${it.message}") })
             }
         }
     }
@@ -2175,7 +2175,7 @@ class EditorActivity : Activity() {
                 result.fold({ captions ->
                     edit(snapshot.copy(texts = snapshot.texts + captions))
                     info.text = "${captions.size} legendas importadas"
-                }, { refresh(); error("Nao foi possivel importar as legendas: ${it.message}") })
+                }, { refresh(); error("Não foi possível importar as legendas: ${it.message}") })
             }
         }
     }
@@ -2318,7 +2318,7 @@ class EditorActivity : Activity() {
         if (busy) return
         pendingLutClipId = clipId
         runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), 705) }
-            .onFailure { pendingLutClipId = null; error("Nao foi possivel abrir o seletor de LUT") }
+            .onFailure { pendingLutClipId = null; error("Não foi possível abrir o seletor de LUT") }
     }
     private fun importLut(uri: Uri, clipId: String) {
         if (busy || project.allVideos.none { it.id == clipId }) return
@@ -2337,7 +2337,7 @@ class EditorActivity : Activity() {
                     contentResolver.openInputStream(uri)?.use { source -> file.outputStream().use { dest ->
                         val buffer = ByteArray(16_384); var total = 0
                         while (true) { val n = source.read(buffer); if (n < 0) break; total += n; require(total <= 12_000_000) { "LUT maior que 12 MB" }; dest.write(buffer, 0, n) }
-                    } } ?: throw IllegalArgumentException("Arquivo indisponivel")
+                    } } ?: throw IllegalArgumentException("Arquivo indisponível")
                     CubeLut.parse(file.reader())
                     fun changed(clip: VideoClip) = if (clip.id == clipId) clip.copy(grade = clip.grade.copy(lutPath = file.absolutePath)) else clip
                     snapshot.copy(videos = snapshot.videos.map(::changed), videoTracks = snapshot.videoTracks.map { track ->
@@ -2350,12 +2350,12 @@ class EditorActivity : Activity() {
     private fun beatPanel() {
         val audio = timeline.selectedLayerId?.let { id -> project.audio.find { it.id == id } }
         val clip = if (audio == null) selectedClip() else null
-        if (clip?.image == true) { error("Imagens nao tem ritmo para analisar"); return }
+        if (clip?.image == true) { error("Imagens não têm ritmo para analisar"); return }
         val body = column()
         var sensitivity = 1f
-        body.addView(sectionTitle("Batidas", "Acha o BPM do audio selecionado e marca o ritmo na timeline."))
+        body.addView(sectionTitle("Batidas", "Acha o BPM do áudio selecionado e marca o ritmo na timeline."))
         body.addView(label(
-            if (audio != null) "Analisando a faixa ${audio.name}." else "Analisando o audio do clipe de video selecionado.",
+            if (audio != null) "Analisando a faixa ${audio.name}." else "Analisando o áudio do clipe de vídeo selecionado.",
             color = EditorStyle.MUTED))
         slider(body, "Sensibilidade (%)", 100, 300) { sensitivity = it / 100f }
         lateinit var dialog: Dialog
@@ -2374,7 +2374,7 @@ class EditorActivity : Activity() {
                 runOnUiThread {
                     if (isDestroyed) return@runOnUiThread
                     busy = false
-                    result.fold({ beatResult(it) }, { refresh(); error("Falha ao analisar o audio: ${it.message}") })
+                    result.fold({ beatResult(it) }, { refresh(); error("Falha ao analisar o áudio: ${it.message}") })
                 }
             }
         })
@@ -2388,8 +2388,8 @@ class EditorActivity : Activity() {
     private fun beatResult(map: BeatMap) {
         val body = column()
         if (map.isEmpty) {
-            body.addView(sectionTitle("Nenhuma batida", "O clipe selecionado nao tem audio com ritmo claro."))
-            body.addView(label("Tente aumentar a sensibilidade, ou confira se o clipe tem faixa de audio.", color = EditorStyle.MUTED))
+            body.addView(sectionTitle("Nenhuma batida", "O clipe selecionado não tem áudio com ritmo claro."))
+            body.addView(label("Tente aumentar a sensibilidade, ou confira se o clipe tem faixa de áudio.", color = EditorStyle.MUTED))
             lateinit var empty: Dialog
             body.addView(action("Fechar") { empty.dismiss() })
             empty = sheet("Batidas", body)
@@ -2403,7 +2403,7 @@ class EditorActivity : Activity() {
         val preview = run {
             val first = map.beats.first().timeUs
             val last = map.beats.last().timeUs
-            "${timeLabel(first)} ate ${timeLabel(last)}"
+            "${timeLabel(first)} até ${timeLabel(last)}"
         }
         body.addView(label(preview, color = EditorStyle.MUTED))
 
@@ -2432,7 +2432,7 @@ class EditorActivity : Activity() {
         val body = column()
         body.addView(sectionTitle("Marque seus melhores momentos", "Os marcadores ajudam a navegar e alinhar cortes."))
         val name = EditText(this).apply { setText(marker.name); isSingleLine = true; filters = arrayOf(android.text.InputFilter.LengthFilter(100)) }; body.addView(name)
-        val time = numberField(body, "Posicao (segundos)", marker.timeUs / SECOND.toDouble())
+        val time = numberField(body, "Posição (segundos)", marker.timeUs / SECOND.toDouble())
         var color = marker.color
         val colors = row()
         listOf(0xFFFFC66D.toInt(), 0xFFC3A0FF.toInt(), 0xFF5BC7BC.toInt(), 0xFFFF7C8F.toInt()).forEach { value ->
@@ -2453,8 +2453,8 @@ class EditorActivity : Activity() {
     }
     private fun freezeFrame() {
         val clip = selectedClip() ?: return
-        if (busy || clip.image) { if (clip.image) error("Este clipe ja e uma foto"); return }
-        if (project.videos.size >= 198) { error("Nao ha espaco para dividir e inserir outro clipe"); return }
+        if (busy || clip.image) { if (clip.image) error("Este clipe já é uma foto"); return }
+        if (project.videos.size >= 198) { error("Não há espaço para dividir e inserir outro clipe"); return }
         val snapshot = project; val index = selected; val at = position
         val source = clip.timeMap.sourceAt(at - snapshot.startOf(index))
         busy = true; preview.suspendSources(); info.text = "Criando quadro congelado..."
@@ -2478,14 +2478,14 @@ class EditorActivity : Activity() {
                 val insertion = if (at <= snapshot.startOf(index)) index else index + 1
                 split.copy(videos = split.videos.toMutableList().apply { add(insertion, still) })
             }
-            runOnUiThread { if (!isDestroyed) { busy = false; result.fold({ edit(it) }, { refresh(); error("Nao foi possivel congelar: ${it.message}") }) } }
+            runOnUiThread { if (!isDestroyed) { busy = false; result.fold({ edit(it) }, { refresh(); error("Não foi possível congelar: ${it.message}") }) } }
         }
     }
     private fun selectedClip(): VideoClip? {
         if (selected !in project.videos.indices) selected = project.indexAt(position)
         timeline.selected = selected
         videoHandles.mainClipIndex = selected
-        return project.videos.getOrNull(selected).also { if (it == null) feedback("Adicione um video ou foto") }
+        return project.videos.getOrNull(selected).also { if (it == null) feedback("Adicione um vídeo ou foto") }
     }
 
     private fun selectedClipAtCursor(): VideoClip? {
@@ -2790,57 +2790,75 @@ class EditorActivity : Activity() {
 
     private fun editTools() {
         val clip = selectedClip() ?: return
-        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(4)) }
-        body.addView(label(clip.name, 15f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
-        body.addView(label("${timeLabel(clip.durationUs)}  •  Clipe ${selected + 1} de ${project.videos.size}", 12f, EditorStyle.MUTED).apply {
-            setPadding(dp(8), 0, dp(8), dp(12))
-        })
+        val body = column().apply { setPadding(0, dp(4), 0, dp(4)) }
         lateinit var dialog: Dialog
         fun runAndClose(action: () -> Unit) { dialog.dismiss(); action() }
-        body.addView(editorToolCard("Cortar", "Ajuste o inicio e o fim com precisao", accent = true) {
+        body.addView(editorToolCard("Cortar", "Ajuste o início e o fim com precisão", accent = true) {
             runAndClose { trimPanel() }
-        }, LinearLayout.LayoutParams(-1, dp(82)).apply { bottomMargin = dp(10) })
+        }, LinearLayout.LayoutParams(-1, dp(82)).apply { topMargin = dp(8); bottomMargin = dp(4) })
 
-        val grid = GridLayout(this).apply { columnCount = 3; alignmentMode = GridLayout.ALIGN_BOUNDS }
+        // Tools grouped by intent, so the 40 options read as a few short lists instead of one wall.
+        var grid = GridLayout(this)
+        fun section(title: String) {
+            body.addView(label(title.uppercase(), 11f, EditorStyle.MUTED).apply {
+                letterSpacing = .08f; setPadding(dp(4), dp(16), dp(4), dp(6))
+                typeface = EditorFonts.get(this@EditorActivity, TextFont.OUTFIT, android.graphics.Typeface.BOLD)
+            })
+            grid = GridLayout(this).apply { columnCount = 3; alignmentMode = GridLayout.ALIGN_BOUNDS }
+            body.addView(grid)
+        }
         fun addTool(name: String, subtitle: String, danger: Boolean = false, action: () -> Unit) {
             grid.addView(editorToolCard(name, subtitle, danger = danger) { runAndClose(action) }, GridLayout.LayoutParams().apply {
-                width = 0; height = dp(84); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                width = 0; height = dp(86); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                 setMargins(dp(3), dp(3), dp(3), dp(3))
             })
         }
+        section("Essenciais")
         addTool("Dividir", "No cursor") { splitAtCursor() }
-        addTool("✨ Auto Edit", "Edicao inteligente") { autoEditPanel.open() }
-        addTool("Auto Reframe", "Enquadrar sujeito IA") { autoReframePanel.open() }
-        addTool("Auto Cor", "Equilíbrio com 1 toque") { autoColor() }
-        addTool("Color Match", "Copiar cor de outro clipe") { colorMatchPanel() }
-        addTool("Presets", "Looks cinematográficos") { presetsPanel() }
-        addTool("Navegador LUTs", "Comparar LUTs 3D") { openLutBrowser() }
-        addTool("Estabilizar", "Remover trepidação") { stabilizeVideoPanel() }
-        addTool("Motion Blur", "Desfoque de movimento") { motionBlurPanel() }
-        addTool("Scopes", "Waveform e Histograma") { scopesPanel() }
-        addTool("Stickers Lottie", "Elementos animados") { lottieStickersPanel() }
         addTool("Velocidade", "Constante e curvas") { speedPanel() }
-        addTool("Batidas", "Achar o BPM e marcar") { beatPanel() }
-        addTool("Movimento suave", "Camera lenta sem serrilhado") { smoothSlowMoPanel() }
         addTool("Volume", "Som do clipe") { volumePanel() }
-        addTool("Extrair audio", "Do video") { extractAudio() }
-        addTool("Ajustar", "Cor e luz") { adjustmentsPanel() }
-        addTool("Filtros", "Looks e cores") { filters() }
-        addTool("Cor", "Curvas e LUT 3D") { colorPanel() }
-        addTool("Keyframe", "Animar no tempo") { keyframePanel() }
-        addTool("Câmera 3D", "Perspectiva e visão") { cameraPanel() }
-        addTool("Animacoes", "Entrada, saida e loop") { animationTools.open(clip.id) }
-        addTool("Mascaras", "Forma e chroma") { masksPanel() }
-        addTool("Remover fundo", "Recorte com IA") { backgroundRemovalTools.open(clip.id) }
-        addTool("Vídeo em camada", "Vídeo por cima") { addVideoLayer() }
-        addTool("Rastreamento", "Seguir objeto") { trackingPanel() }
-        addTool("Congelar", "Foto do quadro") { freezeFrame() }
-        addTool("Transformar", "Zoom e posicao") { transformPanel() }
-        addTool("Transicao", "Entrada e saida") { transitionPanel() }
+        addTool("Transformar", "Zoom e posição") { transformPanel() }
         addTool("Recorte", "Enquadramento") { cropPanel() }
         addTool("Girar", "90 graus") { edit(project.changeVideo(selected) { it.copy(rotation = (it.rotation + 90) % 360) }) }
         addTool("Espelhar", "Horizontal") { edit(project.changeVideo(selected) { it.copy(flip = !it.flip) }) }
-        addTool("Duplicar", "Criar copia") { duplicateSelected() }
+        addTool("Duplicar", "Criar cópia") { duplicateSelected() }
+        addTool("Congelar", "Foto do quadro") { freezeFrame() }
+        addTool("Mover", "Ordem do clipe") { movePanel() }
+        addTool("Substituir", "Trocar arquivo") { pick(false, selected) }
+
+        section("Inteligência artificial")
+        addTool("Auto Edit", "Edição inteligente") { autoEditPanel.open() }
+        addTool("Auto Reframe", "Enquadrar o sujeito") { autoReframePanel.open() }
+        addTool("Auto Cor", "Equilíbrio com 1 toque") { autoColor() }
+        addTool("Remover fundo", "Recorte do sujeito") { backgroundRemovalTools.open(clip.id) }
+        addTool("Color Match", "Copiar cor de outro clipe") { colorMatchPanel() }
+
+        section("Cor e efeitos")
+        addTool("Ajustar", "Cor e luz") { adjustmentsPanel() }
+        addTool("Filtros", "Looks e cores") { filters() }
+        addTool("Cor", "Curvas e LUT 3D") { colorPanel() }
+        addTool("Presets", "Looks cinematográficos") { presetsPanel() }
+        addTool("Navegador LUTs", "Comparar LUTs 3D") { openLutBrowser() }
+        addTool("Scopes", "Waveform e histograma") { scopesPanel() }
+
+        section("Movimento")
+        addTool("Animações", "Entrada, saída e loop") { animationTools.open(clip.id) }
+        addTool("Keyframe", "Animar no tempo") { keyframePanel() }
+        addTool("Transição", "Entrada e saída") { transitionPanel() }
+        addTool("Câmera 3D", "Perspectiva e visão") { cameraPanel() }
+        addTool("Rastreamento", "Seguir objeto") { trackingPanel() }
+        addTool("Estabilizar", "Remover trepidação") { stabilizeVideoPanel() }
+        addTool("Motion Blur", "Desfoque de movimento") { motionBlurPanel() }
+        addTool("Movimento suave", "Câmera lenta sem serrilhado") { smoothSlowMoPanel() }
+
+        section("Áudio")
+        addTool("Extrair áudio", "Do vídeo") { extractAudio() }
+        addTool("Batidas", "Achar o BPM e marcar") { beatPanel() }
+
+        section("Camadas e grupos")
+        addTool("Vídeo em camada", "Vídeo por cima") { addVideoLayer() }
+        addTool("Máscaras", "Forma e chroma") { masksPanel() }
+        addTool("Stickers Lottie", "Elementos animados") { lottieStickersPanel() }
         val group = CompoundEditing.at(project, clipId = clip.id)
         if (group == null) addTool("Criar compound", "Agrupar clipes") { createCompoundPanel() }
         else {
@@ -2852,13 +2870,12 @@ class EditorActivity : Activity() {
         }
         addTool("Copiar estilo", "Efeitos do clipe") { copyClipStyle() }
         if (copiedClipStyle != null) addTool("Colar estilo", "Aplicar efeitos") { pasteClipStyle() }
-        addTool("Mover", "Ordem do clipe") { movePanel() }
-        addTool("Substituir", "Trocar arquivo") { pick(false, selected) }
-        body.addView(grid)
+
         body.addView(editorToolCard("Excluir", "Remover este clipe da timeline", danger = true) {
             runAndClose { confirmDeleteSelected() }
-        }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(10) })
-        dialog = sheet("Editar clipe", body)
+        }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(18) })
+        dialog = sheet(clip.name.ifBlank { "Editar clipe" }, body, maxHeightRatio = .78f,
+            subtitle = "${timeLabel(clip.durationUs)}  ·  Clipe ${selected + 1} de ${project.videos.size}")
     }
 
     private fun splitAtCursor() {
@@ -2905,10 +2922,10 @@ class EditorActivity : Activity() {
 
     private fun movePanel() {
         val targets = project.videos.indices.filter { it != selected }
-        if (targets.isEmpty()) { feedback("Este e o unico clipe"); return }
+        if (targets.isEmpty()) { feedback("Este é o único clipe"); return }
         val options = targets.map { target ->
             val clipName = project.videos[target].name.take(34)
-            "Posicao ${target + 1} - $clipName"
+            "Posição ${target + 1} - $clipName"
         }
         choose("Mover clipe para", options) { index ->
             val target = targets[index]; val next = project.moveVideo(selected, target); selected = target; edit(next)
@@ -2919,8 +2936,8 @@ class EditorActivity : Activity() {
         val clip = project.videos.getOrNull(selected) ?: return
         val group = CompoundEditing.at(project, clipId = clip.id)
         val message = if (group != null) {
-            "${clip.name} sera removido. O compound \"${group.name}\" perde este clipe e sera desfeito."
-        } else "${clip.name} sera removido somente deste projeto."
+            "${clip.name} será removido. O compound \"${group.name}\" perde este clipe e será desfeito."
+        } else "${clip.name} será removido somente deste projeto."
         AlertDialog.Builder(this).setTitle("Excluir clipe?").setMessage(message)
             .setPositiveButton("Excluir") { _, _ ->
                 if (openCompoundId == group?.id) openCompoundId = null
@@ -2936,7 +2953,7 @@ class EditorActivity : Activity() {
         }
     }
     private fun seconds(field: EditText) = ((field.text.toString().replace(',', '.').toDoubleOrNull()
-        ?: throw IllegalArgumentException("Digite um tempo valido")) * SECOND).toLong().also { require(it >= 0) }
+        ?: throw IllegalArgumentException("Digite um tempo válido")) * SECOND).toLong().also { require(it >= 0) }
     private fun trimPanel() {
         val clip = selectedClip() ?: return
         val body = column().apply { setPadding(dp(4), 0, dp(4), dp(4)) }
@@ -2956,7 +2973,7 @@ class EditorActivity : Activity() {
             startValue.text = timeLabel(startUs); endValue.text = timeLabel(endUs)
             durationValue.text = timeLabel(clip.copy(inUs = startUs, outUs = endUs).durationUs)
         }
-        body.addView(label("INICIO", 10f, EditorStyle.MUTED))
+        body.addView(label("INÍCIO", 10f, EditorStyle.MUTED))
         val startSlider = SeekBar(this).apply { max = rangeMax; this.progress = progress(startUs); minimumHeight = dp(52) }
         body.addView(startSlider)
         body.addView(label("FIM", 10f, EditorStyle.MUTED))
@@ -2985,7 +3002,7 @@ class EditorActivity : Activity() {
         val clipStart = project.startOf(selected)
         val cursorSource = clip.timeMap.sourceAt(position - clipStart)
         val cursorActions = row()
-        cursorActions.addView(action("Inicio no cursor") {
+        cursorActions.addView(action("Início no cursor") {
             startUs = cursorSource.coerceAtMost(latestStart()); startSlider.progress = progress(startUs); updateValues()
         }, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginEnd = dp(4) })
         cursorActions.addView(action("Fim no cursor") {
@@ -3057,14 +3074,14 @@ class EditorActivity : Activity() {
         // The panel has to tell the truth about what it will actually do, otherwise the
         // control reads as broken when the clip simply is not slowed down yet.
         val explanation = when {
-            clip.image -> "Imagens nao tem quadros para interpolar."
+            clip.image -> "Imagens não têm quadros para interpolar."
             current == SmoothSlowMoProfile.OFF ->
-                "Desligado: o clipe em camera lenta mostra os quadros originais esticados."
+                "Desligado: o clipe em câmera lenta mostra os quadros originais esticados."
             plan == null ->
-                "Este clipe nao esta em camera lenta (minimo ${formatSpeed(SmoothSlowMoPlanner.slowestSpeed(clip))}). " +
+                "Este clipe não está em câmera lenta (mínimo ${formatSpeed(SmoothSlowMoPlanner.slowestSpeed(clip))}). " +
                     "Reduza a velocidade em Velocidade e volte aqui."
-            SmoothSlowMoCache.isRendering(clip.id) -> "Gerando a previa interpolada em segundo plano..."
-            else -> "Vai gerar ${plan.outputFps} quadros por segundo a partir de ${formatSpeed(plan.slowestSpeed)} de camera lenta. O arquivo original nao e alterado e a exportacao usa o original."
+            SmoothSlowMoCache.isRendering(clip.id) -> "Gerando a prévia interpolada em segundo plano..."
+            else -> "Vai gerar ${plan.outputFps} quadros por segundo a partir de ${formatSpeed(plan.slowestSpeed)} de câmera lenta. O arquivo original não é alterado e a exportação usa o original."
         }
         body.addView(label(explanation, color = EditorStyle.MUTED))
 
@@ -3080,7 +3097,7 @@ class EditorActivity : Activity() {
             SmoothSlowMoPreferences.setProfile(this, profile)
             val request = SmoothSlowMoPlanner.plan(clip, profile)
             if (request == null) {
-                feedback("Nada a gerar: este clipe nao esta em camera lenta")
+                feedback("Nada a gerar: este clipe não está em câmera lenta")
             } else {
                 SmoothSlowMoCache.requestIfNeeded(applicationContext, clip, profile) { clipId, derivedUri ->
                     runOnUiThread {
@@ -3095,7 +3112,7 @@ class EditorActivity : Activity() {
                         }
                     }
                 }
-                feedback("Gerando previa interpolada em segundo plano")
+                feedback("Gerando prévia interpolada em segundo plano")
             }
             dialog.dismiss()
         })
@@ -3112,14 +3129,14 @@ class EditorActivity : Activity() {
         var compression = (clip.enhance.compression * 100).toInt()
         var normalize = (clip.enhance.normalize * 100).toInt()
         slider(body, "Volume (%)", volume, 200) { volume = it }
-        slider(body, "Fade-in do audio (ms)", fadeInMs, 10_000) { fadeInMs = it }
-        slider(body, "Fade-out do audio (ms)", fadeOutMs, 10_000) { fadeOutMs = it }
-        body.addView(sectionTitle("Tratamento do audio", "Reduz ruido, destaca a voz e deixa o volume mais constante."))
+        slider(body, "Fade-in do áudio (ms)", fadeInMs, 10_000) { fadeInMs = it }
+        slider(body, "Fade-out do áudio (ms)", fadeOutMs, 10_000) { fadeOutMs = it }
+        body.addView(sectionTitle("Tratamento do áudio", "Reduz ruído, destaca a voz e deixa o volume mais constante."))
         slider(body, "Reduzir ruido (%)", noiseReduction, 100) { noiseReduction = it }
         slider(body, "Destacar voz (%)", voiceEnhance, 100) { voiceEnhance = it }
-        slider(body, "Compressao (%)", compression, 100) { compression = it }
+        slider(body, "Compressão (%)", compression, 100) { compression = it }
         slider(body, "Normalizar volume (%)", normalize, 100) { normalize = it }
-        body.addView(label("Os fades sao ajustados automaticamente se forem maiores que metade do clipe. Acima de 100% o volume pode distorcer.", color = EditorStyle.MUTED))
+        body.addView(label("Os fades são ajustados automaticamente se forem maiores que metade do clipe. Acima de 100% o volume pode distorcer.", color = EditorStyle.MUTED))
         lateinit var dialog: Dialog
         body.addView(action("Aplicar", true) {
             edit(project.changeVideo(selected) { it.copy(
@@ -3140,7 +3157,7 @@ class EditorActivity : Activity() {
         }
         val currentTransform = clip.transformAt(sourceUs).copy(sourceUs = sourceUs)
         val body = column().apply { setPadding(dp(3), 0, dp(3), dp(6)) }
-        body.addView(label("TRANSFORMACAO", 11f, EditorStyle.ACCENT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        body.addView(label("TRANSFORMAÇÃO", 11f, EditorStyle.ACCENT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
         var zoom = (currentTransform.zoom * 100).toInt()
         var horizontal = (currentTransform.x * 100).toInt()
         var vertical = (currentTransform.y * 100).toInt()
@@ -3162,19 +3179,19 @@ class EditorActivity : Activity() {
         }
         fun draft() = previewEdit(project.mapVideo(clip.id) { transformed(it) })
         slider(body, "Zoom (%)", zoom, 400, minimum = 25) { zoom = it; draft() }
-        slider(body, "Posicao horizontal", horizontal + 50, 100) { horizontal = it - 50; draft() }
-        slider(body, "Posicao vertical", vertical + 50, 100) { vertical = it - 50; draft() }
-        slider(body, "Rotacao livre", angle + 180, 360) { angle = it - 180; draft() }
+        slider(body, "Posição horizontal", horizontal + 50, 100) { horizontal = it - 50; draft() }
+        slider(body, "Posição vertical", vertical + 50, 100) { vertical = it - 50; draft() }
+        slider(body, "Rotação livre", angle + 180, 360) { angle = it - 180; draft() }
         slider(body, "Opacidade (%)", opacity, 100, minimum = 5) { opacity = it; draft() }
         slider(body, "Desfoque", blur, 250) { blur = it }
         lateinit var motionButton: Button
         motionButton = action("Movimento: ${motion.label}") {
-            choose("Movimento automatico", ClipMotion.entries.map { it.label }) { index ->
+            choose("Movimento automático", ClipMotion.entries.map { it.label }) { index ->
                 motion = ClipMotion.entries[index]; motionButton.text = "Movimento: ${motion.label}"; draft()
             }
         }
         body.addView(motionButton, LinearLayout.LayoutParams(-1, dp(56)))
-        body.addView(label("Movimentos automaticos criam efeito Ken Burns e panoramica, especialmente util em fotos.", 11f, EditorStyle.MUTED))
+        body.addView(label("Movimentos automáticos criam efeito Ken Burns e panorâmica, especialmente útil em fotos.", 11f, EditorStyle.MUTED))
         lateinit var dialog: Dialog
         val footer = row()
         footer.addView(action("Restaurar") {
@@ -3197,21 +3214,21 @@ class EditorActivity : Activity() {
         lateinit var inputButton: Button
         lateinit var outputButton: Button
         inputButton = action("Entrada: ${input.label}") {
-            choose("Transicao de entrada", ClipTransition.entries.map { it.label }) { index ->
+            choose("Transição de entrada", ClipTransition.entries.map { it.label }) { index ->
                 input = ClipTransition.entries[index]; inputButton.text = "Entrada: ${input.label}"
             }
         }
-        outputButton = action("Saida: ${output.label}") {
-            choose("Transicao de saida", ClipTransition.entries.map { it.label }) { index ->
-                output = ClipTransition.entries[index]; outputButton.text = "Saida: ${output.label}"
+        outputButton = action("Saída: ${output.label}") {
+            choose("Transição de saída", ClipTransition.entries.map { it.label }) { index ->
+                output = ClipTransition.entries[index]; outputButton.text = "Saída: ${output.label}"
             }
         }
         body.addView(inputButton, LinearLayout.LayoutParams(-1, dp(56)))
         body.addView(outputButton, LinearLayout.LayoutParams(-1, dp(56)))
-        slider(body, "Duracao (ms)", durationMs, 2000, minimum = 100) { durationMs = it }
-        body.addView(label("A duracao e limitada automaticamente em clipes curtos para preservar o conteudo.", 11f, EditorStyle.MUTED))
+        slider(body, "Duração (ms)", durationMs, 2000, minimum = 100) { durationMs = it }
+        body.addView(label("A duração é limitada automaticamente em clipes curtos para preservar o conteúdo.", 11f, EditorStyle.MUTED))
         lateinit var dialog: Dialog
-        body.addView(action("Aplicar transicoes", true) {
+        body.addView(action("Aplicar transições", true) {
             edit(project.changeVideo(selected) { it.copy(
                 transitionIn = input, transitionOut = output, transitionDurationUs = durationMs * 1000L,
             ) }); dialog.dismiss()
@@ -3221,20 +3238,20 @@ class EditorActivity : Activity() {
                 transitionIn = input, transitionOut = output, transitionDurationUs = durationMs * 1000L,
             ) })); dialog.dismiss()
         })
-        dialog = sheet("Transicoes", body)
+        dialog = sheet("Transições", body)
     }
     private fun extractAudio() {
         val clip = selectedClip() ?: return
-        if (clip.image) { error("Fotos nao possuem audio para extrair."); return }
-        if (clip.speed != 1f || clip.speedCurve.isNotEmpty()) { error("Para manter o audio sincronizado, extraia antes de alterar a velocidade do clipe."); return }
-        if (project.audio.size >= 8) { error("Limite de 8 faixas de audio"); return }
+        if (clip.image) { error("Fotos não possuem áudio para extrair."); return }
+        if (clip.speed != 1f || clip.speedCurve.isNotEmpty()) { error("Para manter o áudio sincronizado, extraia antes de alterar a velocidade do clipe."); return }
+        if (project.audio.size >= 8) { error("Limite de 8 faixas de áudio"); return }
         val track = AudioClip(
-            uri = clip.uri, name = "Audio - ${clip.name}", sourceUs = clip.sourceUs,
+            uri = clip.uri, name = "Áudio - ${clip.name}", sourceUs = clip.sourceUs,
             startUs = project.startOf(selected), inUs = clip.inUs, outUs = clip.outUs,
         )
         val withTrack = project.copy(audio = project.audio + track)
-        AlertDialog.Builder(this).setTitle("Audio extraido")
-            .setMessage("Deseja silenciar o som original deste clipe para evitar audio duplicado?")
+        AlertDialog.Builder(this).setTitle("Áudio extraído")
+            .setMessage("Deseja silenciar o som original deste clipe para evitar áudio duplicado?")
             .setPositiveButton("Extrair e silenciar") { _, _ -> edit(withTrack.changeVideo(selected) { it.copy(volume = 0f) }) }
             .setNegativeButton("Manter os dois") { _, _ -> edit(withTrack) }
             .setNeutralButton("Cancelar", null).show()
@@ -3275,8 +3292,8 @@ class EditorActivity : Activity() {
     private fun adjustmentsPanel() {
         val clip = selectedClip() ?: return
         val body = column().apply { setPadding(dp(3), 0, dp(3), dp(6)) }
-        body.addView(label("CORRECAO DE COR", 11f, EditorStyle.ACCENT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
-        body.addView(label("Os ajustes aparecem na previa e no arquivo exportado.", 12f, EditorStyle.MUTED))
+        body.addView(label("CORREÇÃO DE COR", 11f, EditorStyle.ACCENT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        body.addView(label("Os ajustes aparecem na prévia e no arquivo exportado.", 12f, EditorStyle.MUTED))
         var brightness = (clip.brightness * 100).toInt()
         var contrast = (clip.contrast * 100).toInt()
         var saturation = clip.saturation.toInt()
@@ -3294,7 +3311,7 @@ class EditorActivity : Activity() {
         )
         fun draft() = previewEdit(project.mapVideo(clip.id) { adjusted(it) })
         val colorButtons = row()
-        colorButtons.addView(action("✦ Auto Color") {
+        colorButtons.addView(action("Auto Cor") {
             if (busy) return@action
             val sourceUs = clip.timeMap.sourceAt((position - project.startOf(selected)).coerceIn(0L, clip.durationUs))
             io.execute {
@@ -3336,7 +3353,7 @@ class EditorActivity : Activity() {
 
         val otherClips = project.videos.filterIndexed { idx, _ -> idx != selected }
         if (otherClips.isNotEmpty()) {
-            colorButtons.addView(action("⚖ Color Match") {
+            colorButtons.addView(action("Color Match") {
                 val names = otherClips.mapIndexed { idx, c -> "${idx + 1}. ${c.name.take(30)}" }
                 choose("Escolha o clipe de referência", names) { chosenIdx ->
                     val refClip = otherClips[chosenIdx]
@@ -3382,7 +3399,7 @@ class EditorActivity : Activity() {
 
         slider(body, "Brilho", brightness + 100, 200) { brightness = it - 100; draft() }
         slider(body, "Contraste", contrast + 90, 180) { contrast = it - 90; draft() }
-        slider(body, "Saturacao", saturation + 100, 200) { saturation = it - 100; draft() }
+        slider(body, "Saturação", saturation + 100, 200) { saturation = it - 100; draft() }
         slider(body, "Matiz", hue + 180, 360) { hue = it - 180; draft() }
         slider(body, "Luminosidade", lightness + 100, 200) { lightness = it - 100; draft() }
         slider(body, "Temperatura", temperature + 100, 200) { temperature = it - 100; draft() }
@@ -3416,19 +3433,19 @@ class EditorActivity : Activity() {
 
     private fun audioPanel(id: String? = null) {
         if (id == null) {
-            choose("Faixas de audio", listOf("+ Importar musica ou audio", "● Gravar narracao") + project.audio.mapIndexed { index, track ->
+            choose("Faixas de áudio", listOf("+ Importar música ou áudio", "● Gravar narração") + project.audio.mapIndexed { index, track ->
                 "${index + 1}. ${track.name.take(42)}"
             }) { index ->
                 if (index == 0) {
-                    if (project.audio.size >= 8) error("Limite de 8 faixas de audio") else pick(true)
+                    if (project.audio.size >= 8) error("Limite de 8 faixas de áudio") else pick(true)
                 } else if (index == 1) voiceoverPanel() else audioPanel(project.audio[index - 2].id)
             }
             return
         }
         val audio = project.audio.find { it.id == id } ?: return
         val body = column(); body.addView(label(audio.name))
-        val start = numberField(body, "Posicao na timeline (s)", audio.startUs / SECOND.toDouble())
-        val sourceStart = numberField(body, "Inicio no arquivo (s)", audio.inUs / SECOND.toDouble())
+        val start = numberField(body, "Posição na timeline (s)", audio.startUs / SECOND.toDouble())
+        val sourceStart = numberField(body, "Início no arquivo (s)", audio.inUs / SECOND.toDouble())
         val sourceEnd = numberField(body, "Fim no arquivo (s)", audio.outUs / SECOND.toDouble())
         var volume = (audio.volume * 100).toInt()
         var fadeInMs = (audio.fadeInUs / 1000).toInt()
@@ -3436,17 +3453,17 @@ class EditorActivity : Activity() {
         slider(body, "Volume (%)", volume, 200) { volume = it }
         slider(body, "Fade-in (ms)", fadeInMs, 10_000) { fadeInMs = it }
         slider(body, "Fade-out (ms)", fadeOutMs, 10_000) { fadeOutMs = it }
-        body.addView(sectionTitle("Tratamento do audio", "Reduz ruido, destaca a voz e deixa o volume mais constante."))
+        body.addView(sectionTitle("Tratamento do áudio", "Reduz ruído, destaca a voz e deixa o volume mais constante."))
         var noiseReduction = (audio.enhance.noiseReduction * 100).toInt()
         var voiceEnhance = (audio.enhance.voiceEnhance * 100).toInt()
         var compression = (audio.enhance.compression * 100).toInt()
         var normalize = (audio.enhance.normalize * 100).toInt()
         slider(body, "Reduzir ruido (%)", noiseReduction, 100) { noiseReduction = it }
         slider(body, "Destacar voz (%)", voiceEnhance, 100) { voiceEnhance = it }
-        slider(body, "Compressao (%)", compression, 100) { compression = it }
+        slider(body, "Compressão (%)", compression, 100) { compression = it }
         slider(body, "Normalizar volume (%)", normalize, 100) { normalize = it }
-        body.addView(label("O tratamento roda no preview e na exportacao. Use fones para avaliar a voz.", color = EditorStyle.MUTED))
-        body.addView(label("Uma faixa de musica adicional, misturada ao som dos videos. O audio termina junto com a timeline.", color = EditorStyle.MUTED))
+        body.addView(label("O tratamento roda no preview e na exportação. Use fones para avaliar a voz.", color = EditorStyle.MUTED))
+        body.addView(label("Uma faixa de música adicional, misturada ao som dos vídeos. O áudio termina junto com a timeline.", color = EditorStyle.MUTED))
         lateinit var dialog: Dialog
         body.addView(action("Aplicar", true) {
             runCatching {
@@ -3457,11 +3474,11 @@ class EditorActivity : Activity() {
                         compression / 100f, normalize / 100f))
             }.fold({ changed ->
                 edit(project.copy(audio = project.audio.map { if (it.id == id) changed else it })); dialog.dismiss()
-            }, { error("Intervalo de audio invalido") })
+            }, { error("Intervalo de áudio inválido") })
         })
         val actions = row()
         actions.addView(action("Duplicar faixa") {
-            if (project.audio.size >= 8) error("Limite de 8 faixas de audio") else {
+            if (project.audio.size >= 8) error("Limite de 8 faixas de áudio") else {
                 val copy = audio.copy(id = newId(), startUs = (audio.startUs + SECOND).coerceAtMost((project.durationUs - 1).coerceAtLeast(0)))
                 edit(project.copy(audio = project.audio + copy)); dialog.dismiss()
             }
@@ -3471,22 +3488,22 @@ class EditorActivity : Activity() {
         }, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(3) })
         body.addView(actions)
         if (project.audio.size < 8) body.addView(action("+ Adicionar outra faixa") { dialog.dismiss(); pick(true) })
-        dialog = sheet("Editar faixa de audio", body)
+        dialog = sheet("Editar faixa de áudio", body)
     }
 
     private fun voiceoverPanel() {
-        if (project.durationUs <= 0) { error("Adicione um video antes da narracao"); return }
-        if (project.audio.size >= 8) { error("Limite de 8 faixas de audio"); return }
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes da narração"); return }
+        if (project.audio.size >= 8) { error("Limite de 8 faixas de áudio"); return }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 703)
             return
         }
         val body = column()
-        body.addView(label("A narracao comeca na posicao atual da timeline: ${timeLabel(position)}", 14f))
-        body.addView(label("Use fones para evitar que o som da previa volte pelo microfone. A gravacao para automaticamente no fim do projeto.", 12f, EditorStyle.MUTED))
+        body.addView(label("A narração começa na posição atual da timeline: ${timeLabel(position)}", 14f))
+        body.addView(label("Use fones para evitar que o som da prévia volte pelo microfone. A gravação para automaticamente no fim do projeto.", 12f, EditorStyle.MUTED))
         lateinit var dialog: Dialog
-        body.addView(action("Iniciar narracao", true) { dialog.dismiss(); startVoiceover() })
-        dialog = sheet("Gravar narracao", body)
+        body.addView(action("Iniciar narração", true) { dialog.dismiss(); startVoiceover() })
+        dialog = sheet("Gravar narração", body)
     }
 
     @Suppress("DEPRECATION")
@@ -3506,7 +3523,7 @@ class EditorActivity : Activity() {
             recorder.start()
         }
         if (started.isFailure) {
-            recorder.release(); file.delete(); error("Nao foi possivel iniciar o microfone: ${started.exceptionOrNull()?.message}"); return
+            recorder.release(); file.delete(); error("Não foi possível iniciar o microfone: ${started.exceptionOrNull()?.message}"); return
         }
         voiceRecorder = recorder
         voiceFile = file
@@ -3515,8 +3532,8 @@ class EditorActivity : Activity() {
         seek(voiceStartUs)
         if (!preview.isPlaying) preview.toggle(project.durationUs)
         main.postDelayed(voiceLimit, ((project.durationUs - voiceStartUs) / 1000).coerceAtLeast(300))
-        voiceDialog = AlertDialog.Builder(this).setTitle("Gravando narracao")
-            .setMessage("Fale agora. A previa esta acompanhando a timeline.")
+        voiceDialog = AlertDialog.Builder(this).setTitle("Gravando narração")
+            .setMessage("Fale agora. A prévia está acompanhando a timeline.")
             .setPositiveButton("Parar e adicionar", null)
             .setNegativeButton("Cancelar", null)
             .setCancelable(false).create().also { dialog ->
@@ -3542,17 +3559,17 @@ class EditorActivity : Activity() {
         voiceDialog = null
         if (!save || !stopped || file == null || elapsedUs < 300_000) {
             file?.delete()
-            if (save) feedback("Narracao curta demais")
+            if (save) feedback("Narração curta demais")
             return
         }
         val start = voiceStartUs
         io.execute {
-            val result = runCatching { MediaImport.audio(this, Uri.fromFile(file), start).copy(name = "Narracao") }
+            val result = runCatching { MediaImport.audio(this, Uri.fromFile(file), start).copy(name = "Narração") }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 result.fold({ track ->
                     if (project.audio.size < 8) edit(project.copy(audio = project.audio + track)) else file.delete()
-                }, { file.delete(); error("Nao foi possivel adicionar a narracao: ${it.message}") })
+                }, { file.delete(); error("Não foi possível adicionar a narração: ${it.message}") })
             }
         }
     }
@@ -3561,12 +3578,12 @@ class EditorActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 703) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) voiceoverPanel()
-            else error("Permita o microfone para gravar narracao.")
+            else error("Permita o microfone para gravar narração.")
         }
     }
 
     private fun stickerMenu() {
-        if (project.durationUs <= 0) { error("Adicione um video antes da camada de imagem"); return }
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes da camada de imagem"); return }
         val options = mutableListOf(
             "+ Adicionar imagem da galeria",
             "+ Sticker animado (Lottie)",
@@ -3597,22 +3614,22 @@ class EditorActivity : Activity() {
         var animation = sticker.animation
         slider(body, "Tamanho (%)", size, 150, minimum = 3) { size = it }
         slider(body, "Opacidade (%)", opacity, 100, minimum = 5) { opacity = it }
-        slider(body, "Rotacao", rotation + 180, 360) { rotation = it - 180 }
+        slider(body, "Rotação", rotation + 180, 360) { rotation = it - 180 }
         slider(body, "Horizontal (%)", horizontal, 100) { horizontal = it }
         slider(body, "Vertical (%)", vertical, 100) { vertical = it }
         val flip = CheckBox(this).apply { this.text = "Espelhar horizontalmente"; isChecked = sticker.flip }
         body.addView(flip)
         lateinit var animationButton: Button
-        animationButton = action("Animacao: ${animation.label}") {
-            choose("Animacao da camada", TextAnimation.entries.map { it.label }) { index ->
+        animationButton = action("Animação: ${animation.label}") {
+            choose("Animação da camada", TextAnimation.entries.map { it.label }) { index ->
                 animation = TextAnimation.entries[index]
-                animationButton.text = "Animacao: ${animation.label}"
+                animationButton.text = "Animação: ${animation.label}"
             }
         }
         body.addView(animationButton, LinearLayout.LayoutParams(-1, dp(54)))
-        val start = numberField(body, "Inicio na timeline (s)", sticker.startUs / SECOND.toDouble())
+        val start = numberField(body, "Início na timeline (s)", sticker.startUs / SECOND.toDouble())
         val end = numberField(body, "Fim na timeline (s)", sticker.endUs / SECOND.toDouble())
-        body.addView(label("Arraste na previa para posicionar, pince para redimensionar e toque duas vezes para editar.", 11f, EditorStyle.MUTED))
+        body.addView(label("Arraste na prévia para posicionar, pince para redimensionar e toque duas vezes para editar.", 11f, EditorStyle.MUTED))
         lateinit var dialog: Dialog
         body.addView(action("Aplicar camada", true) {
             runCatching {
@@ -3703,7 +3720,7 @@ class EditorActivity : Activity() {
         if (project.texts.isNotEmpty()) body.addView(action("Exportar textos como SRT") {
             dialog.dismiss()
             runCatching { startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                .setType("application/x-subrip").putExtra(Intent.EXTRA_TITLE, "Legendas.srt"), 706) }.onFailure { error("Seletor de destino indisponivel") }
+                .setType("application/x-subrip").putExtra(Intent.EXTRA_TITLE, "Legendas.srt"), 706) }.onFailure { error("Seletor de destino indisponível") }
         })
         dialog = sheet("Legendas", body)
     }
@@ -4616,24 +4633,32 @@ class EditorActivity : Activity() {
         if (project.texts.isEmpty()) { textPanel(); return }
         val body = column()
         lateinit var dialog: Dialog
-        body.addView(action("+ Adicionar texto", true) { dialog.dismiss(); textPanel() })
-        val search = EditText(this).apply { hint = "Buscar texto ou legenda"; isSingleLine = true }; body.addView(search)
-        val list = ListView(this).apply { dividerHeight = dp(5) }
-        var filtered = project.texts.sortedBy { it.startUs }
+        body.addView(action("Adicionar texto", true) { dialog.dismiss(); textPanel() })
+        val search = searchField("Buscar texto ou legenda")
+        body.addView(search, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        val results = column().apply { setPadding(0, dp(6), 0, 0) }
+        body.addView(results)
         fun update(query: String) {
-            filtered = project.texts.filter { it.text.contains(query, true) }.sortedBy { it.startUs }
-            list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, filtered.map { "${timeLabel(it.startUs)}   ${it.text.replace('\n', ' ').take(90)}" })
+            results.removeAllViews()
+            val key = searchKey(query)
+            val filtered = project.texts.filter { searchKey(it.text).contains(key) }.sortedBy { it.startUs }
+            if (filtered.isEmpty()) results.addView(emptyState("Nenhum texto encontrado."))
+            filtered.take(120).forEach { text ->
+                results.addRow(listRow(text.text.replace('\n', ' ').take(90), timeLabel(text.startUs)) {
+                    dialog.dismiss(); seek(text.startUs); textPanel(text.id)
+                })
+            }
+            if (filtered.size > 120) results.addView(label("Mostrando 120 de ${filtered.size}. Use a busca para achar os outros.", 12f, EditorStyle.MUTED))
         }
-        list.setOnItemClickListener { _, _, index, _ -> val text = filtered[index]; dialog.dismiss(); seek(text.startUs); textPanel(text.id) }
         search.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { update(s.toString()) }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
-        body.addView(list, LinearLayout.LayoutParams(-1, dp(280))); update(""); dialog = sheet("Textos e legendas", body)
+        update(""); dialog = sheet("Textos e legendas", body, subtitle = "${project.texts.size} na timeline")
     }
     private fun textPanel(id: String? = null) {
-        if (project.durationUs <= 0) { error("Adicione um video antes do texto"); return }
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes do texto"); return }
         if (id == null && project.texts.size >= MAX_TEXTS) { error("Limite de $MAX_TEXTS textos por projeto"); return }
         val existing = project.texts.find { it.id == id }
         val at = minOf(position, (project.durationUs - MIN_CLIP).coerceAtLeast(0))
@@ -4665,7 +4690,7 @@ class EditorActivity : Activity() {
         var yPosition = (text.y * 100).toInt()
         var animation = text.animation
 
-        section("Conteudo", "Veja uma amostra do estilo antes de aplicar")
+        section("Conteúdo", "Veja uma amostra do estilo antes de aplicar")
         val input = EditText(this).apply {
             setText(text.text); minLines = 2; maxLines = 6
             filters = arrayOf(android.text.InputFilter.LengthFilter(500))
@@ -4713,7 +4738,7 @@ class EditorActivity : Activity() {
             alignmentButton.text = "Alinhamento: ${when (alignment) {
                 TextAlignment.LEFT -> "Esquerda"; TextAlignment.CENTER -> "Centro"; TextAlignment.RIGHT -> "Direita"
             }}"
-            animationButton.text = "Animacao: ${animation.label}"
+            animationButton.text = "Animação: ${animation.label}"
             bold.isChecked = boldValue
             italic.isChecked = italicValue
             underline.isChecked = underlineValue
@@ -4721,7 +4746,7 @@ class EditorActivity : Activity() {
             widthSlider.progress = boxWidth
         }
 
-        section("Estilos rapidos")
+        section("Estilos rápidos")
         val presets = row()
         // Cada estilo rápido aparece como "Aa" já na fonte, cor, fundo e contorno dele.
         fun preset(name: String, sampleFont: String, sampleColor: Int, sampleBg: Int, sampleOutline: Int?, apply: () -> Unit) =
@@ -4766,7 +4791,7 @@ class EditorActivity : Activity() {
             this.text = "Negrito"; isChecked = boldValue; setOnCheckedChangeListener { _, checked -> boldValue = checked; updatePreview() }
         }
         italic = CheckBox(this).apply {
-            this.text = "Italico"; isChecked = italicValue; setOnCheckedChangeListener { _, checked -> italicValue = checked; updatePreview() }
+            this.text = "Itálico"; isChecked = italicValue; setOnCheckedChangeListener { _, checked -> italicValue = checked; updatePreview() }
         }
         underline = CheckBox(this).apply {
             this.text = "Sublinhado"; isChecked = underlineValue; setOnCheckedChangeListener { _, checked -> underlineValue = checked; updatePreview() }
@@ -4782,7 +4807,7 @@ class EditorActivity : Activity() {
         }
         body.addView(alignmentButton, LinearLayout.LayoutParams(-1, dp(52)))
 
-        section("Cor do texto", "Escolha uma cor ou digite um codigo hexadecimal")
+        section("Cor do texto", "Escolha uma cor ou digite um código hexadecimal")
         val colors = listOf(Color.WHITE, Color.BLACK, 0xFFFFCF5A.toInt(), 0xFFFF6B7A.toInt(), 0xFFC50022.toInt(), 0xFF5EDADB.toInt(), 0xFF58E28A.toInt())
         val colorRow = row()
         colors.forEach { chosen ->
@@ -4818,29 +4843,29 @@ class EditorActivity : Activity() {
         shadow = CheckBox(this).apply { this.text = "Sombra suave"; isChecked = text.shadow }
         body.addView(shadow)
 
-        section("Tamanho e composicao")
+        section("Tamanho e composição")
         var size = (text.size * 100).toInt()
         sizeSlider = slider(body, "Tamanho (% da altura)", size, 25, minimum = 2) { size = it }
         opacitySlider = slider(body, "Opacidade (%)", opacity, 100, minimum = 10) { opacity = it; updatePreview() }
-        widthSlider = slider(body, "Largura da caixa (0 = automatica)", boxWidth, 95) { boxWidth = if (it in 1..19) 20 else it }
+        widthSlider = slider(body, "Largura da caixa (0 = automática)", boxWidth, 95) { boxWidth = if (it in 1..19) 20 else it }
         slider(body, "Espacamento entre letras", letterSpacing + 5, 35) { letterSpacing = it - 5; updatePreview() }
         slider(body, "Espacamento entre linhas", lineSpacing, 200, minimum = 70) { lineSpacing = it; updatePreview() }
-        slider(body, "Rotacao", rotation + 180, 360) { rotation = it - 180 }
+        slider(body, "Rotação", rotation + 180, 360) { rotation = it - 180 }
 
-        section("Posicao precisa", "Tambem e possivel arrastar e redimensionar direto no video")
+        section("Posição precisa", "Também é possível arrastar e redimensionar direto no vídeo")
         slider(body, "Horizontal (%)", xPosition, 100) { xPosition = it }
         slider(body, "Vertical (%)", yPosition, 100) { yPosition = it }
 
         section("Tempo e movimento")
-        val start = numberField(body, "Inicio na timeline (s)", text.startUs / SECOND.toDouble())
+        val start = numberField(body, "Início na timeline (s)", text.startUs / SECOND.toDouble())
         val end = numberField(body, "Fim na timeline (s)", text.endUs / SECOND.toDouble())
         animationButton = action("") {
-            choose("Animacao de entrada e saida", TextAnimation.entries.map { it.label }) { index ->
+            choose("Animação de entrada e saída", TextAnimation.entries.map { it.label }) { index ->
                 animation = TextAnimation.entries[index]; updatePreview()
             }
         }
         body.addView(animationButton, LinearLayout.LayoutParams(-1, dp(54)))
-        body.addView(label("A animacao aparece na previa e no video exportado. Arraste o texto no video, pince para redimensionar e toque duas vezes para editar.", color = EditorStyle.MUTED))
+        body.addView(label("A animação aparece na prévia e no vídeo exportado. Arraste o texto no vídeo, pince para redimensionar e toque duas vezes para editar.", color = EditorStyle.MUTED))
 
         updatePreview()
         lateinit var dialog: Dialog
@@ -4863,7 +4888,7 @@ class EditorActivity : Activity() {
                 stickerHandles.selected = null
                 edit(project.copy(texts = if (existing == null) project.texts + changed else project.texts.map { if (it.id == id) changed else it }))
                 seek(changed.startUs); dialog.dismiss()
-            }, { error("Preencha o texto e um intervalo valido dentro do video.") })
+            }, { error("Preencha o texto e um intervalo válido dentro do vídeo.") })
         })
         if (existing != null) {
             val layerRow = row()
@@ -4887,33 +4912,43 @@ class EditorActivity : Activity() {
                 LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(3) })
             body.addView(editRow)
         }
-        dialog = sheet(if (existing == null) "Novo texto" else "Estudio de texto", body)
+        dialog = sheet(if (existing == null) "Novo texto" else "Estúdio de texto", body)
     }
 
     private fun previewQuality() {
-        if (EditorExportService.state.active) { error("A previa fica pausada durante a exportacao para economizar memoria."); return }
-        choose("Qualidade da previa (nao altera a exportacao)", listOf("Automatica (recomendado)", "Leve: 480p", "Media: 720p", "Alta: ate 1080p")) {
+        if (EditorExportService.state.active) { error("A prévia fica pausada durante a exportação para economizar memória."); return }
+        choose("Qualidade da prévia (não altera a exportação)", listOf("Automática (recomendado)", "Leve: 480p", "Média: 720p", "Alta: até 1080p")) {
             preview.quality = when (it) { 0 -> 0; 1 -> 480; 2 -> 720; else -> 1080 }
             if (!EditorExportService.state.active) preview.load(project, position)
         }
     }
     private fun projectPanel() {
-        choose("Projeto", listOf("Salvar agora", "Renomear", "Abrir biblioteca", "Recursos desta versao")) { i -> when (i) {
+        choose("Projeto", listOf("Salvar agora", "Renomear", "Abrir biblioteca")) { i -> when (i) {
             0 -> saveAsync(false)
-            1 -> {
-                val input = EditText(this).apply { setText(project.name); filters = arrayOf(android.text.InputFilter.LengthFilter(100)) }
-                AlertDialog.Builder(this).setTitle("Nome do projeto").setView(input).setPositiveButton("Salvar") { _, _ ->
-                    edit(project.copy(name = input.text.toString().trim().ifEmpty { "Novo projeto" }))
-                }.setNegativeButton("Cancelar", null).show()
-            }
+            1 -> renameProject()
             2 -> { saveAsync(false); startActivity(Intent(this, EditorLibraryActivity::class.java)) }
-            3 -> AlertDialog.Builder(this).setTitle("Recly Editor V3: base multicamadas")
-                .setMessage("Video principal e ate sete faixas sobrepostas com posicao, escala, corte, divisao, volume, visibilidade e bloqueio. O limite pratico depende dos decoders do aparelho.\n\nPilha de efeitos GPU com intensidade e parametros, seis efeitos incluidos e importacao de pacotes .reclyfx. Previa e exportacao usam a mesma composicao.\n\nFiltros, LUTs, curvas de cor, mascaras, chroma, keyframes, textos, stickers, SRT, rascunhos de legendas automaticas, tracking de movimento e narracao continuam disponiveis. Revise as legendas geradas antes de exportar. Waveform real nas faixas de audio importadas.\n\nEsta etapa ainda nao inclui reverse, speed ramp ou transicoes entre dois videos. Exportacao H.264/AAC com resolucao e FPS validados pelo encoder.")
-                .setPositiveButton("OK", null).show()
         } }
     }
+    private fun renameProject() {
+        val body = column()
+        lateinit var dialog: Dialog
+        val input = EditText(this).apply {
+            setText(project.name); setSelection(text.length); isSingleLine = true
+            filters = arrayOf(android.text.InputFilter.LengthFilter(100)); hint = "Nome do projeto"
+        }
+        body.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        val buttons = row().apply { setPadding(0, dp(12), 0, 0) }
+        buttons.addView(action("Cancelar") { dialog.dismiss() }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) })
+        buttons.addView(action("Salvar", true) {
+            edit(project.copy(name = input.text.toString().trim().ifEmpty { "Novo projeto" })); dialog.dismiss()
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        body.addView(buttons)
+        dialog = sheet("Renomear projeto", body)
+        input.requestFocus()
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+    }
     private fun searchTools() {
-        val tools = listOf<Pair<String, () -> Unit>>("Importar video ou foto" to { pick(false) }, "Editar / Dividir / Excluir" to { editTools() },
+        val tools = listOf<Pair<String, () -> Unit>>("Importar vídeo ou foto" to { pick(false) }, "Editar / Dividir / Excluir" to { editTools() },
             "Auto Reframe / Enquadramento Inteligente IA" to { autoReframePanel.open() },
             "Auto Cor / Equilíbrio automático" to { autoColor() },
             "Color Match / Combinar cor com outro clipe" to { colorMatchPanel() },
@@ -4923,23 +4958,30 @@ class EditorActivity : Activity() {
             "Motion Blur Vetorial" to { motionBlurPanel() },
             "Scopes de Vídeo / Waveform / Histograma" to { scopesPanel() },
             "Stickers Animados Lottie" to { lottieStickersPanel() },
-            "Aparar" to { trimPanel() }, "Velocidade" to { speedPanel() }, "Volume" to { volumePanel() }, "Extrair audio" to { extractAudio() },
-            "Transformar / Zoom / Posicao / Desfoque" to { transformPanel() }, "Transicoes" to { transitionPanel() },
-            "Keyframes / Animar / Interpolacao" to { keyframePanel() }, "Cor / Curvas / LUT / Nitidez / Grao / Vinheta" to { colorPanel() },
-            "Mascaras / Chroma key" to { masksPanel() }, "Rastreamento de movimento" to { trackingPanel() }, "Congelar quadro" to { freezeFrame() }, "Marcadores" to { markerPanel() },
-            "Ajustar timeline na tela" to { timeline.fit() }, "Qualidade da previa" to { previewQuality() },
-            "Ajustar cor e luz" to { adjustmentsPanel() }, "Audio / Musica / Faixas" to { audioPanel() }, "Gravar narracao" to { voiceoverPanel() },
-            "Texto / Fontes / Animacoes" to { textMenu() }, "Legendas SRT" to { subtitleMenu() }, "Camada / Sticker" to { stickerMenu() },
-            "Recortar imagem" to { cropPanel() }, "Filtros" to { filters() }, "Proporcao" to { aspectPanel() },
+            "Aparar" to { trimPanel() }, "Velocidade" to { speedPanel() }, "Volume" to { volumePanel() }, "Extrair áudio" to { extractAudio() },
+            "Transformar / Zoom / Posição / Desfoque" to { transformPanel() }, "Transições" to { transitionPanel() },
+            "Keyframes / Animar / Interpolação" to { keyframePanel() }, "Cor / Curvas / LUT / Nitidez / Grão / Vinheta" to { colorPanel() },
+            "Máscaras / Chroma key" to { masksPanel() }, "Rastreamento de movimento" to { trackingPanel() }, "Congelar quadro" to { freezeFrame() }, "Marcadores" to { markerPanel() },
+            "Ajustar timeline na tela" to { timeline.fit() }, "Qualidade da prévia" to { previewQuality() },
+            "Ajustar cor e luz" to { adjustmentsPanel() }, "Áudio / Música / Faixas" to { audioPanel() }, "Gravar narração" to { voiceoverPanel() },
+            "Texto / Fontes / Animações" to { textMenu() }, "Legendas SRT" to { subtitleMenu() }, "Camada / Sticker" to { stickerMenu() },
+            "Recortar imagem" to { cropPanel() }, "Filtros" to { filters() }, "Proporção" to { aspectPanel() },
             "Salvar projeto" to { saveAsync(false) }, "Exportar" to { exportPanel(true) },
-            "Qualidade de exportacao" to { exportPanel(false) })
-        val body = column(); val input = EditText(this).apply { hint = "Buscar ferramenta" }; body.addView(input)
-        val results = column(); body.addView(results)
+            "Qualidade de exportação" to { exportPanel(false) })
+        val body = column()
+        val input = searchField("Buscar ferramenta")
+        body.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        val results = column().apply { setPadding(0, dp(8), 0, 0) }; body.addView(results)
         lateinit var dialog: Dialog
         fun update(query: String) {
             results.removeAllViews()
-            tools.filter { it.first.contains(query, true) }.forEach { (name, callback) ->
-                results.addView(action(name) { dialog.dismiss(); callback() })
+            val key = searchKey(query)
+            val matches = tools.filter { searchKey(it.first).contains(key) }
+            if (matches.isEmpty()) results.addView(emptyState("Nenhuma ferramenta com esse nome."))
+            matches.forEach { (name, callback) ->
+                val title = name.substringBefore(" / ")
+                val detail = name.substringAfter(" / ", "").replace(" / ", " · ")
+                results.addRow(listRow(title, detail) { dialog.dismiss(); callback() })
             }
         }
         input.addTextChangedListener(object : android.text.TextWatcher {
@@ -4947,17 +4989,17 @@ class EditorActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { update(s.toString()) }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
-        update(""); dialog = sheet("Ferramentas", body)
+        update(""); dialog = sheet("Ferramentas", body, maxHeightRatio = .82f)
     }
     private fun exportPanel(startExport: Boolean) {
         preview.pause()
         if (EditorExportService.state.active) {
-            AlertDialog.Builder(this).setTitle("Exportacao em andamento").setMessage(EditorExportService.state.message)
-                .setPositiveButton("Continuar", null).setNegativeButton("Cancelar exportacao") { _, _ ->
+            AlertDialog.Builder(this).setTitle("Exportação em andamento").setMessage(EditorExportService.state.message)
+                .setPositiveButton("Continuar", null).setNegativeButton("Cancelar exportação") { _, _ ->
                     startService(Intent(this, EditorExportService::class.java).setAction(EditorExportService.CANCEL))
                 }.show(); return
         }
-        if (project.allVideos.isEmpty()) { error("Adicione um video ou foto para exportar"); return }
+        if (project.allVideos.isEmpty()) { error("Adicione um vídeo ou foto para exportar"); return }
         if (busy) return
         ExportPanel.show(this, project, startExport, io) { candidate ->
             edit(candidate)
@@ -4967,11 +5009,11 @@ class EditorActivity : Activity() {
     private fun beginExport() {
         if (busy || EditorExportService.state.active) return
         val snapshot = project
-        busy = true; preview.suspendSources(); info.text = "Preparando exportacao..."
+        busy = true; preview.suspendSources(); info.text = "Preparando exportação..."
         main.removeCallbacks(autosave)
         io.execute {
             val result = runCatching {
-                require(MediaImport.missing(this, snapshot).isEmpty()) { "Arquivo de midia nao encontrado" }
+                require(MediaImport.missing(this, snapshot).isEmpty()) { "Arquivo de mídia não encontrado" }
                 EditorExportService.activeProjectSnapshot = snapshot
                 store.save(snapshot)
                 ProjectStore(File(filesDir, "editor-export")).save(snapshot)
@@ -4981,8 +5023,8 @@ class EditorActivity : Activity() {
                 busy = false
                 result.fold({
                     runCatching { startForegroundService(Intent(this, EditorExportService::class.java).putExtra("project", snapshot.id)) }
-                        .onFailure { refresh(); error("Nao foi possivel iniciar exportacao: ${it.message}") }
-                }, { refresh(); error("Nao foi possivel preparar exportacao: ${it.message}") })
+                        .onFailure { refresh(); error("Não foi possível iniciar exportação: ${it.message}") }
+                }, { refresh(); error("Não foi possível preparar exportação: ${it.message}") })
             }
         }
     }
@@ -4994,14 +5036,14 @@ class EditorActivity : Activity() {
                 if (cursor.moveToFirst()) cursor.getString(0) else null
             }
         }.getOrNull() ?: "Vídeo MP4"
-        AlertDialog.Builder(this).setTitle("Video exportado")
+        AlertDialog.Builder(this).setTitle("Vídeo exportado")
             .setMessage("$savedName\nMovies/Recly/Editados")
             .setPositiveButton("Abrir") { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), "video/mp4").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
-                    .onFailure { error("Nenhum player de video instalado") }
+                    .onFailure { error("Nenhum player de vídeo instalado") }
             }.setNeutralButton("Compartilhar") { _, _ ->
                 startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("video/mp4").putExtra(Intent.EXTRA_STREAM, Uri.parse(uri))
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Compartilhar video"))
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Compartilhar vídeo"))
             }.setNegativeButton("Fechar", null).show()
     }
 }
