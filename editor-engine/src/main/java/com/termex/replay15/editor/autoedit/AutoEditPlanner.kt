@@ -4,9 +4,18 @@ import com.termex.replay15.editor.domain.SECOND
 import kotlin.math.abs
 
 object AutoEditPlanner {
-    fun plan(analysis: ClipAnalysis, options: AutoEditOptions): AutoEditPlan {
+    /**
+     * @param brollSuggestions moments proposed by the AI pass ([BrollAiSuggester]); null or empty
+     * falls back to the local dictionary. Only used when [AutoEditOptions.broll] is on.
+     */
+    fun plan(analysis: ClipAnalysis, options: AutoEditOptions, brollSuggestions: List<BrollSuggestion>? = null): AutoEditPlan {
         val cuts = if (options.cleanPauses) planCuts(analysis, options) else emptyList()
-        val captions = if (options.captions) segmentCaptions(analysis.words, analysis.durationUs) else emptyList()
+        val captions = when {
+            !options.captions -> emptyList()
+            options.podcastCaptions -> PodcastCaptions.chunk(analysis.words, analysis.durationUs, ::importance)
+            else -> segmentCaptions(analysis.words, analysis.durationUs)
+        }
+        val brolls = if (options.broll) BrollPlanner.plan(analysis.words, analysis.durationUs, cuts, brollSuggestions) else emptyList()
         val excluded = cuts.map { it.startUs..it.endUs }
         val peaks = meaningfulPeaks(analysis, options).filter { peak -> excluded.none { peak.timeUs in it } }
         val zooms = if (options.smartZoom) planZooms(peaks, options, analysis.durationUs) else emptyList()
@@ -25,8 +34,10 @@ object AutoEditPlanner {
             reframes = reframes,
             effects = effects,
             audio = audio,
+            brolls = brolls,
             warnings = analysis.warnings + buildList {
                 if (options.captions && analysis.words.isEmpty()) add("Sem transcricao temporizada: nenhuma legenda nova foi inventada")
+                if (options.broll && analysis.words.isEmpty()) add("Sem transcricao: nenhuma imagem de B-roll foi escolhida")
                 if (options.autoReframe && reframes.isEmpty() && !alreadyVertical) add("Sem foco visual confiavel: a proporcao original foi preservada")
             },
         ))
@@ -209,6 +220,8 @@ object AutoEditPlanner {
         require(plan.zooms.all { it.timeUs + it.durationUs <= plan.sourceDurationUs }) { "Zoom fora do clipe" }
         require(plan.reframes.all { it.timeUs <= plan.sourceDurationUs }) { "Reframe fora do clipe" }
         require(plan.effects.all { valid(it.startUs, it.endUs) }) { "Efeito fora do clipe" }
+        require(plan.brolls.all { valid(it.startUs, it.endUs) }) { "B-roll fora do clipe" }
+        require(plan.brolls.zipWithNext().all { (a, b) -> a.endUs <= b.startUs }) { "B-rolls sobrepostos" }
         require(plan.cuts.sumOf { it.endUs - it.startUs } < plan.sourceDurationUs - 100_000L) { "Plano removeria o clipe inteiro" }
         return plan
     }

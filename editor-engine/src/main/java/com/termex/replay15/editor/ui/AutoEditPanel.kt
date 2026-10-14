@@ -15,7 +15,15 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import com.termex.replay15.editor.autoedit.*
+import com.termex.replay15.editor.captions.AnimatedCaptionStyles
+import com.termex.replay15.editor.captions.CaptionBackendNotConfigured
+import com.termex.replay15.editor.captions.CaptionGenerationOptions
+import com.termex.replay15.editor.captions.GeminiCaptionGenerator
+import com.termex.replay15.editor.captions.InvalidApiKey
+import com.termex.replay15.editor.captions.NoInternet
+import com.termex.replay15.editor.captions.QuotaExceeded
 import com.termex.replay15.editor.domain.Project
+import com.termex.replay15.editor.domain.TextClip
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -68,11 +76,18 @@ class AutoEditPanel(
         val timedCaptions = snapshot.texts.any { ClipAnalyzer.isCaptionOf(it, clipStart, clipStart + clip.durationUs) && it.wordCues.isNotEmpty() }
         val captions = optionRow(card, "Legendas automáticas",
             when {
-                words.isEmpty() -> "Gere legendas ou importe um SRT para usar"
-                timedCaptions -> "Mantém suas legendas e o estilo delas"
+                words.isEmpty() -> "Transcreve a fala com IA e cria as legendas"
+                timedCaptions -> "Usa suas legendas; o estilo podcast troca o visual delas"
                 else -> "Divide as legendas em frases curtas no estilo atual"
             },
-            words.isNotEmpty() && !timedCaptions, words.isNotEmpty() && !timedCaptions)
+            true)
+        // Estilo da referência de podcast: 1 a 3 palavras, CAIXA ALTA, palavra falada em amarelo.
+        val podcastCaptions = optionRow(card, "Legendas estilo podcast",
+            "Frases curtas em caixa alta com a palavra falada em amarelo", true)
+        val broll = optionRow(card, "Imagens da internet (B-roll)",
+            if (snapshot.videoTracks.size >= AutoEditExecutor.MAX_VIDEO_TRACKS) "Limite de camadas atingido: remova uma camada para usar"
+            else "Quando a fala cita algo (dinheiro, trabalho...), mostra uma foto",
+            snapshot.videoTracks.size < AutoEditExecutor.MAX_VIDEO_TRACKS, snapshot.videoTracks.size < AutoEditExecutor.MAX_VIDEO_TRACKS)
         val clean = optionRow(card, "Cortar silêncios", "Tira pausas e respirações longas", true)
         val zoom = optionRow(card, "Zoom nos destaques", "Keyframes de zoom nas falas-chave", true)
         val reframe = optionRow(card, "Auto Reframe para 9:16", "Enquadra o sujeito na vertical", true)
@@ -85,11 +100,15 @@ class AutoEditPanel(
                 style = AutoEditStyle.entries[style.index],
                 intensity = AutoEditIntensity.entries[intensity.index],
                 cleanup = SpeechCleanup.entries[cleanup.index],
-                captions = captions.isChecked,
+                // Timed captions are only rebuilt for the podcast look; otherwise they are kept as they are.
+                captions = captions.isChecked && (!timedCaptions || podcastCaptions.isChecked),
                 cleanPauses = clean.isChecked,
                 smartZoom = zoom.isChecked,
                 autoReframe = reframe.isChecked,
                 audioEnhancement = audio.isChecked,
+                podcastCaptions = captions.isChecked && podcastCaptions.isChecked,
+                broll = broll.isChecked,
+                transcribe = true,
             ))
         }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(16) })
         body.addView(activity.label("Sai como projeto editável — nada é renderizado até exportar.", 12f, EditorStyle.MUTED).apply {
@@ -249,7 +268,17 @@ class AutoEditPanel(
         }
     }
 
-    private fun generate(snapshot: Project, index: Int, words: List<TimedWord>, options: AutoEditOptions) {
+    /** What the worker hands back to the UI thread. */
+    private class Prepared(val plan: AutoEditPlan, val generatedCaptions: List<TextClip>, val words: List<TimedWord>)
+
+    /**
+     * @param pretranscribed captions already transcribed for this clip (placed on [snapshot]'s
+     * timeline) by an earlier run; "Gerar outra versão" reuses them instead of paying again.
+     */
+    private fun generate(
+        snapshot: Project, index: Int, words: List<TimedWord>, options: AutoEditOptions,
+        pretranscribed: List<TextClip> = emptyList(),
+    ) {
         cancellation?.cancel()
         val token = AutoEditCancellation().also { cancellation = it }
         // The analysis runs beside the editor in a floating card; editing stays available.
@@ -270,46 +299,100 @@ class AutoEditPanel(
         }
         stage(AutoEditProgress.Inspecting.label, .05f)
         val clip = snapshot.videos[index]
+        val snapshotStart = snapshot.startOf(index)
+        // Images already on disk for this run; deleted again if the run does not reach the preview.
+        val downloaded = java.util.concurrent.CopyOnWriteArrayList<BrollDecision>()
         worker.execute {
             val result = runCatching {
-                val analysis = ClipAnalyzer.analyze(activity, clip, words, token) { progress ->
+                val notes = mutableListOf<String>()
+                var clipWords = words
+                var generated = pretranscribed
+                if (generated.isNotEmpty() && clipWords.isEmpty()) {
+                    clipWords = ClipAnalyzer.wordsFromCaptions(generated, snapshotStart, clip.durationUs)
+                }
+                // No timed text yet: transcribe with the caption service, so captions and B-roll
+                // follow what is actually said. A failure only removes those two features.
+                if (options.transcribe && clipWords.isEmpty() && (options.captions || options.broll) && !clip.image) {
+                    stage(AutoEditProgress.Transcribing.label, .06f)
+                    try {
+                        generated = transcribe(snapshot, index, token) { label -> stage(label, .12f) }
+                        clipWords = ClipAnalyzer.wordsFromCaptions(generated, snapshotStart, clip.durationUs)
+                    } catch (error: InterruptedException) {
+                        throw error
+                    } catch (error: Exception) {
+                        notes += "Transcrição indisponível: ${transcriptionMessage(error)}"
+                    }
+                }
+                token.check()
+                val analysis = ClipAnalyzer.analyze(activity, clip, clipWords, token) { progress ->
                     stage(progress.label, when (progress) {
                         AutoEditProgress.Audio -> .25f
-                        AutoEditProgress.Visuals -> .55f
-                        else -> .1f
+                        AutoEditProgress.Visuals -> .45f
+                        else -> .2f
                     })
                 }
-                stage(AutoEditProgress.Planning.label, .8f)
                 token.check()
-                val plan = AutoEditPlanner.plan(analysis, options)
+                var suggestions: List<BrollSuggestion>? = null
+                if (options.broll && analysis.words.isNotEmpty()) {
+                    val key = com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey()
+                    if (key.isNotBlank()) {
+                        stage("Escolhendo momentos para imagens", .55f)
+                        val ai = BrollAiSuggester(key)
+                        suggestions = ai.suggest(analysis.words, analysis.durationUs, snapshot.captionLanguage, token)
+                        if (suggestions == null) notes += "IA de imagens indisponível; usei as palavras-chave da fala"
+                    }
+                }
+                stage(AutoEditProgress.Planning.label, .62f)
+                token.check()
+                var plan = AutoEditPlanner.plan(analysis, options, suggestions)
+                if (plan.brolls.isNotEmpty()) {
+                    stage(AutoEditProgress.Broll.label, .66f)
+                    val fetched = BrollImageFetcher(activity, BrollSources.default()).resolve(
+                        plan.brolls, AutoEditExecutor.canvasAspectAfter(snapshot, plan), token,
+                    ) { done, total -> stage("${AutoEditProgress.Broll.label} ($done/$total)", .66f + .24f * done / total.coerceAtLeast(1)) }
+                    downloaded += fetched.decisions
+                    plan = plan.copy(brolls = fetched.decisions, warnings = plan.warnings + fetched.warnings)
+                }
+                plan = plan.copy(warnings = plan.warnings + notes)
                 token.check()
                 stage(AutoEditProgress.Validating.label, .92f)
                 AutoEditPlanner.validate(plan)
                 token.check()
-                plan
+                Prepared(plan, if (options.captions) generated else emptyList(), clipWords)
             }
             activity.runOnUiThread {
-                if (activity.isDestroyed) return@runOnUiThread
+                fun discard() = BrollImageFetcher.discard(activity, downloaded)
+                if (activity.isDestroyed) { discard(); return@runOnUiThread }
                 if (card == null) { progressDialog?.dismiss(); progressDialog = null; processing(false) }
                 result.fold(
-                    onSuccess = { plan ->
+                    onSuccess = { prepared ->
+                        val plan = prepared.plan
                         // The user may have kept editing: apply the plan to the project as it is now,
                         // as long as the analysed clip itself was not changed.
                         val current = project()
                         val currentIndex = current.videos.indexOfFirst { it.id == clip.id }
                         if (currentIndex < 0 || current.videos[currentIndex] != clip) {
+                            discard()
                             card?.fail("O clipe mudou durante a análise. Analise de novo.")
                                 ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
                             return@fold
                         }
-                        val edited = runCatching { AutoEditExecutor.execute(current, currentIndex, plan) }.getOrElse { error ->
-                            card?.fail("Não foi possível montar a edição: ${error.message}"); return@fold
+                        val shift = current.startOf(currentIndex) - snapshotStart
+                        val captionsHere = AutoEditExecutor.shiftedCaptions(prepared.generatedCaptions, shift)
+                        val edited = runCatching {
+                            AutoEditExecutor.execute(AutoEditExecutor.withCaptions(current, captionsHere), currentIndex, plan)
+                        }.getOrElse { error ->
+                            discard()
+                            card?.fail("Não foi possível montar a edição: ${error.message}")
+                                ?: Toast.makeText(activity, "Nao foi possivel montar a edicao: ${error.message}", Toast.LENGTH_LONG).show()
+                            return@fold
                         }
-                        if (card != null) card.succeed(plan.summary().lineSequence().firstOrNull().orEmpty().ifBlank { "Edição pronta" }, "Ver resultado") {
-                            showPreview(current, currentIndex, words, options, plan, edited)
-                        } else showPreview(current, currentIndex, words, options, plan, edited)
+                        val show = { showPreview(current, currentIndex, prepared.words, options, plan, edited, captionsHere) }
+                        if (card != null) card.succeed(plan.summary().lineSequence().firstOrNull().orEmpty().ifBlank { "Edição pronta" }, "Ver resultado") { show() }
+                        else show()
                     },
                     onFailure = { error ->
+                        discard()
                         if (error is InterruptedException) {
                             card?.fail("Análise cancelada") ?: Toast.makeText(activity, "Auto Edit cancelado", Toast.LENGTH_SHORT).show()
                         } else if (card != null) card.fail("Não foi possível analisar: ${error.message}")
@@ -320,7 +403,34 @@ class AutoEditPanel(
         }
     }
 
-    private fun showPreview(original: Project, index: Int, words: List<TimedWord>, options: AutoEditOptions, plan: AutoEditPlan, edited: Project) {
+    /** Transcribes the clip with the app's caption service; returns only the new caption layers. */
+    private fun transcribe(snapshot: Project, index: Int, token: AutoEditCancellation, onStage: (String) -> Unit): List<TextClip> {
+        val options = CaptionGenerationOptions(
+            languageCode = snapshot.captionLanguage,
+            maxWords = PodcastCaptions.MAX_WORDS,
+            maxLines = 1,
+        )
+        val (updated, _) = kotlinx.coroutines.runBlocking {
+            GeminiCaptionGenerator(activity.applicationContext).generate(snapshot, index, options, { event -> onStage(event.stage) }, token::check)
+        }
+        val known = snapshot.texts.mapTo(HashSet()) { it.id }
+        val added = updated.texts.filter { it.id !in known }
+        require(added.isNotEmpty()) { "nenhuma fala reconhecida" }
+        // Readable default look (white, black outline); the podcast option restyles them anyway.
+        val look = AnimatedCaptionStyles.byId("none")
+        return if (look == null) added else added.map { look.patch().applyTo(it) }
+    }
+
+    private fun transcriptionMessage(error: Throwable): String = when (error) {
+        is CaptionBackendNotConfigured -> "serviço de legendas não configurado neste build"
+        is InvalidApiKey, is NoInternet, is QuotaExceeded -> error.message ?: "serviço indisponível"
+        else -> error.message?.takeIf(String::isNotBlank) ?: "tente novamente mais tarde"
+    }
+
+    private fun showPreview(
+        original: Project, index: Int, words: List<TimedWord>, options: AutoEditOptions, plan: AutoEditPlan, edited: Project,
+        generatedCaptions: List<TextClip>,
+    ) {
         preview(edited)
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
         body.addView(activity.sectionTitle("Preview pronto", plan.summary()))
@@ -330,17 +440,22 @@ class AutoEditPanel(
         compare.addView(activity.action("Editado", true) { preview(edited) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f).apply { leftMargin = activity.dp(4) })
         body.addView(compare)
         lateinit var dialog: Dialog
+        // Downloaded B-roll images stay on disk only if this edit is applied.
+        var keepImages = false
         body.addView(activity.action("Aplicar Auto Edit", true) {
+            keepImages = true
             dialog.dismiss(); preview(original); apply(edited)
         }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(10) })
         body.addView(activity.action("Gerar outra versao") {
-            dialog.dismiss(); preview(original); generate(original, index, words, options.copy(variation = options.variation + 1))
+            dialog.dismiss(); preview(original)
+            generate(original, index, words, options.copy(variation = options.variation + 1), generatedCaptions)
         }, LinearLayout.LayoutParams(-1, activity.dp(48)).apply { topMargin = activity.dp(6) })
         body.addView(activity.action("Cancelar") { dialog.dismiss(); preview(original) }, LinearLayout.LayoutParams(-1, activity.dp(48)).apply { topMargin = activity.dp(6) })
         dialog = activity.sheet("Auto Edit", body)
         suggestionDialog = dialog
         dialog.setOnDismissListener {
             suggestionDialog = null
+            if (!keepImages) BrollImageFetcher.discard(activity, plan.placedBrolls)
             if (!closing && !activity.isDestroyed) preview(original)
         }
     }

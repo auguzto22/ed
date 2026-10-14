@@ -67,11 +67,16 @@ object AutoEditExecutor {
         // the user's look. Re-segmenting them into plain text threw all of that away, so they are
         // kept (and moved through the cuts like any other text). Only captions without word timing
         // (an imported SRT with long lines) are re-split, and the new lines copy their look.
-        val resegment = plan.captions.isNotEmpty() && existingCaptions.none { it.wordCues.isNotEmpty() }
-        val captionCandidates = if (resegment) existingCaptions.toSet() else emptySet()
+        // Podcast look: the user asked for the reference captions, so the clip's captions are
+        // replaced by short highlighted lines built from the same measured word timing.
+        val podcast = plan.podcastCaptions
+        val resegment = !podcast && plan.captions.isNotEmpty() && existingCaptions.none { it.wordCues.isNotEmpty() }
+        val captionCandidates = if (resegment || podcast) existingCaptions.toSet() else emptySet()
         val keptTexts = project.texts.filterNot { it in captionCandidates }.mapNotNull { text -> remapText(text, clipStart, mapAbsolute) }
         val template = existingCaptions.firstOrNull()
-        val captions = if (!resegment) emptyList() else plan.captions.mapNotNull { caption ->
+        val timelineEnd = clipStart + newDuration
+        val captions = if (podcast) plan.captions.mapNotNull { caption -> podcastLayer(caption, clipStart, timelineEnd, mapLocal) }
+        else if (!resegment) emptyList() else plan.captions.mapNotNull { caption ->
             val start = clipStart + mapLocal(caption.startUs)
             val end = clipStart + mapLocal(caption.endUs)
             if (end - start < 80_000L || start >= clipStart + newDuration) null
@@ -93,6 +98,18 @@ object AutoEditExecutor {
             )
         }
 
+        val mappedTracks = project.videoTracks.map { track ->
+            var previousEnd = 0L
+            val mapped = track.clips.sortedBy { it.startUs }.mapNotNull { item ->
+                val start = maxOf(previousEnd, mapAbsolute(item.startUs))
+                if (start > MAX_PROJECT_US - item.clip.durationUs) null else item.copy(startUs = start).also { previousEnd = it.endUs }
+            }
+            track.copy(clips = mapped)
+        }
+        // B-roll goes on its own new layer at the top, so it covers the speaker but stays under
+        // the captions (texts are drawn after every video layer) and can be moved or deleted.
+        val brollTrack = if (mappedTracks.size >= MAX_VIDEO_TRACKS) null else brollTrack(plan, clipStart, timelineEnd, mapLocal)
+
         val next = project.copy(
             videos = newVideos,
             texts = (keptTexts + captions).sortedBy { it.startUs }.take(MAX_TEXTS),
@@ -103,14 +120,8 @@ object AutoEditExecutor {
                     mask = sticker.mask?.let { mask -> mask.copy(keyframes = mask.keyframes.filter { it.timeUs <= end - start }) })
             },
             markers = project.markers.map { it.copy(timeUs = mapAbsolute(it.timeUs)) },
-            videoTracks = project.videoTracks.map { track ->
-                var previousEnd = 0L
-                val mapped = track.clips.sortedBy { it.startUs }.mapNotNull { item ->
-                    val start = maxOf(previousEnd, mapAbsolute(item.startUs))
-                    if (start > MAX_PROJECT_US - item.clip.durationUs) null else item.copy(startUs = start).also { previousEnd = it.endUs }
-                }
-                track.copy(clips = mapped)
-            },
+            videoTracks = mappedTracks + listOfNotNull(brollTrack),
+            trackStates = if (brollTrack == null) project.trackStates else project.trackStates + (brollTrack.id to TrackState(BROLL_TRACK_NAME)),
             adjustmentClips = project.adjustmentClips.mapNotNull { adjustment ->
                 val start = mapAbsolute(adjustment.startUs); val end = mapAbsolute(adjustment.endUs)
                 if (end <= start) null else adjustment.copy(startUs = start, endUs = end)
@@ -119,6 +130,78 @@ object AutoEditExecutor {
             canvasFill = if (plan.options.autoReframe && plan.reframes.isNotEmpty()) CanvasFill.FILL else project.canvasFill,
         )
         return next
+    }
+
+    const val MAX_VIDEO_TRACKS = 7
+    const val BROLL_TRACK_NAME = "B-roll"
+    /** Shorter than this after the cuts, an image reads as a glitch and is left out. */
+    const val MIN_BROLL_US = 600_000L
+    /** Slow push-in over each image, like the reference. */
+    const val BROLL_PUSH_IN = 1.08f
+
+    /**
+     * Captions transcribed during the analysis, moved by [shiftUs] (the clip may have moved on the
+     * timeline while the user kept editing). Layers that would start before zero are dropped.
+     */
+    fun shiftedCaptions(captions: List<TextClip>, shiftUs: Long): List<TextClip> {
+        if (shiftUs == 0L) return captions
+        return captions.mapNotNull { text ->
+            if (text.startUs + shiftUs < 0L || text.endUs + shiftUs > MAX_PROJECT_US) return@mapNotNull null
+            text.copy(startUs = text.startUs + shiftUs, endUs = text.endUs + shiftUs,
+                wordCues = text.wordCues.map { it.copy(startUs = it.startUs + shiftUs, endUs = it.endUs + shiftUs) })
+        }
+    }
+
+    /** Adds transcribed captions to [project] within the layer limit, before the plan is applied. */
+    fun withCaptions(project: Project, captions: List<TextClip>): Project {
+        if (captions.isEmpty()) return project
+        val known = project.texts.mapTo(HashSet()) { it.id }
+        val room = (MAX_TEXTS - project.texts.size).coerceAtLeast(0)
+        val added = captions.filter { it.id !in known }.take(room)
+        return if (added.isEmpty()) project else project.copy(texts = (project.texts + added).sortedBy { it.startUs })
+    }
+
+    /** Width / height of the canvas once [plan] is applied; B-roll images are cropped to it. */
+    fun canvasAspectAfter(project: Project, plan: AutoEditPlan): Float {
+        if (plan.options.autoReframe && plan.reframes.isNotEmpty()) return 9f / 16f
+        val (width, height) = project.dimensions()
+        return width.toFloat() / height
+    }
+
+    private fun podcastLayer(caption: CaptionDecision, clipStart: Long, timelineEnd: Long, mapLocal: (Long) -> Long): TextClip? {
+        val start = clipStart + mapLocal(caption.startUs)
+        val end = minOf(clipStart + mapLocal(caption.endUs), timelineEnd)
+        if (end - start < 80_000L) return null
+        val cues = caption.words.mapNotNull { word ->
+            val cueStart = (clipStart + mapLocal(word.startUs)).coerceIn(start, end)
+            val cueEnd = (clipStart + mapLocal(word.endUs)).coerceIn(start, end)
+            if (cueEnd > cueStart) SubtitleWordCue(word.text.take(120), cueStart, cueEnd) else null
+        }
+        return PodcastCaptions.layer(caption.text.take(500), start, end, cues)
+    }
+
+    private fun brollTrack(plan: AutoEditPlan, clipStart: Long, timelineEnd: Long, mapLocal: (Long) -> Long): VideoTrack? {
+        val clips = mutableListOf<TimedVideoClip>()
+        var previousEnd = 0L
+        plan.placedBrolls.sortedBy { it.startUs }.forEach { decision ->
+            val media = decision.media ?: return@forEach
+            val start = maxOf(clipStart + mapLocal(decision.startUs), previousEnd)
+            val end = minOf(clipStart + mapLocal(decision.endUs), timelineEnd)
+            val duration = end - start
+            if (duration < MIN_BROLL_US) return@forEach
+            val image = VideoClip(
+                uri = media.uri, name = "B-roll: ${decision.keyword}".take(180),
+                sourceUs = duration, width = media.width, height = media.height,
+                image = true, inUs = 0L, outUs = duration, volume = 0f,
+                keyframes = listOf(
+                    TransformKeyframe(sourceUs = 0L, zoom = 1f, easing = Easing.LINEAR),
+                    TransformKeyframe(sourceUs = duration, zoom = BROLL_PUSH_IN, easing = Easing.LINEAR),
+                ),
+            )
+            clips += TimedVideoClip(start, image)
+            previousEnd = start + image.durationUs
+        }
+        return if (clips.isEmpty()) null else VideoTrack(clips = clips.take(200))
     }
 
     private fun keepRanges(durationUs: Long, cuts: List<CutDecision>): List<LongRange> {

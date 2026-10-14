@@ -7,6 +7,8 @@ plugins {
 val localProperties = Properties()
 rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { localProperties.load(it) }
 val localGeminiApiKey = localProperties.getProperty("GEMINI_API_KEY", "")
+// Optional: Auto Edit B-roll searches Pexels with this key; without it, Openverse (no key) is used.
+val localPexelsApiKey = localProperties.getProperty("PEXELS_API_KEY", "")
 val captionBackendUrl = providers.gradleProperty("RECLY_CAPTION_BACKEND_URL").orNull ?: ""
 
 fun buildConfigString(value: String): String =
@@ -29,11 +31,13 @@ android {
         debug {
             // The value is read only from the untracked root local.properties.
             buildConfigField("String", "GEMINI_API_KEY", buildConfigString(localGeminiApiKey))
+            buildConfigField("String", "PEXELS_API_KEY", buildConfigString(localPexelsApiKey))
             buildConfigField("String", "RECLY_CAPTION_BACKEND_URL", buildConfigString(captionBackendUrl))
         }
         release {
             // Never copy a local secret into a release variant or the APK.
             buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+            buildConfigField("String", "PEXELS_API_KEY", "\"\"")
             buildConfigField("String", "RECLY_CAPTION_BACKEND_URL", buildConfigString(captionBackendUrl))
         }
     }

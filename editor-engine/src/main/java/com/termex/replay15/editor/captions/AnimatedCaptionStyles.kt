@@ -76,6 +76,9 @@ object AnimatedCaptionStyles {
             SubtitleWordStyle(activeColor = GREEN, activeScale = 1.12f, pop = true, uppercase = true)),
         AnimatedCaptionStyle("bolha", "Bolha", "poppins_semibold", WHITE, 0, 0f, 0xB3000000.toInt(), false,
             SubtitleWordStyle(highlightColor = YELLOW, activeColor = BLACK, pop = true, activeScale = 1.05f)),
+        // Cortes de podcast: CAIXA ALTA branca com contorno e só a palavra falada em amarelo.
+        AnimatedCaptionStyle("podcast", "Podcast", "montserrat_semibold", WHITE, BLACK, .016f, 0, true,
+            SubtitleWordStyle(activeColor = YELLOW, activeScale = 1.06f, pop = true, uppercase = true)),
     )
 
     fun byId(id: String): AnimatedCaptionStyle? = all.firstOrNull { it.id == id }
