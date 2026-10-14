@@ -17,9 +17,23 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:statusBarColor">@color/recly_bg_main</item>
         <item name="android:navigationBarColor">@color/recly_bg_main</item>
-        <item name="android:colorAccent">@color/recly_accent_white</item>
+        <!-- Controles nativos (checkbox, switch, cursor, seleção de texto) no vermelho de ação do Recly. -->
+        <item name="android:colorAccent">#FFC50022</item>
+        <item name="android:colorControlNormal">#FF9A968C</item>
+        <item name="android:textColorHint">#FF6E6B64</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
         <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:alertDialogTheme">@style/Theme.Replay15.Editor.Alert</item>
+    </style>
+
+    <!-- Diálogos de sistema que ainda restam no editor: mesmo painel escuro e cantos das folhas. -->
+    <style name="Theme.Replay15.Editor.Alert" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorBackground">#FF121213</item>
+        <item name="android:dialogCornerRadius">24dp</item>
+        <item name="android:colorAccent">#FFE5304F</item>
+        <item name="android:textColorPrimary">#FFFAFAF6</item>
+        <item name="android:textColorSecondary">#FF9A968C</item>
+        <item name="android:backgroundDimAmount">0.5</item>
     </style>
 
     <!-- Seletor de mídia: janela transparente, a folha e o fundo escurecido são desenhados na tela. -->

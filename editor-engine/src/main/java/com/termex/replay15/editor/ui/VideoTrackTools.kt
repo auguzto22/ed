@@ -27,13 +27,13 @@ class VideoTrackTools(
     private var importing = false
     private fun attempt(action: () -> Unit) {
         runCatching(action).onFailure { if (!closed) AlertDialog.Builder(activity).setTitle("Camadas")
-            .setMessage(it.message ?: "Nao foi possivel alterar a camada").setPositiveButton("OK", null).show() }
+            .setMessage(it.message ?: "Não foi possível alterar a camada").setPositiveButton("OK", null).show() }
     }
     fun importVideo(uri: Uri) {
         if (importing) return
         pause(); importing = true
         val at = position()
-        Toast.makeText(activity, "Importando video sobreposto...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(activity, "Importando vídeo sobreposto...", Toast.LENGTH_SHORT).show()
         worker.execute {
             val result = runCatching { MediaImport.video(activity.applicationContext, uri).copy(zoom = .4f, offsetX = .27f, offsetY = -.27f) }
             activity.runOnUiThread {
@@ -43,7 +43,7 @@ class VideoTrackTools(
                     val p = project(); require(p.videoTracks.size < 7) { "Limite de sete faixas sobrepostas" }
                     val clip = result.getOrThrow(); val track = VideoTrack(clips = listOf(TimedVideoClip(at, clip)))
                     apply(p.copy(videoTracks = p.videoTracks + track,
-                        trackStates = p.trackStates + (track.id to TrackState("Video ${p.videoTracks.size + 2}"))))
+                        trackStates = p.trackStates + (track.id to TrackState("Vídeo ${p.videoTracks.size + 2}"))))
                     select(track.id, clip.id); seek(at); open(track.id, clip.id)
                 }
             }
@@ -51,19 +51,19 @@ class VideoTrackTools(
     }
     fun menu() = with(activity) {
         pause(); val p = project(); val body = column(); lateinit var dialog: Dialog
-        body.addView(sectionTitle("Video sobre video", "Toque em uma faixa para editar. A faixa mais alta aparece por cima."))
-        body.addView(action("Adicionar video / facecam", true) { dialog.dismiss(); pick() })
+        body.addView(sectionTitle("Vídeo sobre vídeo", "Toque em uma faixa para editar. A faixa mais alta aparece por cima."))
+        body.addView(action("Adicionar vídeo / facecam", true) { dialog.dismiss(); pick() })
         p.videoTracks.asReversed().forEach { track ->
-            val name = p.trackState(track.id).name.ifBlank { "Video sobreposto" }
+            val name = p.trackState(track.id).name.ifBlank { "Vídeo sobreposto" }
             body.addView(action("$name  /  ${track.clips.size} clipes") {
                 dialog.dismiss(); val item = track.activeAt(position()) ?: track.clips.firstOrNull()
                 if (item != null) { select(track.id, item.clip.id); open(track.id, item.clip.id) } else controls(track.id, name)
             })
         }
-        body.addView(action("Faixa principal") { dialog.dismiss(); controls(MAIN_TRACK, "Video principal") })
+        body.addView(action("Faixa principal") { dialog.dismiss(); controls(MAIN_TRACK, "Vídeo principal") })
         if (p.texts.isNotEmpty()) body.addView(action("Textos e legendas") { dialog.dismiss(); controls(TEXT_TRACK, "Textos") })
         if (p.stickers.isNotEmpty()) body.addView(action("Imagens e stickers") { dialog.dismiss(); controls(STICKER_TRACK, "Imagens") })
-        p.audio.forEach { audio -> body.addView(action("Audio: ${audio.name}") { dialog.dismiss(); controls("audio:${audio.id}", audio.name) }) }
+        p.audio.forEach { audio -> body.addView(action("Áudio: ${audio.name}") { dialog.dismiss(); controls("audio:${audio.id}", audio.name) }) }
         dialog = sheet("Faixas", body)
     }
     fun controls(id: String, fallback: String) = with(activity) {
@@ -71,10 +71,10 @@ class VideoTrackTools(
         val name = EditText(this).apply { setText(state.name.ifBlank { fallback }); isSingleLine = true }; body.addView(name)
         fun check(title: String, value: Boolean) = CheckBox(this).apply { text = title; isChecked = value; body.addView(this) }
         val visual = !id.startsWith("audio:")
-        val visible = if (visual) check("Faixa visivel", state.visible) else null
-        val mute = if (id != TEXT_TRACK && id != STICKER_TRACK) check("Silenciar audio", state.muted) else null
+        val visible = if (visual) check("Faixa visível", state.visible) else null
+        val mute = if (id != TEXT_TRACK && id != STICKER_TRACK) check("Silenciar áudio", state.muted) else null
         val solo = check("Isolar esta faixa", state.solo)
-        val locked = check("Bloquear edicao", state.locked)
+        val locked = check("Bloquear edição", state.locked)
         lateinit var dialog: Dialog
         body.addView(action("Aplicar controles", true) {
             attempt { apply(project().copy(trackStates = project().trackStates + (id to TrackState(name.text.toString().take(100), visible?.isChecked ?: state.visible,
@@ -100,13 +100,13 @@ class VideoTrackTools(
         val clip = item.clip; select(trackId, clipId)
         if (p.trackState(trackId).locked) { controls(trackId, clip.name); return@with }
         val body = column(); lateinit var dialog: Dialog
-        body.addView(sectionTitle(clip.name, "Arraste, pince ou gire a camada selecionada na previa."))
+        body.addView(sectionTitle(clip.name, "Arraste, pince ou gire a camada selecionada na prévia."))
         fun field(title: String, time: Long): EditText {
             body.addView(label(title, color = EditorStyle.MUTED))
             return EditText(this).apply { inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
                 setText(String.format(java.util.Locale.ROOT, "%.3f", time / SECOND.toDouble())); body.addView(this) }
         }
-        val start = field("Inicio na timeline (segundos)", item.startUs)
+        val start = field("Início na timeline (segundos)", item.startUs)
         val trimIn = field("Corte inicial no arquivo", clip.inUs); val trimOut = field("Corte final no arquivo", clip.outUs)
         var changed = clip
         if (clip.keyframes.isEmpty()) {
@@ -115,11 +115,11 @@ class VideoTrackTools(
         slider(body, "Vertical", (clip.offsetY * 100).toInt(), 50, -50) { changed = changed.copy(offsetY = it / 100f) }
         slider(body, "Girar (graus)", clip.fineRotation.toInt(), 180, -180) { changed = changed.copy(fineRotation = it.toFloat()) }
         slider(body, "Opacidade (%)", (clip.opacity * 100).toInt(), 100) { changed = changed.copy(opacity = it / 100f) }
-        } else body.addView(label("Esta camada tem animacao. Use Keyframe no cursor para ajustar tamanho, posicao, giro e opacidade.", 13f, EditorStyle.MUTED))
+        } else body.addView(label("Esta camada tem animação. Use Keyframe no cursor para ajustar tamanho, posição, giro e opacidade.", 13f, EditorStyle.MUTED))
         slider(body, "Volume (%)", (clip.volume * 100).toInt(), 200) { changed = changed.copy(volume = it / 100f) }
         fun us(field: EditText) = ((field.text.toString().replace(',', '.').toDoubleOrNull()
-            ?: throw IllegalArgumentException("Digite um tempo valido")) * SECOND).toLong()
-        body.addView(action("Aplicar tempo e transformacao", true) { attempt {
+            ?: throw IllegalArgumentException("Digite um tempo válido")) * SECOND).toLong()
+        body.addView(action("Aplicar tempo e transformação", true) { attempt {
             val updated = changed.copy(inUs = us(trimIn), outUs = us(trimOut))
             apply(TrackEditing.update(project(), trackId, clipId) { TimedVideoClip(us(start), updated) }); dialog.dismiss()
         } })
@@ -130,7 +130,7 @@ class VideoTrackTools(
         body.addView(action("Filtros") { dialog.dismiss(); FilterGallery.show(this, clip, allowApplyAll = false) { filter, strength, _ -> update(trackId, clip.copy(filter = filter, filterStrength = strength)) } })
         body.addView(action("Pilha de efeitos") { dialog.dismiss(); effects(clipId) })
         body.addView(action("Remover fundo com IA") { dialog.dismiss(); backgroundRemoval(clipId) })
-        body.addView(action("Animacoes de entrada, saida e loop") { dialog.dismiss(); animations(clipId) })
+        body.addView(action("Animações de entrada, saída e loop") { dialog.dismiss(); animations(clipId) })
         body.addView(action("Velocidade e curvas") { dialog.dismiss(); SpeedTools.show(this, clip) { next ->
             apply(TrackEditing.update(project(), trackId, clipId) { it.copy(clip = next) })
         } })
@@ -144,8 +144,8 @@ class VideoTrackTools(
                 timestampUs = RenderPlan.sourceTime(clip, item.startUs, position()),
             )
         })
-        body.addView(action("Mascara e chroma key") { dialog.dismiss(); StudioPanels.masks(this, clip, apply = { update(trackId, it) }) })
-        body.addView(action("Mascara profissional") {
+        body.addView(action("Máscara e chroma key") { dialog.dismiss(); StudioPanels.masks(this, clip, apply = { update(trackId, it) }) })
+        body.addView(action("Máscara profissional") {
             dialog.dismiss()
             val sourceUs = RenderPlan.sourceTime(clip, item.startUs, position())
             MaskTools.show(
@@ -179,7 +179,7 @@ class VideoTrackTools(
                     apply(current.copy(videoTracks = tracks)); dialog.dismiss()
                 } }.show()
         })
-        dialog = sheet("Video sobreposto", body)
+        dialog = sheet("Vídeo sobreposto", body)
     }
     override fun close() { closed = true; worker.shutdownNow() }
 }

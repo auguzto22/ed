@@ -4,12 +4,12 @@ import kotlin.math.abs
 
 /** Shapes supported by a non-destructive visual-layer mask. */
 enum class MaskType(val label: String) {
-    RECTANGLE("Retangulo"),
-    CIRCLE("Circulo"),
+    RECTANGLE("Retângulo"),
+    CIRCLE("Círculo"),
     ELLIPSE("Elipse"),
     LINEAR("Linear"),
     MIRROR("Espelho"),
-    HEART("Coracao"),
+    HEART("Coração"),
     STAR("Estrela"),
     CUSTOM_PATH("Caminho personalizado"),
 }

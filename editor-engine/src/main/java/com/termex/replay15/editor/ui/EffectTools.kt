@@ -28,12 +28,12 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         data class Adjustment(val id: String) : Target
     }
     private fun report(message: String) { if (!closed) Toast.makeText(activity, message, Toast.LENGTH_LONG).show() }
-    private fun safely(action: () -> Unit) { runCatching(action).onFailure { report(it.message ?: "Efeito indisponivel") } }
+    private fun safely(action: () -> Unit) { runCatching(action).onFailure { report(it.message ?: "Efeito indisponível") } }
     private fun change(id: String, effects: List<EffectInstance>) = apply(project().mapVideo(id) { it.copy(effects = effects) })
     private fun effects(target: Target, snapshot: Project = project()): List<EffectInstance> = when (target) {
         is Target.Clip -> snapshot.allVideos.firstOrNull { it.id == target.id }?.effects
         is Target.Adjustment -> snapshot.adjustmentClips.firstOrNull { it.id == target.id }?.effects
-    } ?: error("Destino de efeitos nao encontrado")
+    } ?: error("Destino de efeitos não encontrado")
     private fun changed(target: Target, newEffects: List<EffectInstance>, preview: Boolean = false) {
         val current = project()
         val updated = when (target) {
@@ -68,22 +68,16 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         p.videoTracks.forEach { track -> track.clips.firstOrNull { it.clip.id == clipId }?.let { item ->
             return item.clip.timeMap.sourceAt(position() - item.startUs)
         } }
-        error("Clipe nao encontrado")
+        error("Clipe não encontrado")
     }
     fun open(clipId: String): Unit = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with
         val body = column(); lateinit var dialog: Dialog
-        body.addView(sectionTitle("Pilha de efeitos", "Processados de cima para baixo. Todos entram na previa e na exportacao."))
+        body.addView(sectionTitle("Pilha de efeitos", "Processados de cima para baixo. Todos entram na prévia e na exportação."))
         openFilters?.let { opener ->
-            body.addView(action("✨ Filtros de cor (Looks com prévia real)", accent = true) {
-                dialog.dismiss()
-                opener(clipId)
-            }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(6) })
+            body.addRow(listRow("Filtros de cor", "Looks com prévia real no vídeo") { dialog.dismiss(); opener(clipId) })
         }
-        body.addView(action("⚡ Presets de efeitos (com prévia real)", accent = true) {
-            dialog.dismiss()
-            presets(clipId)
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
+        body.addRow(listRow("Presets de efeitos", "Combinações prontas com prévia real") { dialog.dismiss(); presets(clipId) })
         if (clip.effects.isNotEmpty()) body.addView(action("Comparar sem efeitos (bypass)") {
             previewApply(project().mapVideo(clipId) { current -> current.copy(effects = current.effects.map { it.copy(enabled = false) }) })
         })
@@ -107,7 +101,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         if (clip.effects.size < 12) body.addView(action("Presets compostos (com prévia real)") { dialog.dismiss(); presets(clipId) })
         body.addView(action("Camadas de ajuste") { dialog.dismiss(); adjustments() })
         body.addView(action("Importar pacote .reclyfx") { dialog.dismiss(); pickPackage() })
-        body.addView(action("Abrir catalogo HTTPS") { dialog.dismiss(); online() })
+        body.addView(action("Abrir catálogo HTTPS") { dialog.dismiss(); online() })
         dialog = sheet("Efeitos", body)
         dialog.setOnDismissListener { previewApply(project()) }
     }
@@ -115,7 +109,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         val adjustment = project().adjustmentClips.firstOrNull { it.id == adjustmentId } ?: return@with
         val body = column(); lateinit var dialog: Dialog
         body.addView(sectionTitle(adjustment.name,
-            "${timeLabel(adjustment.startUs)}–${timeLabel(adjustment.endUs)}. A pilha e aplicada ao resultado das faixas abaixo."))
+            "${timeLabel(adjustment.startUs)}–${timeLabel(adjustment.endUs)}. A pilha é aplicada ao resultado das faixas abaixo."))
         if (adjustment.effects.isNotEmpty()) body.addView(action("Comparar sem efeitos (bypass)") {
             changed(Target.Adjustment(adjustmentId), adjustment.effects.map { it.copy(enabled = false) }, preview = true)
         })
@@ -154,7 +148,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     private fun presetIntensityControls(body: LinearLayout, target: Target, baseEffects: List<EffectInstance>, done: () -> Unit) {
         if (baseEffects.size < 2) return
         var scaled = baseEffects
-        body.addView(activity.sectionTitle("Intensidade do preset", "Ajusta todos os passes mantendo a proporcao original."))
+        body.addView(activity.sectionTitle("Intensidade do preset", "Ajusta todos os passes mantendo a proporção original."))
         activity.slider(body, "Intensidade global (%)", 100, 150) { percent ->
             val scale = percent / 100f
             scaled = baseEffects.map { it.copy(intensity = (it.intensity * scale).coerceIn(0f, 1f)) }
@@ -165,7 +159,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     fun adjustments(): Unit = with(activity) {
         val snapshot = project()
         val body = column(); lateinit var dialog: Dialog
-        body.addView(sectionTitle("Adjustment clips", "Aplicam uma unica pilha ao resultado das faixas abaixo, sem duplicar efeitos nos clipes."))
+        body.addView(sectionTitle("Adjustment clips", "Aplicam uma única pilha ao resultado das faixas abaixo, sem duplicar efeitos nos clipes."))
         snapshot.adjustmentClips.forEach { layer ->
             val names = layer.effects.map { effect ->
                 runCatching { repository.resolve(effect.assetId, effect.version).first.name }.getOrDefault(effect.assetId)
@@ -191,7 +185,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     }
     private fun adjustmentPresets(): Unit = with(activity) {
         val snapshot = project()
-        if (snapshot.durationUs < 100_000L) { report("Adicione uma midia antes da camada de ajuste"); return@with }
+        if (snapshot.durationUs < 100_000L) { report("Adicione uma mídia antes da camada de ajuste"); return@with }
         val representativeClip = snapshot.allVideos.firstOrNull() ?: return@with
         val start = position().coerceIn(0L, (snapshot.durationUs - 100_000L).coerceAtLeast(0L))
         EffectPresetGallery.show(
@@ -223,58 +217,61 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         val body = column()
         lateinit var dialog: Dialog
         openFilters?.let { opener ->
-            body.addView(action("✨ Filtros de cor (Looks com prévia real)", accent = true) {
-                dialog.dismiss()
-                opener(clipId)
-            }, LinearLayout.LayoutParams(-1, dp(44)).apply { bottomMargin = dp(6) })
+            body.addRow(listRow("Filtros de cor", "Looks com prévia real no vídeo") { dialog.dismiss(); opener(clipId) })
         }
-        body.addView(action("⚡ Presets de efeitos (com prévia real)", accent = true) {
-            dialog.dismiss()
-            presets(clipId)
-        }, LinearLayout.LayoutParams(-1, dp(44)).apply { bottomMargin = dp(6) })
+        body.addRow(listRow("Presets de efeitos", "Combinações prontas com prévia real") { dialog.dismiss(); presets(clipId) })
         val categories = EffectCatalog.UI_CATEGORIES
-        val category = Spinner(this).apply {
-            adapter = ArrayAdapter(this@with, android.R.layout.simple_spinner_dropdown_item, categories)
-        }
-        body.addView(category, LinearLayout.LayoutParams(-1, dp(52)))
-        val search = EditText(this).apply { hint = "Buscar efeito ou categoria"; isSingleLine = true }; body.addView(search)
-        var shown = definitions
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf<String>())
-        val list = ListView(this).apply { this.adapter = adapter }; body.addView(list, LinearLayout.LayoutParams(-1, dp(320)))
+        var selected = categories.first()
+        var limit = 40
+        val search = searchField("Buscar efeito ou categoria")
+        body.addView(search, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        val (scroller, chips) = chipScroller()
+        body.addView(scroller, LinearLayout.LayoutParams(-1, -2))
+        val count = label("", 12f, EditorStyle.MUTED).apply { setPadding(dp(2), dp(4), dp(2), dp(6)) }
+        body.addView(count)
+        val results = column()
+        body.addView(results, LinearLayout.LayoutParams(-1, -2))
+        val more = action("Mostrar mais") {}
+        body.addView(more, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
         fun refresh() {
-            val selected = categories[category.selectedItemPosition]
-            val query = search.text.toString()
             val recent = repository.recent()
             val favorites = definitions.map { it.id }.filter { repository.favorite(it) }.toSet()
-            shown = EffectCatalog.filter(definitions, selected, query, recent, favorites)
-            adapter.clear()
-            adapter.addAll(shown.map { "${if (repository.favorite(it.id)) "★ " else ""}${it.name}  •  ${EffectCatalog.canonicalCategory(it.category)}" })
+            val shown = EffectCatalog.filter(definitions, selected, search.text.toString(), recent, favorites)
+            count.text = when (shown.size) { 0 -> "Nenhum efeito"; 1 -> "1 efeito"; else -> "${shown.size} efeitos" }
+            results.removeAllViews()
+            if (shown.isEmpty()) results.addView(emptyState(
+                if (selected == EffectCatalog.CATEGORY_FAVORITES) "Toque e segure um efeito para favoritar." else "Nada encontrado. Tente outra busca ou categoria."))
+            shown.take(limit).forEach { definition ->
+                val star = if (repository.favorite(definition.id)) "★  " else ""
+                val row = listRow(star + definition.name, EffectCatalog.canonicalCategory(definition.category)) {
+                    val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@listRow
+                    safely { require(clip.effects.size < 12); val instance = EffectInstance(newId(), definition.id, definition.version)
+                        change(clipId, clip.effects + instance); repository.used(definition.id); dialog.dismiss(); parameters(clipId, instance) }
+                }
+                row.setOnLongClickListener {
+                    repository.toggleFavorite(definition.id)
+                    report(if (repository.favorite(definition.id)) "Adicionado aos favoritos" else "Removido dos favoritos")
+                    refresh(); true
+                }
+                results.addRow(row)
+            }
+            more.visibility = if (shown.size > limit) android.view.View.VISIBLE else android.view.View.GONE
+            more.text = "Mostrar mais (${shown.size - limit})"
         }
-        category.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, index: Int, id: Long) = refresh()
+        fun renderChips() {
+            chips.removeAllViews()
+            categories.forEach { category ->
+                chips.addChip(chip(category, category == selected) { selected = category; limit = 40; renderChips(); refresh() })
+            }
         }
-        list.setOnItemClickListener { _, _, position, _ ->
-            val definition = shown[position]
-            val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@setOnItemClickListener
-            safely { require(clip.effects.size < 12); val instance = EffectInstance(newId(), definition.id, definition.version)
-                change(clipId, clip.effects + instance); repository.used(definition.id); dialog.dismiss(); parameters(clipId, instance) }
-        }
-        list.setOnItemLongClickListener { _, _, position, _ ->
-            val selectedId = shown[position].id
-            repository.toggleFavorite(selectedId)
-            report(if (repository.favorite(selectedId)) "Adicionado aos favoritos" else "Removido dos favoritos")
-            refresh()
-            true
-        }
+        more.setOnClickListener { limit += 40; refresh() }
         search.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = refresh()
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { limit = 40; refresh() }
             override fun afterTextChanged(s: Editable?) {}
         })
-        refresh()
-        body.addView(label("Toque para aplicar. Segure para alternar favorito.", 12f, EditorStyle.MUTED))
-        dialog = sheet("Biblioteca de efeitos (${definitions.size})", body)
+        renderChips(); refresh()
+        dialog = sheet("Efeitos", body, subtitle = "${definitions.size} efeitos · toque para aplicar, segure para favoritar")
     }
     fun presets(clipId: String) = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with
@@ -308,7 +305,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             },
             onApply = { preset, intensity ->
                 if (clip.effects.size + preset.nodes.size > 12) {
-                    report("A pilha aceita no maximo 12 efeitos")
+                    report("A pilha aceita no máximo 12 efeitos")
                 } else safely {
                     preset.nodes.forEach { repository.resolve(it.assetId, it.version) }
                     val range = if (preset.category.equals("Gaming", true) && clip.outUs - clip.inUs >= 100_000L) {
@@ -378,7 +375,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                 }
             }
         }
-        body.addView(sectionTitle("Composicao", "O ajuste continua nao destrutivo."))
+        body.addView(sectionTitle("Composição", "O ajuste continua não destrutivo."))
         body.addView(blend, LinearLayout.LayoutParams(-1, dp(52)))
         lateinit var dialog: Dialog
         body.addView(action("Aplicar", true) { changed(target, updated()); dialog.dismiss() })
@@ -424,15 +421,15 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                 }
             }
         }
-        body.addView(sectionTitle("Composicao", "Modo de mistura e intervalo nao alteram a midia original."))
+        body.addView(sectionTitle("Composição", "Modo de mistura e intervalo não alteram a mídia original."))
         body.addView(blend, LinearLayout.LayoutParams(-1, dp(52)))
         val range = row()
-        range.addView(action("Inicio no cursor") { startTimeUs = sourceUs; if (endTimeUs != null && endTimeUs!! <= sourceUs) endTimeUs = null; previewValues() }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        range.addView(action("Início no cursor") { startTimeUs = sourceUs; if (endTimeUs != null && endTimeUs!! <= sourceUs) endTimeUs = null; previewValues() }, LinearLayout.LayoutParams(0, dp(48), 1f))
         range.addView(action("Fim no cursor") { if (sourceUs > (startTimeUs ?: -1L)) endTimeUs = sourceUs; previewValues() }, LinearLayout.LayoutParams(0, dp(48), 1f))
         range.addView(action("Limpar intervalo") { startTimeUs = null; endTimeUs = null; previewValues() }, LinearLayout.LayoutParams(0, dp(48), 1f))
         body.addView(range)
         if (definition.supportsMask) {
-            body.addView(sectionTitle("Mascara", "Retangulo, elipse e gradientes com feather; os controles tambem aceitam keyframe."))
+            body.addView(sectionTitle("Máscara", "Retângulo, elipse e gradientes com feather; os controles também aceitam keyframe."))
             val shapes = EffectMaskShape.entries
             val maskShape = Spinner(this).apply {
                 adapter = ArrayAdapter(this@with, android.R.layout.simple_spinner_dropdown_item, shapes.map { it.name.lowercase().replace('_', ' ') })
@@ -447,18 +444,18 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             }
             body.addView(maskShape, LinearLayout.LayoutParams(-1, dp(52)))
             fun updateMask(change: (EffectMask) -> EffectMask) { mask = change(mask ?: EffectMask(shape = EffectMaskShape.ELLIPSE)); previewValues() }
-            slider(body, "Posicao X", (((mask?.x ?: 0f) + .5f) * 100).toInt(), 100) { updateMask { m -> m.copy(x = it / 100f - .5f) } }
-            slider(body, "Posicao Y", (((mask?.y ?: 0f) + .5f) * 100).toInt(), 100) { updateMask { m -> m.copy(y = it / 100f - .5f) } }
+            slider(body, "Posição X", (((mask?.x ?: 0f) + .5f) * 100).toInt(), 100) { updateMask { m -> m.copy(x = it / 100f - .5f) } }
+            slider(body, "Posição Y", (((mask?.y ?: 0f) + .5f) * 100).toInt(), 100) { updateMask { m -> m.copy(y = it / 100f - .5f) } }
             slider(body, "Tamanho", (((mask?.size ?: .75f) - .05f) / 1.95f * 100).toInt(), 100) { updateMask { m -> m.copy(size = .05f + it / 100f * 1.95f) } }
-            slider(body, "Proporcao", (((mask?.aspect ?: 1f) - .1f) / 9.9f * 100).toInt(), 100) { updateMask { m -> m.copy(aspect = .1f + it / 100f * 9.9f) } }
+            slider(body, "Proporção", (((mask?.aspect ?: 1f) - .1f) / 9.9f * 100).toInt(), 100) { updateMask { m -> m.copy(aspect = .1f + it / 100f * 9.9f) } }
             slider(body, "Feather", (((mask?.feather ?: .08f) - .001f) / .499f * 100).toInt(), 100) { updateMask { m -> m.copy(feather = .001f + it / 100f * .499f) } }
             slider(body, "Opacidade (%)", ((mask?.opacity ?: 1f) * 100f).toInt(), 100) { updateMask { m -> m.copy(opacity = it / 100f) } }
-            slider(body, "Rotacao", (((mask?.rotation ?: 0f) + 180f) / 360f * 100).toInt(), 100) { updateMask { m -> m.copy(rotation = it / 100f * 360f - 180f) } }
-            body.addView(action(if (mask?.invert == true) "Desativar inversao" else "Inverter mascara") { updateMask { m -> m.copy(invert = !m.invert) } })
+            slider(body, "Rotação", (((mask?.rotation ?: 0f) + 180f) / 360f * 100).toInt(), 100) { updateMask { m -> m.copy(rotation = it / 100f * 360f - 180f) } }
+            body.addView(action(if (mask?.invert == true) "Desativar inversão" else "Inverter máscara") { updateMask { m -> m.copy(invert = !m.invert) } })
         }
         val allKeys = effect.keyframes.values.flatten().map { it.sourceUs }.distinct().sorted()
         val nearby = allKeys.minByOrNull { abs(it - sourceUs) }?.takeIf { abs(it - sourceUs) < 20_000 }
-        body.addView(sectionTitle("Animar parametros", "Cursor: ${timeLabel(project().allVideos.first { it.id == clipId }.timeMap.timelineAt(sourceUs))}. O mesmo calculo e usado na previa e exportacao."))
+        body.addView(sectionTitle("Animar parâmetros", "Cursor: ${timeLabel(project().allVideos.first { it.id == clipId }.timeMap.timelineAt(sourceUs))}. O mesmo cálculo é usado na prévia e exportação."))
         val easing = Spinner(this).apply {
             adapter = ArrayAdapter(this@with, android.R.layout.simple_spinner_dropdown_item, Easing.entries.map { it.label })
             setSelection(effect.keyframes.values.flatten().firstOrNull { it.sourceUs == nearby }?.easing?.ordinal ?: Easing.SMOOTH.ordinal)
@@ -508,7 +505,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         })
         if (allKeys.isNotEmpty()) {
             val navigation = row()
-            listOf("Anterior" to allKeys.lastOrNull { it < sourceUs }, "Proximo" to allKeys.firstOrNull { it > sourceUs }).forEach { (label, target) ->
+            listOf("Anterior" to allKeys.lastOrNull { it < sourceUs }, "Próximo" to allKeys.firstOrNull { it > sourceUs }).forEach { (label, target) ->
                 navigation.addView(action(label) {
                     if (target != null) {
                         val p = project(); val main = p.videos.indexOfFirst { it.id == clipId }
@@ -531,7 +528,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                     var total = 0L; val buffer = ByteArray(16_384)
                     while (true) { check(!closed); val n = input.read(buffer); if (n < 0) break; total += n
                         require(total <= AssetValidator.MAX_PACKAGE); output.write(buffer, 0, n) }
-                } } ?: throw IllegalArgumentException("Arquivo indisponivel")
+                } } ?: throw IllegalArgumentException("Arquivo indisponível")
                 repository.install(temporary)
             }
             temporary.delete()
@@ -540,37 +537,39 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     }
     private fun online() = with(activity) {
         val input = EditText(this).apply { hint = "https://seu-servidor/catalogo.json"; isSingleLine = true }
-        AlertDialog.Builder(this).setTitle("Catalogo de efeitos").setMessage("Informe o endereco de um catalogo Recly. Nenhum video sera enviado.")
+        AlertDialog.Builder(this).setTitle("Catálogo de efeitos").setMessage("Informe o endereco de um catálogo Recly. Nenhum vídeo será enviado.")
             .setView(input).setNegativeButton("Cancelar", null).setPositiveButton("Abrir") { _, _ ->
                 val manager = AssetDownloadManager(); download?.cancelled?.set(true); download = manager
                 val url = input.text.toString().trim()
                 worker.execute {
                     val result = runCatching { manager.catalog(url) }
-                    runOnUiThread { if (!closed) result.fold(::onlineList, { report("Catalogo indisponivel: ${it.message}") }) }
+                    runOnUiThread { if (!closed) result.fold(::onlineList, { report("Catálogo indisponível: ${it.message}") }) }
                 }
             }.show()
     }
     private fun onlineList(assets: List<OnlineAsset>) = with(activity) {
-        val body = column(); val list = ListView(this)
-        list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, assets.map { "${it.name} / ${it.bytes / 1024} KB" })
-        body.addView(list, LinearLayout.LayoutParams(-1, dp(300)))
-        val status = label("Toque em um pacote para baixar", 13f); body.addView(status)
+        val body = column()
+        val status = label("Toque em um pacote para baixar", 13f, EditorStyle.MUTED).apply { setPadding(dp(2), dp(4), dp(2), dp(8)) }
+        body.addView(status)
         var downloading = false
         val manager = AssetDownloadManager(); download = manager
-        body.addView(action("Cancelar download") { manager.cancelled.set(true) })
-        list.setOnItemClickListener { _, _, n, _ ->
-            if (!downloading) {
-                downloading = true; val asset = assets[n]
-                manager.cancelled.set(false)
-                worker.execute {
-                    val file = File.createTempFile("download-", ".reclyfx", cacheDir)
-                    val result = runCatching { manager.download(asset, file) { percent -> runOnUiThread { if (!closed) status.text = "${asset.name}: $percent%" } }; repository.install(file, asset) }
-                    file.delete()
-                    runOnUiThread { downloading = false; if (!closed) status.text = result.fold({ "Instalado: ${it.name}" }, { "Falha: ${it.message}" }) }
+        if (assets.isEmpty()) body.addView(emptyState("Nenhum pacote neste catálogo."))
+        assets.forEach { asset ->
+            body.addRow(listRow(asset.name, "${asset.bytes / 1024} KB") {
+                if (!downloading) {
+                    downloading = true
+                    manager.cancelled.set(false)
+                    worker.execute {
+                        val file = File.createTempFile("download-", ".reclyfx", cacheDir)
+                        val result = runCatching { manager.download(asset, file) { percent -> runOnUiThread { if (!closed) status.text = "${asset.name}: $percent%" } }; repository.install(file, asset) }
+                        file.delete()
+                        runOnUiThread { downloading = false; if (!closed) status.text = result.fold({ "Instalado: ${it.name}" }, { "Falha: ${it.message}" }) }
+                    }
                 }
-            }
+            })
         }
-        sheet("Catalogo online", body)
+        body.addView(action("Cancelar download") { manager.cancelled.set(true) })
+        sheet("Catálogo online", body)
     }
     override fun close() { closed = true; download?.cancelled?.set(true); worker.shutdownNow() }
 }

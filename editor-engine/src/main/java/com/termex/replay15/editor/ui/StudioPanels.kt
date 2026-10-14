@@ -27,8 +27,8 @@ object StudioPanels {
         val body = column()
         var grade = clip.grade
         fun update(change: (StudioGrade) -> StudioGrade) { grade = change(grade); preview(clip.copy(grade = grade)) }
-        body.addView(sectionTitle("Luz e profundidade", "Exposicao em stops, recuperacao tonal e acabamento."))
-        slider(body, "Exposicao", (grade.exposure * 100).toInt(), 300, -300,
+        body.addView(sectionTitle("Luz e profundidade", "Exposição em stops, recuperação tonal e acabamento."))
+        slider(body, "Exposição", (grade.exposure * 100).toInt(), 300, -300,
             format = { String.format(java.util.Locale.ROOT, "%.2f", it / 100f) }) { update { grade -> grade.copy(exposure = it / 100f) } }
         slider(body, "Sombras", (grade.shadows * 100).toInt(), 100, -100) { update { grade -> grade.copy(shadows = it / 100f) } }
         slider(body, "Altas luzes", (grade.highlights * 100).toInt(), 100, -100) { update { grade -> grade.copy(highlights = it / 100f) } }
@@ -52,7 +52,7 @@ object StudioPanels {
         listOf("Linear" to listOf(0f, .25f, .5f, .75f, 1f), "Contraste" to listOf(0f, .17f, .5f, .83f, 1f), "Matte" to listOf(.07f, .28f, .51f, .75f, .95f))
             .forEach { (name, points) -> presets.addView(action(name) { curve.reset(points) }, LinearLayout.LayoutParams(0, dp(48), 1f)) }
         body.addView(presets)
-        body.addView(sectionTitle("HSL por cor", "Ajuste matiz, saturacao e luminosidade em oito faixas de cor."))
+        body.addView(sectionTitle("HSL por cor", "Ajuste matiz, saturação e luminosidade em oito faixas de cor."))
         val band = Spinner(this).apply { adapter = ArrayAdapter(this@with, android.R.layout.simple_spinner_dropdown_item, HslBand.entries.map { it.label }) }
         val hslBody = column(); body.addView(band, LinearLayout.LayoutParams(-1, dp(52))); body.addView(hslBody)
         fun editBand(index: Int) {
@@ -60,7 +60,7 @@ object StudioPanels {
             val selected = grade.hsl[index]
             fun change(value: HslAdjustment) { update { grade -> grade.copy(hsl = grade.hsl.mapIndexed { i, old -> if (i == index) value else old }) } }
             slider(hslBody, "Matiz (graus)", selected.hue.toInt(), 180, -180) { change(grade.hsl[index].copy(hue = it.toFloat())) }
-            slider(hslBody, "Saturacao (%)", (selected.saturation * 100).toInt(), 100, -100) { change(grade.hsl[index].copy(saturation = it / 100f)) }
+            slider(hslBody, "Saturação (%)", (selected.saturation * 100).toInt(), 100, -100) { change(grade.hsl[index].copy(saturation = it / 100f)) }
             slider(hslBody, "Luminosidade (%)", (selected.luminance * 100).toInt(), 100, -100) { change(grade.hsl[index].copy(luminance = it / 100f)) }
         }
         band.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -69,7 +69,7 @@ object StudioPanels {
         }
         body.addView(sectionTitle("Acabamento"))
         slider(body, "Vinheta (%)", (grade.vignette * 100).toInt(), 100) { update { grade -> grade.copy(vignette = it / 100f) } }
-        slider(body, "Grao de filme (%)", (grade.grain * 100).toInt(), 100) { update { grade -> grade.copy(grain = it / 100f) } }
+        slider(body, "Grão de filme (%)", (grade.grain * 100).toInt(), 100) { update { grade -> grade.copy(grain = it / 100f) } }
         slider(body, "Nitidez (%)", (grade.sharpen * 100).toInt(), 100) { update { grade -> grade.copy(sharpen = it / 100f) } }
         lateinit var dialog: Dialog
         body.addView(sectionTitle("LUT 3D"))
@@ -104,7 +104,7 @@ object StudioPanels {
             apply(clip.copy(grade = grade.copy(exposure = 0f, shadows = 0f, highlights = 0f, vignette = 0f, grain = 0f, sharpen = 0f,
                 curve = StudioGrade().curve, channelCurves = StudioGrade().channelCurves, hsl = StudioGrade().hsl, lutPath = ""))); dialog.dismiss()
         })
-        dialog = sheet("Estudio de cor", body)
+        dialog = sheet("Estúdio de cor", body)
         dialog.setOnDismissListener { restore() }
     }
 
@@ -112,7 +112,7 @@ object StudioPanels {
         preview: (VideoClip) -> Unit = {}, restore: () -> Unit = {}) = with(activity) {
         val body = column(); var grade = clip.grade
         fun update(change: (StudioGrade) -> StudioGrade) { grade = change(grade); preview(clip.copy(grade = grade)) }
-        body.addView(sectionTitle("Mascara de enquadramento", "As areas removidas revelam os videos abaixo e o fundo do projeto."))
+        body.addView(sectionTitle("Máscara de enquadramento", "As áreas removidas revelam os vídeos abaixo e o fundo do projeto."))
         val shape = Spinner(this).apply {
             adapter = ArrayAdapter(this@with, android.R.layout.simple_spinner_dropdown_item, MaskShape.entries.map { it.label })
             setSelection(grade.mask.ordinal)
@@ -121,32 +121,32 @@ object StudioPanels {
         slider(body, "Tamanho (%)", (grade.maskSize * 100).toInt(), 100, 10) { update { grade -> grade.copy(maskSize = it / 100f) } }
         slider(body, "Horizontal (%)", (grade.maskX * 100).toInt(), 50, -50) { update { grade -> grade.copy(maskX = it / 100f) } }
         slider(body, "Vertical (%)", (grade.maskY * 100).toInt(), 50, -50) { update { grade -> grade.copy(maskY = it / 100f) } }
-        slider(body, "Rotacao (graus)", grade.maskRotation.toInt(), 180, -180) { update { grade -> grade.copy(maskRotation = it.toFloat()) } }
-        slider(body, "Proporcao horizontal (%)", (grade.maskAspect * 100).toInt(), 500, 10) { update { grade -> grade.copy(maskAspect = it / 100f) } }
-        slider(body, "Intensidade da mascara (%)", (grade.maskOpacity * 100).toInt(), 100) { update { grade -> grade.copy(maskOpacity = it / 100f) } }
+        slider(body, "Rotação (graus)", grade.maskRotation.toInt(), 180, -180) { update { grade -> grade.copy(maskRotation = it.toFloat()) } }
+        slider(body, "Proporção horizontal (%)", (grade.maskAspect * 100).toInt(), 500, 10) { update { grade -> grade.copy(maskAspect = it / 100f) } }
+        slider(body, "Intensidade da máscara (%)", (grade.maskOpacity * 100).toInt(), 100) { update { grade -> grade.copy(maskOpacity = it / 100f) } }
         slider(body, "Suavidade da borda", (grade.feather * 1000).toInt(), 500, 1,
             format = { "${it / 10f}%" }) { update { grade -> grade.copy(feather = it / 1000f) } }
-        val invert = CheckBox(this).apply { text = "Inverter mascara"; isChecked = grade.invertMask }; body.addView(invert)
+        val invert = CheckBox(this).apply { text = "Inverter máscara"; isChecked = grade.invertMask }; body.addView(invert)
         body.addView(sectionTitle("Chroma key", "Remove uma cor uniforme para revelar as camadas abaixo."))
-        val enabled = CheckBox(this).apply { text = "Ativar remocao de cor"; isChecked = grade.chromaEnabled }; body.addView(enabled)
+        val enabled = CheckBox(this).apply { text = "Ativar remoção de cor"; isChecked = grade.chromaEnabled }; body.addView(enabled)
         val color = EditText(this).apply { hint = "Cor #00FF00"; setText(String.format("#%06X", grade.chromaColor and 0xFFFFFF)); isSingleLine = true }; body.addView(color)
         val keys = row()
         listOf("Verde" to "#00FF00", "Azul" to "#0000FF", "Preto" to "#000000").forEach { (label, value) -> keys.addView(action(label) { color.setText(value) }, LinearLayout.LayoutParams(0, dp(48), 1f)) }
         body.addView(keys)
-        slider(body, "Tolerancia (%)", (grade.chromaTolerance * 100).toInt(), 80, 1) { update { grade -> grade.copy(chromaTolerance = it / 100f) } }
+        slider(body, "Tolerância (%)", (grade.chromaTolerance * 100).toInt(), 80, 1) { update { grade -> grade.copy(chromaTolerance = it / 100f) } }
         slider(body, "Suavidade do chroma (%)", (grade.chromaSmoothness * 1000).toInt(), 500, 1, { "${it / 10f}" }) { update { grade -> grade.copy(chromaSmoothness = it / 1000f) } }
         slider(body, "Remover reflexo da cor (%)", (grade.chromaSpill * 100).toInt(), 100) { update { grade -> grade.copy(chromaSpill = it / 100f) } }
         slider(body, "Ajuste da borda (%)", (grade.chromaEdge * 100).toInt(), 20, -20) { update { grade -> grade.copy(chromaEdge = it / 100f) } }
         lateinit var dialog: Dialog
-        body.addView(action("Aplicar composicao", true) {
+        body.addView(action("Aplicar composição", true) {
             val parsed = runCatching { Color.parseColor(color.text.toString()) }.getOrNull()
             if (parsed == null) color.error = "Use #RRGGBB" else {
                 apply(clip.copy(grade = grade.copy(mask = MaskShape.entries[shape.selectedItemPosition], invertMask = invert.isChecked,
                     chromaEnabled = enabled.isChecked, chromaColor = parsed))); dialog.dismiss()
             }
         })
-        body.addView(action("Remover mascara e chroma") { apply(clip.copy(grade = grade.copy(mask = MaskShape.NONE, chromaEnabled = false))); dialog.dismiss() })
-        dialog = sheet("Mascaras e chroma", body)
+        body.addView(action("Remover máscara e chroma") { apply(clip.copy(grade = grade.copy(mask = MaskShape.NONE, chromaEnabled = false))); dialog.dismiss() })
+        dialog = sheet("Máscaras e chroma", body)
         dialog.setOnDismissListener { restore() }
     }
 
@@ -163,11 +163,11 @@ object StudioPanels {
         val body = column(); var candidate = project
         body.addView(sectionTitle("Formato de entrega"))
         val ratios = listOf("Original" to 0f, "Reels / Stories 9:16" to 9f / 16, "YouTube 16:9" to 16f / 9, "Quadrado 1:1" to 1f,
-            "Retrato 4:5" to 4f / 5, "Cinema 21:9" to 21f / 9, "Classico 4:3" to 4f / 3)
+            "Retrato 4:5" to 4f / 5, "Cinema 21:9" to 21f / 9, "Clássico 4:3" to 4f / 3)
         val ratio = Spinner(this).apply { adapter = ArrayAdapter(this@with, android.R.layout.simple_spinner_dropdown_item, ratios.map { it.first }); setSelection(ratios.indexOfFirst { it.second == project.aspect }.coerceAtLeast(0)) }
         body.addView(ratio, LinearLayout.LayoutParams(-1, dp(56)))
         val fill = CheckBox(this).apply { text = "Preencher tela (recorta as bordas)"; isChecked = project.canvasFill == CanvasFill.FILL }; body.addView(fill)
-        body.addView(sectionTitle("Cor do fundo", "Aparece nas margens, mascaras e areas transparentes."))
+        body.addView(sectionTitle("Cor do fundo", "Aparece nas margens, máscaras e áreas transparentes."))
         val swatches = row()
         val input = EditText(this).apply { setText(String.format("#%06X", project.backgroundColor and 0xFFFFFF)); hint = "#RRGGBB"; isSingleLine = true }
         listOf(Color.BLACK, Color.WHITE, 0xFF20132E.toInt(), 0xFFD8C6FC.toInt(), 0xFF182D39.toInt(), 0xFFFFCF71.toInt()).forEach { color ->

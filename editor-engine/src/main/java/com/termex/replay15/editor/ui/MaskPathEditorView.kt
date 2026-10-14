@@ -56,7 +56,7 @@ class MaskPathEditorView @JvmOverloads constructor(
 
     init {
         setBackgroundColor(0xFF0A0A0B.toInt())
-        contentDescription = "Editor do caminho da mascara"
+        contentDescription = "Editor do caminho da máscara"
     }
 
     fun setPoints(points: List<MaskPathPoint>) {

@@ -94,7 +94,7 @@ object TrackingTools {
         body.addView(rateSpinner, LinearLayout.LayoutParams(-1, dp(52)))
 
         // Start tracking button
-        body.addView(action("🎯 Iniciar Rastreamento", accent = true) {
+        body.addView(action("Iniciar rastreamento", accent = true) {
             val fromStart = rangeSpinner.selectedItemPosition == 1
             val startUs = if (fromStart) clip.inUs else currentSourceUs
             val endUs = clip.outUs

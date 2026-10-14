@@ -20,10 +20,14 @@ import com.recly.editor.engine.R
  * traços vetoriais anti-aliased proporcionais para ferramentas contextuais.
  */
 class EditorGlyph(
-    private val kind: String,
+    kindName: String,
     private val tint: Int = Color.WHITE,
     private val context: Context? = null,
 ) : Drawable() {
+
+    /** Lookup key without accents, so "Máscaras" and "Mascaras" draw the same icon. */
+    private val kind: String = if (kindName.startsWith("canvas:")) kindName else
+        java.text.Normalizer.normalize(kindName, java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
 
     private val delegate: Drawable? = context?.let { ctx ->
         val resId = when (kind) {
@@ -53,7 +57,7 @@ class EditorGlyph(
             "Projeto" -> R.drawable.ic_pro_folder
             "Favorito" -> R.drawable.ic_recly_star_filled
             "Replay" -> R.drawable.ic_recly_replay_badge
-            "Econômico" -> R.drawable.ic_recly_economy
+            "Economico" -> R.drawable.ic_recly_economy
             "Qualidade" -> R.drawable.ic_recly_quality
             "Facecam" -> R.drawable.ic_recly_facecam
             "+ Midia" -> R.drawable.ic_pro_plus
