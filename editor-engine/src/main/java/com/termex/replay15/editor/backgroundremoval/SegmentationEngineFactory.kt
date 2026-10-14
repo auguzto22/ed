@@ -41,7 +41,7 @@ object SegmentationEngineFactory {
         }
     }
 
-    fun createApplier(context: Context): GeminiBitmapMaskApplier {
-        return GeminiBitmapMaskApplier(context)
+    fun createApplier(context: Context): BitmapMaskApplier {
+        return BitmapMaskApplier(context)
     }
 }

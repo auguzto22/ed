@@ -97,16 +97,26 @@ class BackgroundRemovalTools(
             var effect = sticker.backgroundRemoval
             lateinit var dialog: Dialog
             val body = column()
-            body.addView(sectionTitle("Remover Fundo", "O Gemini recorta o assunto da foto e deixa todo o resto transparente."))
+            body.addView(sectionTitle("Remover Fundo", "Recorta o assunto da imagem no próprio aparelho e deixa todo o resto transparente."))
             val enabled = CheckBox(this).apply { text = "Ativar remoção de fundo"; isChecked = effect.enabled }
             body.addView(enabled)
             fun updated() = project().copy(stickers = project().stickers.map {
                 if (it.id == stickerId) it.copy(backgroundRemoval = effect) else it
             })
             fun preview() = previewApply(updated())
-            enabled.setOnCheckedChangeListener { _, checked ->
-                effect = effect.copy(enabled = checked, provider = BackgroundRemovalProvider.GEMINI); preview()
+            // The toggle used to force the Gemini provider, whose polygon contours made sticker
+            // cut-outs look faceted. The provider is now an explicit choice, local by default.
+            enabled.setOnCheckedChangeListener { _, checked -> effect = effect.copy(enabled = checked); preview() }
+
+            body.addView(label("Motor de IA", 13f, EditorStyle.MUTED))
+            val providers = row()
+            BackgroundRemovalProvider.entries.forEach { provider ->
+                providers.addView(action(providerLabel(provider), effect.provider == provider) {
+                    effect = effect.copy(provider = provider); preview()
+                }, LinearLayout.LayoutParams(0, dp(48), 1f))
             }
+            body.addView(providers)
+
             body.addView(label("Precisão do recorte", 13f, EditorStyle.MUTED))
             val qualities = row()
             SegmentationQuality.entries.forEach { quality ->
@@ -126,7 +136,7 @@ class BackgroundRemovalTools(
     }
 
     private fun providerLabel(provider: BackgroundRemovalProvider): String = when (provider) {
-        BackgroundRemovalProvider.AUTO -> "Auto (Gemini/Local)"
+        BackgroundRemovalProvider.AUTO -> "Auto (Local)"
         BackgroundRemovalProvider.GEMINI -> "Gemini API"
         BackgroundRemovalProvider.MLKIT -> "ML Kit (Local)"
     }
