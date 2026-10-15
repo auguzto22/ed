@@ -62,6 +62,21 @@ class GeminiBackgroundRemovalTest {
     }
 
     @Test
+    fun contourWrittenAsYxIsReadInTheRightOrientation() {
+        // Same wide subject as above, but Gemini wrote the contour as [y, x] like its boxes.
+        val json = """
+            {"boxes": [{"box_2d": [400, 100, 600, 900], "label": "skate",
+              "mask": [[400, 100], [400, 900], [600, 900], [600, 100]]}]}
+        """.trimIndent()
+        val subject = GeminiSegmentationParser.parseSubjects(json).single()
+        assertTrue("x volta para 0,1..0,9: ${subject.polygon}", subject.polygon.all { it.first in .09f..0.91f })
+        assertTrue("y volta para 0,4..0,6: ${subject.polygon}", subject.polygon.all { it.second in .39f..0.61f })
+        val mask = GeminiSegmentationParser.rasterize(listOf(subject), 100, 100)
+        assertTrue("Borda esquerda no meio é objeto", mask[50 * 100 + 15] > 0.5f)
+        assertTrue("Topo no meio é fundo", mask[15 * 100 + 50] < 0.5f)
+    }
+
+    @Test
     fun boxRelativePolygonIsMappedIntoTheBox() {
         // Points span the whole 0..1000 range but the box is the right half: box-relative.
         val json = """

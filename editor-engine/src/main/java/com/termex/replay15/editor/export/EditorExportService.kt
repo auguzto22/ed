@@ -76,7 +76,8 @@ class EditorExportService : Service() {
                 }
                 require(project.durationUs > 0L) { "O projeto não possui duração exportável" }
                 val assets = AssetRepository(this)
-                project.allVideos.flatMap { it.effects }.filter { it.enabled }.distinctBy { it.assetId to it.version }.forEach {
+                (project.allVideos.flatMap { it.effects } + project.adjustmentClips.filter { it.enabled }.flatMap { it.effects })
+                    .filter { it.enabled }.distinctBy { it.assetId to it.version }.forEach {
                     require(runCatching { assets.resolve(it.assetId, it.version) }.isSuccess) { "Um efeito deste projeto precisa ser instalado novamente" }
                 }
                 require(EncoderSupport.supports(project)) { "Resolucao/FPS nao suportados pelo encoder. Escolha 720p/30 FPS." }
@@ -127,7 +128,7 @@ class EditorExportService : Service() {
                 val values = ContentValues().apply {
                     put(MediaStore.Video.Media.DISPLAY_NAME, "Editado_${System.currentTimeMillis()}.mp4")
                     put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Recly/Editados")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Blitz/Editados")
                     put(MediaStore.Video.Media.IS_PENDING, 1)
                 }
                 val created = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
@@ -176,7 +177,7 @@ class EditorExportService : Service() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         val open = PendingIntent.getActivity(this, 510, openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val builder = Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_save_15)
+        val builder = Notification.Builder(this, CHANNEL).setSmallIcon(com.recly.core.ui.R.drawable.blitz_mark)
             .setContentTitle("Editor Replay15").setContentText(value.message).setContentIntent(open)
             .setOnlyAlertOnce(true).setOngoing(value.active)
         if (value.active) {

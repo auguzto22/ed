@@ -6,6 +6,9 @@ import kotlin.math.abs
 
 /** Converts a validated plan into the editor's normal, persisted and fully editable primitives. */
 object AutoEditExecutor {
+    /** One frame at 30 fps: the punch-in lands on the target frame, not a frame later. */
+    private const val PUNCH_STEP_US = 33_000L
+
     fun execute(project: Project, clipIndex: Int, rawPlan: AutoEditPlan): Project {
         val source = project.videos.getOrNull(clipIndex) ?: error("Clipe nao encontrado")
         require(source.id == rawPlan.clipId) { "O clipe mudou durante a analise" }
@@ -134,18 +137,34 @@ object AutoEditExecutor {
 
     private fun autoKeyframes(source: VideoClip, plan: AutoEditPlan): List<TransformKeyframe> {
         val result = source.keyframes.associateByTo(sortedMapOf()) { it.sourceUs }
-        fun place(localUs: Long, zoomMultiplier: Float = 1f, x: Float? = null, y: Float? = null) {
+        fun place(localUs: Long, zoomMultiplier: Float = 1f, x: Float? = null, y: Float? = null,
+            easing: Easing = Easing.SMOOTH, focusX: Float? = null, focusY: Float? = null) {
             val sourceUs = source.timeMap.sourceAt(localUs.coerceIn(0, source.durationUs))
             val base = source.transformAt(sourceUs)
             if (sourceUs in result || result.size < 200) {
-                result[sourceUs] = base.copy(sourceUs = sourceUs, zoom = (base.zoom * zoomMultiplier).coerceIn(.25f, 4f),
-                    x = x ?: base.x, y = y ?: base.y, easing = Easing.SMOOTH)
+                val zoom = (base.zoom * zoomMultiplier).coerceIn(.25f, 4f)
+                // Zooming happens around the frame centre. Shifting by (0.5 - focus) * extra zoom keeps the
+                // focus point (the face) where it was instead of pushing it out of the frame. The shift is
+                // at most half of the extra zoom, so the frame edges never show.
+                val extra = zoom - base.zoom
+                val focusShiftX = focusX?.let { (.5f - it) * extra } ?: 0f
+                val focusShiftY = focusY?.let { (.5f - it) * extra } ?: 0f
+                result[sourceUs] = base.copy(sourceUs = sourceUs, zoom = zoom,
+                    x = (x ?: (base.x + focusShiftX)).coerceIn(-.5f, .5f),
+                    y = (y ?: (base.y + focusShiftY)).coerceIn(-.5f, .5f), easing = easing)
             }
         }
         plan.zooms.forEach { zoom ->
-            place(zoom.timeUs - 70_000L)
-            place(zoom.timeUs, zoom.scale)
-            place(zoom.timeUs + zoom.durationUs)
+            if (zoom.hold) {
+                // Punch-in: a cut to the closer framing, held, then a cut back.
+                place(zoom.timeUs - PUNCH_STEP_US, easing = Easing.HOLD)
+                place(zoom.timeUs, zoom.scale, easing = Easing.HOLD, focusX = zoom.focusX, focusY = zoom.focusY)
+                place(zoom.timeUs + zoom.durationUs)
+            } else {
+                place(zoom.timeUs - 70_000L)
+                place(zoom.timeUs, zoom.scale, focusX = zoom.focusX, focusY = zoom.focusY)
+                place(zoom.timeUs + zoom.durationUs)
+            }
         }
         plan.reframes.forEach { reframe ->
             place(reframe.timeUs - 180_000L)
@@ -156,8 +175,11 @@ object AutoEditExecutor {
 
     private fun boundedKeys(source: VideoClip, sourceIn: Long, sourceOut: Long, all: List<TransformKeyframe>): List<TransformKeyframe> {
         if (all.isEmpty()) return emptyList()
-        val start = source.transformAt(sourceIn).copy(sourceUs = sourceIn)
-        val end = source.transformAt(sourceOut).copy(sourceUs = sourceOut)
+        // The edges are read from the planned keys, not the original ones: a punch-in that spans a
+        // removed pause must still be zoomed in on the piece after the cut.
+        val planned = source.copy(keyframes = all)
+        val start = planned.transformAt(sourceIn).copy(sourceUs = sourceIn)
+        val end = planned.transformAt(sourceOut).copy(sourceUs = sourceOut)
         return (listOf(start) + all.filter { it.sourceUs in (sourceIn + 1) until sourceOut } + end)
             .distinctBy { it.sourceUs }.sortedBy { it.sourceUs }.take(200)
     }

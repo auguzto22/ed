@@ -23,16 +23,21 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * Removes the background of chosen images (photo overlays / stickers) using only the Gemini API.
+ * Removes the background of chosen images (photo overlays / stickers).
  *
- * Gemini returns the traced contour of every foreground subject; everything outside the union
- * of those contours becomes fully transparent. There is no local fallback and no guessed shape:
- * if Gemini cannot trace the subject, this returns null and the caller keeps the original image.
+ * With a Gemini key (debug builds), Gemini returns the traced contour of every foreground subject;
+ * everything outside the union of those contours becomes fully transparent. Without a key (release
+ * builds never carry one) or when Gemini cannot trace the subject, the on-device subject/selfie
+ * models ([StillImageSegmenter]) cut the image instead. Before, release builds returned null here
+ * and "Remover fundo" silently did nothing. Null still means "keep the original image".
  */
 class GeminiBitmapMaskApplier(
-    @Suppress("UNUSED_PARAMETER") context: Context,
+    private val context: Context,
     private val apiKey: String = GeminiApiKeyConfig.getApiKey(),
 ) : AutoCloseable {
+
+    /** Created on first use: only images that actually need a local cut-out pay for the models. */
+    private var local: StillImageSegmenter? = null
 
     private val http = GeminiHttpClient(apiKey)
     /** Avoids hammering the API every frame after a failure; retried after the cooldown. */
@@ -42,22 +47,49 @@ class GeminiBitmapMaskApplier(
     fun apply(source: Bitmap, effect: BackgroundRemovalEffect): Bitmap? {
         if (!effect.enabled || effect.mode != BackgroundMode.REMOVE) return source
         if (closed || source.isRecycled) return null
-        if (apiKey.isBlank()) {
-            Log.w(TAG, "GEMINI_API_KEY ausente; remoção de fundo indisponível")
-            return null
-        }
         val key = "${System.identityHashCode(source)}:${source.generationId}:${effect.quality}"
         failedAt[key]?.let { if (SystemClock.elapsedRealtime() - it < FAILURE_COOLDOWN_MS) return null }
 
-        val subjects = runCatching { requestSubjects(source, effect.quality) }
-            .onFailure { Log.w(TAG, "Gemini não conseguiu recortar a imagem", it) }
+        val subjects = if (apiKey.isBlank()) emptyList() else runCatching { requestSubjects(source, effect.quality) }
+            .onFailure { Log.w(TAG, "Gemini não conseguiu recortar a imagem; tentando no aparelho", it) }
             .getOrDefault(emptyList())
-        if (subjects.isEmpty()) {
-            failedAt[key] = SystemClock.elapsedRealtime()
-            return null
+        val result = if (subjects.isNotEmpty()) cutout(source, subjects, effect) else localCutout(source, effect)
+        if (result == null) failedAt[key] = SystemClock.elapsedRealtime() else failedAt.remove(key)
+        return result
+    }
+
+    /** On-device fallback: subject + selfie models, the same ones photo clips use. */
+    private fun localCutout(source: Bitmap, effect: BackgroundRemovalEffect): Bitmap? {
+        val segmenter = synchronized(this) {
+            if (closed) return null
+            local ?: StillImageSegmenter(context).also { local = it }
         }
-        failedAt.remove(key)
-        return cutout(source, subjects, effect)
+        val result = runCatching { segmenter.segmentBlocking(source, 0L) }
+            .onFailure { Log.w(TAG, "Recorte no aparelho falhou", it) }
+            .getOrNull() ?: return null
+        if (closed || source.isRecycled) return null
+        val w = source.width
+        val h = source.height
+        val pixels = IntArray(result.width * result.height) { index ->
+            (result.mask[index].coerceIn(0f, 1f) * 255f).roundToInt() shl 24
+        }
+        val small = Bitmap.createBitmap(pixels, result.width, result.height, Bitmap.Config.ARGB_8888)
+        val scaled = if (small.width == w && small.height == h) small
+            else Bitmap.createScaledBitmap(small, w, h, true).also { small.recycle() }
+        val alpha = scaled.extractAlpha().also { scaled.recycle() }
+        val mask = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8)
+        val featherPx = effect.feather * min(w, h) * 0.05f
+        Canvas(mask).drawBitmap(alpha, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG).apply {
+            if (featherPx >= 0.5f) maskFilter = BlurMaskFilter(featherPx, BlurMaskFilter.Blur.NORMAL)
+        })
+        alpha.recycle()
+        val output = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        Canvas(output).apply {
+            drawBitmap(source, 0f, 0f, null)
+            drawBitmap(mask, 0f, 0f, Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN) })
+        }
+        mask.recycle()
+        return output
     }
 
     private fun requestSubjects(source: Bitmap, quality: SegmentationQuality): List<GeminiSubject> {
@@ -128,6 +160,7 @@ class GeminiBitmapMaskApplier(
     override fun close() {
         closed = true
         failedAt.clear()
+        synchronized(this) { local?.close(); local = null }
     }
 
     private companion object {

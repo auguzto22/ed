@@ -17,7 +17,7 @@ class EasingGraphView(context: Context) : View(context) {
     private var active = -1
     private fun x(t: Float) = pad + (width - pad * 2) * t
     private fun y(t: Float) = height - pad - (height - pad * 2) * (t + 2) / 5
-    init { isFocusable = true; contentDescription = "Grafico de interpolacao. Bezier tem duas alcas arrastaveis, tambem editaveis nos campos abaixo." }
+    init { isFocusable = true; contentDescription = "Gráfico de interpolação. Bezier tem duas alcas arrastáveis, também editáveis nos campos abaixo." }
     override fun onDraw(canvas: Canvas) {
         paint.color = EditorStyle.BG; canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), 18f, 18f, paint)
         paint.color = EditorStyle.CARD; paint.strokeWidth = 1f

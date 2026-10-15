@@ -68,31 +68,33 @@ class ClipTimeMap(private val clip: VideoClip) {
     }
 
     fun sourceAt(timelineUs: Long): Long {
-        if (timelineUs <= 0) return if (clip.reverse) clip.outUs else clip.inUs
-        if (timelineUs >= durationUs) return if (clip.reverse) clip.inUs else clip.outUs
-        val index = segments.binarySearch { it.timelineUs.compareTo(timelineUs) }.let { if (it >= 0) it else -it - 2 }
-        val item = segments[index.coerceAtLeast(0)]
-        val forward = (item.sourceUs + ((timelineUs - item.timelineUs) * item.speed.toDouble()).roundToLong())
-            .coerceIn(item.sourceUs, item.endUs)
-        // Reversal mirrors the walk through the same segment table, so trims and speed ramps
-        // keep their shape and the clip's duration is unchanged. Only the direction differs,
-        // which is why every downstream placement, transition and audio offset stays valid.
-        return if (clip.reverse) mirror(item, forward) else forward
+        // Reversal walks the same segment table from the end: the reversed clip at time t shows
+        // what forward playback shows at (duration - t). Trims and speed ramps keep their shape
+        // (anchored to the source), and the duration is unchanged, so every downstream placement,
+        // transition and audio offset stays valid. Mirroring inside each segment instead would
+        // only reverse ~20 ms chunks of a ramped clip while still walking the chunks forward.
+        return if (clip.reverse) forwardSourceAt(durationUs - timelineUs) else forwardSourceAt(timelineUs)
     }
 
-    /** Maps a forward source position inside [item] to its reversed counterpart. */
-    private fun mirror(item: Segment, sourceUs: Long): Long =
-        (item.sourceUs + item.endUs - sourceUs).coerceIn(item.sourceUs, item.endUs)
+    private fun forwardSourceAt(timelineUs: Long): Long {
+        if (timelineUs <= 0) return clip.inUs
+        if (timelineUs >= durationUs) return clip.outUs
+        val index = segments.binarySearch { it.timelineUs.compareTo(timelineUs) }.let { if (it >= 0) it else -it - 2 }
+        val item = segments[index.coerceAtLeast(0)]
+        return (item.sourceUs + ((timelineUs - item.timelineUs) * item.speed.toDouble()).roundToLong())
+            .coerceIn(item.sourceUs, item.endUs)
+    }
 
     fun timelineAt(sourceUs: Long): Long {
+        val forward = forwardTimelineAt(sourceUs)
+        return if (clip.reverse) (durationUs - forward).coerceIn(0, durationUs) else forward
+    }
+
+    private fun forwardTimelineAt(sourceUs: Long): Long {
         val source = sourceUs.coerceIn(clip.inUs, clip.outUs)
         val index = segments.binarySearch { it.sourceUs.compareTo(source) }.let { if (it >= 0) it else -it - 2 }
         val item = segments[index.coerceAtLeast(0)]
-        val forward = (item.timelineUs + ((source - item.sourceUs) / item.speed.toDouble()).roundToLong())
-            .coerceIn(0, durationUs)
-        if (!clip.reverse) return forward
-        val mirrored = mirror(item, source)
-        return (item.timelineUs + ((mirrored - item.sourceUs) / item.speed.toDouble()).roundToLong())
+        return (item.timelineUs + ((source - item.sourceUs) / item.speed.toDouble()).roundToLong())
             .coerceIn(0, durationUs)
     }
 

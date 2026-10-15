@@ -22,6 +22,11 @@ class AnimatedCaptionStylesTest {
         }
     }
 
+    @Test fun animatedCaptionsNeverUseReclyOriginalFonts() {
+        val reclyFonts = AnimatedCaptionStyles.all.filter { it.fontId.startsWith("recly_") }.map { it.id }
+        assertTrue("Legendas animadas com fonte Recly: $reclyFonts", reclyFonts.isEmpty())
+    }
+
     @Test fun estimatedTimingCoversTheWholeCaptionInOrder() {
         val clip = TextClip(text = "uma frase com várias palavras aqui", startUs = 3 * second, endUs = 5 * second, isCaption = true)
         val cues = AnimatedCaptionStyles.withWordTiming(clip).wordCues
@@ -49,5 +54,10 @@ class AnimatedCaptionStylesTest {
         val restored = ProjectCodec.read(bytes.inputStream())
         assertEquals(style, restored.texts.single().wordStyle)
         assertEquals(caption.wordCues, restored.texts.single().wordCues)
+    }
+
+    @Test fun aCaptionShorterThanItsWordCountKeepsItsTextInsteadOfCrashing() {
+        val clip = TextClip(text = "uma duas tres quatro", startUs = 0L, endUs = 3L, isCaption = true)
+        assertEquals(clip, AnimatedCaptionStyles.withWordTiming(clip))
     }
 }

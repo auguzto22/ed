@@ -5,10 +5,10 @@ import kotlin.math.roundToLong
 
 enum class AnimationCategory(val label: String) {
     IN("Entrada"),
-    OUT("Saida"),
-    LOOP("Repeticao"),
+    OUT("Saída"),
+    LOOP("Repetição"),
     ENTRANCE("Entrada"),
-    EXIT("Saida"),
+    EXIT("Saída"),
     EMPHASIS("Destaque"),
     TEXT("Texto"),
     IMAGE("Imagem"),
@@ -16,7 +16,7 @@ enum class AnimationCategory(val label: String) {
     SOCIAL("Social"),
     GAMING("Gaming"),
     UI("Interface"),
-    CELEBRATION("Celebracao"),
+    CELEBRATION("Celebração"),
     MOTION("Movimento");
 }
 data class AnimationPoint(val time: Float, val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f,
@@ -34,14 +34,14 @@ data class AnimationPreset(val id: String, val version: Int, val name: String, v
         require(points.size in 2..32 && points.first().time == 0f && points.last().time == 1f)
         require(points.zipWithNext().all { (a, b) -> a.time < b.time })
         if (category == AnimationCategory.LOOP) require(points.first().copy(time = 1f, easing = points.last().easing, bezier = points.last().bezier) == points.last()) {
-            "Uma animacao em loop precisa terminar na mesma pose em que comecou"
+            "Uma animação em loop precisa terminar na mesma pose em que comecou"
         }
     }
 
     /** Presets compile into editable keyframes, so projects do not depend on installed packs. */
     fun applyTo(clip: VideoClip, durationUs: Long): VideoClip {
-        require(durationUs >= 50_000L) { "A duracao minima e 0.05 segundo" }
-        require(clip.durationUs >= 50_000L) { "Clipe muito curto para esta animacao" }
+        require(durationUs >= 50_000L) { "A duração mínima e 0.05 segundo" }
+        require(clip.durationUs >= 50_000L) { "Clipe muito curto para esta animação" }
         val duration = minOf(durationUs, clip.durationUs)
         val isOut = category == AnimationCategory.OUT || category == AnimationCategory.EXIT
         val isIn = category == AnimationCategory.IN || category == AnimationCategory.ENTRANCE
@@ -49,7 +49,7 @@ data class AnimationPreset(val id: String, val version: Int, val name: String, v
         val start = if (isOut) clip.durationUs - duration else 0L
         val end = if (isIn) duration else clip.durationUs
         val repeats = if (isLoop) (clip.durationUs + duration - 1) / duration else 1L
-        require(repeats * (points.size - 1) + 3 <= 200) { "Aumente o periodo da repeticao para usar ate 200 keyframes" }
+        require(repeats * (points.size - 1) + 3 <= 200) { "Aumente o período da repetição para usar até 200 keyframes" }
         val sourceStart = clip.timeMap.sourceAt(start); val sourceEnd = clip.timeMap.sourceAt(end)
         val base = TransformKeyframe(sourceStart, clip.zoom, clip.offsetX, clip.offsetY, clip.fineRotation, clip.opacity)
         val result = clip.keyframes.filterNot { it.sourceUs in sourceStart..sourceEnd }.toMutableList()
@@ -68,7 +68,7 @@ data class AnimationPreset(val id: String, val version: Int, val name: String, v
                 result.removeAll { it.sourceUs == source }; result += key
             }
         }
-        require(result.size <= 200) { "O clipe ja possui muitos keyframes. Remova pontos ou aumente o periodo." }
+        require(result.size <= 200) { "O clipe já possui muitos keyframes. Remova pontos ou aumente o período." }
         return clip.copy(keyframes = result.sortedBy { it.sourceUs })
     }
 }

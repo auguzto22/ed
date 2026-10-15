@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ system splash: graphite background with the Recly rings, no white flash.
+    <!-- Android 12+ system splash: black background with the white BLITZ mark, no white flash.
          The in-app BootSplashView continues the same motif after the first frame. -->
     <style name="Theme.Replay15" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
@@ -23,9 +23,12 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:statusBarColor">@color/recly_bg_main</item>
         <item name="android:navigationBarColor">@color/recly_bg_main</item>
-        <item name="android:colorAccent">@color/recly_accent_white</item>
+        <item name="android:colorAccent">#FFC50022</item>
+        <item name="android:colorControlNormal">#FF9A968C</item>
+        <item name="android:textColorHint">#FF6E6B64</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
         <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:alertDialogTheme">@style/Theme.Replay15.Editor.Alert</item>
         <item name="android:windowSplashScreenBackground">#FF000000</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="android:windowSplashScreenIconBackgroundColor">#FF000000</item>

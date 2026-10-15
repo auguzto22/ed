@@ -60,19 +60,19 @@ object AnimatedCaptionStyles {
             SubtitleWordStyle(activeColor = GREEN, activeScale = 1.12f, pop = true, uppercase = true)),
         AnimatedCaptionStyle("caixa", "Caixa", "system_sans_black", WHITE, BLACK, 0f, 0, false,
             SubtitleWordStyle(highlightColor = RED, activeColor = WHITE, pop = true, activeScale = 1.06f, uppercase = true)),
-        AnimatedCaptionStyle("amarelo", "Amarelo pop", "recly_poster_bold", WHITE, BLACK, .016f, 0, true,
+        AnimatedCaptionStyle("amarelo", "Amarelo pop", "anton_regular", WHITE, BLACK, .016f, 0, true,
             SubtitleWordStyle(activeColor = YELLOW, activeScale = 1.2f, pop = true, uppercase = true)),
         AnimatedCaptionStyle("arco_iris", "Arco-íris", "system_sans_black", WHITE, BLACK, .014f, 0, true,
             SubtitleWordStyle(activePalette = listOf(PINK, CYAN, YELLOW, GREEN), activeScale = 1.1f, pop = true)),
         AnimatedCaptionStyle("revelar", "Palavra a palavra", "montserrat_semibold", WHITE, BLACK, .014f, 0, true,
             SubtitleWordStyle(reveal = true, activeColor = YELLOW, pop = true, activeScale = 1.08f)),
-        AnimatedCaptionStyle("neon", "Neon", "recly_wide_bold", WHITE, 0xFF0A2A3A.toInt(), .012f, 0, true,
+        AnimatedCaptionStyle("neon", "Neon", "outfit_regular", WHITE, 0xFF0A2A3A.toInt(), .012f, 0, true,
             SubtitleWordStyle(activeColor = CYAN, futureColor = DIM, activeScale = 1.08f, pop = true)),
         AnimatedCaptionStyle("fogo", "Fogo", "bebas_neue_regular", WHITE, BLACK, .016f, 0, true,
             SubtitleWordStyle(activeColor = ORANGE, spokenColor = 0xFFFFE3C2.toInt(), activeScale = 1.15f, pop = true, uppercase = true)),
         AnimatedCaptionStyle("minimal", "Minimal", "poppins_semibold", WHITE, BLACK, 0f, 0, true,
             SubtitleWordStyle(futureColor = DIM, spokenColor = DIM, activeColor = WHITE)),
-        AnimatedCaptionStyle("gaming", "Gaming", "recly_arcade_regular", WHITE, BLACK, .014f, 0, true,
+        AnimatedCaptionStyle("gaming", "Gaming", "space_mono_regular", WHITE, BLACK, .014f, 0, true,
             SubtitleWordStyle(activeColor = GREEN, activeScale = 1.12f, pop = true, uppercase = true)),
         AnimatedCaptionStyle("bolha", "Bolha", "poppins_semibold", WHITE, 0, 0f, 0xB3000000.toInt(), false,
             SubtitleWordStyle(highlightColor = YELLOW, activeColor = BLACK, pop = true, activeScale = 1.05f)),
@@ -88,6 +88,9 @@ object AnimatedCaptionStyles {
         val words = Regex("\\S+").findAll(clip.text).map { it.value }.toList()
         // Tempo medido na transcrição vale mais que qualquer estimativa, mesmo se faltar alguma palavra.
         if (words.isEmpty() || clip.wordCues.isNotEmpty()) return clip
+        // Cada palavra precisa de pelo menos 1 µs; com menos tempo que palavras o coerceIn abaixo
+        // receberia mínimo > máximo e lançaria exceção.
+        if (clip.durationUs < words.size) return clip
         val weights = words.map { it.length.coerceAtLeast(2) + 1 }
         val total = weights.sum().toFloat()
         var cursor = clip.startUs

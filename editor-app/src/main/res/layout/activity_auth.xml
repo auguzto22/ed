@@ -32,27 +32,22 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/rc_logo_square">
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="BLITZ"
+                android:src="@drawable/blitz_mark" />
 
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_gravity="center"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_rc_mark" />
-            </FrameLayout>
-
+            <!-- A marca nova vai sem o nome; a view fica (o código ajusta a fonte dela), só escondida. -->
             <TextView
                 android:id="@+id/authBrand"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
-                android:text="Recly"
+                android:text="Blitz"
                 android:textColor="@color/recly_text_primary"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <!-- Título -->
@@ -370,9 +365,9 @@
             android:layout_height="44dp"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Continuar sem conta (build de desenvolvimento)"
-            android:textColor="@color/recly_text_disabled"
-            android:textSize="12sp"
+            android:text="Entrar sem conta"
+            android:textColor="@color/recly_text_secondary"
+            android:textSize="14sp"
             android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

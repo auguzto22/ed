@@ -1,9 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Primeiro plano do ícone adaptável e da splash do sistema: símbolo BLITZ branco com raio e ponto vermelhos.
+     O símbolo (viewport 100) é reduzido para 56 dp e centralizado em 108 dp, dentro da zona segura. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFC50022" android:pathData="M54,18a36,36 0,1 0,36 36h-11a25,25 0,1 1,-25 -25z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M54,39a15,15 0,1 0,15 15h12a27,27 0,1 1,-27 -27z" />
+
+    <group
+        android:translateX="26"
+        android:translateY="26"
+        android:scaleX="0.56"
+        android:scaleY="0.56">
+
+        <path
+            android:pathData="M8,26V8H26M74,8H92V26M92,74V92H74M26,92H8V74"
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeAlpha="0.45"
+            android:strokeWidth="4"
+            android:strokeLineCap="butt"
+            android:strokeLineJoin="miter" />
+
+        <path
+            android:pathData="M84.5,20a4.5,4.5 0,1 1,-9 0a4.5,4.5 0,1 1,9 0z"
+            android:fillColor="#FFC50022" />
+
+        <group
+            android:translateX="30.4"
+            android:translateY="22"
+            android:scaleX="0.56"
+            android:scaleY="0.56">
+
+            <group>
+                <clip-path android:pathData="M-20,-20H100V140H-20Z M-3.34,68.48 L29.28,55.09 L35.35,69.25 L82.81,48.41 L77.19,35.59 L42.65,50.75 L36.72,36.91 L-8.66,55.52 Z" />
+                <path
+                    android:fillType="evenOdd"
+                    android:fillColor="#FFFFFFFF"
+                    android:pathData="M0,0H44C58,0 66,9 66,24C66,35 61,42 53,46C64,50 70,58 70,72C70,89 60,100 44,100H0Z M20,18H42C46,18 47,21 47,27C47,33 45,37 41,37H20Z M20,55H44C49,55 51,59 51,67C51,77 48,82 43,82H20Z" />
+            </group>
+
+            <path
+                android:pathData="M-6,62L33,46L39,60L80,42"
+                android:fillColor="#00000000"
+                android:strokeColor="#FFC50022"
+                android:strokeWidth="5"
+                android:strokeLineCap="butt"
+                android:strokeLineJoin="miter" />
+        </group>
+    </group>
 </vector>

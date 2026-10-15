@@ -46,7 +46,7 @@ sealed interface PreviewMediaFailure {
 
 fun PreviewMediaFailure.userMessage(): String = when (this) {
     is PreviewMediaFailure.MissingSource -> "Arquivo original não foi encontrado."
-    is PreviewMediaFailure.PermissionLost -> "O Recly perdeu acesso a este arquivo. Selecione-o novamente."
+    is PreviewMediaFailure.PermissionLost -> "O Blitz perdeu acesso a este arquivo. Selecione-o novamente."
     is PreviewMediaFailure.UnsupportedFormat -> "Este formato de vídeo não é suportado neste dispositivo."
     is PreviewMediaFailure.SurfaceFailure -> "A prévia perdeu a superfície de vídeo e está se recuperando."
     is PreviewMediaFailure.SeekFailure -> "Não foi possível buscar este ponto do vídeo. Tentando recuperar a prévia."

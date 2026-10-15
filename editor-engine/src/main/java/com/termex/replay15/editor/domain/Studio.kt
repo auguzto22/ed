@@ -3,7 +3,7 @@ package com.termex.replay15.editor.domain
 enum class Easing(val label: String) {
     LINEAR("Linear"), SMOOTH("Suave"), EASE_IN("Acelerar"), EASE_OUT("Desacelerar"), HOLD("Manter"),
     EASE_IN_OUT("Acelerar e desacelerar"), BEZIER("Bezier personalizada"), SPRING("Mola"),
-    BOUNCE("Quique"), ELASTIC("Elastico"), BACK("Antecipacao");
+    BOUNCE("Quique"), ELASTIC("Elástico"), BACK("Antecipação");
     fun apply(value: Float, bezier: CubicBezier = CubicBezier()): Float {
         val t = value.coerceIn(0f, 1f)
         if (t == 0f || t == 1f) return t
@@ -103,7 +103,7 @@ fun VideoClip.transformAt(sourceTimeUs: Long): TransformKeyframe {
 }
 
 enum class MaskShape(val label: String) {
-    NONE("Sem mascara"), CIRCLE("Circulo"), RECTANGLE("Retangulo"), CINEMA("Cinema 2.35:1"),
+    NONE("Sem máscara"), CIRCLE("Círculo"), RECTANGLE("Retângulo"), CINEMA("Cinema 2.35:1"),
     LINEAR("Linear"), MIRROR("Espelho"), SPLIT("Faixa vertical"), OVAL("Oval"), DIAMOND("Losango")
 }
 

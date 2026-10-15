@@ -105,14 +105,25 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
                 imageWidth, imageHeight, subjects,
                 person?.mask, person?.width ?: 0, person?.height ?: 0,
             )
-            // When the subject model found nothing worth keeping, the person mask (if any) is the
-            // final answer, not something to retry.
-            if (combined != null) SegmentationResult(imageWidth, imageHeight, timestampUs, combined) else person
+            // No subject at all: the selfie mask is the answer only when it is clearly a person.
+            // On dark product photos it is a hallucination that erased the whole picture.
+            if (combined != null) SegmentationResult(imageWidth, imageHeight, timestampUs, combined)
+            else person?.takeIf { StillMaskCombiner.isConfidentPerson(it.mask) } ?: keepWholePhoto(timestampUs)
         } else {
             person?.copy(provisional = true)
         }) ?: return null
-        return if (rotationDegrees % 360 == 0) refineEdges(result, bitmap) else result
+        val refined = if (rotationDegrees % 360 == 0) refineEdges(result, bitmap) else result
+        // Never hand back a cut that removes (almost) the entire photo: that is a failed
+        // segmentation, and showing the untouched photo is far less wrong than an empty frame.
+        if (StillMaskCombiner.keepsAlmostNothing(refined.mask)) {
+            Log.w(TAG, "Máscara quase vazia; mantendo a foto inteira")
+            return keepWholePhoto(timestampUs).copy(provisional = refined.provisional)
+        }
+        return refined
     }
+
+    /** A 1x1 fully-opaque mask: the photo stays as it is and is not re-segmented every second. */
+    private fun keepWholePhoto(timestampUs: Long) = SegmentationResult(1, 1, timestampUs, floatArrayOf(1f))
 
     /**
      * Snaps the matte onto the photo's own edges with a guided filter at the photo's resolution.
@@ -134,7 +145,10 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         val refined = GuidedMatteFilter.filter(GuidedMatteFilter.luminance(pixels), matte, width, height, radius, EDGE_EPSILON)
         // Straighten the pixel-to-pixel wobble of the contour (serrated hems and sleeves).
         val sigma = (maxOf(width, height) / CONTOUR_SIGMA_DIVISOR).coerceIn(1f, 2f)
-        return result.copy(width = width, height = height, mask = GuidedMatteFilter.gaussianBlur(refined, width, height, sigma))
+        val smoothed = GuidedMatteFilter.gaussianBlur(refined, width, height, sigma)
+        // Refinement only nudges the model's edge; it never fills gaps or erases details the
+        // model was sure about (see GuidedMatteFilter.limitShift).
+        return result.copy(width = width, height = height, mask = GuidedMatteFilter.limitShift(smoothed, matte, MAX_REFINEMENT_SHIFT))
     }
 
     override fun close() {
@@ -150,8 +164,19 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         const val TIMEOUT_S = 20L
         /** Guided-filter window radius = longest side / this (6 px on a 1536 px photo). */
         const val EDGE_RADIUS_DIVISOR = 256
-        const val EDGE_EPSILON = 1e-3f
+        /**
+         * Guided-filter regularisation. 1e-3 copied high-contrast fabric texture (stripes, prints)
+         * into the matte next to the edge, which showed up as ripples along the contour.
+         */
+        const val EDGE_EPSILON = 1e-2f
         /** Contour smoothing sigma = longest side / this, clamped to 1..2 px (1.5 px on a 1536 px photo). */
         const val CONTOUR_SIGMA_DIVISOR = 1000f
+        /**
+         * Most the refinement may move a pixel's confidence away from the model's. 0.2 keeps the
+         * edge snapping and de-serration (sub-pixel to ~1 px moves), but with the default
+         * "Precisão" (threshold 0.65, feather 0.08) a background gap the model scored below 0.37
+         * stays fully transparent and a detail it scored above 0.93 stays fully opaque.
+         */
+        const val MAX_REFINEMENT_SHIFT = 0.2f
     }
 }

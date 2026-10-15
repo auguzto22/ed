@@ -20,7 +20,7 @@ import android.view.SurfaceView
 import com.termex.replay15.editor.assets.AssetRepository
 import com.termex.replay15.editor.assets.BuiltInTransitions
 import com.termex.replay15.editor.assets.TransitionCatalog
-import com.termex.replay15.editor.backgroundremoval.GeminiBitmapMaskApplier
+import com.termex.replay15.editor.backgroundremoval.BitmapMaskApplier
 import com.termex.replay15.editor.domain.CanvasFill
 import com.termex.replay15.editor.domain.TextAnimation
 import com.termex.replay15.editor.domain.chromaKeyState
@@ -100,7 +100,7 @@ class GpuPreviewRenderer(
     private var overlayWorkBitmap:Bitmap?=null
     private val overlayStickerBitmaps=HashMap<String,Bitmap>()
     private val overlayStickerSources=HashMap<String,Bitmap>()
-    private var overlayMaskApplier: GeminiBitmapMaskApplier? = null
+    private var overlayMaskApplier: BitmapMaskApplier? = null
     private val overlayTextLayouts=HashMap<Int,TextLayout.Block>()
     private var overlayTexture = 0
     private var overlaySignature = Long.MIN_VALUE
@@ -702,12 +702,17 @@ class GpuPreviewRenderer(
         return runCatching {
             backgroundRemovalPass?.apply(
                 sourceTexture = input,
-                key = "${layer.key.trackId}:${layer.key.clipId}",
+                // The media is part of the key: after "replace media" the clip id stays the same,
+                // and a photo kept the old picture's silhouette forever (masks are never
+                // recomputed once final), a video briefly showed the old video's masks.
+                key = "${layer.key.trackId}:${layer.key.clipId}:${layer.uri}",
                 sourceWidth = actualSize?.first ?: layer.sourceWidth,
                 sourceHeight = actualSize?.second ?: layer.sourceHeight,
                 sourceTimestampUs = layer.sourceTimeUs,
                 effect = effect,
                 image = layer.image,
+                targetWidth = outputWidth,
+                targetHeight = outputHeight,
             ) ?: input
         }.onFailure { diagnostics.event("BACKGROUND_REMOVAL_PASS_FAILED ${it.message}") }.getOrDefault(input)
     }
@@ -855,7 +860,7 @@ class GpuPreviewRenderer(
                 }.getOrNull()?.also { overlayStickerSources[sticker.uri] = it } ?: return@forEach
                 val imageKey = "${sticker.uri}:${sticker.backgroundRemoval.hashCode()}"
                 val image = overlayStickerBitmaps[imageKey] ?: if (sticker.backgroundRemoval.enabled) {
-                    val processed = (overlayMaskApplier ?: GeminiBitmapMaskApplier(context).also { overlayMaskApplier = it })
+                    val processed = (overlayMaskApplier ?: BitmapMaskApplier(context).also { overlayMaskApplier = it })
                         .apply(source, sticker.backgroundRemoval)
                     processed?.also { overlayStickerBitmaps[imageKey] = it } ?: source
                 } else source

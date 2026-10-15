@@ -21,20 +21,20 @@ object ScopeReadout {
     fun headline(frame: ScopeFrame): String {
         val spread = frame.tonalSpread()
         return when {
-            frame.clippedHighlights > .02f -> "Estourado: ${percent(frame.clippedHighlights)} da imagem esta no branco."
-            frame.clippedShadows > .04f -> "Preto queimado: ${percent(frame.clippedShadows)} da imagem esta no preto."
-            spread < .18f -> "Contraste baixo: os tons ocupam so ${percent(spread)} da faixa."
-            spread > .95f -> "Contraste alto: pretos e brancos estao colados nos extremos."
-            else -> "Nivel saudavel: pretos e brancos usados, sem queima relevante."
+            frame.clippedHighlights > .02f -> "Estourado: ${percent(frame.clippedHighlights)} da imagem está no branco."
+            frame.clippedShadows > .04f -> "Preto queimado: ${percent(frame.clippedShadows)} da imagem está no preto."
+            spread < .18f -> "Contraste baixo: os tons ocupam só ${percent(spread)} da faixa."
+            spread > .95f -> "Contraste alto: pretos e brancos estão colados nos extremos."
+            else -> "Nível saudável: pretos e brancos usados, sem queima relevante."
         }
     }
 
     fun saturationNote(frame: ScopeFrame): String {
         val saturation = frame.saturation
         return when {
-            saturation < .08f -> "Quase sem cor (${percent(saturation)}). A imagem esta lavada."
+            saturation < .08f -> "Quase sem cor (${percent(saturation)}). A imagem está lavada."
             saturation > .72f -> "Cor muito saturada (${percent(saturation)}). Pode parecer falso."
-            else -> "Saturacao em ${percent(saturation)}."
+            else -> "Saturação em ${percent(saturation)}."
         }
     }
 
@@ -48,7 +48,7 @@ object ScopeReadout {
         // The cast is measured as a share of the average level per channel, which is what a
         // colourist reads off the parade. A third is a neutral image; much past forty percent
         // the frame is genuinely tinted.
-        return if (levels.max() / total > .40f) "O canal $dominant domina: a imagem esta com tinta $dominant."
+        return if (levels.max() / total > .40f) "O canal $dominant domina: a imagem está com tinta $dominant."
         else null
     }
 
@@ -99,7 +99,7 @@ class ScopePanel(private val context: Context, private val sampler: ScopeFrameSa
         val frame = sampler.sample(clip.uri, sourceTime, clip.sourceUs)
         if (frame == null) {
             view.frame = null
-            notes.text = "Nao foi possivel medir este quadro."
+            notes.text = "Não foi possível medir este quadro."
             return
         }
         view.frame = frame
@@ -107,7 +107,7 @@ class ScopePanel(private val context: Context, private val sampler: ScopeFrameSa
             add(ScopeReadout.headline(frame))
             add(ScopeReadout.saturationNote(frame))
             ScopeReadout.channelNote(frame)?.let(::add)
-            add("Luma ${frame.lumaMin}-${frame.lumaMax} · media ${frame.lumaAverage}")
+            add("Luma ${frame.lumaMin}-${frame.lumaMax} · média ${frame.lumaAverage}")
         }.joinToString("\n")
     }
 }

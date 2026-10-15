@@ -111,7 +111,8 @@ object ProjectComposition {
             if (clip.rotation != 0 || clip.flip) effects += ScaleAndRotateTransformation.Builder()
                 .setRotationDegrees(clip.rotation.toFloat()).setScale(if (clip.flip) -1f else 1f, 1f).build()
             if (clip.backgroundRemoval.enabled && clip.backgroundRemoval.mode == BackgroundMode.REMOVE) {
-                effects += BackgroundRemovalExportEffect(clip.backgroundRemoval, stillImage = clip.image)
+                effects += BackgroundRemovalExportEffect(clip.backgroundRemoval, stillImage = clip.image,
+                    targetWidth = width, targetHeight = height, fill = project.canvasFill == CanvasFill.FILL)
             }
             if (clip.brightness != 0f) effects += Brightness(clip.brightness)
             if (clip.contrast != 0f) effects += Contrast(clip.contrast)
@@ -130,6 +131,12 @@ object ProjectComposition {
                     it.keyframes[com.termex.replay15.editor.assets.EffectInstance.INTENSITY].orEmpty().any { key -> key.value > 0 })
             }
                 .forEach { effects += PackageEffect(it, clip, placed.startUs) }
+            // Background removal runs first, on the untouched source frame, as in the preview
+            // (GpuPreviewRenderer removes the background before effects, mask and crop). Added
+            // after the layer mask, crop and rotation, the model saw a different picture (cropped,
+            // masked-out areas, rotated) and the exported cut-out did not match the preview.
+            effects.indexOfFirst { it is BackgroundRemovalExportEffect }.takeIf { it > 0 }
+                ?.let { index -> effects.add(0, effects.removeAt(index)) }
             effects += Presentation.createForWidthAndHeight(width, height, if (project.canvasFill == CanvasFill.FILL)
                 Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP else Presentation.LAYOUT_SCALE_TO_FIT)
             if (

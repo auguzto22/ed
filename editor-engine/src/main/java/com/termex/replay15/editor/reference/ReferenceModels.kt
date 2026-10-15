@@ -61,11 +61,14 @@ data class ReferenceStyleProfile(
     /** True when the semantic (Gemini) pass contributed to this profile. */
     val semanticAnalysis: Boolean = false,
     val styleNotes: String = "",
+    /** Displayed width / height of the reference (0 = unknown, profiles analysed before this field). */
+    val aspect: Float = 0f,
 ) {
     init {
         require(id.matches(Regex("[a-zA-Z0-9-]{1,80}")) && name.isNotBlank() && name.length <= 100)
         require(analysisVersion > 0 && sourceDurationUs > 0 && overallConfidence in 0f..1f)
         require(events.size <= 4000 && beats.size <= 12000 && layout.size <= 60 && styleNotes.length <= 400)
+        require(aspect == 0f || aspect in .2f..5f)
     }
 
     fun summary(): List<String> = buildList {
@@ -106,7 +109,7 @@ data class ReferenceStyleProfile(
         put("effectCombinations", JSONArray(effectCombinations.map { combinationJson(it) }))
         put("colorSaturation", colorSaturation); put("colorContrast", colorContrast); put("colorTemperature", colorTemperature)
         put("overallConfidence", overallConfidence); put("warnings", JSONArray(warnings))
-        put("layout", JSONArray(layout.map { it.toJson() })); put("semanticAnalysis", semanticAnalysis); put("styleNotes", styleNotes)
+        put("layout", JSONArray(layout.map { it.toJson() })); put("semanticAnalysis", semanticAnalysis); put("styleNotes", styleNotes); put("aspect", aspect)
     }
 
     companion object {
@@ -128,6 +131,7 @@ data class ReferenceStyleProfile(
             warnings = json.getJSONArray("warnings").strings(),
             layout = layoutFromJson(json.optJSONArray("layout")), semanticAnalysis = json.optBoolean("semanticAnalysis", false),
             styleNotes = json.optString("styleNotes").take(400),
+            aspect = json.optDouble("aspect", 0.0).toFloat().takeIf { it in .2f..5f } ?: 0f,
         )
     }
 }

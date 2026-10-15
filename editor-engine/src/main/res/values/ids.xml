@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marks views that already received the editor look (EditorWidgets.polishControls). -->
+    <item name="recly_polished" type="id" />
+</resources>

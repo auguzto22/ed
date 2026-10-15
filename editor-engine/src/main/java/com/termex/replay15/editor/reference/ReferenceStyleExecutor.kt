@@ -61,7 +61,25 @@ object ReferenceStyleExecutor {
                 edited = edited.copy(videos = edited.videos.map { if (it.id == clip.id) it.copy(speedCurve = bounded, preservePitch = true) else it })
             }
         }
+        edited = withReferenceAspect(edited, source, profile)
         return applyLayout(project, edited, clipIndex, plan.layout, placeholder)
+    }
+
+    /**
+     * Exports in the reference's proportions (a 9:16 reference gave a 3:4 video before). Only when the
+     * clip has the same orientation: filling 9:16 from a 16:9 clip would crop most of it, and that
+     * case belongs to Auto Reframe.
+     */
+    internal fun withReferenceAspect(project: Project, clip: VideoClip, profile: ReferenceStyleProfile): Project {
+        val target = profile.aspect.takeIf { it in .2f..5f } ?: return project
+        val clipAspect = com.termex.replay15.editor.autoedit.ClipAnalyzer.displayedAspect(clip).takeIf { it > 0f } ?: return project
+        if ((target < 1f) != (clipAspect < 1f)) return project
+        val snapped = listOf(9f / 16f, 4f / 5f, 1f, 16f / 9f).minByOrNull { kotlin.math.abs(it - target) }!!
+            .takeIf { kotlin.math.abs(it - target) / target < .04f } ?: target
+        if (kotlin.math.abs(project.aspect - snapped) < .001f) return project
+        // Fill only when little of the clip is lost (up to ~25% of one side); otherwise fit.
+        val loss = 1f - minOf(snapped, clipAspect) / maxOf(snapped, clipAspect)
+        return project.copy(aspect = snapped, canvasFill = if (loss <= .25f) CanvasFill.FILL else project.canvasFill)
     }
 
     /** Layout slots become ordinary text, sticker and marker items over the edited clip span. */
@@ -85,7 +103,8 @@ object ReferenceStyleExecutor {
                     val card = slot.kind == ReferenceLayoutKind.CARD
                     val background = when { slot.style.backgroundColor != 0 -> slot.style.backgroundColor; card -> 0xF2FFFFFF.toInt(); else -> 0 }
                     val color = if (card && slot.style.backgroundColor == 0) 0xFF111111.toInt() else slot.style.textColor
-                    val text = if (card) "Texto do card" else "Seu titulo aqui"
+                    // Placeholder text: left out of the export until the user writes the real one (see ReferenceSlots).
+                    val text = if (card) ReferenceSlots.CARD_TEXT else ReferenceSlots.TITLE_TEXT
                     if (edited.texts.size + texts.size < MAX_TEXTS) texts += TextClip(
                         text = if (slot.style.uppercase) text.uppercase() else text, startUs = start, endUs = end,
                         x = box.x.coerceIn(0f, 1f), y = box.y.coerceIn(0f, 1f),

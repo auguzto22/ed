@@ -34,6 +34,8 @@ class AutoEditPanel(
     private var progressDialog: AlertDialog? = null
     private var suggestionDialog: Dialog? = null
     private var closing = false
+    /** Captions made for a clip by the last run, reused by "Gerar outra versao" instead of transcribing again. */
+    private var generatedCaptions: Pair<String, List<com.termex.replay15.editor.domain.TextClip>>? = null
 
     fun open() {
         val snapshot = project()
@@ -68,13 +70,14 @@ class AutoEditPanel(
         val timedCaptions = snapshot.texts.any { ClipAnalyzer.isCaptionOf(it, clipStart, clipStart + clip.durationUs) && it.wordCues.isNotEmpty() }
         val captions = optionRow(card, "Legendas automáticas",
             when {
-                words.isEmpty() -> "Gere legendas ou importe um SRT para usar"
+                // Captions are generated first (the zooms land on their phrase starts).
+                words.isEmpty() -> "Cria as legendas da fala antes de editar"
                 timedCaptions -> "Mantém suas legendas e o estilo delas"
                 else -> "Divide as legendas em frases curtas no estilo atual"
             },
-            words.isNotEmpty() && !timedCaptions, words.isNotEmpty() && !timedCaptions)
+            !timedCaptions, !timedCaptions)
         val clean = optionRow(card, "Cortar silêncios", "Tira pausas e respirações longas", true)
-        val zoom = optionRow(card, "Zoom nos destaques", "Keyframes de zoom nas falas-chave", true)
+        val zoom = optionRow(card, "Zoom nos destaques", "Podcast/Shorts: punch-in no rosto a cada frase", true)
         val reframe = optionRow(card, "Auto Reframe para 9:16", "Enquadra o sujeito na vertical", true)
         val audio = optionRow(card, "Equilibrar áudio", "Nivela o volume da fala", true, last = true)
         body.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = activity.dp(16) })
@@ -271,8 +274,22 @@ class AutoEditPanel(
         stage(AutoEditProgress.Inspecting.label, .05f)
         val clip = snapshot.videos[index]
         worker.execute {
+            var addedCaptions = emptyList<com.termex.replay15.editor.domain.TextClip>()
             val result = runCatching {
-                val analysis = ClipAnalyzer.analyze(activity, clip, words, token) { progress ->
+                var captionWords = words
+                if (options.captions && words.isEmpty()) {
+                    val reused = generatedCaptions?.takeIf { it.first == clip.id }?.second.orEmpty()
+                    val prepared = if (reused.isNotEmpty()) CaptionPrep.Result(CaptionPrep.merge(snapshot, reused), reused)
+                        else CaptionPrep.ensure(activity, snapshot, index, progress = { label -> stage(label, .08f) }, checkCancelled = token::check)
+                    addedCaptions = prepared.added
+                    if (prepared.added.isNotEmpty()) {
+                        generatedCaptions = clip.id to prepared.added
+                        captionWords = ClipAnalyzer.wordsFromCaptions(prepared.project.texts, prepared.project.startOf(index), clip.durationUs)
+                    }
+                    prepared.note?.let { note -> activity.runOnUiThread { Toast.makeText(activity, note, Toast.LENGTH_LONG).show() } }
+                }
+                token.check()
+                val analysis = ClipAnalyzer.analyze(activity, clip, captionWords, token, detectFaces = options.smartZoom) { progress ->
                     stage(progress.label, when (progress) {
                         AutoEditProgress.Audio -> .25f
                         AutoEditProgress.Visuals -> .55f
@@ -295,25 +312,27 @@ class AutoEditPanel(
                     onSuccess = { plan ->
                         // The user may have kept editing: apply the plan to the project as it is now,
                         // as long as the analysed clip itself was not changed.
-                        val current = project()
-                        val currentIndex = current.videos.indexOfFirst { it.id == clip.id }
-                        if (currentIndex < 0 || current.videos[currentIndex] != clip) {
+                        val live = project()
+                        val currentIndex = live.videos.indexOfFirst { it.id == clip.id }
+                        if (currentIndex < 0 || live.videos[currentIndex] != clip) {
                             card?.fail("O clipe mudou durante a análise. Analise de novo.")
-                                ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
+                                ?: Toast.makeText(activity, "O clipe mudou durante a análise", Toast.LENGTH_SHORT).show()
                             return@fold
                         }
+                        // New captions are part of the edit: "Original" and "Cancelar" leave the project without them.
+                        val current = CaptionPrep.merge(live, addedCaptions)
                         val edited = runCatching { AutoEditExecutor.execute(current, currentIndex, plan) }.getOrElse { error ->
                             card?.fail("Não foi possível montar a edição: ${error.message}"); return@fold
                         }
                         if (card != null) card.succeed(plan.summary().lineSequence().firstOrNull().orEmpty().ifBlank { "Edição pronta" }, "Ver resultado") {
-                            showPreview(current, currentIndex, words, options, plan, edited)
-                        } else showPreview(current, currentIndex, words, options, plan, edited)
+                            showPreview(live, currentIndex, words, options, plan, edited)
+                        } else showPreview(live, currentIndex, words, options, plan, edited)
                     },
                     onFailure = { error ->
                         if (error is InterruptedException) {
                             card?.fail("Análise cancelada") ?: Toast.makeText(activity, "Auto Edit cancelado", Toast.LENGTH_SHORT).show()
                         } else if (card != null) card.fail("Não foi possível analisar: ${error.message}")
-                        else AlertDialog.Builder(activity).setTitle("Auto Edit").setMessage("Nao foi possivel analisar o clipe: ${error.message}").setPositiveButton("OK", null).show()
+                        else AlertDialog.Builder(activity).setTitle("Auto Edit").setMessage("Não foi possível analisar o clipe: ${error.message}").setPositiveButton("OK", null).show()
                     },
                 )
             }
@@ -333,7 +352,7 @@ class AutoEditPanel(
         body.addView(activity.action("Aplicar Auto Edit", true) {
             dialog.dismiss(); preview(original); apply(edited)
         }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(10) })
-        body.addView(activity.action("Gerar outra versao") {
+        body.addView(activity.action("Gerar outra versão") {
             dialog.dismiss(); preview(original); generate(original, index, words, options.copy(variation = options.variation + 1))
         }, LinearLayout.LayoutParams(-1, activity.dp(48)).apply { topMargin = activity.dp(6) })
         body.addView(activity.action("Cancelar") { dialog.dismiss(); preview(original) }, LinearLayout.LayoutParams(-1, activity.dp(48)).apply { topMargin = activity.dp(6) })
