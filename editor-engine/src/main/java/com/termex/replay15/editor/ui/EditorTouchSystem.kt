@@ -193,6 +193,18 @@ sealed interface TimelineHitTarget {
         val clip: VideoClip,
     ) : TimelineHitTarget
 
+    /** Handle of the selected effect balloon (key from EffectBalloons). */
+    data class EffectTrimTarget(
+        val key: String,
+        val side: Int, // -1: left/start handle, 1: right/end handle
+        val boundaryUs: Long,
+        val distancePx: Float,
+    ) : TimelineHitTarget
+
+    data class EffectBodyTarget(
+        val key: String,
+    ) : TimelineHitTarget
+
     data class TrackHeaderTarget(
         val trackId: String,
         val type: Int,
@@ -228,6 +240,9 @@ enum class TimelineGestureLock {
     AUDIO_FADE_IN,
     AUDIO_FADE_OUT,
     AUDIO_VOLUME_KEYFRAME,
+    EFFECT_TRIM_START,
+    EFFECT_TRIM_END,
+    EFFECT_DRAG,
 }
 
 /**
@@ -523,6 +538,36 @@ object TimelineHitResolver {
                                 if (stickerClip != null) {
                                     return TimelineHitTarget.StickerBodyTarget(hitSegment.id, stickerClip)
                                 }
+                            }
+                        }
+                        4 -> { // Effect balloons (adjustment layers and clip effects)
+                            val selectedSegment = if (context.selectedLayerId != null) {
+                                laneSnapshot.segments.firstOrNull { it.id == context.selectedLayerId }
+                            } else null
+
+                            if (selectedSegment != null) {
+                                val startX = context.timeToX(selectedSegment.startUs)
+                                val endX = context.timeToX(selectedSegment.endUs)
+                                val dStart = abs(touchX - startX)
+                                val dEnd = abs(touchX - endX)
+                                val effectHandleRadius = dp(16f)
+                                if (dStart <= effectHandleRadius || dEnd <= effectHandleRadius) {
+                                    return if (dStart <= dEnd) {
+                                        TimelineHitTarget.EffectTrimTarget(selectedSegment.id, -1, selectedSegment.startUs, dStart)
+                                    } else {
+                                        TimelineHitTarget.EffectTrimTarget(selectedSegment.id, 1, selectedSegment.endUs, dEnd)
+                                    }
+                                }
+                            }
+
+                            val hitSegment = laneSnapshot.segments.firstOrNull {
+                                val sX = context.timeToX(it.startUs)
+                                val eX = context.timeToX(it.endUs)
+                                touchX in (sX - dp(4f))..(eX + dp(4f)) || touchTimeUs in it.startUs until it.endUs
+                            } ?: selectedSegment
+
+                            if (hitSegment != null) {
+                                return TimelineHitTarget.EffectBodyTarget(hitSegment.id)
                             }
                         }
                         3 -> { // Video PIP track

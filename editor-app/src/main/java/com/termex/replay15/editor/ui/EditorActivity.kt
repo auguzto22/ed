@@ -953,6 +953,25 @@ class EditorActivity : Activity() {
         }
         onMarker = { markerPanel(it) }
         onAdjustment = { effectTools.openAdjustment(it) }
+        // Pink effect balloons: adjustment layers and effects placed on clips.
+        effectName = { assetId ->
+            if (::effectTools.isInitialized) effectTools.effectName(assetId)
+            else com.termex.replay15.editor.timeline.EffectBalloons.defaultName(assetId)
+        }
+        onEffect = { key ->
+            val balloon = com.termex.replay15.editor.timeline.EffectBalloons.find(project, key)
+            val adjustmentId = balloon?.adjustmentId
+            val clipId = balloon?.clipId
+            val effectId = balloon?.effectId
+            when {
+                adjustmentId != null -> effectTools.openAdjustment(adjustmentId)
+                clipId != null && effectId != null -> effectTools.openEffect(clipId, effectId)
+            }
+        }
+        onEffectRange = { key, startUs, endUs ->
+            val next = com.termex.replay15.editor.timeline.EffectBalloons.withRange(project, key, startUs, endUs)
+            if (next != project) edit(next)
+        }
         onVideoLayer = { track, clip -> videoTrackTools.open(track, clip) }
         onLayerMove = { track, clip, start -> videoTrackTools.move(track, clip, start) }
         onLayerTrim = { track, clip, start, end -> videoTrackTools.update(track, clip.copy(inUs = start, outUs = end)) }

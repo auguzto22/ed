@@ -111,6 +111,23 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         dialog = sheet("Efeitos", body)
         dialog.setOnDismissListener { previewApply(project()) }
     }
+    /** Opens one effect of a clip straight from its pink balloon on the timeline. */
+    fun openEffect(clipId: String, effectId: String) {
+        val effect = project().allVideos.firstOrNull { it.id == clipId }?.effects?.firstOrNull { it.id == effectId }
+        if (effect != null) parameters(clipId, effect) else open(clipId)
+    }
+
+    private var effectNames: Map<String, String> = emptyMap()
+
+    /** Catalog name of an effect asset, for the timeline balloons. */
+    fun effectName(assetId: String): String {
+        effectNames[assetId]?.let { return it }
+        // Installed packages can appear while the editor is open, so a miss reloads the catalog once.
+        effectNames = runCatching { repository.definitions().associate { it.id to it.name } }.getOrDefault(effectNames)
+        return effectNames[assetId] ?: com.termex.replay15.editor.timeline.EffectBalloons.defaultName(assetId)
+            .also { effectNames = effectNames + (assetId to it) }
+    }
+
     fun openAdjustment(adjustmentId: String): Unit = with(activity) {
         val adjustment = project().adjustmentClips.firstOrNull { it.id == adjustmentId } ?: return@with
         val body = column(); lateinit var dialog: Dialog
