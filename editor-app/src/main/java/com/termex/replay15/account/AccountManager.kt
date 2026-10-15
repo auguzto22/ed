@@ -21,7 +21,8 @@ object AccountManager {
     private val client = SupabaseAuthClient(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY)
     @Volatile private var cached: AuthSession? = null
     @Volatile private var loaded = false
-    private var refreshing = false
+    @Volatile private var refreshing = false
+    private val refreshLock = Any()
 
     val isConfigured: Boolean get() = client.isConfigured
     val googleClientId: String get() = BuildConfig.GOOGLE_WEB_CLIENT_ID
@@ -35,7 +36,7 @@ object AccountManager {
         return cached
     }
 
-    fun isSignedIn(context: Context): Boolean = true
+    fun isSignedIn(context: Context): Boolean = session(context) != null || devBypass(context) || BuildConfig.SKIP_LOGIN
 
     /**
      * Só em builds de desenvolvimento sem Supabase configurado: permite usar o editor sem conta,
@@ -78,8 +79,12 @@ object AccountManager {
         if (!current.expiresWithin(300) || refreshing) return
         refreshing = true
         worker.execute {
-            val result = runCatching { client.refresh(current.refreshToken) }
-            result.onSuccess { store(context, it) }
+            val result = synchronized(refreshLock) {
+                // Outra thread pode ter renovado enquanto esta esperava: usa a sessão mais nova.
+                val latest = session(context) ?: current
+                if (!latest.expiresWithin(300)) Result.success(latest)
+                else runCatching { client.refresh(latest.refreshToken) }.onSuccess { store(context, it) }
+            }
             val expired = (result.exceptionOrNull() as? AuthFailure)?.kind == AuthFailureKind.SESSION_EXPIRED
             if (expired) clearLocal(context)
             main.post { refreshing = false; if (expired) onSignedOut() }
@@ -87,10 +92,12 @@ object AccountManager {
     }
 
     /** Access token válido para chamar outros serviços (renova antes, se preciso). Chamar fora da thread principal. */
-    fun freshAccessToken(context: Context): String? {
+    fun freshAccessToken(context: Context): String? = synchronized(refreshLock) {
+        // Uma renovação por vez: o Supabase gira o refresh token, e duas renovações paralelas
+        // com o mesmo token (legendas em paralelo + refreshIfNeeded) podem derrubar a sessão.
         val current = session(context) ?: return null
         if (!current.expiresWithin(60)) return current.accessToken
-        return runCatching { client.refresh(current.refreshToken).also { store(context, it) }.accessToken }.getOrNull()
+        runCatching { client.refresh(current.refreshToken).also { store(context, it) }.accessToken }.getOrNull()
     }
 
     fun signOut(context: Context, done: () -> Unit) {

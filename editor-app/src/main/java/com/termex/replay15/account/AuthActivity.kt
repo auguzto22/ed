@@ -86,12 +86,12 @@ class AuthActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Login desativado por enquanto: avança direto
-        goNext()
-        return
-    }
-
-    private fun unusedSetup(savedInstanceState: Bundle?) {
+        // Quem já tem sessão nunca vê esta tela (ex.: voltou pelo histórico de apps).
+        if (AccountManager.isSignedIn(this) && !intent.getBooleanExtra(EXTRA_EXPIRED, false)) { goNext(); return }
+        setContentView(R.layout.activity_auth)
+        bindViews()
+        applyInsets()
+        applyType()
 
         val hadAccount = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_HAD_ACCOUNT, false)
         mode = savedInstanceState?.getString(STATE_MODE)

@@ -33,6 +33,14 @@ excluída, senha trocada, sessão revogada) ou quando a pessoa toca em "Sair da 
    desenho; o que protege os dados são as políticas RLS. **Nunca** coloque a chave `service_role` no app.
 
 Um build **release** sem esses dois valores falha de propósito (senão ninguém conseguiria entrar).
+
+Para testar o editor sem passar pelo login, só no **debug**, adicione ao `local.properties`:
+
+```properties
+RECLY_SKIP_LOGIN=true
+```
+
+O release ignora essa linha e sempre exige conta.
 Sem `SUPABASE_URL`/`SUPABASE_ANON_KEY` o app de debug mostra um aviso na tela de conta. Em build de debug aparece
 "Continuar sem conta" para você seguir desenvolvendo; em release esse botão não existe.
 

@@ -97,7 +97,9 @@ class BackgroundRemovalTools(
             var effect = sticker.backgroundRemoval
             lateinit var dialog: Dialog
             val body = column()
-            body.addView(sectionTitle("Remover Fundo", "O Gemini recorta o assunto da foto e deixa todo o resto transparente."))
+            body.addView(sectionTitle("Remover Fundo", if (com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey().isNotBlank())
+                "O Gemini recorta o assunto da foto e deixa todo o resto transparente."
+                else "O recorte é feito no aparelho: o assunto da foto fica e todo o resto vira transparente."))
             val enabled = CheckBox(this).apply { text = "Ativar remoção de fundo"; isChecked = effect.enabled }
             body.addView(enabled)
             fun updated() = project().copy(stickers = project().stickers.map {
@@ -126,8 +128,8 @@ class BackgroundRemovalTools(
     }
 
     private fun providerLabel(provider: BackgroundRemovalProvider): String = when (provider) {
-        BackgroundRemovalProvider.AUTO -> "Auto (Gemini/Local)"
-        BackgroundRemovalProvider.GEMINI -> "Gemini API"
+        BackgroundRemovalProvider.AUTO -> "Automático (no aparelho)"
+        BackgroundRemovalProvider.GEMINI -> if (com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey().isNotBlank()) "Gemini API" else "Gemini (indisponível: usa o aparelho)"
         BackgroundRemovalProvider.MLKIT -> "ML Kit (Local)"
     }
 

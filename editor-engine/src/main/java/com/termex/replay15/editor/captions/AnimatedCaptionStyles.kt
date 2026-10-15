@@ -88,6 +88,9 @@ object AnimatedCaptionStyles {
         val words = Regex("\\S+").findAll(clip.text).map { it.value }.toList()
         // Tempo medido na transcrição vale mais que qualquer estimativa, mesmo se faltar alguma palavra.
         if (words.isEmpty() || clip.wordCues.isNotEmpty()) return clip
+        // Cada palavra precisa de pelo menos 1 µs; com menos tempo que palavras o coerceIn abaixo
+        // receberia mínimo > máximo e lançaria exceção.
+        if (clip.durationUs < words.size) return clip
         val weights = words.map { it.length.coerceAtLeast(2) + 1 }
         val total = weights.sum().toFloat()
         var cursor = clip.startUs

@@ -50,4 +50,9 @@ class AnimatedCaptionStylesTest {
         assertEquals(style, restored.texts.single().wordStyle)
         assertEquals(caption.wordCues, restored.texts.single().wordCues)
     }
+
+    @Test fun aCaptionShorterThanItsWordCountKeepsItsTextInsteadOfCrashing() {
+        val clip = TextClip(text = "uma duas tres quatro", startUs = 0L, endUs = 3L, isCaption = true)
+        assertEquals(clip, AnimatedCaptionStyles.withWordTiming(clip))
+    }
 }

@@ -63,6 +63,7 @@ class ReclyBackendTranscriptionProvider(private val baseUrl: String) : Transcrip
             readTimeout = 180_000
             doOutput = true
             setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            ReclyBackendAuth.authorize(this)
         }
 }
 
@@ -77,6 +78,7 @@ class ReclyBackendContextCorrector(private val baseUrl: String) : CaptionContext
         val connection = (URL("$baseUrl/v1/captions/correct").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"; connectTimeout = 20_000; readTimeout = 60_000; doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            ReclyBackendAuth.authorize(this)
         }
         val rows = JSONArray()
         segments.forEach { rows.put(JSONObject().put("id", it.id).put("text", it.text)) }
@@ -116,6 +118,7 @@ class ReclyBackendContextCorrector(private val baseUrl: String) : CaptionContext
             readTimeout = 90_000
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            ReclyBackendAuth.authorize(this)
         }
         try {
             val rows = JSONArray()
@@ -183,6 +186,7 @@ class ReclyBackendCaptionTranslator(private val baseUrl: String) : CaptionTransl
             readTimeout = 90_000
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            ReclyBackendAuth.authorize(this)
         }
         try {
             val request = JSONObject()

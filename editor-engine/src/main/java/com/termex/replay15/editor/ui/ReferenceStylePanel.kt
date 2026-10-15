@@ -35,7 +35,7 @@ class ReferenceStylePanel(
             Toast.makeText(activity, "Selecione um clipe para aplicar um estilo", Toast.LENGTH_SHORT).show(); return
         }
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
-        val aiNote = if (semanticAnalyzer() != null) " O video de referencia e enviado ao Gemini para identificar titulos, cards e B-roll; o arquivo enviado e apagado em seguida." else ""
+        val aiNote = if (semanticAnalyzer() != null) " O video de referencia e enviado ao Gemini para identificar titulos, cards e B-roll; o arquivo enviado e apagado em seguida." else " Nesta versao a analise roda so no aparelho: a leitura por IA de titulos, cards e B-roll fica desligada."
         body.addView(activity.sectionTitle("Estilo de referencia", "Analisa a edicao e o layout (titulos, cards, imagens, B-roll) de um unico video. Nenhum frame, audio ou asset e copiado para o projeto: os elementos viram espacos editaveis.$aiNote"))
         body.addView(activity.action("Usar novo video como referencia", true) { dialog?.dismiss(); pickReference() }, LinearLayout.LayoutParams(-1, activity.dp(52)))
         val profiles = store.list()
