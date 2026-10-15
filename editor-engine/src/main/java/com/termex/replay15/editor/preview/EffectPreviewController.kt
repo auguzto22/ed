@@ -95,6 +95,9 @@ class EffectPreviewController(
             return
         }
 
+        // Já está na fila: a lista recicla cartões e pode pedir o mesmo preset de novo.
+        if (session.pendingRenders.containsKey(preset.id)) return
+
         // 2. If baseFrame is already ready, render directly
         val base = session.baseFrame
         if (base != null) {
@@ -112,6 +115,14 @@ class EffectPreviewController(
         }
     }
 
+    /**
+     * Tira da fila a miniatura de um preset que saiu da tela. Com ~1000 presets, rolar a lista
+     * rápido enfileiraria centenas de renders que ninguém vai ver.
+     */
+    fun cancelPresetThumbnail(presetId: String) {
+        activeSession?.pendingRenders?.remove(presetId)?.cancel(false)
+    }
+
     private fun dispatchPresetRender(
         session: Session,
         preset: EffectPreset,
@@ -125,7 +136,7 @@ class EffectPreviewController(
 
         controllerScope.launch(session.job) {
             val result = runCatching { future.get() }.getOrNull()
-            session.pendingRenders.remove(preset.id)
+            session.pendingRenders.remove(preset.id, future)
 
             if (result != null && session.sessionId == activeSession?.sessionId) {
                 val cacheKey = EffectThumbnailCache.makePresetKey(
