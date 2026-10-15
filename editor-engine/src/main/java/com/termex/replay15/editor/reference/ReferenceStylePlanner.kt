@@ -152,7 +152,7 @@ object ReferenceStylePlanner {
             if ((zoomEvents.isNotEmpty() || profile.cutCount > 0) && plan.zooms.isEmpty())
                 add(if (analysis.words.isEmpty()) "Zoom: sem legendas no clipe nao ha inicio de frase para posicionar os punch-ins."
                     else "Zoom: nao houve momento adequado no clipe para posicionar os zooms.")
-            if (unsupported.isNotEmpty()) add("Efeitos sem equivalente no Recly: ${unsupported.joinToString { it.name.lowercase() }}")
+            if (unsupported.isNotEmpty()) add("Efeitos sem equivalente no Blitz: ${unsupported.joinToString { it.name.lowercase() }}")
             if (!profile.semanticAnalysis && profile.layout.isEmpty())
                 add("Nenhum titulo, card ou sobreposicao foi detectado na referencia.")
         }

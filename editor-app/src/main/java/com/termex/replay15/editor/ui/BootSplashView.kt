@@ -49,7 +49,7 @@ class BootSplashView(context: Context) : View(context) {
     init {
         setBackgroundColor(EditorStyle.BG)
         isClickable = true
-        contentDescription = "Recly"
+        contentDescription = "Blitz"
         setOnClickListener { animator.cancel(); exit() }
     }
 
@@ -94,7 +94,7 @@ class BootSplashView(context: Context) : View(context) {
         text.alpha = (255 * word).toInt()
         text.letterSpacing = .18f * (1f - word) + .02f
         text.shader = LinearGradient(cx - r * 2, 0f, cx + r * 2, 0f, Color.WHITE, 0xFFE5DEFF.toInt(), Shader.TileMode.CLAMP)
-        canvas.drawText("Recly", cx, cy + r * 2.25f + r * .5f * (1f - word), text)
+        canvas.drawText("Blitz", cx, cy + r * 2.25f + r * .5f * (1f - word), text)
         subtitle.textSize = r * .28f
         subtitle.alpha = (200 * phase(.55f, .95f)).toInt()
         canvas.drawText("Editor de vídeo", cx, cy + r * 2.85f, subtitle)

@@ -5,7 +5,7 @@ import java.util.Locale
 /** Presentation-only cleanup. Never expands slang or supplies words missing from the audio. */
 class PtBrTextNormalizer(customVocabulary: Set<String> = emptySet()) {
     private val casing = mapOf(
-        "recly" to "Recly", "capcut" to "CapCut", "tiktok" to "TikTok",
+        "recly" to "Recly", "blitz" to "Blitz", "capcut" to "CapCut", "tiktok" to "TikTok",
         "youtube" to "YouTube", "instagram" to "Instagram", "whatsapp" to "WhatsApp",
         "insta" to "Insta", "podcast" to "podcast", "podcasts" to "podcasts",
         "reels" to "Reels", "shorts" to "Shorts", "discord" to "Discord",
