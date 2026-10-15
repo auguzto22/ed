@@ -203,10 +203,14 @@ class ProjectStore(private val directory: File) {
     }
     private fun preserveLegacy(target: File) {
         if (!target.isFile) return
-        val version = DataInputStream(target.inputStream()).use { input ->
-            if (input.readInt() != 0x52313545) return
-            input.readInt()
-        }
+        // Um arquivo truncado (menos de 8 bytes) lançava EOFException aqui e impedia para sempre
+        // de salvar por cima dele; sem cabeçalho legível não há versão antiga a preservar.
+        val version = runCatching {
+            DataInputStream(target.inputStream()).use { input ->
+                if (input.readInt() != 0x52313545) return
+                input.readInt()
+            }
+        }.getOrElse { return }
         if (version !in 1 until PROJECT_SCHEMA) return
         val backup = File(directory, "${target.name}.pre-v3.bak")
         if (backup.exists()) return

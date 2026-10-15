@@ -19,3 +19,13 @@ Os segmentos retornados são convertidos nos `TextClip` existentes, com `wordCue
 ## RELEASE
 
 Configure `RECLY_CAPTION_BACKEND_URL` como propriedade Gradle HTTPS. O provider de release envia áudio para `/v1/captions/transcribe` e correções para `/v1/captions/correct`; o backend deve guardar a chave Gemini em variável de ambiente/Secret Manager e nunca devolvê-la ao Android.
+
+## Autenticação do backend
+
+Toda chamada do app a `/v1/captions/*` leva `Authorization: Bearer <access token do Supabase>`
+(`ReclyBackendAuth`, instalado pelo `ReclyApplication`). Sem sessão, o app nem faz a chamada.
+
+O backend **precisa** validar esse JWT antes de chamar a Gemini e responder `401` sem ele;
+caso contrário qualquer pessoa que encontre a URL no APK gasta os créditos. Valide com o JWT
+secret do projeto Supabase (Project Settings › API) ou chamando `GET /auth/v1/user` com o token.
+Vale também limitar por usuário (`sub` do token) quantos minutos de áudio cada conta transcreve por dia.

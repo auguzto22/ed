@@ -43,7 +43,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Só para testar o editor sem passar pelo login: RECLY_SKIP_LOGIN=true no local.properties.
+            buildConfigField("boolean", "SKIP_LOGIN", accountSetting("RECLY_SKIP_LOGIN").equals("true", ignoreCase = true).toString())
+        }
         release {
+            // Release sempre exige conta.
+            buildConfigField("boolean", "SKIP_LOGIN", "false")
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(

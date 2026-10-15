@@ -102,7 +102,19 @@ class EditorLibraryActivity : Activity() {
         findViewById<View>(R.id.btnHomeAutoEdit).setOnClickListener { pendingOpenTool = "auto_edit"; openVideoPicker() }
         findViewById<View>(R.id.btnHomeAnalyze).setOnClickListener { pendingOpenTool = "analyze"; openVideoPicker() }
         // Perfil (canvas): leva para os ajustes, o mesmo destino do último item da barra de baixo.
-        findViewById<View>(R.id.btnProfile).setOnClickListener { findViewById<View>(R.id.navSettings)?.performClick() }
+        findViewById<View>(R.id.btnProfile).setOnClickListener {
+            // Visitante: oferece entrar ou criar conta antes dos ajustes.
+            if (com.termex.replay15.account.AccountManager.isGuest(this) && !com.termex.replay15.account.AccountManager.hasAccount(this)) {
+                AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                    .setTitle("Você está sem conta")
+                    .setMessage("Crie uma conta ou entre para usar as legendas automáticas e guardar seu acesso.")
+                    .setPositiveButton("Entrar ou criar conta") { _, _ ->
+                        AccountGate.openAuth(this, null, com.termex.replay15.account.AuthActivity.MODE_SIGN_IN)
+                    }
+                    .setNeutralButton("Ajustes") { _, _ -> findViewById<View>(R.id.navSettings)?.performClick() }
+                    .show()
+            } else findViewById<View>(R.id.navSettings)?.performClick()
+        }
 
         // "editar" em amarelo, como no título do canvas.
         findViewById<TextView>(R.id.homeTitle).apply {

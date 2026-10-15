@@ -105,7 +105,16 @@ class HighlightDetector(
         progress("Concluído", 3, 3)
 
         // Step 4: Combine results
-        combineResults(geminiResult, localResult, maxHighlights)
+        val combined = combineResults(geminiResult, localResult, maxHighlights)
+        // Sem a IA (release sem backend, sem legendas ou falha), os destaques vêm só de áudio e
+        // cortes de cena: a pessoa precisa saber que a escolha não leu o que foi dito.
+        val aiNote = when {
+            geminiResult?.highlights?.isNotEmpty() == true -> null
+            geminiAnalyzer == null -> AI_UNAVAILABLE
+            transcriptSegments.isEmpty() -> AI_NEEDS_CAPTIONS
+            else -> AI_FAILED
+        }
+        if (aiNote == null) combined else combined.copy(warnings = listOf(aiNote) + combined.warnings)
     }
 
     private fun extractTranscript(project: Project): List<TranscriptSegment> {
@@ -176,6 +185,10 @@ class HighlightDetector(
     }
 
     companion object {
+        const val AI_UNAVAILABLE = "A análise por IA não está disponível nesta versão: os destaques foram escolhidos pelo áudio e pelos cortes de cena."
+        const val AI_NEEDS_CAPTIONS = "Gere as legendas antes para a IA entender o que foi dito; por enquanto os destaques vêm do áudio e dos cortes de cena."
+        const val AI_FAILED = "A IA não respondeu; os destaques foram escolhidos pelo áudio e pelos cortes de cena."
+
         private fun createGeminiAnalyzer(): HighlightAnalyzer? {
             val key = BuildConfig.GEMINI_API_KEY.takeIf(String::isNotBlank)
                 ?: com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey()

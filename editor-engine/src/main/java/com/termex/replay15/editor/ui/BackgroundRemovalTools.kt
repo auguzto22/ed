@@ -136,8 +136,8 @@ class BackgroundRemovalTools(
     }
 
     private fun providerLabel(provider: BackgroundRemovalProvider): String = when (provider) {
-        BackgroundRemovalProvider.AUTO -> "Auto (Local)"
-        BackgroundRemovalProvider.GEMINI -> "Gemini API"
+        BackgroundRemovalProvider.AUTO -> "Automático (no aparelho)"
+        BackgroundRemovalProvider.GEMINI -> if (com.termex.replay15.editor.ai.GeminiApiKeyConfig.getApiKey().isNotBlank()) "Gemini API" else "Gemini (indisponível: usa o aparelho)"
         BackgroundRemovalProvider.MLKIT -> "ML Kit (Local)"
     }
 

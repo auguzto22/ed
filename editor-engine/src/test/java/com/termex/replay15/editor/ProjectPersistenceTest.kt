@@ -206,6 +206,15 @@ class ProjectPersistenceTest {
             assertFalse(File(dir, "${project.id}.tmp").exists())
         } finally { dir.deleteRecursively() }
     }
+    @Test fun aTruncatedProjectFileCanBeSavedOver() {
+        val dir = Files.createTempDirectory("r15-truncated-test").toFile()
+        try {
+            val store = ProjectStore(dir); val project = sample()
+            store.file(project.id).writeBytes(byteArrayOf(0x52, 0x31))
+            store.save(project)
+            assertEquals(project, store.load(project.id))
+        } finally { dir.deleteRecursively() }
+    }
     @Test fun stickerScaleAndKeyframesRoundTripInSchema20() {
         val sticker = StickerClip(
             uri = "content://image/sticker",

@@ -168,6 +168,23 @@ class TimeMappingTest {
         assertEquals(reversed.outUs, reversed.timeMap.sourceAt(0))
     }
 
+    @Test fun aReversedSpeedRampWalksBackwardsWithoutJumps() {
+        // Com rampa, a tabela tem centenas de segmentos; o reverso precisa percorrer a tabela
+        // de trás para frente, e não só inverter cada pedaço de ~20 ms.
+        val forward = clip()
+        assertTrue(forward.speedCurve.isNotEmpty())
+        val reversed = forward.copy(reverse = true)
+        var previous = Long.MAX_VALUE
+        for (time in 0..reversed.durationUs step 5_000) {
+            val source = reversed.timeMap.sourceAt(time)
+            assertTrue("voltou para frente em $time", source <= previous)
+            val expected = forward.timeMap.sourceAt(reversed.durationUs - time)
+            assertTrue("em $time esperado $expected, veio $source", abs(expected - source) <= 1)
+            assertTrue("ida e volta em $time", abs(time - reversed.timeMap.timelineAt(source)) <= 3 * SECOND / 1000)
+            previous = source
+        }
+    }
+
     @Test fun splitPreservesReversalOnBothHalves() {
         val c = constant(speed = 1f, inUs = 0, outUs = 8 * SECOND).copy(reverse = true)
         val p = Project(videos = listOf(c))
