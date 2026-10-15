@@ -657,8 +657,6 @@ class EditorActivity : Activity() {
             when (tool) {
                 "auto_edit" -> if (selectedClip() != null) autoEditPanel.open()
                 "analyze" -> analyzeMenu()
-                // Atalho "Legendar vídeo" da tela Início: abre a geração de legendas automáticas.
-                "captions" -> if (project.videos.isNotEmpty()) automaticCaptionsDialog()
             }
         }
     }

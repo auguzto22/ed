@@ -115,8 +115,6 @@ class EditorLibraryActivity : Activity() {
         findViewById<View>(R.id.btnImportVideo).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnHomeAutoEdit).setOnClickListener { pendingOpenTool = "auto_edit"; openVideoPicker() }
         findViewById<View>(R.id.btnHomeAnalyze).setOnClickListener { pendingOpenTool = "analyze"; openVideoPicker() }
-        // Novo atalho: escolhe o vídeo e já abre a geração de legendas automáticas no editor.
-        findViewById<View>(R.id.btnHomeCaptions).setOnClickListener { pendingOpenTool = "captions"; openVideoPicker() }
         // Perfil: visitante pode entrar/criar conta; com conta vai direto para Config. (dados da conta).
         findViewById<View>(R.id.btnProfile).setOnClickListener {
             if (AccountManager.isGuest(this) && !AccountManager.hasAccount(this)) {
@@ -228,7 +226,6 @@ class EditorLibraryActivity : Activity() {
         val title = when (pendingOpenTool) {
             "auto_edit" -> "Vídeo para o Auto Edit"
             "analyze" -> "Vídeo para analisar"
-            "captions" -> "Vídeo para legendar"
             else -> "Novo projeto"
         }
         val mode = if (pendingOpenTool == null) GalleryPickerActivity.MODE_ANY else GalleryPickerActivity.MODE_VIDEOS
