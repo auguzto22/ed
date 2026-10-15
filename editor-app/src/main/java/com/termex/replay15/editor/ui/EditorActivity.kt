@@ -146,6 +146,7 @@ class EditorActivity : Activity() {
     private lateinit var projectMetaView: TextView
     private lateinit var captionAutoChip: Button
     private lateinit var clock: TextView
+    private lateinit var transportRuler: TransportRulerView
     private lateinit var play: View
     private lateinit var undo: View
     private lateinit var redo: View
@@ -674,10 +675,20 @@ class EditorActivity : Activity() {
      * Transporte do canvas: timecode mono à esquerda, play branco redondo no centro e
      * desfazer / refazer à direita.
      */
-    private fun buildPlaybackControls(): LinearLayout = row().apply {
+    /**
+     * Barra do play: régua de segundos correndo por trás (mini timeline) e, por cima, play,
+     * contador em duas linhas no centro e desfazer/refazer.
+     */
+    private fun buildPlaybackControls(): View = FrameLayout(this).apply {
+        setBackgroundColor(EditorStyle.BG)
+        transportRuler = TransportRulerView(this@EditorActivity)
+        addView(transportRuler, FrameLayout.LayoutParams(-1, -1))
+        addView(buildPlaybackRow(), FrameLayout.LayoutParams(-1, -1))
+    }
+
+    private fun buildPlaybackRow(): LinearLayout = row().apply {
         gravity = Gravity.CENTER_VERTICAL
         setPadding(dp(14), 0, dp(10), 0)
-        setBackgroundColor(EditorStyle.BG)
 
         fun iconBtn(name: String, iconRes: Int, callback: () -> Unit): View = FrameLayout(this@EditorActivity).apply {
             contentDescription = name
@@ -721,14 +732,21 @@ class EditorActivity : Activity() {
         left.addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
         addView(left, LinearLayout.LayoutParams(0, -1, 1f))
 
-        // Contador "0:03 / 0:09": atual em destaque, total apagado, dígitos tabulares (não "pulam").
+        // Contador em duas linhas: atual em cima (destaque), total embaixo (apagado), dígitos
+        // tabulares (não "pulam"). Fundo preto atrás para a régua passar por trás dele.
         clock = TextView(this@EditorActivity).apply {
             text = clockText(0L, 0L)
             textSize = 15f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
             includeFontPadding = false
-            maxLines = 1
+            maxLines = 2
+            setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(dp(14), dp(4), dp(14), dp(4))
+            background = GradientDrawable().apply {
+                setColor(0xE6000000.toInt())
+                cornerRadius = dp(6).toFloat()
+            }
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
             fontFeatureSettings = "tnum"
             letterSpacing = .01f
@@ -748,7 +766,7 @@ class EditorActivity : Activity() {
         addView(right, LinearLayout.LayoutParams(0, -1, 1f))
     }
 
-    /** Formato do Instagram Edits: "0:03 / 0:09" (h:mm:ss acima de uma hora), atual em destaque. */
+    /** "00:05" em cima (atual, branco) e "01:12" embaixo (total, apagado); h:mm:ss acima de uma hora. */
     private fun clockText(positionUs: Long, durationUs: Long): CharSequence {
         val current = editsTime(positionUs)
         val total = editsTime(durationUs)
@@ -756,8 +774,9 @@ class EditorActivity : Activity() {
             append(current)
             setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             val from = length
-            append(" / $total")
+            append("\n$total")
             setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.RelativeSizeSpan(.9f), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
@@ -765,7 +784,7 @@ class EditorActivity : Activity() {
         val totalSec = us.coerceAtLeast(0L) / 1_000_000L
         val h = totalSec / 3600; val m = (totalSec % 3600) / 60; val sec = totalSec % 60
         return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, sec)
-        else String.format(java.util.Locale.ROOT, "%d:%02d", m, sec)
+        else String.format(java.util.Locale.ROOT, "%02d:%02d", m, sec)
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
@@ -1366,7 +1385,7 @@ class EditorActivity : Activity() {
         // estilos continuam pela ferramenta Texto/Legendas da barra de baixo.
 
         val playbackControls = buildPlaybackControls()
-        monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(46)))
+        monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(56)))
 
         timeline = createTimelineView()
         timelinePane = buildTimelineContainer(landscape)
@@ -1898,6 +1917,7 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
+        if (::transportRuler.isInitialized) { transportRuler.durationUs = project.durationUs; transportRuler.positionUs = position }
         val clockKey = (position / 1_000_000L) * 1_000_003L + project.durationUs / 1_000_000L
         if (clockKey != lastClockKey) {
             lastClockKey = clockKey
