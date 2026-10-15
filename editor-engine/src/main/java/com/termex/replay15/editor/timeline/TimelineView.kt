@@ -433,11 +433,10 @@ class TimelineView(context: Context) : View(context) {
                 }
             }
         }
-        // Botão de transição entre clips adjacentes, na cor do grupo Transição (roxo dos efeitos):
-        // símbolo de gravata-borboleta (dois triângulos que se encontram no corte).
-        // Sem transição: quadradinho escuro com contorno e símbolo roxos vazados.
-        // Com transição: quadradinho roxo cheio com o símbolo branco preenchido.
-        val transColor = EditorStyle.TRACK_EFFECT
+        // Botão de transição entre clips adjacentes, com a cara do Blitz: pílula que fica em cima
+        // do corte com um "raio de corte" (traço em zigue-zague, o mesmo raio do símbolo BLITZ).
+        // Sem transição: pílula branca com o raio preto, como os botões do Edits.
+        // Com transição: pílula vermelha Blitz com o raio branco.
         for (i in 0 until project.videos.size - 1) {
             val leftClip = project.videos[i]
             val rightClip = project.videos[i + 1]
@@ -446,40 +445,33 @@ class TimelineView(context: Context) : View(context) {
             val jx = x(midUs)
             if (jx >= gutter - dp(20f) && jx <= width + dp(20f)) {
                 val cy = dp(83f)
-                val btnW = dp(20f)
-                val btnH = dp(24f)
+                val btnW = dp(18f)
+                val btnH = dp(26f)
                 val rect = RectF(jx - btnW / 2, cy - btnH / 2, jx + btnW / 2, cy + btnH / 2)
-                val radius = dp(6f)
-                // Anel preto por fora separa o botão das miniaturas dos dois clips.
+                val radius = btnW / 2
+                // Anel preto por fora separa a pílula das miniaturas dos dois clips.
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = dp(3f)
                 paint.color = EditorStyle.TIMELINE_BG
                 c.drawRoundRect(rect, radius, radius, paint)
                 paint.style = Paint.Style.FILL
-                paint.color = if (trans != null) transColor else 0xF21C1C1F.toInt()
+                paint.color = if (trans != null) EditorStyle.ACTION else Color.WHITE
                 c.drawRoundRect(rect, radius, radius, paint)
+                // Raio de corte: desce em zigue-zague pelo meio da pílula.
+                val u = dp(1f)
+                val bolt = Path().apply {
+                    moveTo(jx + 2.4f * u, cy - 7f * u)
+                    lineTo(jx - 2.2f * u, cy + 0.6f * u)
+                    lineTo(jx + 2.2f * u, cy - 0.6f * u)
+                    lineTo(jx - 2.4f * u, cy + 7f * u)
+                }
                 paint.style = Paint.Style.STROKE
-                paint.strokeWidth = dp(1.2f)
-                paint.color = if (trans != null) EditorStyle.alpha(Color.WHITE, 0x55) else EditorStyle.alpha(transColor, 0xB0)
-                c.drawRoundRect(rect, radius, radius, paint)
-                val half = dp(4.6f)
-                val tip = dp(1.2f)
-                val tall = dp(4.4f)
-                val bow = Path().apply {
-                    moveTo(jx - half, cy - tall); lineTo(jx - tip, cy); lineTo(jx - half, cy + tall); close()
-                    moveTo(jx + half, cy - tall); lineTo(jx + tip, cy); lineTo(jx + half, cy + tall); close()
-                }
+                paint.strokeWidth = dp(1.9f)
+                paint.strokeCap = Paint.Cap.ROUND
                 paint.strokeJoin = Paint.Join.ROUND
-                if (trans != null) {
-                    paint.style = Paint.Style.FILL_AND_STROKE
-                    paint.strokeWidth = dp(1f)
-                    paint.color = Color.WHITE
-                } else {
-                    paint.style = Paint.Style.STROKE
-                    paint.strokeWidth = dp(1.4f)
-                    paint.color = transColor
-                }
-                c.drawPath(bow, paint)
+                paint.color = if (trans != null) Color.WHITE else EditorStyle.BG
+                c.drawPath(bolt, paint)
+                paint.strokeCap = Paint.Cap.BUTT
                 paint.strokeJoin = Paint.Join.MITER
                 paint.style = Paint.Style.FILL
             }

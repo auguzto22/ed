@@ -393,8 +393,8 @@ private val CANVAS_ICONS: Map<String, List<String>> = mapOf(
         "M15 3v6h6",
         "M8.5 14.5a4 4 0 0 0 7 0",
     ),
-    // Gravata-borboleta: o mesmo símbolo do botão de transição na timeline.
-    "canvas:transicao" to listOf("M4 6l7 6-7 6z", "M20 6l-7 6 7 6z"),
+    // Dois clipes com o raio de corte entre eles: o mesmo raio do botão de transição da timeline.
+    "canvas:transicao" to listOf("M3 6h4v12H3z", "M17 6h4v12h-4z", "M14 3l-4 8.5 4-1L10 21"),
     "canvas:filtros" to listOf(
         "M7 8a5 5 0 1 0 10 0a5 5 0 1 0-10 0",
         "M3.5 14a5 5 0 1 0 10 0a5 5 0 1 0-10 0",
@@ -543,7 +543,8 @@ fun toolColor(name: String): Int = when (name) {
     "Dividir", "Aparar", "Recorte", "Velocidade" -> EditorStyle.TOOL_CUT
     "Texto", "Legendas" -> EditorStyle.TRACK_TEXT
     "Áudio", "Volume" -> EditorStyle.TRACK_AUDIO
-    "Filtros", "Efeitos", "Transição" -> EditorStyle.TRACK_EFFECT
+    "Filtros", "Efeitos" -> EditorStyle.TRACK_EFFECT
+    "Transição" -> EditorStyle.ACTION_TEXT
     "Ajustar", "Animação", "Máscara", "Remover fundo" -> EditorStyle.TOOL_ADJUST
     "Auto Edit", "Analisar" -> EditorStyle.ACTION
     "Excluir" -> EditorStyle.DANGER
