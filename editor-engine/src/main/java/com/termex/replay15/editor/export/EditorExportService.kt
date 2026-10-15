@@ -76,7 +76,8 @@ class EditorExportService : Service() {
                 }
                 require(project.durationUs > 0L) { "O projeto não possui duração exportável" }
                 val assets = AssetRepository(this)
-                project.allVideos.flatMap { it.effects }.filter { it.enabled }.distinctBy { it.assetId to it.version }.forEach {
+                (project.allVideos.flatMap { it.effects } + project.adjustmentClips.filter { it.enabled }.flatMap { it.effects })
+                    .filter { it.enabled }.distinctBy { it.assetId to it.version }.forEach {
                     require(runCatching { assets.resolve(it.assetId, it.version) }.isSuccess) { "Um efeito deste projeto precisa ser instalado novamente" }
                 }
                 require(EncoderSupport.supports(project)) { "Resolucao/FPS nao suportados pelo encoder. Escolha 720p/30 FPS." }
