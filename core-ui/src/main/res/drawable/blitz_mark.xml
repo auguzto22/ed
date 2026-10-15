@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Símbolo BLITZ (versão branca, sem o nome): cantoneiras de enquadramento, ponto de gravação
+<!-- Símbolo BLITZ (branco com raio e ponto vermelhos, sem o nome): cantoneiras de enquadramento, ponto de gravação
      e o "B" cortado por um raio. O corte é feito com clip-path (retângulo menos a faixa do raio)
      e a linha do raio é desenhada por cima, então o vão mostra o fundo de verdade. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -19,7 +19,7 @@
 
     <path
         android:pathData="M84.5,20a4.5,4.5 0,1 1,-9 0a4.5,4.5 0,1 1,9 0z"
-        android:fillColor="#FFFFFFFF" />
+        android:fillColor="#FFC50022" />
 
     <group
         android:translateX="30.4"
@@ -38,7 +38,7 @@
         <path
             android:pathData="M-6,62L33,46L39,60L80,42"
             android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
+            android:strokeColor="#FFC50022"
             android:strokeWidth="5"
             android:strokeLineCap="butt"
             android:strokeLineJoin="miter" />
