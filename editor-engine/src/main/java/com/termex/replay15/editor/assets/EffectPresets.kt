@@ -26,10 +26,26 @@ object BuiltInEffectPresets {
     fun definitions(context: Context): List<EffectPreset> =
         parse(context.assets.open("editor/effect_presets.json").bufferedReader().use { it.readText() })
 
+    /** The library ships ~300 presets (about 90 KB); the caps leave room to grow without accepting arbitrary input. */
+    const val MAX_PRESETS = 500
+    const val MAX_TEXT_LENGTH = 524_288
+
+    // Gallery tabs keep the historical order first; categories added later follow, then anything unknown.
+    private val PREFERRED_CATEGORIES = listOf(
+        "Cinema", "Film", "Gaming", "Retro", "Distorsao",
+        "Cor", "Glitch", "Luz", "Movimento", "Camera", "Blur", "Criativo", "Particulas", "Rastro",
+    )
+
+    fun orderedCategories(presets: List<EffectPreset>): List<String> {
+        val present = presets.map { it.category }.distinct()
+        val known = PREFERRED_CATEGORIES.filter { wanted -> present.any { it.equals(wanted, ignoreCase = true) } }
+        return known + present.filter { category -> PREFERRED_CATEGORIES.none { it.equals(category, ignoreCase = true) } }
+    }
+
     fun parse(text: String): List<EffectPreset> {
-        require(text.length in 2..131_072)
+        require(text.length in 2..MAX_TEXT_LENGTH)
         val root = JSONArray(text)
-        require(root.length() in 1..100)
+        require(root.length() in 1..MAX_PRESETS)
         return List(root.length()) { index ->
             val json = root.getJSONObject(index)
             require(json.getInt("schemaVersion") == 1)

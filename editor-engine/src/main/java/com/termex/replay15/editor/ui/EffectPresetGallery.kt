@@ -34,7 +34,7 @@ object EffectPresetGallery {
         ))
 
         val allPresets = runCatching { BuiltInEffectPresets.definitions(this) }.getOrDefault(emptyList())
-        val categories = listOf("Todos", "Cinema", "Film", "Gaming", "Retro", "Distorsao")
+        val categories = listOf("Todos") + BuiltInEffectPresets.orderedCategories(allPresets)
 
         var selectedPreset: EffectPreset? = null
         var currentIntensity = 1.0f
@@ -79,6 +79,24 @@ object EffectPresetGallery {
         }
         body.addView(thumbScrollView)
 
+        // The library has ~300 presets and "Todos" lists them all, so a GPU thumbnail is rendered only
+        // for cards near the viewport (and as the strip scrolls) instead of all of them at once.
+        val pendingThumbnails = mutableListOf<Pair<View, EffectPreset>>()
+        val requestedThumbnails = mutableSetOf<String>()
+        fun requestVisibleThumbnails() {
+            val frames = ownFrames ?: return
+            val viewportWidth = thumbScrollView.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+            val from = thumbScrollView.scrollX - dp(120)
+            val to = thumbScrollView.scrollX + viewportWidth + dp(120)
+            pendingThumbnails.forEach { (card, preset) ->
+                if (card.width > 0 && card.right >= from && card.left <= to && requestedThumbnails.add(preset.id)) {
+                    frames.requestPresetThumbnail(preset)
+                }
+            }
+        }
+        thumbScrollView.setOnScrollChangeListener { _, _, _, _, _ -> requestVisibleThumbnails() }
+        thumbStripContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> requestVisibleThumbnails() }
+
         fun updateCardVisuals() {
             presetCardMap.forEach { (presetId, views) ->
                 val isChosen = selectedPreset?.id == presetId
@@ -95,6 +113,8 @@ object EffectPresetGallery {
         fun populateThumbnails() {
             thumbStripContainer.removeAllViews()
             presetCardMap.clear()
+            pendingThumbnails.clear()
+            requestedThumbnails.clear()
 
             val filterCategory = categories[currentCategoryIndex]
             val visiblePresets = allPresets.filter {
@@ -184,8 +204,9 @@ object EffectPresetGallery {
                     if (imageView.drawable == null) imageView.setImageDrawable(drawable)
                     placeholder.visibility = View.GONE
                 }
-                ownFrames?.requestPresetThumbnail(preset)
+                pendingThumbnails += cardContainer to preset
             }
+            requestVisibleThumbnails()
         }
 
         fun updateTabs() {

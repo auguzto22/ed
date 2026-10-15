@@ -52,3 +52,12 @@ Built-in definitions live in `app/src/main/assets/editor/effects.json`, with GLS
 bodies in `editor/effects/<id>.frag`. Adding a supported package does not require
 editing EditorActivity. IDs prefixed `recly_` are reserved for built-in content.
 Only use licenses you are entitled to grant for the shader and any package artwork.
+
+## Built-in effect presets
+
+`editor/effect_presets.json` holds the 300 presets shown in the effect preset gallery. The first 20 are
+hand-written and must keep their ids and order (the atlas preview mapping depends on them); the rest are
+produced by `python3 tools/library/gen_effect_presets.py`, which also validates every preset: known effects,
+parameters inside their ranges, at most 5 nodes (the clip stack takes 12), at most 3 MEDIUM and 2 temporal
+effects, and that every effect in `effects.json` appears in at least one preset. Re-run it after adding effects.
+Presets in the "Gaming" category are applied as ~350 ms impacts, so keep sustained looks in other categories.
