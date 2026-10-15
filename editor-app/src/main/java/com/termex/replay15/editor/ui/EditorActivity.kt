@@ -144,7 +144,6 @@ class EditorActivity : Activity() {
     private lateinit var info: TextView
     private lateinit var projectTitleView: TextView
     private lateinit var projectMetaView: TextView
-    private lateinit var captionAutoChip: Button
     private lateinit var clock: TextView
     private lateinit var timeRuler: TimeRulerView
     private lateinit var play: View
@@ -197,6 +196,7 @@ class EditorActivity : Activity() {
             val iconRes = if (isPlaying) R.drawable.ic_recly_pause else R.drawable.ic_recly_play
             (play as? ViewGroup)?.findViewById<ImageView>(R.id.recly_transport_icon)?.setImageResource(iconRes)
             play.contentDescription = if (isPlaying) "Pausar" else "Reproduzir"
+            if (::timeRuler.isInitialized) timeRuler.playing = isPlaying
             val export = EditorExportService.state
             if (export != lastExportState) {
                 val wasActive = lastExportState.active
@@ -473,93 +473,6 @@ class EditorActivity : Activity() {
     }
 
     /**
-     * Barra de legenda do canvas: fica logo abaixo da prévia.
-     * Só chama funções que já existem (subtitleContentPanel, SubtitleApplyRangeResolver,
-     * automaticCaptionsDialog, subtitleMenu) — nenhuma lógica nova de legenda.
-     */
-    private val captionStyleChips = mutableListOf<Button>()
-    private var captionStyleSelected = 0
-
-    private fun buildCaptionBar(): HorizontalScrollView = HorizontalScrollView(this).apply {
-        isHorizontalScrollBarEnabled = false
-        val bar = row().apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(5), dp(5), dp(5), dp(5))
-            background = GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1.5f), EditorStyle.BORDER)
-                cornerRadius = dp(12).toFloat()
-            }
-        }
-
-        fun chipBackground(fill: Int, stroke: Int) = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-            setColor(fill)
-            if (stroke != Color.TRANSPARENT) setStroke(dp(1.5f), stroke)
-            cornerRadius = dp(8).toFloat()
-        }, null)
-
-        fun separator() = View(this@EditorActivity).apply { setBackgroundColor(EditorStyle.BORDER) }
-
-        // Texto: edita o texto da legenda sob a agulha.
-        bar.addView(action("Texto") {
-            val id = captionAtCursor()?.id
-            if (id == null) automaticCaptionsDialog() else subtitleContentPanel(id)
-        }.apply {
-            contentDescription = "Editar texto da legenda"
-            tooltipText = "Editar texto da legenda"
-            textSize = 12f
-            minWidth = dp(44); minimumWidth = dp(44)
-            setPadding(dp(10), 0, dp(10), 0)
-            setTextColor(EditorStyle.TEXT)
-            background = chipBackground(Color.TRANSPARENT, Color.TRANSPARENT)
-        }, LinearLayout.LayoutParams(-2, dp(34)))
-        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(6), 0, dp(6), 0) })
-
-        // Três estilos rápidos, mostrados como "Aa" no próprio estilo (Destaque, Contorno, Caixa).
-        captionStyleChips.clear()
-        captionQuickStyles().forEachIndexed { index, (name, patch, look) ->
-            val sample = android.text.SpannableString("Aa").apply {
-                setSpan(android.text.style.ForegroundColorSpan(look.first), 0, length, 0)
-                if (look.second != EditorStyle.BG) setSpan(android.text.style.BackgroundColorSpan(look.second), 0, length, 0)
-                setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)
-            }
-            val chip = action("") {
-                captionStyleSelected = index
-                paintCaptionStyleChips()
-                applyCaptionQuickStyle(patch)
-            }.apply {
-                text = sample
-                contentDescription = "Estilo $name"
-                tooltipText = "Estilo $name"
-                textSize = 13f
-                minWidth = dp(38); minimumWidth = dp(38)
-                setPadding(0, 0, 0, 0)
-            }
-            captionStyleChips.add(chip)
-            bar.addView(chip, LinearLayout.LayoutParams(dp(38), dp(34)).apply { setMargins(dp(3), 0, dp(3), 0) })
-        }
-        paintCaptionStyleChips()
-        bar.addView(separator(), LinearLayout.LayoutParams(dp(1), dp(20)).apply { setMargins(dp(6), 0, dp(6), 0) })
-
-        // Auto: gera as legendas automáticas.
-        captionAutoChip = action(if (project.texts.any { it.isCaption }) "Auto ✓" else "Auto") {
-            // Já com legendas: abre o gerenciador (idioma, SRT, traduzir, fonte global); sem legendas: gera.
-            if (project.texts.any { it.isCaption }) subtitleMenu() else automaticCaptionsDialog()
-        }.apply {
-            contentDescription = "Gerar legendas automáticas"
-            tooltipText = "Gerar legendas automáticas"
-            textSize = 12f
-            minWidth = dp(44); minimumWidth = dp(44)
-            setPadding(dp(10), 0, dp(10), 0)
-            setTextColor(EditorStyle.CAPTION)
-            background = chipBackground(Color.TRANSPARENT, Color.TRANSPARENT)
-        }
-        bar.addView(captionAutoChip, LinearLayout.LayoutParams(-2, dp(34)))
-
-        addView(bar, FrameLayout.LayoutParams(-2, -1, Gravity.CENTER_HORIZONTAL))
-    }
-
-    /**
      * Amostra "Aa" de um estilo de texto: a letra desenhada na fonte, cor, fundo e contorno
      * que o estilo aplica, com o nome embaixo. Usada em todo lugar onde se escolhe estilo.
      */
@@ -604,43 +517,6 @@ class EditorActivity : Activity() {
             setPadding(0, dp(4), 0, 0)
         }, LinearLayout.LayoutParams(-1, -2))
         setOnClickListener { click() }
-    }
-
-    /** Moldura do estilo escolhido em amarelo, as outras em cinza, como no canvas. */
-    private fun paintCaptionStyleChips() {
-        captionStyleChips.forEachIndexed { index, chip ->
-            chip.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                setColor(EditorStyle.BG)
-                setStroke(dp(1.5f), if (index == captionStyleSelected) EditorStyle.CAPTION else EditorStyle.BORDER)
-                cornerRadius = dp(8).toFloat()
-            }, null)
-        }
-    }
-
-    /** Legenda sob a agulha; se não houver, a primeira legenda do projeto. */
-    private fun captionAtCursor(): TextClip? {
-        val captions = project.texts.filter { it.isCaption }
-        return captions.firstOrNull { position >= it.startUs && position < it.endUs } ?: captions.minByOrNull { it.startUs }
-    }
-
-    /** Três estilos rápidos do canvas: Destaque (fundo amarelo), Contorno (texto amarelo), Caixa (fundo preto). */
-    private fun captionQuickStyles(): List<Triple<String, SubtitleStylePatch, Pair<Int, Int>>> = listOf(
-        Triple("Destaque", SubtitleStylePatch(fontWeight = 800, color = EditorStyle.INK, backgroundColor = EditorStyle.CAPTION,
-            outlineWidth = 0f, shadow = false), EditorStyle.INK to EditorStyle.CAPTION),
-        Triple("Contorno", SubtitleStylePatch(fontWeight = 800, color = EditorStyle.CAPTION, backgroundColor = Color.TRANSPARENT,
-            outlineColor = Color.BLACK, outlineWidth = .012f, shadow = true), EditorStyle.CAPTION to EditorStyle.BG),
-        Triple("Caixa", SubtitleStylePatch(fontWeight = 700, color = Color.WHITE, backgroundColor = 0xE6141414.toInt(),
-            outlineWidth = 0f, shadow = false), EditorStyle.INK to EditorStyle.TEXT),
-    )
-
-    private fun applyCaptionQuickStyle(patch: SubtitleStylePatch) {
-        val anchor = captionAtCursor()
-        if (anchor == null) { automaticCaptionsDialog(); return }
-        val changed = SubtitleApplyRangeResolver.apply(project, anchor.id, ApplyRange.all(), patch)
-        if (changed != project) {
-            edit(changed)
-            info.text = "Estilo aplicado em todas as legendas"
-        }
     }
 
     private var pendingOpenTool: String? = null
@@ -702,14 +578,14 @@ class EditorActivity : Activity() {
             tooltipText = "Reproduzir"
             isClickable = true
             isFocusable = true
-            background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), null,
-                GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) })
+            // Só o triângulo, sem bola em volta; o toque responde com o "pulo" do ícone.
+            background = null
             addView(ImageView(context).apply {
                 id = R.id.recly_transport_icon
                 setImageResource(R.drawable.ic_recly_play)
                 imageTintList = ColorStateList.valueOf(Color.WHITE)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
-            }, FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER))
+            }, FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER))
             setOnClickListener {
                 preview.endScrub(position)
                 if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
@@ -1378,9 +1254,6 @@ class EditorActivity : Activity() {
             ::selectVideoLayer, ::pickLut,
             { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
 
-        // Barra de legenda dentro da área da prévia (substitui a tela separada de legendas do canvas).
-        monitor.addView(buildCaptionBar(), LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(dp(8), dp(2), dp(8), dp(2)) })
-
         val playbackControls = buildPlaybackControls()
         monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(46)))
 
@@ -1881,9 +1754,6 @@ class EditorActivity : Activity() {
         if (::projectTitleView.isInitialized) {
             projectTitleView.text = project.name
             projectMetaView.text = projectMeta()
-        }
-        if (::captionAutoChip.isInitialized) {
-            captionAutoChip.text = if (project.texts.any { it.isCaption }) "Auto ✓" else "Auto"
         }
         updateContextualTools()
         updatePosition(); fitPreview()
@@ -4799,10 +4669,16 @@ class EditorActivity : Activity() {
     }
 
     private fun textMenu() {
-        if (project.texts.isEmpty()) { textPanel(); return }
+        // Abre sempre o menu (mesmo sem textos) para "Legendas automáticas" ficar à mão.
+        if (project.durationUs <= 0) { error("Adicione um vídeo antes do texto"); return }
         val body = column()
         lateinit var dialog: Dialog
         body.addView(action("Adicionar texto", true) { dialog.dismiss(); textPanel() })
+        // Atalho que antes ficava na barra embaixo da prévia: gera ou gerencia as legendas.
+        body.addView(action(if (project.texts.any { it.isCaption }) "Legendas automáticas ✓" else "Legendas automáticas") {
+            dialog.dismiss()
+            if (project.texts.any { it.isCaption }) subtitleMenu() else automaticCaptionsDialog()
+        })
         val search = searchField("Buscar texto ou legenda")
         body.addView(search, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         val results = column().apply { setPadding(0, dp(6), 0, 0) }

@@ -5,10 +5,13 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.os.SystemClock
 import android.util.TypedValue
 import android.view.View
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.floor
 
 /**
@@ -19,6 +22,9 @@ import kotlin.math.floor
  * "3 s"...) com um traço curto embaixo; segundos pares têm só uma linha fina e apagada.
  * Tudo some suavemente nas bordas e na faixa ocupada pelo contador, para o tempo nunca
  * ficar ilegível.
+ *
+ * Identidade Blitz: agulha vermelha no centro (continua na agulha da timeline logo abaixo)
+ * e, enquanto o vídeo toca, o ponto de gravação vermelho do logo pulsando ao lado do tempo.
  */
 class TimeRulerView(context: Context) : View(context) {
 
@@ -32,6 +38,10 @@ class TimeRulerView(context: Context) : View(context) {
 
     /** Metade da largura que o contador ocupa no meio; a régua some embaixo dele. */
     var clearHalfWidthPx = 0f
+        set(value) { if (field != value) { field = value; invalidate() } }
+
+    /** Enquanto toca, o ponto de gravação aparece e pulsa. */
+    var playing = false
         set(value) { if (field != value) { field = value; invalidate() } }
 
     private var positionUs = 0L
@@ -52,6 +62,13 @@ class TimeRulerView(context: Context) : View(context) {
         color = 0x2EFFFFFF
         strokeWidth = dp(1f)
     }
+
+    private val needlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = EditorStyle.ACTION
+        strokeWidth = dp(2f)
+        strokeCap = Paint.Cap.ROUND
+    }
+    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = EditorStyle.ACTION }
 
     init {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -95,6 +112,17 @@ class TimeRulerView(context: Context) : View(context) {
                 linePaint.alpha = (46 * alpha).toInt()
                 canvas.drawLine(x, lineTop, x, lineBottom, linePaint)
             }
+        }
+
+        // Agulha vermelha: sai de baixo do contador e encosta na timeline.
+        canvas.drawLine(cx, h * .88f, cx, h, needlePaint)
+
+        // Ponto de gravação, no canto de cima à direita do tempo, como no logo.
+        if (playing && clearHalfWidthPx > 0f) {
+            val pulse = .55f + .45f * cos(SystemClock.uptimeMillis() / 1000.0 * 2 * PI).toFloat()
+            dotPaint.alpha = (255 * pulse).toInt()
+            canvas.drawCircle(cx + clearHalfWidthPx - dp(2f), h * .22f, dp(3f), dotPaint)
+            postInvalidateOnAnimation()
         }
     }
 
