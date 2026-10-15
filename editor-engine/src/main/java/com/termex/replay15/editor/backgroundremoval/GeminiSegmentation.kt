@@ -28,6 +28,7 @@ object GeminiSegmentationRequest {
         clothing), animals, products and any other object that is the subject of the photo.
         Do not include floor, walls, sky, scenery, tables or anything that is background.
         Trace each mask tightly along the real outer edge of the subject with many points.
+        Write every point of "mask" as [x, y] in the full image, normalized to 0-1000.
         Output a JSON list of segmentation masks where each entry contains the 2D bounding box in
         the key "box_2d", the segmentation mask in key "mask", and the text label in the key "label".
         Use descriptive labels.
@@ -114,11 +115,18 @@ object GeminiSegmentationParser {
         // The docs describe the polygon as "inside the box" normalized to 0..1000. Normally that
         // is the full image frame; if the points clearly do not fit the box, they are box-relative.
         val tolerance = 0.03f
-        val fitsImageFrame = raw.all { (x, y) ->
+        fun fits(points: List<Pair<Float, Float>>) = points.all { (x, y) ->
             x in (xmin - tolerance)..(xmax + tolerance) && y in (ymin - tolerance)..(ymax + tolerance)
         }
-        val polygon = if (fitsImageFrame) raw else raw.map { (x, y) ->
-            (xmin + x * (xmax - xmin)) to (ymin + y * (ymax - ymin))
+        // Gemini writes boxes as [y, x] and, despite the prompt, sometimes the contour too. Read
+        // as [x, y] such a contour is mirrored across the diagonal: it failed the box check and
+        // was then stretched as if box-relative, cutting a shape that had nothing to do with the
+        // subject. The order that lands inside the box wins; [x, y] when both (or neither) do.
+        val swapped = raw.map { (a, b) -> b to a }
+        val polygon = when {
+            fits(raw) -> raw
+            fits(swapped) -> swapped
+            else -> raw.map { (x, y) -> (xmin + x * (xmax - xmin)) to (ymin + y * (ymax - ymin)) }
         }
         return GeminiSubject(item.optString("label"), floatArrayOf(xmin, ymin, xmax, ymax), polygon)
     }

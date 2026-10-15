@@ -60,6 +60,8 @@ class BackgroundRemovalExportEffect(
         private val stillSegmenter: StillImageSegmenter? = if (stillImage) StillImageSegmenter(context) else null
         private var stillMask: SegmentationResult? = null
         private var stillAttempts = 0
+        /** Presentation time of the mask currently in [maskTexture] (video clips). */
+        private var videoMaskUs = Long.MIN_VALUE
         private var captureTexture = 0
         private var captureFbo = 0
         private var captureWidth = 1
@@ -103,16 +105,7 @@ class BackgroundRemovalExportEffect(
                 if (stillSegmenter != null) {
                     prepareStillMask(stillSegmenter, inputTexId, presentationTimeUs)
                 } else {
-                    capture(inputTexId)
-                    val mlMask = Tasks.await(
-                        segmenter.process(InputImage.fromBitmap(bitmap, 0)),
-                        10L,
-                        TimeUnit.SECONDS,
-                    )
-                    val mask = mlMask.buffer.duplicate().order(ByteOrder.nativeOrder()).apply { rewind() }
-                    val values = FloatArray(mlMask.width * mlMask.height)
-                    for (index in values.indices) values[index] = mask.float.coerceIn(0f, 1f)
-                    maskTexture.upload(SegmentationResult(mlMask.width, mlMask.height, presentationTimeUs, values))
+                    prepareVideoMask(inputTexId, presentationTimeUs)
                 }
                 outputGl.use()
                 outputGl.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
@@ -128,6 +121,35 @@ class BackgroundRemovalExportEffect(
                 // A transient model/device failure must preserve the source frame in the export.
                 drawOriginal(inputTexId)
             }
+        }
+
+        /**
+         * Segments this frame. When the model fails on a single frame (timeout, transient ML Kit
+         * error) the previous frame's mask is reused if it is recent; before, that one frame was
+         * exported with its whole background, a visible flash in the middle of the video.
+         * Throws (keeping the original frame) only when there is no recent mask at all.
+         */
+        private fun prepareVideoMask(inputTexId: Int, presentationTimeUs: Long) {
+            val fresh = runCatching {
+                capture(inputTexId)
+                val mlMask = Tasks.await(
+                    segmenter.process(InputImage.fromBitmap(bitmap, 0)),
+                    10L,
+                    TimeUnit.SECONDS,
+                )
+                val mask = mlMask.buffer.duplicate().order(ByteOrder.nativeOrder()).apply { rewind() }
+                val values = FloatArray(mlMask.width * mlMask.height)
+                for (index in values.indices) values[index] = mask.float.coerceIn(0f, 1f)
+                SegmentationResult(mlMask.width, mlMask.height, presentationTimeUs, values)
+            }.getOrNull()
+            if (fresh != null) {
+                maskTexture.upload(fresh)
+                videoMaskUs = presentationTimeUs
+                return
+            }
+            val recent = videoMaskUs != Long.MIN_VALUE && maskTexture.id != 0 &&
+                kotlin.math.abs(presentationTimeUs - videoMaskUs) <= MAX_REUSED_MASK_US
+            check(recent) { "Sem máscara para o quadro" }
         }
 
         /**
@@ -218,6 +240,8 @@ class BackgroundRemovalExportEffect(
     private companion object {
         private const val STILL_LONGEST_SIDE = 1536
         private const val MAX_STILL_ATTEMPTS = 3
+        /** Same tolerance as the preview (BackgroundRemovalGpuPass.MAX_MASK_DISTANCE_US). */
+        private const val MAX_REUSED_MASK_US = 250_000L
         private const val VERTEX = "attribute vec4 aFramePosition; varying vec2 vUv; void main(){ gl_Position=aFramePosition; vUv=(aFramePosition.xy+1.0)*0.5; }"
         private const val CAPTURE = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
         private const val ORIGINAL = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"

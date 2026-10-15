@@ -36,28 +36,26 @@ class GeminiBackgroundSegmenter(
     override fun process(
         frame: SegmentationFrame,
         timestampUs: Long,
-        callback: (SegmentationResult?) -> Unit,
+        onResult: (SegmentationResult?) -> Unit,
     ) {
+        // Exactly one answer per frame, whichever path (Gemini, fallback, failure) produces it.
+        val answered = AtomicBoolean(false)
+        val callback: (SegmentationResult?) -> Unit = { if (answered.compareAndSet(false, true)) onResult(it) }
+        // The frame belongs to the caller (SegmentationScheduler releases it after the callback),
+        // as with every other engine. Releasing it here as well freed the capture buffer a second
+        // time, after the scheduler had already handed it to the next capture, so the GL thread
+        // could overwrite a bitmap that ML Kit was still reading (garbled or wrong masks).
         if (closed.get()) {
-            frame.release()
             callback(null)
             return
         }
 
         if (apiKey.isBlank()) {
-            if (fallbackEngine != null) {
-                fallbackEngine.process(frame, timestampUs, callback)
-            } else {
-                frame.release()
-                callback(null)
-            }
+            if (fallbackEngine != null) fallbackEngine.process(frame, timestampUs, callback) else callback(null)
             return
         }
 
         scope.launch {
-            // When the fallback takes over it owns the frame until its own callback; releasing it
-            // here let the next capture overwrite the bitmap while ML Kit was still reading it.
-            var delegated = false
             try {
                 val inputBitmap = frame.bitmap
                 val maxDim = 384
@@ -96,22 +94,19 @@ class GeminiBackgroundSegmenter(
                 if (result != null) {
                     callback(result)
                 } else if (fallbackEngine != null && !closed.get()) {
-                    delegated = true
                     fallbackEngine.process(frame, timestampUs, callback)
-                    return@launch
                 } else {
                     callback(null)
                 }
-            } catch (_: Throwable) {
-                if (fallbackEngine != null && !closed.get()) {
-                    delegated = true
+            } catch (failure: Throwable) {
+                if (failure is kotlinx.coroutines.CancellationException) {
+                    // Closed while waiting for Gemini: still answer once so the scheduler unblocks.
+                    callback(null)
+                } else if (fallbackEngine != null && !closed.get()) {
                     fallbackEngine.process(frame, timestampUs, callback)
-                    return@launch
                 } else {
                     callback(null)
                 }
-            } finally {
-                if (!delegated) frame.release()
             }
         }
     }

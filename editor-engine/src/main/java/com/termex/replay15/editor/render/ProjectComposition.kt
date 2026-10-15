@@ -103,16 +103,21 @@ object ProjectComposition {
             else media.setClippingConfiguration(MediaItem.ClippingConfiguration.Builder()
                 .setStartPositionUs(clip.inUs).setEndPositionUs(clip.outUs).build())
             val effects = mutableListOf<Effect>()
-            // Mask first, on the untransformed frame: the preview masks the source texture before
+            // Background removal runs on the untouched source frame, as in the preview
+            // (GpuPreviewRenderer removes the background before effects, mask and crop). It used
+            // to run after the layer mask, crop and rotation, so the model saw a different picture
+            // (cropped, masked-out areas, rotated) and the exported cut-out did not match the one
+            // the user approved in the preview.
+            if (clip.backgroundRemoval.enabled && clip.backgroundRemoval.mode == BackgroundMode.REMOVE) {
+                effects += BackgroundRemovalExportEffect(clip.backgroundRemoval, stillImage = clip.image)
+            }
+            // Mask on the untransformed frame: the preview masks the source texture before
             // crop/rotation/flip, and the mask, its editor and motion tracking share that space.
             if (clip.mask != null) effects += LayerMaskEffect(clip, placed.startUs)
             if (clip.crop != CropRect()) effects += Crop(2 * clip.crop.left - 1, 2 * clip.crop.right - 1,
                 1 - 2 * clip.crop.bottom, 1 - 2 * clip.crop.top)
             if (clip.rotation != 0 || clip.flip) effects += ScaleAndRotateTransformation.Builder()
                 .setRotationDegrees(clip.rotation.toFloat()).setScale(if (clip.flip) -1f else 1f, 1f).build()
-            if (clip.backgroundRemoval.enabled && clip.backgroundRemoval.mode == BackgroundMode.REMOVE) {
-                effects += BackgroundRemovalExportEffect(clip.backgroundRemoval, stillImage = clip.image)
-            }
             if (clip.brightness != 0f) effects += Brightness(clip.brightness)
             if (clip.contrast != 0f) effects += Contrast(clip.contrast)
             if (clip.saturation != 0f || clip.hue != 0f || clip.lightness != 0f) effects += HslAdjustment.Builder()
