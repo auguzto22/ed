@@ -10,6 +10,8 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.widget.*
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.termex.replay15.editor.assets.BuiltInEffectPresets
 import com.termex.replay15.editor.assets.EffectPreset
 import com.termex.replay15.editor.core.isEditorDebuggable
@@ -34,11 +36,13 @@ object EffectPresetGallery {
         ))
 
         val allPresets = runCatching { BuiltInEffectPresets.definitions(this) }.getOrDefault(emptyList())
-        val categories = listOf("Todos", "Cinema", "Film", "Gaming", "Retro", "Distorção")
+        // As abas saem do próprio arquivo: com ~1000 presets em várias categorias, lista fixa ficaria velha.
+        val categories = listOf("Todos") + BuiltInEffectPresets.categories(allPresets)
 
         var selectedPreset: EffectPreset? = null
         var currentIntensity = 1.0f
         var currentCategoryIndex = 0
+        var query = ""
 
         val targetTimestampUs = if (sessionTimestampUs >= 0L) {
             sessionTimestampUs
@@ -46,12 +50,13 @@ object EffectPresetGallery {
             (clip.inUs + clip.outUs) / 2
         }
 
+        // Cartão visível agora para cada preset; a lista recicla, então só os da tela ficam aqui.
         val presetCardMap = mutableMapOf<String, CardViews>()
         // Thumbnails are rendered on a frame of the user's own clip (generic atlas art only as a
         // placeholder), so each card shows what the preset does to *this* video.
         val ownFrames = runCatching {
             com.termex.replay15.editor.preview.EffectPreviewController(activity, onPresetThumbnailReady = { preset, bitmap ->
-                presetCardMap[preset.id]?.let { views ->
+                presetCardMap[preset.id]?.takeIf { it.boundId == preset.id }?.let { views ->
                     views.image.setImageBitmap(bitmap)
                     views.placeholder.visibility = View.GONE
                     views.image.alpha = 0f
@@ -59,6 +64,21 @@ object EffectPresetGallery {
                 }
             }).also { it.startSession(clip, targetTimestampUs) }
         }.getOrNull()
+
+        // Busca por nome: com 1000 presets, rolar não basta.
+        val search = EditText(this).apply {
+            hint = "Buscar entre ${allPresets.size} presets"
+            textSize = 13f
+            isSingleLine = true
+            setTextColor(Color.WHITE)
+            setHintTextColor(EditorStyle.MUTED)
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = GradientDrawable().apply {
+                setColor(EditorStyle.CARD)
+                cornerRadius = dp(12).toFloat()
+            }
+        }
+        body.addView(search, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
 
         // Categories horizontal strip
         val tabs = row()
@@ -69,57 +89,48 @@ object EffectPresetGallery {
         }
         body.addView(categoryStrip)
 
-        // Thumbnails container
-        val thumbStripContainer = row().apply {
-            setPadding(0, dp(4), 0, dp(8))
+        val countLabel = TextView(this).apply {
+            textSize = 11f
+            setTextColor(EditorStyle.MUTED)
+            setPadding(dp(4), 0, 0, dp(4))
         }
-        val thumbScrollView = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(thumbStripContainer)
+        body.addView(countLabel)
+
+        fun cardBackground(chosen: Boolean) = GradientDrawable().apply {
+            setColor(if (chosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
+            cornerRadius = dp(12).toFloat()
+            setStroke(dp(if (chosen) 2 else 1), if (chosen) EditorStyle.ACCENT else EditorStyle.BORDER)
         }
-        body.addView(thumbScrollView)
+
+        fun styleCard(views: CardViews, chosen: Boolean) {
+            views.container.background = cardBackground(chosen)
+            views.label.setTextColor(if (chosen) EditorStyle.ACCENT else EditorStyle.MUTED)
+            views.label.setTypeface(null, if (chosen) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        }
 
         fun updateCardVisuals() {
-            presetCardMap.forEach { (presetId, views) ->
-                val isChosen = selectedPreset?.id == presetId
-                views.container.background = GradientDrawable().apply {
-                    setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                    cornerRadius = dp(12).toFloat()
-                    setStroke(dp(if (isChosen) 2 else 1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
-                }
-                views.label.setTextColor(if (isChosen) EditorStyle.ACCENT else EditorStyle.MUTED)
-                views.label.setTypeface(views.label.typeface, if (isChosen) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
-            }
+            presetCardMap.forEach { (presetId, views) -> styleCard(views, selectedPreset?.id == presetId) }
         }
 
-        fun populateThumbnails() {
-            thumbStripContainer.removeAllViews()
-            presetCardMap.clear()
+        val visiblePresets = mutableListOf<EffectPreset>()
 
-            val filterCategory = categories[currentCategoryIndex]
-            val visiblePresets = allPresets.filter {
-                currentCategoryIndex == 0 || plainCategory(it.category) == plainCategory(filterCategory)
-            }
+        // RecyclerView horizontal: só os cartões da tela existem e só eles pedem miniatura.
+        // Antes eram criados todos de uma vez — com 1000 presets, 1000 views e 1000 renders na GPU.
+        val adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount() = visiblePresets.size
 
-            visiblePresets.forEach { preset ->
-                val isChosen = selectedPreset?.id == preset.id
-
-                val cardContainer = LinearLayout(this).apply {
+            override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                val cardContainer = LinearLayout(activity).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER_HORIZONTAL
                     isClickable = true
                     isFocusable = true
-                    contentDescription = "${preset.name} - ${preset.category}"
                     setPadding(dp(6), dp(6), dp(6), dp(6))
-
-                    background = GradientDrawable().apply {
-                        setColor(if (isChosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
-                        cornerRadius = dp(12).toFloat()
-                        setStroke(dp(if (isChosen) 2 else 1), if (isChosen) EditorStyle.ACCENT else EditorStyle.BORDER)
-                    }
+                    layoutParams = RecyclerView.LayoutParams(
+                        RecyclerView.LayoutParams.WRAP_CONTENT, RecyclerView.LayoutParams.WRAP_CONTENT
+                    ).apply { setMargins(dp(4), 0, dp(4), 0) }
                 }
-
-                val imageFrame = FrameLayout(this).apply {
+                val imageFrame = FrameLayout(activity).apply {
                     outlineProvider = object : ViewOutlineProvider() {
                         override fun getOutline(view: View, outline: Outline) {
                             outline.setRoundRect(0, 0, view.width, view.height, dp(8).toFloat())
@@ -127,66 +138,110 @@ object EffectPresetGallery {
                     }
                     clipToOutline = true
                 }
-
-                val placeholder = View(this).apply {
+                val placeholder = View(activity).apply {
                     background = GradientDrawable().apply {
                         setColor(0xFF1C1C1E.toInt())
                         cornerRadius = dp(8).toFloat()
                     }
                 }
                 imageFrame.addView(placeholder, FrameLayout.LayoutParams(dp(76), dp(76)))
-
-                val imageView = ImageView(this).apply {
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                }
+                val imageView = ImageView(activity).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
                 imageFrame.addView(imageView, FrameLayout.LayoutParams(dp(76), dp(76)))
-
                 cardContainer.addView(imageFrame)
 
-                val labelView = TextView(this).apply {
-                    text = preset.name
+                val labelView = TextView(activity).apply {
                     textSize = 11f
-                    setTextColor(if (isChosen) EditorStyle.ACCENT else EditorStyle.MUTED)
                     gravity = Gravity.CENTER_HORIZONTAL
                     isSingleLine = true
-                    maxWidth = dp(84)
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    setWidth(dp(84))
                     setPadding(0, dp(6), 0, dp(2))
                 }
                 cardContainer.addView(labelView)
-
-                val tagView = TextView(this).apply {
-                    text = displayCategory(preset.category)
+                val tagView = TextView(activity).apply {
                     textSize = 9f
                     setTextColor(0xFF9A968C.toInt())
                     gravity = Gravity.CENTER_HORIZONTAL
                     isSingleLine = true
                 }
                 cardContainer.addView(tagView)
+                val views = CardViews(cardContainer, imageView, placeholder, labelView, tagView)
+                return object : RecyclerView.ViewHolder(cardContainer) {}.also { cardContainer.tag = views }
+            }
 
-                cardContainer.setOnClickListener {
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+                val preset = visiblePresets[position]
+                val views = holder.itemView.tag as CardViews
+                views.boundId?.let { old -> if (presetCardMap[old] === views) presetCardMap.remove(old) }
+                views.boundId = preset.id
+                presetCardMap[preset.id] = views
+
+                views.container.contentDescription = "${preset.name} - ${preset.category}"
+                views.label.text = preset.name
+                views.tag.text = preset.category
+                views.image.setImageDrawable(null)
+                views.image.animate().cancel()
+                views.image.alpha = 1f
+                views.placeholder.visibility = View.VISIBLE
+                styleCard(views, selectedPreset?.id == preset.id)
+                views.container.setOnClickListener {
                     selectedPreset = preset
                     updateCardVisuals()
                     onPreview(preset, currentIntensity)
                 }
 
-                presetCardMap[preset.id] = CardViews(cardContainer, imageView, placeholder, labelView)
-
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(dp(4), 0, dp(4), 0)
-                }
-                thumbStripContainer.addView(cardContainer, params)
-
                 // Atlas art first (instant), then the preset rendered on the user's frame.
                 AtlasPreviewManager.getEffectPresetPreview(activity, preset.id) { drawable ->
-                    if (imageView.drawable == null) imageView.setImageDrawable(drawable)
-                    placeholder.visibility = View.GONE
+                    if (views.boundId == preset.id && views.image.drawable == null) {
+                        views.image.setImageDrawable(drawable)
+                        views.placeholder.visibility = View.GONE
+                    }
                 }
                 ownFrames?.requestPresetThumbnail(preset)
             }
+
+            override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+                val views = holder.itemView.tag as CardViews
+                views.boundId?.let { id ->
+                    ownFrames?.cancelPresetThumbnail(id)
+                    if (presetCardMap[id] === views) presetCardMap.remove(id)
+                }
+                views.boundId = null
+            }
         }
+
+        val thumbList = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+            this.adapter = adapter
+            itemAnimator = null
+            overScrollMode = View.OVER_SCROLL_NEVER
+            setPadding(0, dp(4), 0, dp(8))
+            clipToPadding = false
+        }
+        body.addView(thumbList, LinearLayout.LayoutParams(-1, -2))
+
+        fun populateThumbnails() {
+            val filterCategory = categories[currentCategoryIndex]
+            val needle = query.trim()
+            visiblePresets.clear()
+            allPresets.filterTo(visiblePresets) {
+                (currentCategoryIndex == 0 || it.category.equals(filterCategory, ignoreCase = true)) &&
+                    (needle.isEmpty() || it.name.contains(needle, ignoreCase = true) || it.category.contains(needle, ignoreCase = true))
+            }
+            countLabel.text = if (visiblePresets.isEmpty()) "Nenhum preset encontrado" else "${visiblePresets.size} presets"
+            @Suppress("NotifyDataSetChanged")
+            adapter.notifyDataSetChanged()
+            thumbList.scrollToPosition(0)
+        }
+
+        search.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                query = s?.toString().orEmpty()
+                populateThumbnails()
+            }
+        })
 
         fun updateTabs() {
             tabs.removeAllViews()
@@ -273,17 +328,12 @@ object EffectPresetGallery {
 
     private var dialogRef: Dialog? = null
 
-    private data class CardViews(
+    private class CardViews(
         val container: View,
         val image: ImageView,
         val placeholder: View,
         val label: TextView,
+        val tag: TextView,
+        var boundId: String? = null,
     )
 }
-
-/** Category keys in the preset data are unaccented ("Distorsao"); compare without accents or case. */
-private fun plainCategory(value: String): String =
-    java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "").lowercase()
-        .let { if (it == "distorsao") "distorcao" else it }
-
-private fun displayCategory(value: String): String = if (plainCategory(value) == "distorcao") "Distorção" else value
