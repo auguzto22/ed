@@ -694,7 +694,8 @@ class EditorActivity : Activity() {
             setOnClickListener { callback() }
         }
 
-        // Play à esquerda, desfazer/refazer à direita (sem contador de tempo no meio).
+        // Layout estilo Edits: play à esquerda, tempo centralizado, desfazer/refazer à direita.
+        // As laterais têm o mesmo peso, então o contador fica no centro exato da tela.
         val left = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.START }
         play = FrameLayout(this@EditorActivity).apply {
             contentDescription = "Reproduzir"
@@ -732,8 +733,7 @@ class EditorActivity : Activity() {
             fontFeatureSettings = "tnum"
             letterSpacing = .01f
         }
-        // O contador fica fora da tela (a régua da timeline já mostra o tempo); o objeto continua
-        // existindo porque updatePosition atualiza o texto e a descrição de acessibilidade.
+        addView(clock, LinearLayout.LayoutParams(-2, -2))
 
         val right = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END }
         undo = iconBtn("Desfazer", R.drawable.ic_recly_undo) {
