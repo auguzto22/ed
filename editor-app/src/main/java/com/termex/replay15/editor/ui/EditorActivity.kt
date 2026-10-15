@@ -1503,6 +1503,7 @@ class EditorActivity : Activity() {
             ToolEntry("Máscara", "Recorte do texto") { textMaskPanel(id) },
             ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
             ToolEntry("Movimento", "Balão na timeline") { animationBalloons.create(id) },
+            ToolEntry("Biblioteca", "Animações prontas") { animationTools.open(id) },
             ToolEntry("Excluir", "Remover este texto", danger = true) {
                 edit(project.copy(texts = project.texts.filterNot { it.id == id }))
                 clearSelection()
@@ -1518,6 +1519,7 @@ class EditorActivity : Activity() {
             ToolEntry("Remover fundo", "Recorte automático") { backgroundRemovalTools.openSticker(id) },
             ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
             ToolEntry("Movimento", "Balão na timeline") { animationBalloons.create(id) },
+            ToolEntry("Biblioteca", "Animações prontas") { animationTools.open(id) },
             ToolEntry("Camadas", "Todas as imagens") { stickerMenu() },
             ToolEntry("Excluir", "Remover esta camada", danger = true) {
                 edit(project.copy(stickers = project.stickers.filterNot { it.id == id }))

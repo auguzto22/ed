@@ -24,7 +24,7 @@ class AnimationTools(private val activity: Activity, private val project: () -> 
     }
     private fun library(clipId: String, definitions: List<AnimationPreset>) = with(activity) {
         val body = column(); lateinit var dialog: Dialog
-        body.addView(sectionTitle("Animacoes editaveis", "Presets viram keyframes reais de video, incluindo camadas PIP. Voce pode ajustar cada ponto depois."))
+        body.addView(sectionTitle("Animacoes editaveis", "Presets viram keyframes reais em video, camadas PIP, textos, legendas e stickers. Voce pode ajustar cada ponto depois."))
         (listOf("Favoritas", "Recentes") + AnimationCategory.entries.map { it.label }).forEachIndexed { index, name ->
             body.addView(action(name) {
                 val shown = when (index) { 0 -> definitions.filter { repository.favorite(it.id) }; 1 -> definitions.filter { it.id in repository.recent() }
@@ -61,7 +61,9 @@ class AnimationTools(private val activity: Activity, private val project: () -> 
         dialog = sheet(title, body, maxHeightRatio = .85f)
     }
     private fun configure(clipId: String, preset: AnimationPreset) = with(activity) {
-        val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with
+        // Qualquer coisa na tela: clipe (principal ou camada), texto/legenda ou sticker.
+        val p = project()
+        if (p.allVideos.none { it.id == clipId } && p.texts.none { it.id == clipId } && p.stickers.none { it.id == clipId }) return@with
         val body = column(); lateinit var dialog: Dialog
         body.addView(sectionTitle(preset.name, "Substitui os keyframes no intervalo da animacao. Fora dele, seus pontos sao preservados. Desfazer restaura o estado anterior."))
         body.addView(label(if (preset.category == AnimationCategory.LOOP) "Periodo de cada repeticao (segundos)" else "Duracao (segundos)"))
@@ -73,12 +75,18 @@ class AnimationTools(private val activity: Activity, private val project: () -> 
         body.addView(action("Aplicar animacao", true) {
             runCatching {
                 val seconds = duration.text.toString().replace(',', '.').toDouble().also { require(it.isFinite() && it in .05..86400.0) }
-                val next = project().mapVideo(clipId) { preset.applyTo(it, (seconds * SECOND).toLong()) }
+                val next = applied(project(), clipId, preset, (seconds * SECOND).toLong())
                 apply(next); repository.used(preset.id)
             }.fold({ dialog.dismiss() }, { duration.error = it.message ?: "Nao foi possivel aplicar a animacao" })
         })
         body.addView(label("Licenca: ${preset.license}", 11f, EditorStyle.MUTED))
         dialog = sheet("Animacao ${preset.category.label.lowercase()}", body)
+    }
+    private fun applied(p: Project, id: String, preset: AnimationPreset, durationUs: Long): Project = when {
+        p.allVideos.any { it.id == id } -> p.mapVideo(id) { preset.applyTo(it, durationUs) }
+        p.texts.any { it.id == id } -> p.copy(texts = p.texts.map { if (it.id == id) preset.applyTo(it, durationUs) else it })
+        p.stickers.any { it.id == id } -> p.copy(stickers = p.stickers.map { if (it.id == id) preset.applyTo(it, durationUs) else it })
+        else -> error("A camada nao existe mais")
     }
     fun importPackage(uri: Uri) {
         if (closed) return

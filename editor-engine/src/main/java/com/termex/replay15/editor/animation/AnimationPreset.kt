@@ -1,7 +1,9 @@
 package com.termex.replay15.editor.animation
 
 import com.termex.replay15.editor.domain.*
+import com.termex.replay15.editor.transform.TransformState
 import kotlin.math.roundToLong
+import com.termex.replay15.editor.transform.TransformKeyframe as LayerKeyframe
 
 enum class AnimationCategory(val label: String) {
     IN("Entrada"),
@@ -70,5 +72,53 @@ data class AnimationPreset(val id: String, val version: Int, val name: String, v
         }
         require(result.size <= 200) { "O clipe ja possui muitos keyframes. Remova pontos ou aumente o periodo." }
         return clip.copy(keyframes = result.sortedBy { it.sourceUs })
+    }
+
+    /** O mesmo preset num texto ou legenda (keyframes de camada, tempo absoluto do projeto). */
+    fun applyTo(text: TextClip, durationUs: Long): TextClip = text.copy(transformKeyframes =
+        layerKeyframes(text.startUs, text.durationUs, text.baseTransform, text.transformKeyframes, durationUs))
+
+    /** O mesmo preset num sticker ou imagem de camada. */
+    fun applyTo(sticker: StickerClip, durationUs: Long): StickerClip = sticker.copy(transformKeyframes =
+        layerKeyframes(sticker.startUs, sticker.durationUs, sticker.baseTransform, sticker.transformKeyframes, durationUs))
+
+    /**
+     * Mesma regra do vídeo (entrada no começo, saída no fim, repetição na camada toda), mas em
+     * keyframes de camada: zoom multiplica a escala, x/y somam à posição (fração da tela, a mesma
+     * unidade do deslocamento do vídeo), rotação soma e opacidade multiplica.
+     */
+    private fun layerKeyframes(
+        layerStartUs: Long, layerDurationUs: Long, base: TransformState,
+        existing: List<LayerKeyframe>, durationUs: Long,
+    ): List<LayerKeyframe> {
+        require(durationUs >= 50_000L) { "A duracao minima e 0.05 segundo" }
+        require(layerDurationUs >= 50_000L) { "Camada muito curta para esta animacao" }
+        val duration = minOf(durationUs, layerDurationUs)
+        val isOut = category == AnimationCategory.OUT || category == AnimationCategory.EXIT
+        val isIn = category == AnimationCategory.IN || category == AnimationCategory.ENTRANCE
+        val isLoop = category == AnimationCategory.LOOP
+        val start = if (isOut) layerDurationUs - duration else 0L
+        val end = if (isIn) duration else layerDurationUs
+        val repeats = if (isLoop) (layerDurationUs + duration - 1) / duration else 1L
+        require(repeats * (points.size - 1) + 3 <= 200) { "Aumente o periodo da repeticao para usar ate 200 keyframes" }
+        val absoluteStart = layerStartUs + start; val absoluteEnd = layerStartUs + end
+        val result = existing.filterNot { it.timeUs in absoluteStart..absoluteEnd }.toMutableList()
+        if (isOut && result.none { it.timeUs == layerStartUs }) result += LayerKeyframe(layerStartUs, base, Easing.HOLD)
+        for (cycle in 0 until repeats.toInt()) {
+            val cycleStart = start + cycle * duration
+            val cycleDuration = minOf(duration, end - cycleStart)
+            points.forEach { point ->
+                val time = layerStartUs + cycleStart + (point.time * cycleDuration.toDouble()).roundToLong()
+                val state = TransformState(
+                    x = (base.x + point.x).coerceIn(-.5f, 1.5f), y = (base.y + point.y).coerceIn(-.5f, 1.5f),
+                    scaleX = (base.scaleX * point.zoom).coerceIn(.05f, 20f), scaleY = (base.scaleY * point.zoom).coerceIn(.05f, 20f),
+                    rotation = (base.rotation + point.rotation).coerceIn(-180f, 180f),
+                    opacity = (base.opacity * point.opacity).coerceIn(0f, 1f),
+                )
+                result.removeAll { it.timeUs == time }; result += LayerKeyframe(time, state, point.easing, point.bezier)
+            }
+        }
+        require(result.size <= 200) { "A camada ja possui muitos keyframes. Remova pontos ou aumente o periodo." }
+        return result.sortedBy { it.timeUs }
     }
 }
