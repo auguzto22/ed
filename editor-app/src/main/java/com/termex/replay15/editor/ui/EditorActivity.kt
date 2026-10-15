@@ -445,29 +445,34 @@ class EditorActivity : Activity() {
         }
         addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Analisar (canvas): contorno azul-acinzentado, abre as análises que já existem no editor.
+        // Dois botões em pílula, mesma altura e raio: Analisar é secundário (cinza escuro, sem
+        // contorno chamativo) e Exportar é o único vermelho da barra, para ser a ação principal.
+        val pill = dp(18).toFloat()
         val analyzeBtn = action("Analisar") { analyzeMenu() }.apply {
             contentDescription = "Analisar vídeo"
             tooltipText = "Analisar vídeo"
-            minWidth = dp(74); minimumWidth = dp(74)
+            textSize = 13.5f
+            minWidth = dp(80); minimumWidth = dp(80)
             minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(10), dp(2), dp(10), dp(2))
-            setTextColor(0xFFFAFAF6.toInt())
+            setPadding(dp(14), 0, dp(14), 0)
+            setTextColor(EditorStyle.TEXT)
             background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1.5f), EditorStyle.VIDEO)
-                cornerRadius = dp(10).toFloat()
+                setColor(EditorStyle.CARD_ELEVATED)
+                setStroke(dp(1), EditorStyle.BORDER_LIGHT)
+                cornerRadius = pill
             }, null)
         }
-        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(6), 0) })
+        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(8), 0) })
 
-        // Export button (vermelho de ação, texto escuro)
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
             contentDescription = "Exportar vídeo"
             tooltipText = "Exportar vídeo"
-            minWidth = dp(74); minimumWidth = dp(74)
+            textSize = 13.5f
+            minWidth = dp(84); minimumWidth = dp(84)
             minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(10), dp(2), dp(10), dp(2))
+            setPadding(dp(16), 0, dp(16), 0)
+            setTextColor(EditorStyle.ON_ACTION)
+            background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), EditorStyle.accentGradient(pill), null)
         }
         addView(exportBtn, LinearLayout.LayoutParams(-2, dp(36)))
     }
@@ -1016,7 +1021,7 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFFAFAF6.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, EditorStyle.TEXT).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"

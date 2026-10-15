@@ -22,10 +22,10 @@ class MaskPathEditorView @JvmOverloads constructor(
     private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x334F5B68; strokeWidth = density }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x558C8880; style = Paint.Style.FILL }
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF8C8880.toInt(); style = Paint.Style.STROKE; strokeWidth = 2f * density
+        color = EditorStyle.TRACK_LAYER; style = Paint.Style.STROKE; strokeWidth = 2f * density
     }
     private val pointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; style = Paint.Style.FILL }
-    private val selectedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFAFAF6.toInt(); style = Paint.Style.FILL }
+    private val selectedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = EditorStyle.TEXT; style = Paint.Style.FILL }
     private val path = Path()
     private var values = MaskState.DEFAULT_CUSTOM_PATH
     private var selected = -1

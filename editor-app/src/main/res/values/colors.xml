@@ -24,19 +24,19 @@
     <color name="recly_accent_gray_light">#E4E4E7</color>
 
     <!-- Estado de Gravação Ativa / Erro (Único detalhe vermelho) -->
-    <color name="recly_accent_red">#C50022</color>
+    <color name="recly_accent_red">#E5163A</color>
     <color name="recly_accent_red_dark">#DC2626</color>
 
     <!-- Cores de função do canvas (Recly — Editor de vídeo mobile) -->
-    <color name="recly_action">#C50022</color>   <!-- ações principais -->
+    <color name="recly_action">#E5163A</color>   <!-- ações principais -->
     <color name="recly_caption">#FAFAF6</color>  <!-- legendas -->
     <color name="recly_video">#8C8880</color>    <!-- vídeo / análise -->
-    <color name="recly_video_deep">#C50022</color>
+    <color name="recly_video_deep">#E5163A</color>
 
     <!-- Aliases para compatibilidade total com código existente -->
     <color name="primary">#121213</color>
     <color name="primary_dark">#000000</color>
-    <color name="accent">#C50022</color>
+    <color name="accent">#E5163A</color>
     <color name="surface">#000000</color>
     <color name="surface_elevated">#121213</color>
     <color name="surface_soft">#0A0A0B</color>
@@ -55,7 +55,7 @@
     <color name="text_secondary">#9A968C</color>
     <color name="text_muted">#6E6B64</color>
     <color name="text_on_dark">#FAFAF6</color>
-    <color name="recording_red">#C50022</color>
+    <color name="recording_red">#E5163A</color>
     <color name="success">#D4D4D8</color>
     <color name="warning">#E4E4E7</color>
     <!-- Tela de conta, na paleta do canvas -->

@@ -408,15 +408,16 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
     val box = FrameLayout(context).apply {
         importantForAccessibility = 2
         isDuplicateParentStateEnabled = true
-        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else 0x26FFFFFF), GradientDrawable().apply {
-            setColor(if (hot) EditorStyle.ACTION else EditorStyle.CARD)
-            setStroke(dp(1.5f), when {
-                hot -> EditorStyle.ACTION
-                name == "Legendas" -> EditorStyle.CAPTION
-                else -> EditorStyle.BORDER
-            })
-            cornerRadius = dp(12).toFloat()
-        }, null)
+        // Quadradinho cinza escuro com contorno quase invisível; só Auto Edit fica vermelho e
+        // Legendas ganha o contorno amarelo da faixa de texto.
+        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else 0x26FFFFFF),
+            if (hot) EditorStyle.accentGradient(dp(12).toFloat())
+            else GradientDrawable().apply {
+                setColor(EditorStyle.CARD_ELEVATED)
+                if (name == "Legendas") setStroke(dp(1.5f), EditorStyle.CAPTION)
+                else setStroke(dp(1), EditorStyle.BORDER_LIGHT)
+                cornerRadius = dp(12).toFloat()
+            }, null)
         addView(ImageView(context).apply {
             setImageDrawable(EditorGlyph(glyph, tint, context))
             importantForAccessibility = 2

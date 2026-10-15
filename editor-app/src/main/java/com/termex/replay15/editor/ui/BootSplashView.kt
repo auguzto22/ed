@@ -89,7 +89,7 @@ class BootSplashView(context: Context) : View(context) {
 
         // Brilho vermelho que "respira" atrás do símbolo.
         val glowAmount = phase(0f, .5f)
-        glow.shader = RadialGradient(cx, cy, r * 3.2f, intArrayOf((0x66C50022 and 0x00FFFFFF) or ((0x66 * glowAmount).toInt() shl 24), 0x00C50022), null, Shader.TileMode.CLAMP)
+        glow.shader = RadialGradient(cx, cy, r * 3.2f, intArrayOf((EditorStyle.ACTION and 0x00FFFFFF) or ((0x66 * glowAmount).toInt() shl 24), EditorStyle.alpha(EditorStyle.ACTION, 0x00)), null, Shader.TileMode.CLAMP)
         canvas.drawCircle(cx, cy, r * 3.2f, glow)
 
         canvas.save()
@@ -149,7 +149,7 @@ class BootSplashView(context: Context) : View(context) {
 
     companion object {
         private val WHITE = 0xFFFFFFFF.toInt()
-        private val RED = 0xFFC50022.toInt()
+        private val RED = EditorStyle.ACTION
 
         private val CORNERS = arrayOf(
             Path().apply { moveTo(8f, 26f); lineTo(8f, 8f); lineTo(26f, 8f) },

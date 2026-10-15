@@ -47,7 +47,7 @@ class SpeedCurveView(context: Context, private val sourceUs: Long) : View(contex
             val px = x(point.sourceUs)
             val py = y(point.speed)
             if (isPointSelected) {
-                paint.color = 0x44C50022.toInt()
+                paint.color = EditorStyle.alpha(EditorStyle.ACTION, 0x44)
                 canvas.drawCircle(px, py, context.dp(14).toFloat(), paint)
             }
             paint.color = if (isPointSelected) Color.WHITE else EditorStyle.ACCENT

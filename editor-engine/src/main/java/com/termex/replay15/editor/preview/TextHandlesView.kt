@@ -1,5 +1,6 @@
 package com.termex.replay15.editor.preview
 
+import com.termex.replay15.editor.ui.EditorStyle
 import android.content.Context
 import android.graphics.*
 import android.os.Build
@@ -14,7 +15,7 @@ import com.termex.replay15.editor.transform.TransformKeyframe
 import com.termex.replay15.editor.transform.TransformState
 import kotlin.math.*
 
-private const val CAPTION_FRAME = 0xFFFAFAF6.toInt()
+private const val CAPTION_FRAME = EditorStyle.CAPTION
 
 /**
  * Professional direct manipulation overlay for text layers on preview.
@@ -192,7 +193,7 @@ class TextHandlesView(context: Context) : View(context) {
         // Draw Snapping Guide Lines
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
-        paint.color = 0xFFC50022.toInt()
+        paint.color = EditorStyle.ACTION
 
         if (snappedX != null) {
             val sx = width * snappedX!!
@@ -208,7 +209,7 @@ class TextHandlesView(context: Context) : View(context) {
         canvas.rotate(transform.rotation, centerX, centerY)
 
         // Bounding Rectangle — legendas usam a moldura amarela tracejada do canvas; textos mantêm o roxo.
-        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else 0xFFFAFAF6.toInt()
+        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else EditorStyle.TEXT
         paint.color = frameColor
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE

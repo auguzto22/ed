@@ -139,7 +139,7 @@ class ScopeView(context: Context) : View(context) {
     }
 
     private fun drawHistogram(canvas: Canvas, data: ScopeFrame, w: Float, h: Float) {
-        paint.color = 0xFFE5304F.toInt()
+        paint.color = EditorStyle.alpha(EditorStyle.ACTION_TEXT, 0xFF)
         val columnWidth = w / data.histogram.size
         val peak = data.histogram.maxOrNull()?.coerceAtLeast(1e-4f) ?: 1f
         data.histogram.forEachIndexed { index, value ->

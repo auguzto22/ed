@@ -30,7 +30,7 @@ class CurveEditorView(context: Context, initial: List<Float>) : View(context) {
             val py = pad + h * (1 - y)
             canvas.drawCircle(px, py, context.dp(if (isSelected) 6.5f else 5f).toFloat(), paint)
             if (isSelected) {
-                paint.color = 0x44C50022.toInt()
+                paint.color = EditorStyle.alpha(EditorStyle.ACTION, 0x44)
                 canvas.drawCircle(px, py, context.dp(12f).toFloat(), paint)
             }
         }

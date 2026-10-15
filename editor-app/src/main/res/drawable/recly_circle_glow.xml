@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Canvas: selo do ícone em vermelho de ação, sem brilho. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#FFC50022" />
+    <solid android:color="#FFE5163A" />
     <corners android:radius="14dp" />
 </shape>

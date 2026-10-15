@@ -166,7 +166,7 @@ class AnimationTools(private val activity: Activity, private val project: () -> 
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
         body.addView(label("Substitui os keyframes no trecho da animação; seus outros pontos são preservados. Desfazer volta ao estado anterior.",
             11.5f, EditorStyle.MUTED).apply { setPadding(dp(2), dp(10), dp(2), 0) })
-        body.addView(label("Licença: ${preset.license}", 11f, 0xFF6E6B64.toInt()).apply { setPadding(dp(2), dp(4), dp(2), 0) })
+        body.addView(label("Licença: ${preset.license}", 11f, EditorStyle.DISABLED).apply { setPadding(dp(2), dp(4), dp(2), 0) })
         dialog = sheet(preset.name, body, subtitle = preset.category.displayLabel())
     }
 

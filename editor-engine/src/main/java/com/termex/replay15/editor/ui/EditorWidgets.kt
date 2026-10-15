@@ -13,36 +13,55 @@ import com.termex.replay15.editor.domain.TextFont
 import com.termex.replay15.editor.render.EditorFonts
 
 object EditorStyle {
-    // Paleta do canvas "Recly — Editor de vídeo mobile": fundo preto + 3 cores de função.
+    // Paleta Blitz: preto de fundo, neutros num tom só (sem mistura de cinza quente com frio),
+    // um vermelho de ação e uma cor por tipo de faixa da timeline.
     const val BG = 0xFF000000.toInt()
-    const val PANEL = 0xFF121213.toInt()
-    const val CARD = 0xFF121213.toInt()
-    const val CARD_ELEVATED = 0xFF1C1C1E.toInt()
+    const val PANEL = 0xFF111113.toInt()
+    const val CARD = 0xFF111113.toInt()
+    const val CARD_ELEVATED = 0xFF1C1C1F.toInt()
+    /** Botão secundário apertado / item ativo sobre cartão. */
+    const val CARD_PRESSED = 0xFF2A2A2E.toInt()
     const val TIMELINE_BG = 0xFF0A0A0B.toInt()
-    const val BORDER = 0xFF2C2C30.toInt()
+    const val BORDER = 0xFF2A2A2E.toInt()
     const val BORDER_LIGHT = 0x22FFFFFF.toInt()
     /** Very subtle 1 dp outline that separates cards from the panel without boxing them in. */
     const val HAIRLINE = 0x17FFFFFF
-    const val TEXT = 0xFFFAFAF6.toInt()
-    const val MUTED = 0xFF9A968C.toInt()
+    const val TEXT = 0xFFF5F5F7.toInt()
+    const val MUTED = 0xFF8E8E93.toInt()
+    const val DISABLED = 0xFF636366.toInt()
     const val ACCENT = 0xFFFFFFFF.toInt()
     const val WHITE = 0xFFFFFFFF.toInt()
     const val INK = 0xFF141414.toInt()
     /** Texto e ícones sobre o vermelho de ação. */
     const val ON_ACTION = 0xFFFFFFFF.toInt()
     /** Vermelho mais claro, para texto pequeno sobre o preto. */
-    const val ACTION_TEXT = 0xFFE5304F.toInt()
+    const val ACTION_TEXT = 0xFFFF5A6E.toInt()
 
-    /** Vermelho: ações principais (Exportar, aplicar, agulha da timeline, item selecionado). */
-    const val ACTION = 0xFFC50022.toInt()
-    /** Amarelo: tudo que é legenda. */
-    const val CAPTION = 0xFFFAFAF6.toInt()
-    /** Azul-acinzentado: trechos de vídeo e análise. */
-    const val VIDEO = 0xFF8C8880.toInt()
-    /** Azul mais fundo para botões com texto branco. */
-    const val VIDEO_DEEP = 0xFFC50022.toInt()
-    const val DANGER = 0xFFEF4444.toInt()
-    const val GREEN = 0xFF10B981.toInt()
+    /** Vermelho Blitz: ações principais (Exportar, aplicar, agulha, item selecionado). */
+    const val ACTION = 0xFFE5163A.toInt()
+    /** Vermelho apertado / borda escura do botão principal. */
+    const val ACTION_PRESSED = 0xFFB8102E.toInt()
+    /** Legenda e texto: amarelo, como no CapCut/Edits. */
+    const val CAPTION = 0xFFFFC94A.toInt()
+    /** Vídeo e análise (secundário neutro claro). */
+    const val VIDEO = 0xFFC7C7CC.toInt()
+    /** Botões com texto branco sobre cor de vídeo: usa o vermelho de ação. */
+    const val VIDEO_DEEP = ACTION
+    const val DANGER = 0xFFFF453A.toInt()
+    const val GREEN = 0xFF3DD68C.toInt()
+
+    // Cores das faixas da timeline (uma por tipo; a versão LIGHT é para alças e keyframes).
+    const val TRACK_LAYER = 0xFFC7C7CC.toInt()
+    const val TRACK_AUDIO = 0xFF3DD68C.toInt()
+    const val TRACK_AUDIO_LIGHT = 0xFF8BEBB8.toInt()
+    const val TRACK_TEXT = 0xFFFFC94A.toInt()
+    const val TRACK_TEXT_LIGHT = 0xFFFFE08F.toInt()
+    const val TRACK_STICKER = 0xFF5B9DFF.toInt()
+    const val TRACK_EFFECT = 0xFFA78BFA.toInt()
+
+    /** Mesma cor com outro alfa (0..255), para sombras, brilhos e faixas translúcidas. */
+    fun alpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
+
     const val RADIUS_PANEL = 20
     const val RADIUS_CONTROL = 12
     const val TOUCH_TARGET = 44
@@ -54,14 +73,13 @@ object EditorStyle {
     // Nomes antigos ainda usados pelo editor: agora todos apontam para o vermelho de ação.
     const val ACCENT_DEEP = ACTION
     const val ACCENT_PINK = ACTION_TEXT
-    const val ACCENT_SOFT = 0x33C50022
+    const val ACCENT_SOFT = 0x33E5163A
     const val CYAN = MUTED
 
-    /** Preenchimento dos botões principais: vermelho chapado, como no canvas. */
-    fun accentGradient(radius: Float): GradientDrawable = GradientDrawable().apply {
-        setColor(ACTION)
-        cornerRadius = radius
-    }
+    /** Preenchimento dos botões principais: vermelho Blitz com um leve brilho em cima. */
+    fun accentGradient(radius: Float): GradientDrawable = GradientDrawable(
+        GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xFFF0284A.toInt(), ACTION),
+    ).apply { cornerRadius = radius }
 }
 
 fun Context.dp(value: Int) = (value * resources.displayMetrics.density).toInt()
@@ -97,7 +115,7 @@ fun Context.action(value: String, accent: Boolean = false, onClick: () -> Unit) 
     // Flat, like the rest of the editor: no Material press shadow jumping under the button.
     stateListAnimator = null; elevation = 0f
     background = editorRipple(
-        if (accent) editorShape(EditorStyle.ACTION, 14)
+        if (accent) EditorStyle.accentGradient(dp(14).toFloat())
         else editorShape(EditorStyle.CARD_ELEVATED, 14, EditorStyle.HAIRLINE),
         light = true,
     )
@@ -509,7 +527,7 @@ fun Context.editorToolCard(name: String, subtitle: String, accent: Boolean = fal
             null,
         )
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> 0xFFFAFAF6.toInt() }, context))
+            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> EditorStyle.TEXT }, context))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }, LinearLayout.LayoutParams(dp(25), dp(25)))
         addView(label(name, 13f, when { danger -> EditorStyle.DANGER; else -> Color.WHITE }).apply {
