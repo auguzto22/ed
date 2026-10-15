@@ -694,8 +694,7 @@ class EditorActivity : Activity() {
             setOnClickListener { callback() }
         }
 
-        // Layout estilo Edits: play à esquerda, tempo centralizado, desfazer/refazer à direita.
-        // As laterais têm o mesmo peso, então o contador fica no centro exato da tela.
+        // Play à esquerda, desfazer/refazer à direita (sem contador de tempo no meio).
         val left = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.START }
         play = FrameLayout(this@EditorActivity).apply {
             contentDescription = "Reproduzir"
@@ -733,7 +732,8 @@ class EditorActivity : Activity() {
             fontFeatureSettings = "tnum"
             letterSpacing = .01f
         }
-        addView(clock, LinearLayout.LayoutParams(-2, -2))
+        // O contador fica fora da tela (a régua da timeline já mostra o tempo); o objeto continua
+        // existindo porque updatePosition atualiza o texto e a descrição de acessibilidade.
 
         val right = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END }
         undo = iconBtn("Desfazer", R.drawable.ic_recly_undo) {
@@ -1362,8 +1362,8 @@ class EditorActivity : Activity() {
             ::selectVideoLayer, ::pickLut,
             { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
 
-        // Barra de legenda dentro da área da prévia (substitui a tela separada de legendas do canvas).
-        monitor.addView(buildCaptionBar(), LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(dp(8), dp(2), dp(8), dp(2)) })
+        // Sem barra de legenda na frente do vídeo (editor mais limpo): legendas automáticas e
+        // estilos continuam pela ferramenta Texto/Legendas da barra de baixo.
 
         val playbackControls = buildPlaybackControls()
         monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(46)))
