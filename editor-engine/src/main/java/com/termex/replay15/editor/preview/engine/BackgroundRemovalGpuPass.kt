@@ -105,7 +105,6 @@ internal class BackgroundRemovalGpuPass(
         // The first shipped mode is transparent removal. Other modes remain persisted in the
         // model so adding background compositing does not change the segmentation contract.
         if (effect.mode != BackgroundMode.REMOVE) return sourceTexture
-        val now = SystemClock.elapsedRealtime()
         uses++
         evictIdle(key)
         val entry = entry(key, sourceWidth, sourceHeight, effect.quality, effect.provider, image)
@@ -121,11 +120,10 @@ internal class BackgroundRemovalGpuPass(
             }
             // A photo never changes, so once its definitive mask exists there is nothing left to
             // infer. Re-running the (heavier) still model every second would only burn battery.
-            if (!image) captureForInference(entry, sourceTexture, sourceTimestampUs)
-            else if (cached.provisional) captureStill(entry, sourceTexture, now)
+            if (!image || cached.provisional) captureForInference(entry, sourceTexture, sourceTimestampUs)
             return drawMasked(entry, sourceTexture, effect)
         }
-        if (image) captureStill(entry, sourceTexture, now) else captureForInference(entry, sourceTexture, sourceTimestampUs)
+        captureForInference(entry, sourceTexture, sourceTimestampUs)
         return sourceTexture
     }
 
@@ -136,12 +134,12 @@ internal class BackgroundRemovalGpuPass(
      * retried). The interval doubles on every attempt (1 s up to 30 s) so a photo the models
      * cannot handle does not run two models every second forever.
      */
-    private fun captureStill(entry: Entry, sourceTexture: Int, nowMs: Long) {
-        if (entry.lastStillRequestMs != Long.MIN_VALUE && nowMs - entry.lastStillRequestMs < entry.stillRetryMs) return
-        if (captureForInference(entry, sourceTexture, nowMs * 1000L)) {
-            if (entry.lastStillRequestMs != Long.MIN_VALUE) entry.stillRetryMs = (entry.stillRetryMs * 2).coerceAtMost(STILL_MAX_RETRY_MS)
-            entry.lastStillRequestMs = nowMs
-        }
+    private fun stillRequestUs(entry: Entry): Long? {
+        val nowMs = SystemClock.elapsedRealtime()
+        if (entry.lastStillRequestMs != Long.MIN_VALUE && nowMs - entry.lastStillRequestMs < entry.stillRetryMs) return null
+        if (entry.lastStillRequestMs != Long.MIN_VALUE) entry.stillRetryMs = (entry.stillRetryMs * 2).coerceAtMost(STILL_MAX_RETRY_MS)
+        entry.lastStillRequestMs = nowMs
+        return nowMs * 1000L
     }
 
     /**
@@ -197,9 +195,11 @@ internal class BackgroundRemovalGpuPass(
         return created
     }
 
-    private fun captureForInference(entry: Entry, sourceTexture: Int, timestampUs: Long): Boolean {
-        if (timestampUs == entry.lastRequestedTimestampUs) return false
+    private fun captureForInference(entry: Entry, sourceTexture: Int, sourceTimestampUs: Long): Boolean {
         val buffer = entry.buffers.firstOrNull { !it.inUse } ?: return false
+        // Photos run on wall-clock time (see stillRequestUs); video on media time.
+        val timestampUs = if (entry.image) stillRequestUs(entry) ?: return false else sourceTimestampUs
+        if (timestampUs == entry.lastRequestedTimestampUs) return false
         buffer.inUse = true
         entry.lastRequestedTimestampUs = timestampUs
 

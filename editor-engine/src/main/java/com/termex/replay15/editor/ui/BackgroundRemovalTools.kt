@@ -111,27 +111,32 @@ class BackgroundRemovalTools(
             }
             body.addView(label("Precisão do recorte", 13f, EditorStyle.MUTED))
             val qualities = row()
-            fun refreshQualities() {
-                choices(qualities, SegmentationQuality.entries, { qualityLabel(it) }, { effect.quality == it }) {
-                    effect = effect.copy(quality = it); preview(); refreshQualities()
-                }
+            SegmentationQuality.entries.forEach { quality ->
+                qualities.addView(action(qualityLabel(quality), effect.quality == quality) {
+                    effect = effect.copy(quality = quality); preview()
+                }, LinearLayout.LayoutParams(0, dp(48), 1f))
             }
-            refreshQualities()
             body.addView(qualities)
-            val feather = slider(body, "Suavizar bordas (%)", (effect.feather * 1000).toInt(), 500) {
+            slider(body, "Suavizar bordas (%)", (effect.feather * 1000).toInt(), 500) {
                 effect = effect.copy(feather = it / 1000f); preview()
             }
-            body.addView(action("Restaurar") {
-                effect = BackgroundRemovalEffect()
-                enabled.isChecked = effect.enabled
-                feather.progress = (effect.feather * 1000).toInt()
-                refreshQualities()
-                preview()
-            })
+            body.addView(action("Restaurar") { effect = BackgroundRemovalEffect(); preview() })
             body.addView(action("Aplicar", true) { apply(updated()); dialog.dismiss() })
             dialog = sheet("Remover Fundo", body)
             dialog.setOnDismissListener { previewApply(project()) }
         }
+    }
+
+    private fun providerLabel(provider: BackgroundRemovalProvider): String = when (provider) {
+        BackgroundRemovalProvider.AUTO -> "Auto (Gemini/Local)"
+        BackgroundRemovalProvider.GEMINI -> "Gemini API"
+        BackgroundRemovalProvider.MLKIT -> "ML Kit (Local)"
+    }
+
+    private fun qualityLabel(quality: SegmentationQuality): String = when (quality) {
+        SegmentationQuality.FAST -> "Rápida"
+        SegmentationQuality.BALANCED -> "Normal"
+        SegmentationQuality.HIGH -> "Alta"
     }
 
     /**
@@ -150,12 +155,6 @@ class BackgroundRemovalTools(
             target.addView(action(title(option), selected(option)) { if (!selected(option)) pick(option) },
                 LinearLayout.LayoutParams(0, dp(48), 1f))
         }
-    }
-
-    private fun qualityLabel(quality: SegmentationQuality): String = when (quality) {
-        SegmentationQuality.FAST -> "Rápida"
-        SegmentationQuality.BALANCED -> "Normal"
-        SegmentationQuality.HIGH -> "Alta"
     }
 
     override fun close() { closed = true }
