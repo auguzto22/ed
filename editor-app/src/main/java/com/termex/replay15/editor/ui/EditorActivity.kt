@@ -146,6 +146,7 @@ class EditorActivity : Activity() {
     private lateinit var projectMetaView: TextView
     private lateinit var captionAutoChip: Button
     private lateinit var clock: TextView
+    private lateinit var timeRuler: TimeRulerView
     private lateinit var play: View
     private lateinit var undo: View
     private lateinit var redo: View
@@ -695,7 +696,6 @@ class EditorActivity : Activity() {
         }
 
         // Layout estilo Edits: play à esquerda, tempo centralizado, desfazer/refazer à direita.
-        // As laterais têm o mesmo peso, então o contador fica no centro exato da tela.
         val left = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.START }
         play = FrameLayout(this@EditorActivity).apply {
             contentDescription = "Reproduzir"
@@ -719,21 +719,34 @@ class EditorActivity : Activity() {
             }
         }
         left.addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
-        addView(left, LinearLayout.LayoutParams(0, -1, 1f))
+        // Laterais com a mesma largura fixa: o contador fica no centro exato e a régua
+        // ganha todo o espaço que sobra no meio.
+        addView(left, LinearLayout.LayoutParams(dp(80), -1))
 
-        // Contador "0:03 / 0:09": atual em destaque, total apagado, dígitos tabulares (não "pulam").
+        // Régua de tempo que desliza por trás do contador: a posição atual fica no centro e os
+        // segundos passam enquanto o vídeo toca. Ocupa o miolo da barra, entre play e desfazer.
+        timeRuler = TimeRulerView(this@EditorActivity)
+        val center = FrameLayout(this@EditorActivity)
+        center.addView(timeRuler, FrameLayout.LayoutParams(-1, -1))
+
+        // Contador em duas linhas: atual em destaque, total apagado, dígitos tabulares (não "pulam").
         clock = TextView(this@EditorActivity).apply {
             text = clockText(0L, 0L)
             textSize = 15f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
             includeFontPadding = false
-            maxLines = 1
+            maxLines = 2
+            setLineSpacing(dp(2).toFloat(), 1f)
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
             fontFeatureSettings = "tnum"
             letterSpacing = .01f
         }
-        addView(clock, LinearLayout.LayoutParams(-2, -2))
+        clock.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+            timeRuler.clearHalfWidthPx = v.width / 2f + dp(6)
+        }
+        center.addView(clock, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+        addView(center, LinearLayout.LayoutParams(0, -1, 1f))
 
         val right = row().apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END }
         undo = iconBtn("Desfazer", R.drawable.ic_recly_undo) {
@@ -745,19 +758,22 @@ class EditorActivity : Activity() {
         right.addView(undo, LinearLayout.LayoutParams(dp(38), dp(38)))
         right.addView(redo, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginStart = dp(2) })
         undo.expandTouchTarget(44); redo.expandTouchTarget(44)
-        addView(right, LinearLayout.LayoutParams(0, -1, 1f))
+        addView(right, LinearLayout.LayoutParams(dp(80), -1))
     }
 
-    /** Formato do Instagram Edits: "0:03 / 0:09" (h:mm:ss acima de uma hora), atual em destaque. */
+    /** Tempo atual em cima e total embaixo ("0:03" / "0:09", h:mm:ss acima de uma hora). */
     private fun clockText(positionUs: Long, durationUs: Long): CharSequence {
         val current = editsTime(positionUs)
         val total = editsTime(durationUs)
         return android.text.SpannableStringBuilder().apply {
             append(current)
             setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            // Total embaixo, menor e apagado: o contador fica estreito e a régua aparece dos dois lados.
+            append("\n")
             val from = length
-            append(" / $total")
+            append(total)
             setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.RelativeSizeSpan(.86f), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
@@ -1898,6 +1914,7 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
+        timeRuler.update(position, project.durationUs)
         val clockKey = (position / 1_000_000L) * 1_000_003L + project.durationUs / 1_000_000L
         if (clockKey != lastClockKey) {
             lastClockKey = clockKey
