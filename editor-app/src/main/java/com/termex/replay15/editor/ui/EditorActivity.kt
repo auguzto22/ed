@@ -1869,7 +1869,7 @@ class EditorActivity : Activity() {
                     val affected = missing + denied
                     val missingVideo = project.videos.indexOfFirst { it.uri in affected }
                     if (missingVideo >= 0) { selected = missingVideo; timeline.selected = selected }
-                    if (denied.isNotEmpty()) error("O Recly perdeu acesso a um arquivo do projeto. Selecione-o novamente.")
+                    if (denied.isNotEmpty()) error("O Blitz perdeu acesso a um arquivo do projeto. Selecione-o novamente.")
                     else error("Arquivo original não foi encontrado. Para vídeo, use Editar > Substituir.")
                 }
             }
@@ -2100,7 +2100,7 @@ class EditorActivity : Activity() {
             ok
         }
     } catch (_: SecurityException) {
-        error("O Recly não conseguiu manter acesso ao arquivo. Escolha-o novamente pelo armazenamento do aparelho.")
+        error("O Blitz não conseguiu manter acesso ao arquivo. Escolha-o novamente pelo armazenamento do aparelho.")
         false
     }
     private fun importMedia(uris: List<Uri>, audio: Boolean) {
@@ -4571,7 +4571,7 @@ class EditorActivity : Activity() {
         val body = column()
         var patch = SubtitleStylePatch()
         body.addView(sectionTitle("Legenda animada", if (text.wordCues.isEmpty())
-            "Esta legenda não tem o tempo de cada palavra; o Recly divide pelo tamanho das palavras. Para sincronia exata, gere legendas automáticas."
+            "Esta legenda não tem o tempo de cada palavra; o Blitz divide pelo tamanho das palavras. Para sincronia exata, gere legendas automáticas."
         else "A palavra acompanha o tempo medido na transcrição. Toque num estilo para ver no vídeo."))
         body.addView(AnimatedCaptionPicker.build(this, captionAnimatedStyleId) { style ->
             captionAnimatedStyleId = style.id
@@ -4907,7 +4907,7 @@ class EditorActivity : Activity() {
                 }.setNegativeButton("Cancelar", null).show()
             }
             2 -> { saveAsync(false); startActivity(Intent(this, EditorLibraryActivity::class.java)) }
-            3 -> AlertDialog.Builder(this).setTitle("Recly Editor V3: base multicamadas")
+            3 -> AlertDialog.Builder(this).setTitle("Blitz V3: base multicamadas")
                 .setMessage("Video principal e ate sete faixas sobrepostas com posicao, escala, corte, divisao, volume, visibilidade e bloqueio. O limite pratico depende dos decoders do aparelho.\n\nPilha de efeitos GPU com intensidade e parametros, seis efeitos incluidos e importacao de pacotes .reclyfx. Previa e exportacao usam a mesma composicao.\n\nFiltros, LUTs, curvas de cor, mascaras, chroma, keyframes, textos, stickers, SRT, rascunhos de legendas automaticas, tracking de movimento e narracao continuam disponiveis. Revise as legendas geradas antes de exportar. Waveform real nas faixas de audio importadas.\n\nEsta etapa ainda nao inclui reverse, speed ramp ou transicoes entre dois videos. Exportacao H.264/AAC com resolucao e FPS validados pelo encoder.")
                 .setPositiveButton("OK", null).show()
         } }
@@ -4995,7 +4995,7 @@ class EditorActivity : Activity() {
             }
         }.getOrNull() ?: "Vídeo MP4"
         AlertDialog.Builder(this).setTitle("Video exportado")
-            .setMessage("$savedName\nMovies/Recly/Editados")
+            .setMessage("$savedName\nMovies/Blitz/Editados")
             .setPositiveButton("Abrir") { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), "video/mp4").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
                     .onFailure { error("Nenhum player de video instalado") }

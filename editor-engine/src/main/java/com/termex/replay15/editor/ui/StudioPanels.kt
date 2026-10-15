@@ -198,7 +198,7 @@ object StudioPanels {
             "Todos", "Em alta", "Recentes", "Favoritos", "Baixadas",
             "Sans", "Serif", "Display", "Escrita", "Mono",
             "Gaming", "Bold", "Minimal", "Elegante", "Retro",
-            "Pixel", "Gothic", "Recly Originals"
+            "Pixel", "Gothic", "Blitz Originals"
         )
         val tabScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
         val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }

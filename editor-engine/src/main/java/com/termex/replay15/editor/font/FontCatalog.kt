@@ -9,7 +9,7 @@ enum class FontSource { BUILT_IN, RECLY_ORIGINAL, USER_IMPORTED, DOWNLOADED }
 
 enum class FontCategory(val label: String) {
     SANS("Sans"), SERIF("Serif"), DISPLAY("Display"), GAMING("Gaming"), PIXEL("Pixel"),
-    SCRIPT("Script"), GOTHIC("Gothic"), MONO("Mono"), RECLY_ORIGINALS("Recly Originals"),
+    SCRIPT("Script"), GOTHIC("Gothic"), MONO("Mono"), RECLY_ORIGINALS("Blitz Originals"),
     HANDWRITING("Escrita"),
 }
 
@@ -66,17 +66,17 @@ object FontCatalog {
         bundled("poppins_semibold", "Poppins SemiBold", "Poppins", 600, "poppins_semibold.ttf", "SIL OFL 1.1", FontCategory.SANS, FontCategory.DISPLAY),
         bundled("im_fell_dw_pica_regular", "IM FELL DW Pica", "IM FELL DW Pica", 400, "im_fell_dw_pica.ttf", "SIL OFL 1.1", FontCategory.SERIF, FontCategory.GOTHIC),
 
-        original("recly_sans_regular", "Recly Sans", "Recly Sans", 400, "ReclySans-Regular.ttf", FontCategory.SANS),
-        original("recly_wide_bold", "Recly Wide", "Recly Wide", 700, "ReclyWide-Bold.ttf", FontCategory.SANS, FontCategory.DISPLAY, FontCategory.GAMING),
-        original("recly_poster_bold", "Recly Poster", "Recly Poster", 700, "ReclyPoster-Bold.ttf", FontCategory.DISPLAY),
-        original("recly_pixel_regular", "Recly Pixel", "Recly Pixel", 400, "ReclyPixel-Regular.ttf", FontCategory.PIXEL, FontCategory.GAMING, FontCategory.MONO),
-        original("recly_arcade_regular", "Recly Arcade", "Recly Arcade", 400, "ReclyArcade-Regular.ttf", FontCategory.DISPLAY, FontCategory.GAMING, FontCategory.PIXEL),
-        original("recly_mono_regular", "Recly Mono", "Recly Mono", 400, "ReclyMono-Regular.ttf", FontCategory.MONO, FontCategory.SANS, FontCategory.GAMING),
-        original("recly_signature_regular", "Recly Signature", "Recly Signature", 400, "ReclySignature-Regular.ttf", FontCategory.SCRIPT, FontCategory.DISPLAY),
-        original("recly_brush_regular", "Recly Brush", "Recly Brush", 400, "ReclyBrush-Regular.ttf", FontCategory.SCRIPT, FontCategory.DISPLAY),
-        original("recly_gothic_regular", "Recly Gothic", "Recly Gothic", 400, "ReclyGothic-Regular.ttf", FontCategory.GOTHIC, FontCategory.DISPLAY),
-        original("recly_editorial_regular", "Recly Editorial", "Recly Editorial", 400, "ReclyEditorial-Regular.ttf", FontCategory.SERIF, FontCategory.DISPLAY),
-        original("recly_urban_regular", "Recly Urban", "Recly Urban", 400, "ReclyUrban-Regular.ttf", FontCategory.DISPLAY, FontCategory.SCRIPT),
+        original("recly_sans_regular", "Blitz Sans", "Recly Sans", 400, "ReclySans-Regular.ttf", FontCategory.SANS),
+        original("recly_wide_bold", "Blitz Wide", "Recly Wide", 700, "ReclyWide-Bold.ttf", FontCategory.SANS, FontCategory.DISPLAY, FontCategory.GAMING),
+        original("recly_poster_bold", "Blitz Poster", "Recly Poster", 700, "ReclyPoster-Bold.ttf", FontCategory.DISPLAY),
+        original("recly_pixel_regular", "Blitz Pixel", "Recly Pixel", 400, "ReclyPixel-Regular.ttf", FontCategory.PIXEL, FontCategory.GAMING, FontCategory.MONO),
+        original("recly_arcade_regular", "Blitz Arcade", "Recly Arcade", 400, "ReclyArcade-Regular.ttf", FontCategory.DISPLAY, FontCategory.GAMING, FontCategory.PIXEL),
+        original("recly_mono_regular", "Blitz Mono", "Recly Mono", 400, "ReclyMono-Regular.ttf", FontCategory.MONO, FontCategory.SANS, FontCategory.GAMING),
+        original("recly_signature_regular", "Blitz Signature", "Recly Signature", 400, "ReclySignature-Regular.ttf", FontCategory.SCRIPT, FontCategory.DISPLAY),
+        original("recly_brush_regular", "Blitz Brush", "Recly Brush", 400, "ReclyBrush-Regular.ttf", FontCategory.SCRIPT, FontCategory.DISPLAY),
+        original("recly_gothic_regular", "Blitz Gothic", "Recly Gothic", 400, "ReclyGothic-Regular.ttf", FontCategory.GOTHIC, FontCategory.DISPLAY),
+        original("recly_editorial_regular", "Blitz Editorial", "Recly Editorial", 400, "ReclyEditorial-Regular.ttf", FontCategory.SERIF, FontCategory.DISPLAY),
+        original("recly_urban_regular", "Blitz Urban", "Recly Urban", 400, "ReclyUrban-Regular.ttf", FontCategory.DISPLAY, FontCategory.SCRIPT),
     )
 
     private val builtInIds = builtIns.mapTo(HashSet(), FontAsset::id)

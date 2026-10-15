@@ -233,8 +233,9 @@ class EditorLibraryActivity : Activity() {
                 contentResolver.query(
                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                     projection,
-                    "${MediaStore.Video.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Video.Media.IS_PENDING} = 0",
-                    arrayOf("Movies/Recly%"),
+                    // Movies/Recly: vídeos exportados antes da troca de nome para Blitz.
+                    "(${MediaStore.Video.Media.RELATIVE_PATH} LIKE ? OR ${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?) AND ${MediaStore.Video.Media.IS_PENDING} = 0",
+                    arrayOf("Movies/Blitz%", "Movies/Recly%"),
                     "${MediaStore.Video.Media.DATE_ADDED} DESC"
                 )?.use { cursor ->
                     val idCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)

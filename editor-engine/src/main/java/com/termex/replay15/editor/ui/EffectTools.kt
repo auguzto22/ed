@@ -540,7 +540,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     }
     private fun online() = with(activity) {
         val input = EditText(this).apply { hint = "https://seu-servidor/catalogo.json"; isSingleLine = true }
-        AlertDialog.Builder(this).setTitle("Catalogo de efeitos").setMessage("Informe o endereco de um catalogo Recly. Nenhum video sera enviado.")
+        AlertDialog.Builder(this).setTitle("Catalogo de efeitos").setMessage("Informe o endereco de um catalogo Blitz. Nenhum video sera enviado.")
             .setView(input).setNegativeButton("Cancelar", null).setPositiveButton("Abrir") { _, _ ->
                 val manager = AssetDownloadManager(); download?.cancelled?.set(true); download = manager
                 val url = input.text.toString().trim()

@@ -135,7 +135,7 @@ object ReferenceStylePlanner {
                 add("Ritmo de cortes: os cortes automaticos removem pausas de fala, e este clipe nao tem fala detectada.")
             if (zoomEvents.isNotEmpty() && plan.zooms.isEmpty())
                 add("Zoom: nao houve picos de audio ou movimento no clipe para posicionar os zooms.")
-            if (unsupported.isNotEmpty()) add("Efeitos sem equivalente no Recly: ${unsupported.joinToString { it.name.lowercase() }}")
+            if (unsupported.isNotEmpty()) add("Efeitos sem equivalente no Blitz: ${unsupported.joinToString { it.name.lowercase() }}")
             if (!profile.semanticAnalysis && profile.layout.isEmpty())
                 add("Nenhum titulo, card ou sobreposicao foi detectado na referencia.")
         }
