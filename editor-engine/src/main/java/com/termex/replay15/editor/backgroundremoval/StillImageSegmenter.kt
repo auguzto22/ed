@@ -134,7 +134,10 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         val refined = GuidedMatteFilter.filter(GuidedMatteFilter.luminance(pixels), matte, width, height, radius, EDGE_EPSILON)
         // Straighten the pixel-to-pixel wobble of the contour (serrated hems and sleeves).
         val sigma = (maxOf(width, height) / CONTOUR_SIGMA_DIVISOR).coerceIn(1f, 2f)
-        return result.copy(width = width, height = height, mask = GuidedMatteFilter.gaussianBlur(refined, width, height, sigma))
+        val smoothed = GuidedMatteFilter.gaussianBlur(refined, width, height, sigma)
+        // Refinement only nudges the model's edge; it never fills gaps or erases details the
+        // model was sure about (see GuidedMatteFilter.limitShift).
+        return result.copy(width = width, height = height, mask = GuidedMatteFilter.limitShift(smoothed, matte, MAX_REFINEMENT_SHIFT))
     }
 
     override fun close() {
@@ -153,5 +156,12 @@ class StillImageSegmenter(@Suppress("UNUSED_PARAMETER") context: Context) : Segm
         const val EDGE_EPSILON = 1e-3f
         /** Contour smoothing sigma = longest side / this, clamped to 1..2 px (1.5 px on a 1536 px photo). */
         const val CONTOUR_SIGMA_DIVISOR = 1000f
+        /**
+         * Most the refinement may move a pixel's confidence away from the model's. 0.2 keeps the
+         * edge snapping and de-serration (sub-pixel to ~1 px moves), but with the default
+         * "Precisão" (threshold 0.65, feather 0.08) a background gap the model scored below 0.37
+         * stays fully transparent and a detail it scored above 0.93 stays fully opaque.
+         */
+        const val MAX_REFINEMENT_SHIFT = 0.2f
     }
 }

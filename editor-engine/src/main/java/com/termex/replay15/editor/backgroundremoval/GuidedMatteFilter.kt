@@ -79,6 +79,25 @@ object GuidedMatteFilter {
         return out
     }
 
+    /**
+     * Keeps a refined matte within [maxShift] of the model's own confidence. The guided filter
+     * and the blur may nudge an edge (snap it to the photo, straighten its wobble), but they must
+     * not overrule what the model was sure about. Without this limit, wherever subject and
+     * background have the same brightness (white stripes of a shirt on a white backdrop) the
+     * filter just averaged the window: narrow gaps of background between an arm and the body
+     * were filled in ("a manga gruda no corpo"), thin light details (collar tips, cuffs, hems)
+     * dropped below the threshold and vanished, and the contour moved by a few pixels from one
+     * stripe to the next, which showed as burrs ("rebarbas").
+     */
+    fun limitShift(refined: FloatArray, original: FloatArray, maxShift: Float): FloatArray {
+        require(refined.size == original.size)
+        require(maxShift >= 0f)
+        return FloatArray(refined.size) { i ->
+            val base = original[i]
+            (base + (refined[i] - base).coerceIn(-maxShift, maxShift)).coerceIn(0f, 1f)
+        }
+    }
+
     /** Converts ARGB pixels to 0..1 luminance (Rec. 601). */
     fun luminance(argb: IntArray): FloatArray = FloatArray(argb.size) { i ->
         val c = argb[i]

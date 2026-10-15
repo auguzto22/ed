@@ -39,33 +39,28 @@ class BackgroundRemovalTools(
             fun preview() = previewApply(updated())
             enabled.setOnCheckedChangeListener { _, checked -> effect = effect.copy(enabled = checked); preview() }
 
-            body.addView(label("Motor de IA", 13f, EditorStyle.MUTED))
-            val providers = row()
-            BackgroundRemovalProvider.entries.forEach { provider ->
-                providers.addView(action(providerLabel(provider), effect.provider == provider) {
-                    effect = effect.copy(provider = provider); preview()
-                }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            }
-            body.addView(providers)
-
+            // There is no "Motor de IA" choice any more: every provider runs the same on-device
+            // engine the export uses (SegmentationEngineFactory), so the old buttons changed
+            // nothing in the exported video.
             body.addView(label("Qualidade da máscara", 13f, EditorStyle.MUTED))
             val qualities = row()
-            SegmentationQuality.entries.forEach { quality ->
-                qualities.addView(action(qualityLabel(quality), effect.quality == quality) {
-                    effect = effect.copy(quality = quality); preview()
-                }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            fun refreshQualities() {
+                choices(qualities, SegmentationQuality.entries, { qualityLabel(it) }, { effect.quality == it }) {
+                    effect = effect.copy(quality = it); preview(); refreshQualities()
+                }
             }
+            refreshQualities()
             body.addView(qualities)
 
             // Linear 0..100 % over the usable threshold range: 100 % is the tightest cut that still
             // keeps the subject (see BackgroundPrecision), not "erase everything".
-            slider(body, "Precisão (%)", BackgroundPrecision.percentFor(effect.threshold), 100) {
+            val precision = slider(body, "Precisão (%)", BackgroundPrecision.percentFor(effect.threshold), 100) {
                 effect = effect.copy(threshold = BackgroundPrecision.thresholdFor(it)); preview()
             }
-            slider(body, "Suavizar bordas (%)", (effect.feather * 1000).toInt(), 500) {
+            val feather = slider(body, "Suavizar bordas (%)", (effect.feather * 1000).toInt(), 500) {
                 effect = effect.copy(feather = it / 1000f); preview()
             }
-            slider(body, "Suavização temporal/espacial (%)", (effect.edgeSmoothing * 100).toInt(), 100) {
+            val smoothing = slider(body, "Suavização temporal/espacial (%)", (effect.edgeSmoothing * 100).toInt(), 100) {
                 effect = effect.copy(edgeSmoothing = it / 100f); preview()
             }
 
@@ -82,6 +77,13 @@ class BackgroundRemovalTools(
 
             body.addView(action("Restaurar", false) {
                 effect = BackgroundRemovalEffect()
+                // The controls used to keep their old values: the box stayed ticked over a
+                // disabled effect and the next slider touch mixed old and default settings.
+                enabled.isChecked = effect.enabled
+                precision.progress = BackgroundPrecision.percentFor(effect.threshold)
+                feather.progress = (effect.feather * 1000).toInt()
+                smoothing.progress = (effect.edgeSmoothing * 100).toInt()
+                refreshQualities()
                 previewApply(updated())
             })
             body.addView(action("Aplicar", true) { apply(updated()); dialog.dismiss() })
@@ -135,6 +137,24 @@ class BackgroundRemovalTools(
         SegmentationQuality.FAST -> "Rápida"
         SegmentationQuality.BALANCED -> "Normal"
         SegmentationQuality.HIGH -> "Alta"
+    }
+
+    /**
+     * Rebuilds a row of mutually exclusive buttons. The buttons used to be created once, so the
+     * highlighted option never moved when the user picked another one.
+     */
+    private fun <T> Activity.choices(
+        target: LinearLayout,
+        options: List<T>,
+        title: (T) -> String,
+        selected: (T) -> Boolean,
+        pick: (T) -> Unit,
+    ) {
+        target.removeAllViews()
+        options.forEach { option ->
+            target.addView(action(title(option), selected(option)) { if (!selected(option)) pick(option) },
+                LinearLayout.LayoutParams(0, dp(48), 1f))
+        }
     }
 
     override fun close() { closed = true }
