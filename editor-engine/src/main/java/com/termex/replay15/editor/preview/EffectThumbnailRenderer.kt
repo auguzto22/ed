@@ -26,13 +26,8 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
     companion object {
         private const val TAG = "ReclyEffectRenderer"
 
-        /** Frames in a library loop: 12 frames shown at 10 fps = a 1.2 s loop. */
-        const val LOOP_FRAMES = 12
         /** Effect time covered by one loop (flash/strobe/punch effects pulse 1-3x per second). */
         private const val LOOP_SECONDS = 1.2f
-        /** The base frame drifts a little so motion effects (trails, echo) have something to move. */
-        private const val LOOP_DRIFT = .02f
-        private const val LOOP_DRIFT_ZOOM = 1.06f
 
         // Flipped quad coordinates so glReadPixels directly outputs a right-side-up Bitmap
         // without requiring CPU row reversing.
@@ -211,23 +206,23 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
     }
 
     /**
-     * Renders a short looping clip of one effect on the base frame, so the library can show the
-     * effect moving (flashes pulse, zooms punch, glitches flicker) instead of one still image.
+     * Renders a short looping clip of one effect over the animated library scene
+     * ([EffectLoopBase]), so the library shows the effect moving (flashes pulse, zooms punch,
+     * glitches flicker) instead of one still image.
      *
-     * The base frame drifts slightly from frame to frame and the previous frames feed the history
-     * samplers, so motion effects (trails, echo, motion blur) have movement to work on. uTime and
+     * Frame i samples scene frame i and the three scene frames before it feed the history
+     * samplers, so motion effects (trails, echo, motion blur) follow the moving balls. uTime and
      * uProgress sweep one loop of [LOOP_SECONDS].
      */
     fun renderEffectLoop(
-        baseFrame: Bitmap,
+        scene: List<Bitmap>,
         definition: EffectDefinition,
         intensity: Float = 0.7f,
-        frameCount: Int = LOOP_FRAMES,
     ): Future<List<Bitmap>?> {
         return executor.submit(Callable {
-            if (isClosed || baseFrame.isRecycled) return@Callable null
+            if (isClosed || scene.size < 2 || scene.any { it.isRecycled }) return@Callable null
             try {
-                renderLoopInternal(baseFrame, definition, intensity, frameCount.coerceIn(2, 24))
+                renderLoopInternal(scene, definition, intensity)
             } catch (e: Throwable) {
                 Log.w(TAG, "Failed to render effect loop for ${definition.id}", e)
                 null
@@ -235,39 +230,26 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
         })
     }
 
-    private fun renderLoopInternal(baseFrame: Bitmap, definition: EffectDefinition, intensity: Float, frameCount: Int): List<Bitmap>? {
-        val w = baseFrame.width
-        val h = baseFrame.height
-        if (w <= 0 || h <= 0) return null
+    private fun renderLoopInternal(scene: List<Bitmap>, definition: EffectDefinition, intensity: Float): List<Bitmap>? {
+        val frameCount = scene.size
+        val w = scene[0].width
+        val h = scene[0].height
+        if (w <= 0 || h <= 0 || scene.any { it.width != w || it.height != h }) return null
         val (resolvedDefinition, shaderCode) = repository.resolve(definition.id, definition.version)
         val program = getOrCompileProgram(resolvedDefinition, shaderCode)
         ensureSurfaceSize(w, h)
 
-        // One input texture per frame: frame i samples inputs[i], its history is i-1, i-2, i-3.
+        // One input texture per scene frame: frame i samples inputs[i], its history is i-1, i-2, i-3.
         val inputs = IntArray(frameCount)
         GLES20.glGenTextures(frameCount, inputs, 0)
         try {
-            val drifted = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            val canvas = android.graphics.Canvas(drifted)
-            val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
-            val matrix = android.graphics.Matrix()
-            try {
-                for (i in 0 until frameCount) {
-                    val phase = (2.0 * Math.PI * i / frameCount).toFloat()
-                    matrix.reset()
-                    matrix.postScale(LOOP_DRIFT_ZOOM, LOOP_DRIFT_ZOOM, w / 2f, h / 2f)
-                    matrix.postTranslate(kotlin.math.sin(phase) * w * LOOP_DRIFT, kotlin.math.cos(phase) * h * LOOP_DRIFT * .6f)
-                    canvas.drawColor(android.graphics.Color.BLACK)
-                    canvas.drawBitmap(baseFrame, matrix, paint)
-                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, inputs[i])
-                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
-                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
-                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
-                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
-                    GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, drifted, 0)
-                }
-            } finally {
-                drifted.recycle()
+            for (i in 0 until frameCount) {
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, inputs[i])
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+                GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, scene[i], 0)
             }
 
             val frames = ArrayList<Bitmap>(frameCount)

@@ -8,8 +8,8 @@ import android.graphics.Paint
 import android.view.View
 
 /**
- * Plays an effect's preview loop (frames rendered by EffectThumbnailRenderer.renderEffectLoop on
- * a frame of the user's own clip), like [AnimatedCaptionPreview] does for caption styles. Frames
+ * Plays an effect's preview loop (frames rendered by EffectThumbnailRenderer.renderEffectLoop over
+ * the library scene, EffectLoopBase), like [AnimatedCaptionPreview] does for caption styles. Frames
  * are center-cropped; only views on screen keep redrawing, at a low frame rate to save battery.
  */
 class AnimatedEffectThumbnail(context: Context) : View(context) {

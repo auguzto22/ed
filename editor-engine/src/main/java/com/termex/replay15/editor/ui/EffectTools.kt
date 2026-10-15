@@ -239,15 +239,11 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         body.addView(category, LinearLayout.LayoutParams(-1, dp(52)))
         val search = EditText(this).apply { hint = "Buscar efeito ou categoria"; isSingleLine = true }; body.addView(search)
         var shown = definitions
-        // Each card plays the effect on a frame of this clip, like the animated caption styles.
-        val libraryClip = project().allVideos.firstOrNull { it.id == clipId }
-        val loops = libraryClip?.let { clip ->
-            val frameUs = runCatching { sourceAt(clipId) }.getOrElse { (clip.inUs + clip.outUs) / 2 }
-            runCatching {
-                com.termex.replay15.editor.preview.EffectPreviewController(activity, onPresetThumbnailReady = { _, _ -> })
-                    .also { it.startSession(clip, frameUs) }
-            }.getOrNull()
-        }
+        // Each card plays the effect over the library's own animated scene (EffectLoopBase),
+        // like the animated caption styles, so every effect is shown on the same picture.
+        val loops = runCatching {
+            com.termex.replay15.editor.preview.EffectPreviewController(activity, onPresetThumbnailReady = { _, _ -> })
+        }.getOrNull()
         val adapter = EffectGridAdapter(this, loops) { repository.favorite(it) }
         val list = GridView(this).apply {
             numColumns = 3
