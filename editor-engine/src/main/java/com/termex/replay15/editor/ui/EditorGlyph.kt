@@ -396,26 +396,19 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
     isFocusable = true
     setPadding(dp(4), dp(6), dp(4), dp(4))
 
-    // Estilo do canvas: ícone dentro de um quadradinho com borda fina.
-    // Auto Edit = quadradinho vermelho (ação); Legendas = borda amarela (legenda); Excluir = vermelho de perigo.
+    // Cada grupo de ferramenta tem a sua cor: ícone colorido sobre um quadradinho com fundo e
+    // contorno leves da mesma cor. Auto Edit continua cheio de vermelho (ação principal).
     val hot = name == "Auto Edit" || name == "Analisar"
-    val tint = when {
-        hot -> EditorStyle.ON_ACTION
-        name == "Legendas" -> EditorStyle.CAPTION
-        name == "Excluir" -> EditorStyle.DANGER
-        else -> EditorStyle.TEXT
-    }
+    val color = toolColor(name)
+    val tint = if (hot) EditorStyle.ON_ACTION else color
     val box = FrameLayout(context).apply {
         importantForAccessibility = 2
         isDuplicateParentStateEnabled = true
-        // Quadradinho cinza escuro com contorno quase invisível; só Auto Edit fica vermelho e
-        // Legendas ganha o contorno amarelo da faixa de texto.
-        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else 0x26FFFFFF),
+        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else EditorStyle.alpha(color, 0x40)),
             if (hot) EditorStyle.accentGradient(dp(12).toFloat())
             else GradientDrawable().apply {
-                setColor(EditorStyle.CARD_ELEVATED)
-                if (name == "Legendas") setStroke(dp(1.5f), EditorStyle.CAPTION)
-                else setStroke(dp(1), EditorStyle.BORDER_LIGHT)
+                setColor(if (color == EditorStyle.TEXT) EditorStyle.CARD_ELEVATED else EditorStyle.alpha(color, 0x24))
+                setStroke(dp(1), if (color == EditorStyle.TEXT) EditorStyle.BORDER_LIGHT else EditorStyle.alpha(color, 0x5C))
                 cornerRadius = dp(12).toFloat()
             }, null)
         addView(ImageView(context).apply {
@@ -427,9 +420,8 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
 
     val labelTint = when {
         hot -> EditorStyle.ACTION_TEXT
-        name == "Legendas" -> EditorStyle.CAPTION
         name == "Excluir" -> EditorStyle.DANGER
-        else -> 0xFFC9C5BA.toInt()
+        else -> EditorStyle.MUTED
     }
     val labelView = label(name, 11f, labelTint).apply {
         gravity = Gravity.CENTER
@@ -467,4 +459,22 @@ fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).appl
     addView(icon, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
     setOnClickListener { click() }
     expandTouchTarget(48)
+}
+
+
+/**
+ * Cor de cada grupo da barra de ferramentas (mesmas cores das faixas da timeline):
+ * mídia e camadas azul, corte e tempo laranja, texto amarelo, áudio verde, efeitos e
+ * filtros roxo, ajustes e movimento ciano. Fechar/Mais/Editar ficam neutros.
+ */
+fun toolColor(name: String): Int = when (name) {
+    "Adicionar", "Camadas", "Stickers" -> EditorStyle.TRACK_STICKER
+    "Dividir", "Aparar", "Recorte", "Velocidade" -> EditorStyle.TOOL_CUT
+    "Texto", "Legendas" -> EditorStyle.TRACK_TEXT
+    "Áudio", "Volume" -> EditorStyle.TRACK_AUDIO
+    "Filtros", "Efeitos", "Transição" -> EditorStyle.TRACK_EFFECT
+    "Ajustar", "Animação", "Máscara", "Remover fundo" -> EditorStyle.TOOL_ADJUST
+    "Auto Edit", "Analisar" -> EditorStyle.ACTION
+    "Excluir" -> EditorStyle.DANGER
+    else -> EditorStyle.TEXT
 }

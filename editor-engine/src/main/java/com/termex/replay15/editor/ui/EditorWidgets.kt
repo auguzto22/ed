@@ -58,6 +58,10 @@ object EditorStyle {
     const val TRACK_TEXT_LIGHT = 0xFFFFE08F.toInt()
     const val TRACK_STICKER = 0xFF5B9DFF.toInt()
     const val TRACK_EFFECT = 0xFFA78BFA.toInt()
+    /** Ferramentas de corte e tempo (Dividir, Aparar, Recorte, Velocidade). */
+    const val TOOL_CUT = 0xFFFF9F43.toInt()
+    /** Ferramentas de ajuste e movimento (Ajustar, Animação, Máscara, Remover fundo). */
+    const val TOOL_ADJUST = 0xFF40C8E0.toInt()
 
     /** Mesma cor com outro alfa (0..255), para sombras, brilhos e faixas translúcidas. */
     fun alpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
