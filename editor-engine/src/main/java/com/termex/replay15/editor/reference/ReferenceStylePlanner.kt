@@ -73,14 +73,30 @@ object ReferenceStylePlanner {
             }
             return result.sortedBy { it.timeUs }
         }
-        val zoomStrength = ((profile.medianZoomScale.takeIf { it > 1f } ?: 1.08f) - 1f) * factor
         val zoomEvents = profile.events.filter { it.type == ReferenceEventType.ZOOM }
+        val measuredScale = profile.medianZoomScale.takeIf { it > 1.03f }
         // Jump-cut punch-ins hold the new framing; smooth zooms last as long as they were measured.
         val punchStyle = zoomEvents.isNotEmpty() && zoomEvents.count { (it.values["punch"] ?: 0f) > 0f } * 2 >= zoomEvents.size
-        val zooms = selected(ReferenceEventType.ZOOM).mapNotNull { target ->
-            val measured = if (punchStyle) 900_000L else zoomEvents.map { it.endUs - it.startUs }.medianLong().takeIf { it >= 80_000L } ?: 240_000L
-            val duration = minOf(measured, analysis.durationUs - target.timeUs).coerceAtMost(900_000L)
-            if (duration < 80_000L) null else ZoomDecision(target.timeUs, duration, 1f + zoomStrength.coerceIn(.03f, .25f), target.score, target.reason)
+        // A talking clip that has no cuts of its own gets the reference's cut rhythm as punch-ins on
+        // phrase starts: that is how a podcast/short-form edit hides one continuous take.
+        val phraseStarts = PunchInPlanner.phraseStarts(analysis.words)
+        val rhythmIntervals = listOfNotNull(
+            profile.medianCutIntervalUs.takeIf { profile.cutCount > 0 && it > 0 },
+            (60_000_000f / profile.zoomsPerMinute).toLong().takeIf { profile.zoomsPerMinute > 0f },
+        )
+        val zooms = if (phraseStarts.isNotEmpty() && (punchStyle || rhythmIntervals.isNotEmpty())) {
+            val interval = ((rhythmIntervals.minOrNull() ?: 2_800_000L) / factor).toLong().coerceIn(1_200_000L, 6_000_000L)
+            val scale = 1f + ((measuredScale ?: 1.15f) - 1f).coerceAtLeast(.1f) * factor
+            PunchInPlanner.plan(analysis, phraseStarts, interval, scale, foundation.cuts.map { it.startUs..it.endUs }, "ritmo da referencia")
+        } else {
+            val strength = (((measuredScale ?: 1.12f) - 1f) * factor).coerceIn(.06f, .25f)
+            selected(ReferenceEventType.ZOOM).mapNotNull { target ->
+                val measured = if (punchStyle) 900_000L else zoomEvents.map { it.endUs - it.startUs }.medianLong().takeIf { it >= 80_000L } ?: 240_000L
+                val duration = minOf(measured, analysis.durationUs - target.timeUs).coerceAtMost(ZoomDecision.MAX_PULSE_US)
+                val face = analysis.faceAt(target.timeUs)
+                if (duration < 80_000L) null else ZoomDecision(target.timeUs, duration, 1f + strength, target.score, target.reason,
+                    focusX = face?.centerX ?: .5f, focusY = face?.centerY ?: .45f)
+            }
         }
         val effectDecisions = mutableListOf<EffectDecision>()
         listOf(ReferenceEventType.SHAKE, ReferenceEventType.FLASH, ReferenceEventType.RGB_SPLIT, ReferenceEventType.BLUR).forEach { type ->
@@ -114,7 +130,7 @@ object ReferenceStylePlanner {
         val layout = ReferenceLayoutPlanner.plan(profile)
         val unsupported = ReferenceEffectMapper.unsupported(profile)
         val applied = buildList {
-            if (plan.zooms.isNotEmpty()) add(if (punchStyle) "Punch-in zoom em ${plan.zooms.size} momento(s)" else "Zoom em ${plan.zooms.size} momento(s)")
+            if (plan.zooms.isNotEmpty()) add(if (plan.zooms.any { it.hold }) "Punch-in zoom em ${plan.zooms.size} frase(s)" else "Zoom em ${plan.zooms.size} momento(s)")
             if (plan.effects.isNotEmpty()) add("Efeitos de impacto: ${plan.effects.size}")
             if (plan.cuts.isNotEmpty()) add("Cortes: ${plan.cuts.size}")
             if (speed.isNotEmpty()) add("Rampa de velocidade")
@@ -133,8 +149,9 @@ object ReferenceStylePlanner {
                 add("Legendas: o clipe ainda nao tem legendas. Gere as legendas automaticas e aplique o estilo de novo para copiar o visual delas.")
             if (profile.cutCount > 0 && plan.cuts.isEmpty())
                 add("Ritmo de cortes: os cortes automaticos removem pausas de fala, e este clipe nao tem fala detectada.")
-            if (zoomEvents.isNotEmpty() && plan.zooms.isEmpty())
-                add("Zoom: nao houve picos de audio ou movimento no clipe para posicionar os zooms.")
+            if ((zoomEvents.isNotEmpty() || profile.cutCount > 0) && plan.zooms.isEmpty())
+                add(if (analysis.words.isEmpty()) "Zoom: sem legendas no clipe nao ha inicio de frase para posicionar os punch-ins."
+                    else "Zoom: nao houve momento adequado no clipe para posicionar os zooms.")
             if (unsupported.isNotEmpty()) add("Efeitos sem equivalente no Recly: ${unsupported.joinToString { it.name.lowercase() }}")
             if (!profile.semanticAnalysis && profile.layout.isEmpty())
                 add("Nenhum titulo, card ou sobreposicao foi detectado na referencia.")

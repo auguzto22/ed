@@ -10,7 +10,7 @@ import android.graphics.PorterDuff
 import android.graphics.RectF
 import android.net.Uri
 import androidx.media3.effect.BitmapOverlay
-import com.termex.replay15.editor.backgroundremoval.GeminiBitmapMaskApplier
+import com.termex.replay15.editor.backgroundremoval.BitmapMaskApplier
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.lottie.LottieLayerRenderer
 import kotlin.math.min
@@ -50,7 +50,7 @@ class TextCanvasOverlay(
         runCatching { sticker.id to decode(context, sticker.uri) }.getOrNull()
     }.toMap()
     private val maskedStickerBitmaps = HashMap<String, Bitmap>()
-    private var maskApplier: GeminiBitmapMaskApplier? = null
+    private var maskApplier: BitmapMaskApplier? = null
 
     override fun getBitmap(presentationTimeUs: Long): Bitmap {
         val frame = bitmap ?: Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
@@ -92,7 +92,7 @@ class TextCanvasOverlay(
                     if (source != null) {
                         val bitmap = if (sticker.backgroundRemoval.enabled) {
                             maskedStickerBitmaps[sticker.id] ?: run {
-                                val processed = (maskApplier ?: GeminiBitmapMaskApplier(context).also { maskApplier = it })
+                                val processed = (maskApplier ?: BitmapMaskApplier(context).also { maskApplier = it })
                                     .apply(source, sticker.backgroundRemoval)
                                 processed?.also { maskedStickerBitmaps[sticker.id] = it } ?: source
                             }

@@ -32,10 +32,12 @@ object ClipAnalyzer {
         clip: VideoClip,
         captionWords: List<TimedWord>,
         cancellation: AutoEditCancellation,
+        /** Also sample faces so zooms land on the speaker (adds a light, bounded pass). */
+        detectFaces: Boolean = false,
         progress: (AutoEditProgress) -> Unit,
     ): ClipAnalysis {
         val key = listOf(AUTO_EDIT_ALGORITHM_VERSION, clip.uri, clip.sourceUs, clip.inUs, clip.outUs, clip.speed,
-            clip.speedCurve.hashCode(), captionWords.hashCode()).joinToString("|")
+            clip.speedCurve.hashCode(), captionWords.hashCode(), clip.crop.hashCode(), clip.rotation, detectFaces).joinToString("|")
         memoryCache[key]?.let { return it.copy(clipId = clip.id) }
         progress(AutoEditProgress.Inspecting)
         cancellation.check()
@@ -52,8 +54,13 @@ object ClipAnalyzer {
             warnings += "Movimento indisponivel para analise: ${it.message ?: "frames nao puderam ser lidos"}"
             emptyList()
         }
+        // Faces are optional evidence: when detection fails the zooms simply stay centred.
+        val faces = if (!detectFaces) emptyList() else runCatching { analyzeFaces(context, clip, cancellation) }.getOrElse {
+            if (it is InterruptedException) throw it
+            emptyList()
+        }
         val result = ClipAnalysis(clip.id, clip.durationUs, audio, motion, captionWords,
-            hasAudio = audio.isNotEmpty(), warnings = warnings, sourceAspect = aspect)
+            hasAudio = audio.isNotEmpty(), warnings = warnings, sourceAspect = aspect, faces = faces)
         memoryCache[key] = result
         return result
     }
@@ -69,6 +76,8 @@ object ClipAnalyzer {
     /** Captions on the clip: generated ones are flagged; imported/manual ones are recognised by place and length. */
     fun isCaptionOf(text: TextClip, clipStartUs: Long, clipEndUs: Long): Boolean =
         text.startUs < clipEndUs && text.endUs > clipStartUs &&
+            // An empty "Texto do card" slot low in the frame is not a caption.
+            !com.termex.replay15.editor.reference.ReferenceSlots.isUnfilled(text) &&
             (text.isCaption || text.wordCues.isNotEmpty() || (text.y >= .6f && text.endUs - text.startUs <= 6 * SECOND))
 
     /**
@@ -246,6 +255,71 @@ object ClipAnalyzer {
             return result
         } finally { retriever.release() }
     }
+
+    /**
+     * The biggest face about once a second (at most [MAX_FACE_SAMPLES] frames), in the clip's own
+     * orientation and crop, normalized to the frame as displayed.
+     */
+    private fun analyzeFaces(context: Context, clip: VideoClip, cancellation: AutoEditCancellation): List<FaceSample> {
+        val count = (clip.durationUs / FACE_STEP_US + 1).toInt().coerceIn(2, MAX_FACE_SAMPLES)
+        val times = List(count) { index -> index.toLong() * clip.durationUs / (count - 1) }
+        val detector = com.termex.replay15.editor.detection.MlKitFaceDetector()
+        val retriever = MediaMetadataRetriever()
+        val result = mutableListOf<FaceSample>()
+        try {
+            retriever.setDataSource(context, Uri.parse(clip.uri))
+            val aspect = displayedAspect(clip).takeIf { it > 0f } ?: (9f / 16f)
+            // Sampled in the decoded orientation; rotation and crop are applied below.
+            val decodedAspect = if (clip.rotation % 180 == 0) aspect else 1f / aspect
+            val width = 360; val height = (width / decodedAspect).toInt().coerceIn(120, 720)
+            for (localUs in times) {
+                cancellation.check()
+                val sourceUs = clip.timeMap.sourceAt(localUs).coerceIn(clip.inUs, (clip.outUs - 1).coerceAtLeast(clip.inUs))
+                val decoded = retriever.getScaledFrameAtTime(sourceUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, width, height) ?: continue
+                val frame = orientAndCrop(decoded, clip)
+                try {
+                    val latch = java.util.concurrent.CountDownLatch(1)
+                    val found = java.util.concurrent.atomic.AtomicReference<List<com.termex.replay15.editor.detection.DetectionObservation>>(emptyList())
+                    detector.process(com.termex.replay15.editor.detection.DetectionFrame(frame, timeUs = localUs)) { found.set(it); latch.countDown() }
+                    // The bitmap must stay alive until ML Kit answers; cancellation is checked right after.
+                    while (!latch.await(100, java.util.concurrent.TimeUnit.MILLISECONDS)) Unit
+                    cancellation.check()
+                    found.get().maxByOrNull { it.width * it.height }?.let { face ->
+                        result += FaceSample(localUs, face.centerX.coerceIn(0f, 1f), face.centerY.coerceIn(0f, 1f), face.height.coerceIn(0f, 1f))
+                    }
+                } finally {
+                    if (frame !== decoded && !decoded.isRecycled) decoded.recycle()
+                    if (!frame.isRecycled) frame.recycle()
+                }
+            }
+        } finally {
+            runCatching { retriever.release() }
+            runCatching { detector.close() }
+        }
+        return result
+    }
+
+    private fun orientAndCrop(source: Bitmap, clip: VideoClip): Bitmap {
+        var current = source
+        if (clip.rotation % 360 != 0) {
+            val matrix = android.graphics.Matrix().apply { postRotate(clip.rotation.toFloat()) }
+            current = Bitmap.createBitmap(current, 0, 0, current.width, current.height, matrix, true)
+        }
+        val crop = clip.crop
+        if (crop.left != 0f || crop.top != 0f || crop.right != 1f || crop.bottom != 1f) {
+            val left = (crop.left * current.width).toInt().coerceIn(0, current.width - 1)
+            val top = (crop.top * current.height).toInt().coerceIn(0, current.height - 1)
+            val right = (crop.right * current.width).toInt().coerceIn(left + 1, current.width)
+            val bottom = (crop.bottom * current.height).toInt().coerceIn(top + 1, current.height)
+            val cropped = Bitmap.createBitmap(current, left, top, right - left, bottom - top)
+            if (current !== source && current !== cropped) current.recycle()
+            current = cropped
+        }
+        return current
+    }
+
+    private const val FACE_STEP_US = 1_000_000L
+    private const val MAX_FACE_SAMPLES = 45
 
     private fun luma(bitmap: Bitmap): IntArray {
         val pixels = IntArray(bitmap.width * bitmap.height)

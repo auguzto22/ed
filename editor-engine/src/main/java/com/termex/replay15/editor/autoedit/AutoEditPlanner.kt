@@ -9,7 +9,14 @@ object AutoEditPlanner {
         val captions = if (options.captions) segmentCaptions(analysis.words, analysis.durationUs) else emptyList()
         val excluded = cuts.map { it.startUs..it.endUs }
         val peaks = meaningfulPeaks(analysis, options).filter { peak -> excluded.none { peak.timeUs in it } }
-        val zooms = if (options.smartZoom) planZooms(peaks, options, analysis.durationUs) else emptyList()
+        val zooms = when {
+            !options.smartZoom -> emptyList()
+            // Talking formats: punch-ins on phrase starts, aimed at the face.
+            options.style in TALKING_STYLES && analysis.words.isNotEmpty() -> PunchInPlanner.plan(
+                analysis, PunchInPlanner.phraseStarts(analysis.words), PunchInPlanner.intervalFor(options.intensity),
+                PunchInPlanner.scaleFor(options.intensity), excluded)
+            else -> planZooms(peaks, options, analysis)
+        }
         // A clip that is already vertical has nothing to reframe: panning it only shows the canvas edges.
         val alreadyVertical = analysis.sourceAspect in 0.01f..VERTICAL_ASPECT_MAX
         val reframes = if (options.autoReframe && !alreadyVertical) planReframes(analysis.motion, options) else emptyList()
@@ -128,7 +135,8 @@ object AutoEditPlanner {
         return chosen.sortedBy { it.timeUs }.take((analysis.durationUs / (spacing * .8)).toInt().coerceIn(1, 8))
     }
 
-    private fun planZooms(peaks: List<MotionSample>, options: AutoEditOptions, durationUs: Long): List<ZoomDecision> {
+    private fun planZooms(peaks: List<MotionSample>, options: AutoEditOptions, analysis: ClipAnalysis): List<ZoomDecision> {
+        val durationUs = analysis.durationUs
         val base = when (options.style) {
             AutoEditStyle.CLEAN, AutoEditStyle.CINEMATIC, AutoEditStyle.PODCAST -> .055f
             AutoEditStyle.DYNAMIC, AutoEditStyle.SHORTS -> .1f
@@ -138,8 +146,11 @@ object AutoEditPlanner {
             val variationScale = when (options.variation % 3) { 1 -> 1.08f; 2 -> .94f; else -> 1f }
             val strength = (base * options.intensity.factor * variationScale * (.75f + peak.amount * .25f)).coerceIn(.03f, .25f)
             val eventDuration = minOf(260_000L, durationUs - peak.timeUs)
+            // Zoom toward the face when one was found, otherwise toward where the action is.
+            val face = analysis.faceAt(peak.timeUs)
             if (eventDuration < 80_000L) null else ZoomDecision(peak.timeUs, eventDuration, 1f + strength,
-                peak.amount.coerceIn(0f, 1f), "pico combinado de audio/movimento")
+                peak.amount.coerceIn(0f, 1f), "pico combinado de audio/movimento",
+                focusX = face?.centerX ?: peak.focusX, focusY = face?.centerY ?: peak.focusY)
         }
     }
 
@@ -183,6 +194,9 @@ object AutoEditPlanner {
         return AudioDecision(gain, 80_000L, 120_000L, "nivel RMS seguro com fades curtos")
     }
 
+    /** Styles where someone talks to camera: zooms become punch-ins on phrase starts. */
+    private val TALKING_STYLES = setOf(AutoEditStyle.PODCAST, AutoEditStyle.SHORTS)
+
     /** Displayed width/height at or below this is treated as already vertical (9:16 = 0.5625, 4:5 = 0.8). */
     const val VERTICAL_ASPECT_MAX = .8f
 
@@ -207,6 +221,7 @@ object AutoEditPlanner {
         require(plan.cuts.zipWithNext().all { (a, b) -> a.endUs <= b.startUs }) { "Cortes sobrepostos" }
         require(plan.captions.all { valid(it.startUs, it.endUs) }) { "Legenda fora do clipe" }
         require(plan.zooms.all { it.timeUs + it.durationUs <= plan.sourceDurationUs }) { "Zoom fora do clipe" }
+        require(plan.zooms.sortedBy { it.timeUs }.zipWithNext().all { (a, b) -> !a.hold || a.timeUs + a.durationUs <= b.timeUs }) { "Zooms sobrepostos" }
         require(plan.reframes.all { it.timeUs <= plan.sourceDurationUs }) { "Reframe fora do clipe" }
         require(plan.effects.all { valid(it.startUs, it.endUs) }) { "Efeito fora do clipe" }
         require(plan.cuts.sumOf { it.endUs - it.startUs } < plan.sourceDurationUs - 100_000L) { "Plano removeria o clipe inteiro" }
