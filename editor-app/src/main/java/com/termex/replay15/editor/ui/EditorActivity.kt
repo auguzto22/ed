@@ -159,6 +159,7 @@ class EditorActivity : Activity() {
      * simplesmente não entrava na timeline. Agora é reaplicado depois do carregamento.
      */
     private val pendingPickerResults = mutableListOf<Triple<Int, Int, Intent?>>()
+    private var addedClips: Pair<Int, Int>? = null
     private var resumed = false
     private var busy = false
     private var fullscreen = false
@@ -648,6 +649,8 @@ class EditorActivity : Activity() {
     private var captionAnimatedStyleId = "karaoke"
 
     private fun consumePendingOpenTool() {
+        // Roda logo depois de uma importação de mídia concluída: leva o cursor até o que entrou.
+        addedClips?.let { (first, count) -> addedClips = null; showAddedClips(first, count) }
         val tool = pendingOpenTool ?: return
         pendingOpenTool = null
         main.post {
@@ -1435,6 +1438,62 @@ class EditorActivity : Activity() {
             }.show()
     }
 
+    /**
+     * Mídia nova entra no fim da timeline. Sem levar o cursor até ela, o vídeo adicionado ficava
+     * fora da tela (ou fora do clipe composto aberto, onde o cursor fica preso) e parecia que
+     * nada tinha acontecido.
+     */
+    private fun showAddedClips(firstIndex: Int, count: Int) {
+        if (firstIndex !in project.videos.indices) return
+        if (openCompoundId != null) closeCompound()
+        selectMainClip(firstIndex)
+        seek(project.startOf(firstIndex))
+        feedback(if (count > 1) "$count itens adicionados no fim da timeline" else "Adicionado no fim da timeline")
+    }
+
+    /**
+     * Várias imagens de uma vez como camadas novas (uma só continua em importSticker). Entram no
+     * cursor, cada uma um pouco deslocada da anterior (em cascata) para não ficarem exatamente uma
+     * sobre a outra. Cada foto é importada sozinha: uma imagem inválida não derruba as outras.
+     */
+    private fun importStickers(uris: List<Uri>) {
+        replaceStickerId = null
+        if (uris.isEmpty() || project.durationUs <= 0) return
+        if (busy) { feedback("Aguarde o processamento terminar"); return }
+        val wanted = uris.take((24 - project.stickers.size).coerceAtLeast(0))
+        if (wanted.isEmpty()) { error("Limite de 24 camadas de imagem"); return }
+        busy = true
+        preview.suspendSources()
+        info.text = "Importando ${wanted.size} imagens..."
+        val snapshot = project
+        val at = minOf(position, (snapshot.durationUs - MIN_CLIP).coerceAtLeast(0))
+        val end = minOf(snapshot.durationUs, at + 5 * SECOND)
+        io.execute {
+            val results = wanted.map { uri -> runCatching { MediaImport.sticker(this, uri, at, end) } }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                busy = false
+                val imported = results.mapNotNull { it.getOrNull() }
+                val failures = results.count { it.isFailure }
+                if (imported.isEmpty()) {
+                    refresh()
+                    error("Não foi possível importar as imagens: ${results.firstNotNullOfOrNull { it.exceptionOrNull() }?.message}")
+                    return@runOnUiThread
+                }
+                val placed = imported.mapIndexed { index, sticker ->
+                    val shift = (index % 6) * .06f
+                    sticker.copy(x = (sticker.x + shift).coerceIn(.1f, .9f), y = (sticker.y + shift).coerceIn(.1f, .9f))
+                }
+                stickerHandles.selected = placed.last().id
+                handles.selected = null
+                edit(snapshot.copy(stickers = snapshot.stickers + placed))
+                seek(at)
+                if (failures > 0) error("$failures imagem(ns) não puderam ser importadas")
+                else feedback("${imported.size} imagens adicionadas como camadas")
+            }
+        }
+    }
+
     private fun updateContextualTools() {
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
@@ -2158,7 +2217,7 @@ class EditorActivity : Activity() {
         val uris = data.clipData?.let { clip -> List(clip.itemCount) { clip.getItemAt(it).uri } } ?: listOfNotNull(data.data)
         if (!persistPickedAccess(data, uris)) return
         when (requestCode) {
-            702 -> importStickers(uris)
+            702 -> if (uris.size > 1 && replaceStickerId == null) importStickers(uris) else importSticker(uris.firstOrNull() ?: return)
             704 -> importSubtitles(uris.firstOrNull() ?: return)
             else -> importMedia(uris, requestCode == 701)
         }
@@ -2190,6 +2249,8 @@ class EditorActivity : Activity() {
         if (uris.isEmpty()) return
         // Antes voltava sem dizer nada e a mídia escolhida sumia.
         if (busy) { feedback("Aguarde o processamento terminar e adicione de novo"); return }
+        // Mostrado depois da importação (consumePendingOpenTool): índice do 1º clipe novo e quantos.
+        addedClips = if (!audio && replaceIndex < 0) project.videos.size to uris.size else null
         if (!audio && project.videos.size + uris.size > 200) { error("Limite de 200 clipes por projeto"); return }
         busy = true; preview.suspendSources(); info.text = "Importando midia..."
         val snapshot = project; val replace = replaceIndex; replaceIndex = -1; val at = position
@@ -2214,12 +2275,8 @@ class EditorActivity : Activity() {
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 busy = false; importing = null
-                result.fold({ next ->
-                    selected = if (replace >= 0) replace else selected
-                    edit(next)
-                    if (!audio && replace < 0) showAddedClips(snapshot.videos.size, uris.size)
-                    consumePendingOpenTool()
-                }, { refresh(); error("Nao foi possivel importar: ${it.message}") })
+                result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next); consumePendingOpenTool() },
+                    { refresh(); error("Nao foi possivel importar: ${it.message}") })
             }
         }
     }
@@ -2228,63 +2285,31 @@ class EditorActivity : Activity() {
      * pouco deslocada da anterior (em cascata) para não ficarem exatamente uma sobre a outra.
      * Ao trocar a imagem de uma camada, só a primeira é usada.
      */
-    /**
-     * Mídia nova entra no fim da timeline. Sem levar o cursor até ela, o vídeo adicionado ficava
-     * fora da tela (ou fora do clipe composto aberto, onde o cursor fica preso) e parecia que
-     * nada tinha acontecido.
-     */
-    private fun showAddedClips(firstIndex: Int, count: Int) {
-        if (firstIndex !in project.videos.indices) return
-        if (openCompoundId != null) closeCompound()
-        selectMainClip(firstIndex)
-        seek(project.startOf(firstIndex))
-        feedback(if (count > 1) "$count itens adicionados no fim da timeline" else "Adicionado no fim da timeline")
-    }
-
-    private fun importStickers(uris: List<Uri>) {
+    private fun importSticker(uri: Uri) {
         val replacing = replaceStickerId
         replaceStickerId = null
-        if (uris.isEmpty() || project.durationUs <= 0) return
-        if (busy) { feedback("Aguarde o processamento terminar"); return }
-        val wanted = if (replacing != null) uris.take(1) else uris.take((24 - project.stickers.size).coerceAtLeast(0))
-        if (wanted.isEmpty()) { error("Limite de 24 camadas de imagem"); return }
+        if (busy || project.durationUs <= 0 || (replacing == null && project.stickers.size >= 24)) return
         busy = true
         preview.suspendSources()
-        info.text = if (wanted.size > 1) "Importando ${wanted.size} imagens..." else "Importando camada de imagem..."
+        info.text = "Importando camada de imagem..."
         val snapshot = project
         val at = minOf(position, (snapshot.durationUs - MIN_CLIP).coerceAtLeast(0))
-        val end = minOf(snapshot.durationUs, at + 5 * SECOND)
         io.execute {
-            // Cada foto é importada sozinha: uma imagem inválida não derruba as outras.
-            val results = wanted.map { uri -> runCatching { MediaImport.sticker(this, uri, at, end) } }
+            val result = runCatching {
+                MediaImport.sticker(this, uri, at, minOf(snapshot.durationUs, at + 5 * SECOND))
+            }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 busy = false
-                val imported = results.mapNotNull { it.getOrNull() }
-                val failures = results.count { it.isFailure }
-                if (imported.isEmpty()) {
-                    refresh()
-                    error("Nao foi possivel importar a camada: ${results.firstNotNullOfOrNull { it.exceptionOrNull() }?.message}")
-                    return@runOnUiThread
-                }
-                val previous = snapshot.stickers.find { it.id == replacing }
-                val next = if (previous != null) {
-                    val sticker = previous.copy(uri = imported.first().uri, name = imported.first().name)
+                result.fold({ imported ->
+                    val previous = snapshot.stickers.find { it.id == replacing }
+                    val sticker = if (previous == null) imported else previous.copy(uri = imported.uri, name = imported.name)
                     stickerHandles.selected = sticker.id
-                    snapshot.copy(stickers = snapshot.stickers.map { if (it.id == previous.id) sticker else it })
-                } else {
-                    val placed = imported.mapIndexed { index, sticker ->
-                        val shift = (index % 6) * .06f
-                        sticker.copy(x = (sticker.x + shift).coerceIn(.1f, .9f), y = (sticker.y + shift).coerceIn(.1f, .9f))
-                    }
-                    stickerHandles.selected = placed.last().id
-                    snapshot.copy(stickers = snapshot.stickers + placed)
-                }
-                handles.selected = null
-                edit(next)
-                seek(at)
-                if (failures > 0) error("$failures imagem(ns) não puderam ser importadas")
-                else if (imported.size > 1) feedback("${imported.size} imagens adicionadas como camadas")
+                    handles.selected = null
+                    edit(snapshot.copy(stickers = if (previous == null) snapshot.stickers + sticker else
+                        snapshot.stickers.map { if (it.id == previous.id) sticker else it }))
+                    seek(sticker.startUs)
+                }, { refresh(); error("Nao foi possivel importar a camada: ${it.message}") })
             }
         }
     }
