@@ -84,8 +84,7 @@ class EditorGlyph(
     }
 
     /**
-     * Ícones das cinco ferramentas do canvas, desenhados com os mesmos traçados do design
-     * (viewBox 24x24, traço 2.1). O nome começa com "canvas:".
+     * Ícones da barra de ferramentas (viewBox 24x24, traço 2.1). O nome começa com "canvas:".
      */
     private val canvasPaths: List<Path>? = CANVAS_ICONS[kind]?.mapNotNull { androidx.core.graphics.PathParser.createPathFromPathData(it) }
 
@@ -95,7 +94,7 @@ class EditorGlyph(
         canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
         val stroke = Paint(paint).apply {
             strokeWidth = 2.1f
-            style = if (kind == "canvas:autoedit") Paint.Style.FILL_AND_STROKE else Paint.Style.STROKE
+            style = if (kind in CANVAS_FILLED) Paint.Style.FILL_AND_STROKE else Paint.Style.STROKE
         }
         paths.forEach { canvas.drawPath(it, stroke) }
         canvas.restore()
@@ -374,17 +373,89 @@ class EditorGlyph(
 }
 
 
+/**
+ * Ícones da barra de ferramentas no estilo Blitz: traço único (viewBox 24x24, traço 2.1,
+ * pontas redondas), desenhados na cor do grupo da ferramenta (ver [toolColor]).
+ */
 private val CANVAS_ICONS: Map<String, List<String>> = mapOf(
-    "canvas:dividir" to listOf("M6 3v18M18 3v18M6 12h12"),
-    "canvas:aparar" to listOf("M12 3v18M5 8l-3 4 3 4M19 8l3 4-3 4"),
-    "canvas:texto" to listOf("M4 7V5h16v2M12 5v14M9 19h6"),
-    "canvas:audio" to listOf(
-        "M9 18V5l12-2v13",
-        "M3 18a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
-        "M15 16a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
+    "canvas:adicionar" to listOf("M12 5v14M5 12h14"),
+    // Dois clipes com a lâmina passando entre eles.
+    "canvas:dividir" to listOf("M4 6h4v12H4z", "M16 6h4v12h-4z", "M12 3v18"),
+    // Alças de aparar abraçando o clipe.
+    "canvas:aparar" to listOf("M9 4H6v16h3", "M15 4h3v16h-3", "M10 12h4"),
+    "canvas:texto" to listOf("M5 7V5h14v2", "M12 5v14", "M9 19h6"),
+    // Onda sonora, igual à faixa verde de áudio da timeline.
+    "canvas:audio" to listOf("M4 10v4", "M8 7v10", "M12 4v16", "M16 7v10", "M20 10v4"),
+    "canvas:volume" to listOf("M11 5L6 9H3v6h3l5 4z", "M15.5 8.5a5 5 0 0 1 0 7", "M18.5 5.5a9 9 0 0 1 0 13"),
+    "canvas:camadas" to listOf("M12 3L3 7.5l9 4.5 9-4.5z", "M3 12l9 4.5 9-4.5", "M3 16.5l9 4.5 9-4.5"),
+    "canvas:stickers" to listOf(
+        "M5 3h10l6 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+        "M15 3v6h6",
+        "M8.5 14.5a4 4 0 0 0 7 0",
+    ),
+    // Gravata-borboleta: o mesmo símbolo do botão de transição na timeline.
+    "canvas:transicao" to listOf("M4 6l7 6-7 6z", "M20 6l-7 6 7 6z"),
+    "canvas:filtros" to listOf(
+        "M7 8a5 5 0 1 0 10 0a5 5 0 1 0-10 0",
+        "M3.5 14a5 5 0 1 0 10 0a5 5 0 1 0-10 0",
+        "M10.5 14a5 5 0 1 0 10 0a5 5 0 1 0-10 0",
+    ),
+    "canvas:efeitos" to listOf("M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z", "M19 15v5", "M16.5 17.5h5"),
+    "canvas:velocidade" to listOf("M4.5 18A8.5 8.5 0 1 1 19.5 18", "M12 15l4-5"),
+    "canvas:recorte" to listOf("M6 2v14a2 2 0 0 0 2 2h14", "M18 22V8a2 2 0 0 0-2-2H2"),
+    "canvas:ajustar" to listOf("M4 7h16", "M4 17h16", "M9 4v6", "M15 14v6"),
+    "canvas:animacao" to listOf("M13 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0", "M3 8h7", "M2 12h8", "M3 16h7"),
+    "canvas:mascara" to listOf(
+        "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+        "M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
+    ),
+    // Varinha: recorte automático do fundo.
+    "canvas:fundo" to listOf("M4 20L14 10", "M17 3v4", "M15 5h4", "M20 10v3", "M18.5 11.5h3", "M10 3v2", "M9 4h2"),
+    "canvas:editar" to listOf("M4 20h4L19 9l-4-4L4 16z", "M14 6l4 4"),
+    "canvas:legendas" to listOf(
+        "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
+        "M7 11h4", "M13 11h4", "M7 15h6",
+    ),
+    "canvas:excluir" to listOf("M4 7h16", "M9 7V4h6v3", "M6 7l1 13h10l1-13", "M10 11v6", "M14 11v6"),
+    "canvas:fechar" to listOf("M6 6l12 12", "M18 6L6 18"),
+    "canvas:mais" to listOf(
+        "M3.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0",
+        "M10.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0",
+        "M17.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0",
     ),
     "canvas:autoedit" to listOf("M13 2L4 14h7l-1 8 9-12h-7z"),
 )
+
+/** Ícones desenhados cheios (os demais são só traço). */
+private val CANVAS_FILLED = setOf("canvas:autoedit", "canvas:mais")
+
+/** Ícone da barra de ferramentas para cada nome de ferramenta, no mesmo traço e na cor do grupo. */
+fun canvasIconFor(name: String): String? = when (name) {
+    "Adicionar" -> "canvas:adicionar"
+    "Dividir" -> "canvas:dividir"
+    "Aparar" -> "canvas:aparar"
+    "Texto" -> "canvas:texto"
+    "Áudio" -> "canvas:audio"
+    "Volume" -> "canvas:volume"
+    "Camadas" -> "canvas:camadas"
+    "Stickers" -> "canvas:stickers"
+    "Transição" -> "canvas:transicao"
+    "Filtros" -> "canvas:filtros"
+    "Efeitos" -> "canvas:efeitos"
+    "Velocidade" -> "canvas:velocidade"
+    "Recorte" -> "canvas:recorte"
+    "Ajustar" -> "canvas:ajustar"
+    "Animação" -> "canvas:animacao"
+    "Máscara" -> "canvas:mascara"
+    "Remover fundo" -> "canvas:fundo"
+    "Editar" -> "canvas:editar"
+    "Legendas" -> "canvas:legendas"
+    "Excluir" -> "canvas:excluir"
+    "Fechar" -> "canvas:fechar"
+    "Mais" -> "canvas:mais"
+    "Auto Edit", "Analisar" -> "canvas:autoedit"
+    else -> null
+}
 
 fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): LinearLayout = column().apply {
     gravity = Gravity.CENTER
@@ -412,7 +483,7 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
                 cornerRadius = dp(12).toFloat()
             }, null)
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(glyph, tint, context))
+            setImageDrawable(EditorGlyph(canvasIconFor(name) ?: glyph, tint, context))
             importantForAccessibility = 2
         }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
     }

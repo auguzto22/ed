@@ -433,7 +433,11 @@ class TimelineView(context: Context) : View(context) {
                 }
             }
         }
-        // Desenha indicadores ◇ de transição entre clips adjacentes
+        // Botão de transição entre clips adjacentes, na cor do grupo Transição (roxo dos efeitos):
+        // símbolo de gravata-borboleta (dois triângulos que se encontram no corte).
+        // Sem transição: quadradinho escuro com contorno e símbolo roxos vazados.
+        // Com transição: quadradinho roxo cheio com o símbolo branco preenchido.
+        val transColor = EditorStyle.TRACK_EFFECT
         for (i in 0 until project.videos.size - 1) {
             val leftClip = project.videos[i]
             val rightClip = project.videos[i + 1]
@@ -442,46 +446,42 @@ class TimelineView(context: Context) : View(context) {
             val jx = x(midUs)
             if (jx >= gutter - dp(20f) && jx <= width + dp(20f)) {
                 val cy = dp(83f)
-                val btnW = dp(18f)
-                val btnH = dp(22f)
+                val btnW = dp(20f)
+                val btnH = dp(24f)
                 val rect = RectF(jx - btnW / 2, cy - btnH / 2, jx + btnW / 2, cy + btnH / 2)
-                if (trans != null) {
-                    paint.color = 0xFF4A4A50.toInt()
-                    paint.style = Paint.Style.FILL
-                    c.drawRoundRect(rect, dp(6f), dp(6f), paint)
-                    paint.color = Color.WHITE
-                    paint.style = Paint.Style.STROKE
-                    paint.strokeWidth = dp(1.5f)
-                    c.drawRoundRect(rect, dp(6f), dp(6f), paint)
-                    paint.style = Paint.Style.FILL
-                    val path = Path().apply {
-                        moveTo(jx, cy - dp(5f))
-                        lineTo(jx + dp(4.5f), cy)
-                        lineTo(jx, cy + dp(5f))
-                        lineTo(jx - dp(4.5f), cy)
-                        close()
-                    }
-                    c.drawPath(path, paint)
-                } else {
-                    paint.color = 0xEE1C1C1E.toInt()
-                    paint.style = Paint.Style.FILL
-                    c.drawRoundRect(rect, dp(5f), dp(5f), paint)
-                    paint.color = 0x88FFFFFF.toInt()
-                    paint.style = Paint.Style.STROKE
-                    paint.strokeWidth = dp(1f)
-                    c.drawRoundRect(rect, dp(5f), dp(5f), paint)
-                    val path = Path().apply {
-                        moveTo(jx, cy - dp(4f))
-                        lineTo(jx + dp(3.5f), cy)
-                        lineTo(jx, cy + dp(4f))
-                        lineTo(jx - dp(3.5f), cy)
-                        close()
-                    }
-                    paint.style = Paint.Style.STROKE
-                    paint.color = 0xDDFFFFFF.toInt()
-                    c.drawPath(path, paint)
-                    paint.style = Paint.Style.FILL
+                val radius = dp(6f)
+                // Anel preto por fora separa o botão das miniaturas dos dois clips.
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = dp(3f)
+                paint.color = EditorStyle.TIMELINE_BG
+                c.drawRoundRect(rect, radius, radius, paint)
+                paint.style = Paint.Style.FILL
+                paint.color = if (trans != null) transColor else 0xF21C1C1F.toInt()
+                c.drawRoundRect(rect, radius, radius, paint)
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = dp(1.2f)
+                paint.color = if (trans != null) EditorStyle.alpha(Color.WHITE, 0x55) else EditorStyle.alpha(transColor, 0xB0)
+                c.drawRoundRect(rect, radius, radius, paint)
+                val half = dp(4.6f)
+                val tip = dp(1.2f)
+                val tall = dp(4.4f)
+                val bow = Path().apply {
+                    moveTo(jx - half, cy - tall); lineTo(jx - tip, cy); lineTo(jx - half, cy + tall); close()
+                    moveTo(jx + half, cy - tall); lineTo(jx + tip, cy); lineTo(jx + half, cy + tall); close()
                 }
+                paint.strokeJoin = Paint.Join.ROUND
+                if (trans != null) {
+                    paint.style = Paint.Style.FILL_AND_STROKE
+                    paint.strokeWidth = dp(1f)
+                    paint.color = Color.WHITE
+                } else {
+                    paint.style = Paint.Style.STROKE
+                    paint.strokeWidth = dp(1.4f)
+                    paint.color = transColor
+                }
+                c.drawPath(bow, paint)
+                paint.strokeJoin = Paint.Join.MITER
+                paint.style = Paint.Style.FILL
             }
         }
         // Compound groups: a bracket spanning the child clips plus a label, drawn above the main
