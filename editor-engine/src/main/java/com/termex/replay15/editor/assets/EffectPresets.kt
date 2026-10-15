@@ -23,13 +23,25 @@ data class EffectPreset(val id: String, val name: String, val category: String, 
 }
 
 object BuiltInEffectPresets {
-    fun definitions(context: Context): List<EffectPreset> =
-        parse(context.assets.open("editor/effect_presets.json").bufferedReader().use { it.readText() })
+    /** Teto de presets embutidos; a biblioteca tem ~1000 (gerados por tools/library/gen_effect_presets.py). */
+    const val MAX_PRESETS = 2_000
+    private const val MAX_JSON_CHARS = 1_048_576
+
+    @Volatile private var cached: List<EffectPreset>? = null
+
+    /** Lido uma vez e mantido: o arquivo tem ~300 KB e a galeria abre várias vezes por sessão. */
+    fun definitions(context: Context): List<EffectPreset> = cached ?: synchronized(this) {
+        cached ?: parse(context.assets.open("editor/effect_presets.json").bufferedReader().use { it.readText() })
+            .also { cached = it }
+    }
+
+    /** Categorias na ordem em que aparecem no arquivo (os presets feitos à mão vêm primeiro). */
+    fun categories(presets: List<EffectPreset>): List<String> = presets.map { it.category }.distinct()
 
     fun parse(text: String): List<EffectPreset> {
-        require(text.length in 2..131_072)
+        require(text.length in 2..MAX_JSON_CHARS)
         val root = JSONArray(text)
-        require(root.length() in 1..100)
+        require(root.length() in 1..MAX_PRESETS)
         return List(root.length()) { index ->
             val json = root.getJSONObject(index)
             require(json.getInt("schemaVersion") == 1)
