@@ -33,11 +33,16 @@ class MlKitHumanSegmenter(context: Context, streamMode: Boolean) : SegmentationE
             callback(null)
             return
         }
-        segmenter.process(image)
-            .addOnSuccessListener(executor) { mask ->
-                callback(mask.toResult(timestampUs))
-            }
+        // The scheduler waits for exactly one callback per frame. If converting the mask threw
+        // inside the success listener, no callback ever came, the scheduler stayed "in flight"
+        // forever and background removal froze for that clip until the editor was reopened.
+        val task = runCatching { segmenter.process(image) }.getOrElse {
+            callback(null)
+            return
+        }
+        task.addOnSuccessListener(executor) { mask -> callback(runCatching { mask.toResult(timestampUs) }.getOrNull()) }
             .addOnFailureListener(executor) { callback(null) }
+            .addOnCanceledListener(executor) { callback(null) }
     }
 
     private fun SegmentationMask.toResult(timestampUs: Long): SegmentationResult? {
@@ -55,6 +60,8 @@ class MlKitHumanSegmenter(context: Context, streamMode: Boolean) : SegmentationE
         if (closed) return
         closed = true
         segmenter.close()
-        executor.shutdownNow()
+        // shutdown (not shutdownNow): a result already being delivered finishes and releases
+        // its frame instead of being interrupted halfway.
+        executor.shutdown()
     }
 }

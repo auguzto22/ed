@@ -72,4 +72,41 @@ class GuidedMatteFilterTest {
         assertEquals(1f, smoothed[5 * w + 20], 1e-4f)
         assertEquals(0f, smoothed[35 * w + 20], 1e-4f)
     }
+
+    @Test
+    fun limitShiftKeepsRefinementCloseToTheModel() {
+        val out = GuidedMatteFilter.limitShift(floatArrayOf(1f, 0f, .6f, 1f), floatArrayOf(0f, 1f, .5f, .9f), .25f)
+        assertEquals(.25f, out[0], 1e-6f)
+        assertEquals(.75f, out[1], 1e-6f)
+        assertEquals(.6f, out[2], 1e-6f)
+        assertEquals(1f, out[3], 1e-6f)
+    }
+
+    @Test
+    fun whiteOnWhiteGapAndThinDetailSurviveRefinement() {
+        // White shirt stripe on a white backdrop: the guide has no edge to follow. A 3 px gap of
+        // backdrop separates the sleeve (x 23..) from the body (.. x 19), and a 3 px wide light
+        // detail sticks out of the body on the left. The model saw both; refinement must not
+        // glue the sleeve to the body nor erase the detail.
+        val w = 48; val h = 48
+        val subject = BooleanArray(w * h) { i ->
+            val x = i % w; val y = i / w
+            (x in 8..19) || (x in 23..40) || (x in 2..7 && y in 20..22)
+        }
+        val guide = FloatArray(w * h) { if (subject[it]) .97f else .93f }
+        val hard = FloatArray(w * h) { if (subject[it]) 1f else 0f }
+        val model = GuidedMatteFilter.gaussianBlur(hard, w, h, 1f) // soft model edge, like ML Kit
+        val refined = GuidedMatteFilter.gaussianBlur(GuidedMatteFilter.filter(guide, model, w, h, 6), w, h, 1.5f)
+        val threshold = .65f
+        val row = 10 * w
+        // Without the limit the plain window average glues the gap and erases the detail.
+        assertTrue("bug reproduced: gap filled", refined[row + 21] > threshold)
+        assertTrue("bug reproduced: detail lost", refined[21 * w + 4] < threshold)
+
+        val limited = GuidedMatteFilter.limitShift(refined, model, .2f)
+        assertTrue("gap stays background: ${limited[row + 21]}", limited[row + 21] < threshold)
+        assertTrue("detail stays subject: ${limited[21 * w + 4]}", limited[21 * w + 4] > threshold)
+        assertTrue("body stays fully opaque", limited[row + 14] > threshold + .08f)
+        assertTrue("sleeve stays fully opaque", limited[row + 30] > threshold + .08f)
+    }
 }

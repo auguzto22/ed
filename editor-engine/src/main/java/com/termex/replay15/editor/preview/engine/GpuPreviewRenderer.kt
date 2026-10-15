@@ -702,7 +702,10 @@ class GpuPreviewRenderer(
         return runCatching {
             backgroundRemovalPass?.apply(
                 sourceTexture = input,
-                key = "${layer.key.trackId}:${layer.key.clipId}",
+                // The media is part of the key: after "replace media" the clip id stays the same,
+                // and a photo kept the old picture's silhouette forever (masks are never
+                // recomputed once final), a video briefly showed the old video's masks.
+                key = "${layer.key.trackId}:${layer.key.clipId}:${layer.uri}",
                 sourceWidth = actualSize?.first ?: layer.sourceWidth,
                 sourceHeight = actualSize?.second ?: layer.sourceHeight,
                 sourceTimestampUs = layer.sourceTimeUs,

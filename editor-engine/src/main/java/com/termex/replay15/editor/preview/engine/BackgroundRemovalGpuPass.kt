@@ -3,6 +3,7 @@ package com.termex.replay15.editor.preview.engine
 import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20
+import android.os.SystemClock
 import com.termex.replay15.editor.backgroundremoval.BackgroundMaskShader
 import com.termex.replay15.editor.backgroundremoval.SegmentationEngine
 import com.termex.replay15.editor.backgroundremoval.SegmentationEngineFactory
@@ -35,8 +36,26 @@ internal class BackgroundRemovalGpuPass(
     private val onMaskReady: () -> Unit,
 ) : AutoCloseable {
     private data class Target(val width: Int, val height: Int, val texture: Int, val fbo: Int)
+    /**
+     * One capture bitmap. [inUse] is cleared by the inference thread (frame release) and read on
+     * the GL thread, so it must be volatile: without it the GL thread could keep seeing all three
+     * buffers as busy and the mask would freeze. A buffer whose entry was released while the
+     * model was still reading it is [retired] and recycled only when the model lets go of it;
+     * recycling it immediately crashed ML Kit mid-inference (quality/provider change, clip gone).
+     */
     private class CaptureBuffer(val bitmap: Bitmap) {
-        var inUse = false
+        @Volatile var inUse = false
+        private var retired = false
+
+        @Synchronized fun release() {
+            inUse = false
+            if (retired && !bitmap.isRecycled) bitmap.recycle()
+        }
+
+        @Synchronized fun retire() {
+            retired = true
+            if (!inUse && !bitmap.isRecycled) bitmap.recycle()
+        }
     }
     private data class Entry(
         val key: String,
@@ -57,6 +76,9 @@ internal class BackgroundRemovalGpuPass(
         val argb: IntArray,
         var lastRequestedTimestampUs: Long = Long.MIN_VALUE,
         var uploadedTimestampUs: Long = Long.MIN_VALUE,
+        var lastUse: Long = 0L,
+        var lastStillRequestMs: Long = Long.MIN_VALUE,
+        var stillRetryMs: Long = STILL_RETRY_MS,
     )
 
     private val entries = HashMap<String, Entry>()
@@ -67,6 +89,8 @@ internal class BackgroundRemovalGpuPass(
         position(0)
     }
     private val ready = AtomicBoolean(true)
+    /** Counts masked draws; idle entries are measured in draws, not wall time (see [evictIdle]). */
+    private var uses = 0L
 
     fun apply(
         sourceTexture: Int,
@@ -84,7 +108,10 @@ internal class BackgroundRemovalGpuPass(
         // The first shipped mode is transparent removal. Other modes remain persisted in the
         // model so adding background compositing does not change the segmentation contract.
         if (effect.mode != BackgroundMode.REMOVE) return sourceTexture
+        uses++
+        evictIdle(key)
         val entry = entry(key, sourceWidth, sourceHeight, effect.quality, effect.provider, image)
+        entry.lastUse = uses
         // A mask from another moment (e.g. before a seek) cuts the wrong silhouette; showing the
         // untouched frame for the few milliseconds until the right mask lands is far less wrong.
         val cached = entry.cache.nearest(sourceTimestampUs)
@@ -104,6 +131,34 @@ internal class BackgroundRemovalGpuPass(
         return sourceTexture
     }
 
+    /**
+     * Photos are (re)segmented on wall-clock time, not media time. With the preview paused the
+     * media timestamp never changes, so the provisional selfie stand-in was never replaced by the
+     * real subject mask until the user pressed play (and a photo that failed once was never
+     * retried). The interval doubles on every attempt (1 s up to 30 s) so a photo the models
+     * cannot handle does not run two models every second forever.
+     */
+    private fun stillRequestUs(entry: Entry): Long? {
+        val nowMs = SystemClock.elapsedRealtime()
+        if (entry.lastStillRequestMs != Long.MIN_VALUE && nowMs - entry.lastStillRequestMs < entry.stillRetryMs) return null
+        if (entry.lastStillRequestMs != Long.MIN_VALUE) entry.stillRetryMs = (entry.stillRetryMs * 2).coerceAtMost(STILL_MAX_RETRY_MS)
+        entry.lastStillRequestMs = nowMs
+        return nowMs * 1000L
+    }
+
+    /**
+     * Releases clips that have not been drawn for a while (effect turned off, clip deleted or
+     * scrolled away, media replaced). Each entry holds an ML Kit client, a thread, GL targets and
+     * three capture bitmaps (~9 MB each for a photo), and none of it was ever freed before the
+     * editor closed. Counted in draws rather than seconds so a long pause does not evict (and
+     * re-segment, flashing the background) a clip that is still on screen.
+     */
+    private fun evictIdle(currentKey: String) {
+        if (entries.size <= 1) return
+        val idle = entries.values.filter { it.key != currentKey && uses - it.lastUse > ENTRY_IDLE_USES }
+        idle.forEach { entries.remove(it.key); releaseEntry(it) }
+    }
+
     private fun entry(
         key: String,
         sourceWidth: Int,
@@ -119,7 +174,8 @@ internal class BackgroundRemovalGpuPass(
         val captureTexture = texture2d(captureWidth, captureHeight)
         val outputTexture = texture2d(sourceWidth.coerceAtLeast(2), sourceHeight.coerceAtLeast(2))
         val engine = SegmentationEngineFactory.createEngine(context, streamMode = !image, provider = provider)
-        val maxHz = if (provider == BackgroundRemovalProvider.GEMINI) (if (image) 1 else 4) else (if (image) 1 else 20)
+        // Every provider runs on the device now (see SegmentationEngineFactory).
+        val maxHz = if (image) 1 else 20
         val created = Entry(
             key = key,
             sourceWidth = sourceWidth,
@@ -143,9 +199,11 @@ internal class BackgroundRemovalGpuPass(
         return created
     }
 
-    private fun captureForInference(entry: Entry, sourceTexture: Int, timestampUs: Long) {
-        if (timestampUs == entry.lastRequestedTimestampUs) return
-        val buffer = entry.buffers.firstOrNull { !it.inUse } ?: return
+    private fun captureForInference(entry: Entry, sourceTexture: Int, sourceTimestampUs: Long): Boolean {
+        val buffer = entry.buffers.firstOrNull { !it.inUse } ?: return false
+        // Photos run on wall-clock time (see stillRequestUs); video on media time.
+        val timestampUs = if (entry.image) stillRequestUs(entry) ?: return false else sourceTimestampUs
+        if (timestampUs == entry.lastRequestedTimestampUs) return false
         buffer.inUse = true
         entry.lastRequestedTimestampUs = timestampUs
 
@@ -174,7 +232,7 @@ internal class BackgroundRemovalGpuPass(
         }
         buffer.bitmap.setPixels(entry.argb, 0, entry.capture.width, 0, 0, entry.capture.width, entry.capture.height)
         entry.scheduler.submit(
-            SegmentationFrame(buffer.bitmap, release = { buffer.inUse = false }),
+            SegmentationFrame(buffer.bitmap, release = buffer::release),
             timestampUs,
         ) { result ->
             if (result != null) entry.cache.put(result)
@@ -183,6 +241,7 @@ internal class BackgroundRemovalGpuPass(
                 onMaskReady()
             }
         }
+        return true
     }
 
     private fun drawMasked(entry: Entry, sourceTexture: Int, effect: BackgroundRemovalEffect, edgeScale: Float): Int {
@@ -220,7 +279,7 @@ internal class BackgroundRemovalGpuPass(
     private fun releaseEntry(entry: Entry) {
         entry.scheduler.close()
         entry.mask.release()
-        entry.buffers.forEach { it.bitmap.recycle() }
+        entry.buffers.forEach { it.retire() }
         GLES20.glDeleteTextures(1, intArrayOf(entry.capture.texture), 0)
         GLES20.glDeleteFramebuffers(1, intArrayOf(entry.capture.fbo), 0)
         GLES20.glDeleteTextures(1, intArrayOf(entry.output.texture), 0)
@@ -311,6 +370,10 @@ internal class BackgroundRemovalGpuPass(
         val IDENTITY = floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f)
         const val MAX_MASK_DISTANCE_US = 250_000L
         const val STILL_LONGEST_SIDE = 1536
+        const val STILL_RETRY_MS = 1_000L
+        const val STILL_MAX_RETRY_MS = 30_000L
+        /** About 10 s of playback with two clips with background removal on screen. */
+        const val ENTRY_IDLE_USES = 600L
         const val VERTEX = "attribute vec2 aPosition; attribute vec2 aUv; uniform mat4 uMvp; uniform mat4 uTexMatrix; varying vec2 vUv; void main(){ gl_Position=uMvp*vec4(aPosition,0.,1.); vUv=(uTexMatrix*vec4(aUv,0.,1.)).xy; }"
         const val CAPTURE_FRAGMENT = "precision mediump float; uniform sampler2D uTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(uTexture,vUv); }"
         val FRAGMENT = """
