@@ -57,7 +57,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         }
     }
     private fun reopen(target: Target) = when (target) {
-        is Target.Clip -> open(target.id)
+        is Target.Clip -> manage(target.id)
         is Target.Adjustment -> openAdjustment(target.id)
     }
     private fun sourceAt(clipId: String): Long {
@@ -69,16 +69,17 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         } }
         error("Clipe não encontrado")
     }
-    fun open(clipId: String): Unit = with(activity) {
+    /** Botão "Efeitos" da barra: vai direto para os presets, que é o que mais se usa. */
+    fun open(clipId: String) { presets(clipId) }
+
+    /** "Mais efeitos": biblioteca completa, filtros de cor e os efeitos já aplicados no clipe. */
+    fun manage(clipId: String): Unit = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with
         val body = column(); lateinit var dialog: Dialog
-        // Painel enxuto: três entradas e, abaixo, os efeitos já aplicados no clipe.
-        val canAdd = clip.effects.size < 12
-        if (canAdd) body.addRow(listRow("Biblioteca de efeitos", "Glitch, luz, distorção e mais") { dialog.dismiss(); library(clipId) })
+        if (clip.effects.size < 12) body.addRow(listRow("Biblioteca de efeitos", "Glitch, luz, distorção e mais") { dialog.dismiss(); library(clipId) })
         openFilters?.let { opener ->
             body.addRow(listRow("Filtros de cor", "Looks prontos para o vídeo") { dialog.dismiss(); opener(clipId) })
         }
-        if (canAdd) body.addRow(listRow("Presets", "Combinações prontas") { dialog.dismiss(); presets(clipId) })
         if (clip.effects.isNotEmpty()) body.addView(sectionTitle("Aplicados", ""))
         if (clip.effects.isNotEmpty()) body.addView(action("Comparar sem efeitos (bypass)") {
             previewApply(project().mapVideo(clipId) { current -> current.copy(effects = current.effects.map { it.copy(enabled = false) }) })
@@ -87,18 +88,18 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             val name = runCatching { repository.resolve(effect.assetId, effect.version).first.name }.getOrDefault(effect.assetId)
             body.addView(action("${index + 1}. $name ${if (effect.enabled) "" else "(desligado)"}") { dialog.dismiss(); parameters(Target.Clip(clipId), effect) })
             val controls = row()
-            controls.addView(action(if (effect.enabled) "Desligar" else "Ligar") { change(clipId, clip.effects.map { if (it.id == effect.id) it.copy(enabled = !it.enabled) else it }); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            if (index > 0) controls.addView(action("Subir") { val effects = clip.effects.toMutableList(); effects.add(index - 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            if (index < clip.effects.lastIndex) controls.addView(action("Descer") { val effects = clip.effects.toMutableList(); effects.add(index + 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            controls.addView(action("Excluir") { change(clipId, clip.effects.filter { it.id != effect.id }); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            controls.addView(action(if (effect.enabled) "Desligar" else "Ligar") { change(clipId, clip.effects.map { if (it.id == effect.id) it.copy(enabled = !it.enabled) else it }); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            if (index > 0) controls.addView(action("Subir") { val effects = clip.effects.toMutableList(); effects.add(index - 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            if (index < clip.effects.lastIndex) controls.addView(action("Descer") { val effects = clip.effects.toMutableList(); effects.add(index + 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            controls.addView(action("Excluir") { change(clipId, clip.effects.filter { it.id != effect.id }); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
             body.addView(controls)
             if (clip.effects.size < 12) body.addView(action("Duplicar $name") {
                 val duplicate = effect.copy(id = newId())
                 val effects = clip.effects.toMutableList().apply { add(index + 1, duplicate) }
-                change(clipId, effects); dialog.dismiss(); open(clipId)
+                change(clipId, effects); dialog.dismiss(); manage(clipId)
             })
         }
-        presetIntensityControls(body, Target.Clip(clipId), clip.effects) { dialog.dismiss(); open(clipId) }
+        presetIntensityControls(body, Target.Clip(clipId), clip.effects) { dialog.dismiss(); manage(clipId) }
         dialog = sheet("Efeitos", body)
         dialog.setOnDismissListener { previewApply(project()) }
     }
@@ -277,6 +278,9 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             activity = this,
             clip = clip,
             sessionTimestampUs = sessionTimestampUs,
+            moreSubtitle = if (clip.effects.isEmpty()) "Biblioteca e filtros de cor"
+                else "${clip.effects.size} aplicado${if (clip.effects.size > 1) "s" else ""} neste clipe",
+            onMore = { stopLoop(); previewApply(project()); manage(clipId) },
             onPreview = { preset, intensity ->
                 val range = if (preset.category.equals("Gaming", true) && clip.outUs - clip.inUs >= 100_000L) {
                     val start = sessionTimestampUs.coerceIn(clip.inUs, (clip.outUs - 100_000L).coerceAtLeast(clip.inUs))
@@ -321,7 +325,6 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                         )
                     }
                     change(clipId, clip.effects + added)
-                    open(clipId)
                 }
             }
         )

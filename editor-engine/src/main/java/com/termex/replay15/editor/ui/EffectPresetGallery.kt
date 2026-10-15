@@ -24,16 +24,19 @@ object EffectPresetGallery {
         activity: Activity,
         clip: VideoClip,
         sessionTimestampUs: Long = -1L,
+        moreSubtitle: String = "",
+        onMore: (() -> Unit)? = null,
         onPreview: (preset: EffectPreset, intensity: Float) -> Unit = { _, _ -> },
         onRestore: () -> Unit = {},
         onApply: (preset: EffectPreset, intensity: Float) -> Unit,
     ) = with(activity) {
         val openStartMs = System.currentTimeMillis()
         val body = column()
-        body.addView(sectionTitle(
-            "Presets de Efeitos",
-            "Combinações multi-pass prontas com prévia real no seu vídeo.",
-        ))
+        // Sem texto explicativo: o título da folha já diz o que é. "Mais efeitos" leva à
+        // biblioteca completa, aos filtros e aos efeitos já aplicados (para remover).
+        if (onMore != null) body.addRow(listRow("Mais efeitos", moreSubtitle) {
+            dialogRef?.dismiss(); onMore()
+        })
 
         val allPresets = runCatching { BuiltInEffectPresets.definitions(this) }.getOrDefault(emptyList())
         // As abas saem do próprio arquivo: com ~1000 presets em várias categorias, lista fixa ficaria velha.
