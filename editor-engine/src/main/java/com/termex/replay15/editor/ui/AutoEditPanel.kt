@@ -316,7 +316,7 @@ class AutoEditPanel(
                         val currentIndex = live.videos.indexOfFirst { it.id == clip.id }
                         if (currentIndex < 0 || live.videos[currentIndex] != clip) {
                             card?.fail("O clipe mudou durante a análise. Analise de novo.")
-                                ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
+                                ?: Toast.makeText(activity, "O clipe mudou durante a análise", Toast.LENGTH_SHORT).show()
                             return@fold
                         }
                         // New captions are part of the edit: "Original" and "Cancelar" leave the project without them.
@@ -332,7 +332,7 @@ class AutoEditPanel(
                         if (error is InterruptedException) {
                             card?.fail("Análise cancelada") ?: Toast.makeText(activity, "Auto Edit cancelado", Toast.LENGTH_SHORT).show()
                         } else if (card != null) card.fail("Não foi possível analisar: ${error.message}")
-                        else AlertDialog.Builder(activity).setTitle("Auto Edit").setMessage("Nao foi possivel analisar o clipe: ${error.message}").setPositiveButton("OK", null).show()
+                        else AlertDialog.Builder(activity).setTitle("Auto Edit").setMessage("Não foi possível analisar o clipe: ${error.message}").setPositiveButton("OK", null).show()
                     },
                 )
             }
@@ -352,7 +352,7 @@ class AutoEditPanel(
         body.addView(activity.action("Aplicar Auto Edit", true) {
             dialog.dismiss(); preview(original); apply(edited)
         }, LinearLayout.LayoutParams(-1, activity.dp(52)).apply { topMargin = activity.dp(10) })
-        body.addView(activity.action("Gerar outra versao") {
+        body.addView(activity.action("Gerar outra versão") {
             dialog.dismiss(); preview(original); generate(original, index, words, options.copy(variation = options.variation + 1))
         }, LinearLayout.LayoutParams(-1, activity.dp(48)).apply { topMargin = activity.dp(6) })
         body.addView(activity.action("Cancelar") { dialog.dismiss(); preview(original) }, LinearLayout.LayoutParams(-1, activity.dp(48)).apply { topMargin = activity.dp(6) })

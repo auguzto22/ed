@@ -38,11 +38,11 @@ class AutoReframePanel(
         val snapshot = project()
         val index = selectedIndex()
         val clip = snapshot.videos.getOrNull(index) ?: run {
-            Toast.makeText(activity, "Selecione um clipe de video", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Selecione um clipe de vídeo", Toast.LENGTH_SHORT).show()
             return
         }
         if (clip.image) {
-            Toast.makeText(activity, "Auto Reframe requer um clipe de video", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Auto Reframe requer um clipe de vídeo", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -50,7 +50,7 @@ class AutoReframePanel(
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(10)) }
         body.addView(activity.sectionTitle(
             "Auto Reframe",
-            "Detecta rosto ou corpo localmente e anima o enquadramento deste clipe. A proporcao escolhida vale para o projeto inteiro.",
+            "Detecta rosto ou corpo localmente e anima o enquadramento deste clipe. A proporção escolhida vale para o projeto inteiro.",
         ))
         body.addView(activity.label("Formato de destino", 12f, EditorStyle.MUTED))
         val aspectSpinner = Spinner(activity).apply {
@@ -72,7 +72,7 @@ class AutoReframePanel(
         val clip = snapshot.videos.getOrNull(index) ?: return
         cancellation?.set(true)
         val token = AtomicBoolean(false).also { cancellation = it }
-        val progressText = activity.label("Preparando deteccao local...", 13f, EditorStyle.MUTED)
+        val progressText = activity.label("Preparando detecção local...", 13f, EditorStyle.MUTED)
         val progressBar = ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
         }
@@ -121,7 +121,7 @@ class AutoReframePanel(
                         } else {
                             AlertDialog.Builder(activity)
                                 .setTitle("Auto Reframe")
-                                .setMessage("Nao foi possivel analisar este clipe: ${error.message ?: "falha na deteccao"}")
+                                .setMessage("Não foi possível analisar este clipe: ${error.message ?: "falha na detecção"}")
                                 .setPositiveButton("OK", null)
                                 .show()
                         }
@@ -138,7 +138,7 @@ class AutoReframePanel(
         }
         val updatedClip = snapshot.mapVideo(clipId) { it.copy(keyframes = analysis.keyframes) }
         if (updatedClip == snapshot) {
-            Toast.makeText(activity, "Nao foi possivel criar keyframes neste clipe", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "Não foi possível criar keyframes neste clipe", Toast.LENGTH_LONG).show()
             return
         }
         val reframed = updatedClip.copy(aspect = analysis.target.ratio, canvasFill = CanvasFill.FILL)
@@ -147,7 +147,7 @@ class AutoReframePanel(
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
         body.addView(activity.sectionTitle(
             "Enquadramento pronto",
-            "${analysis.target.label} · ${analysis.subjectsDetected} deteccoes · ${analysis.points.size} pontos suaves",
+            "${analysis.target.label} · ${analysis.subjectsDetected} detecções · ${analysis.points.size} pontos suaves",
         ))
         body.addView(activity.label("O reenquadramento usa keyframes do clipe e pode ser desfeito como uma acao.", 12f, EditorStyle.MUTED))
         val compare = activity.row().apply { setPadding(0, activity.dp(8), 0, activity.dp(4)) }

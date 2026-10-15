@@ -47,8 +47,8 @@ object MaskTools {
             preview(candidate)
         }
 
-        body.addView(sectionTitle("Mascara profissional",
-            "Valores normalizados, nao destrutivos e avaliados no tempo atual."))
+        body.addView(sectionTitle("Máscara profissional",
+            "Valores normalizados, não destrutivos e avaliados no tempo atual."))
         val pathEditor = MaskPathEditorView(this).apply {
             setPoints(candidate.customPath)
             visibility = if (candidate.type == MaskType.CUSTOM_PATH) View.VISIBLE else View.GONE
@@ -91,7 +91,7 @@ object MaskTools {
             }
         }
         if (onRequestTracking != null) {
-            body.addView(action("🎯 Criar / Gerenciar Rastreamento...") {
+            body.addView(action("Criar ou gerenciar rastreamento") {
                 dialog.dismiss()
                 onRequestTracking()
             }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(4); bottomMargin = dp(8) })
@@ -109,7 +109,7 @@ object MaskTools {
         val height = slider(body, "Altura (%)", (current.height * 100).toInt(), 200, 1) {
             geometry { state -> state.copy(height = it / 100f) }
         }
-        val rotation = slider(body, "Rotacao", current.rotation.toInt() + 180, 360,
+        val rotation = slider(body, "Rotação", current.rotation.toInt() + 180, 360,
             format = { "${it - 180}°" }) {
             geometry { state -> state.copy(rotation = (it - 180).toFloat()) }
         }
@@ -117,14 +117,14 @@ object MaskTools {
             format = { String.format(java.util.Locale.ROOT, "%.1f", it / 10f) }) {
             geometry { state -> state.copy(feather = it / 1000f) }
         }
-        val expansion = slider(body, "Expansao (%)", (current.expansion * 100).toInt(), 100, -100) {
+        val expansion = slider(body, "Expansão (%)", (current.expansion * 100).toInt(), 100, -100) {
             geometry { state -> state.copy(expansion = it / 100f) }
         }
         slider(body, "Intensidade (%)", (candidate.opacity * 100).toInt(), 100) {
             static { state -> state.copy(opacity = it / 100f) }
         }
         val inverted = CheckBox(this).apply {
-            text = "Inverter mascara"
+            text = "Inverter máscara"
             isChecked = candidate.inverted
             setOnCheckedChangeListener { _, checked -> static { it.copy(inverted = checked) } }
         }
@@ -149,7 +149,7 @@ object MaskTools {
             candidate = candidate.upsertKeyframe(localTimeUs, candidate.at(localTimeUs))
             current = candidate.at(localTimeUs)
             preview(candidate)
-            Toast.makeText(this@with, "Keyframe de mascara salvo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@with, "Keyframe de máscara salvo", Toast.LENGTH_SHORT).show()
         }, LinearLayout.LayoutParams(0, dp(56), 1f))
         keyframeRow.addView(action("Remover keyframe") {
             val evaluated = candidate.at(localTimeUs)
@@ -159,18 +159,18 @@ object MaskTools {
             updateControls(current)
             preview(candidate)
         }, LinearLayout.LayoutParams(0, dp(56), 1f))
-        body.addView(sectionTitle("Animacao", "Centro, tamanho, rotacao, feather e expansao podem ter keyframes."))
+        body.addView(sectionTitle("Animação", "Centro, tamanho, rotação, feather e expansão podem ter keyframes."))
         body.addView(keyframeRow)
 
-        body.addView(action("Aplicar mascara", true) {
+        body.addView(action("Aplicar máscara", true) {
             apply(candidate)
             dialog.dismiss()
         })
-        body.addView(action("Remover mascara") {
+        body.addView(action("Remover máscara") {
             apply(null)
             dialog.dismiss()
         })
-        dialog = sheet("Mascara de camada", body)
+        dialog = sheet("Máscara de camada", body)
         dialog.setOnDismissListener { restore() }
     }
 }

@@ -35,9 +35,9 @@ class ReferenceStylePanel(
             Toast.makeText(activity, "Selecione um clipe para aplicar um estilo", Toast.LENGTH_SHORT).show(); return
         }
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
-        val aiNote = if (semanticAnalyzer() != null) " O video de referencia e enviado ao Gemini para identificar titulos, cards e B-roll; o arquivo enviado e apagado em seguida." else ""
-        body.addView(activity.sectionTitle("Estilo de referencia", "Analisa a edicao e o layout (titulos, cards, imagens, B-roll) de um unico video. Nenhum frame, audio ou asset e copiado para o projeto: os elementos viram espacos editaveis.$aiNote"))
-        body.addView(activity.action("Usar novo video como referencia", true) { dialog?.dismiss(); pickReference() }, LinearLayout.LayoutParams(-1, activity.dp(52)))
+        val aiNote = if (semanticAnalyzer() != null) " O vídeo de referência é enviado ao Gemini para identificar títulos, cards e B-roll; o arquivo enviado é apagado em seguida." else ""
+        body.addView(activity.sectionTitle("Estilo de referência", "Analisa a edição e o layout (títulos, cards, imagens, B-roll) de um único vídeo. Nenhum frame, áudio ou asset é copiado para o projeto: os elementos viram espaços editáveis.$aiNote"))
+        body.addView(activity.action("Usar novo vídeo como referência", true) { dialog?.dismiss(); pickReference() }, LinearLayout.LayoutParams(-1, activity.dp(52)))
         val profiles = store.list()
         if (profiles.isEmpty()) body.addView(activity.label("Nenhum estilo salvo ainda.", 12f, EditorStyle.MUTED))
         else {
@@ -59,7 +59,7 @@ class ReferenceStylePanel(
         val progressText = activity.label(ReferenceAnalysisStage.PREPARING.label, 15f)
         val progressDialog = if (card != null) null else {
             processing(true)
-            AlertDialog.Builder(activity).setTitle("Analisando referencia").setView(progressText)
+            AlertDialog.Builder(activity).setTitle("Analisando referência").setView(progressText)
                 .setNegativeButton("Cancelar") { _, _ -> token.cancel() }.setOnCancelListener { token.cancel() }.show()
         }
         val stages = ReferenceAnalysisStage.entries
@@ -85,7 +85,7 @@ class ReferenceStylePanel(
                         else "Não foi possível analisar: ${error.message ?: "arquivo ou codec indisponível"}"
                     if (card != null) card.fail(message)
                     else if (error is InterruptedException) Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
-                    else AlertDialog.Builder(activity).setTitle("Video de referencia").setMessage(message).setPositiveButton("OK", null).show()
+                    else AlertDialog.Builder(activity).setTitle("Vídeo de referência").setMessage(message).setPositiveButton("OK", null).show()
                 }
             }
         }
@@ -103,7 +103,7 @@ class ReferenceStylePanel(
         body.addView(activity.label(details.joinToString(" · "), 11f, EditorStyle.MUTED))
         val layoutLines = profile.layoutLines()
         if (layoutLines.isNotEmpty()) {
-            body.addView(activity.sectionTitle("Layout detectado", if (profile.semanticAnalysis) "Analise local + IA" else "Analise local"))
+            body.addView(activity.sectionTitle("Layout detectado", if (profile.semanticAnalysis) "Análise local + IA" else "Análise local"))
             body.addView(activity.label(layoutLines.joinToString("\n"), 12f))
         }
         if (profile.styleNotes.isNotBlank()) body.addView(activity.label(profile.styleNotes, 11f, EditorStyle.MUTED))
@@ -177,7 +177,7 @@ class ReferenceStylePanel(
                     val currentIndex = live.videos.indexOfFirst { it.id == clip.id }
                     if (currentIndex < 0 || live.videos[currentIndex] != clip) {
                         card?.fail("O clipe mudou durante a análise. Aplique de novo.")
-                            ?: Toast.makeText(activity, "O clipe mudou durante a analise", Toast.LENGTH_SHORT).show()
+                            ?: Toast.makeText(activity, "O clipe mudou durante a análise", Toast.LENGTH_SHORT).show()
                         return@fold
                     }
                     // The new captions are part of the edit: "Original" and "Cancelar" leave the project without them.
@@ -208,10 +208,10 @@ class ReferenceStylePanel(
             body.addView(activity.label(plan.applied.joinToString("\n") { "• $it" }, 12f))
         }
         if (plan.skipped.isNotEmpty()) {
-            body.addView(activity.sectionTitle("Nao aplicado"))
+            body.addView(activity.sectionTitle("Não aplicado"))
             body.addView(activity.label(plan.skipped.joinToString("\n") { "• $it" }, 12f, 0xFFFAFAF6.toInt()))
         }
-        if (plan.applied.isEmpty()) body.addView(activity.label("Nada da referencia pode ser aplicado a este clipe.", 12f, EditorStyle.MUTED))
+        if (plan.applied.isEmpty()) body.addView(activity.label("Nada da referência pode ser aplicado a este clipe.", 12f, EditorStyle.MUTED))
         val compare = activity.row()
         compare.addView(activity.action("Original") { preview(original) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))
         compare.addView(activity.action("Reference Style", true) { preview(edited) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f))
