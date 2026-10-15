@@ -5512,5 +5512,59 @@
   "author": "OllyOllyOlly",
   "license": "MIT",
   "source": "https://github.com/gl-transitions/gl-transitions/blob/master/transitions/zoomInOut.glsl"
+ },
+ {
+  "id": "barra_branca",
+  "version": 1,
+  "name": "Barra Branca",
+  "category": "Light",
+  "engine": "MASK_WIPE",
+  "defaultDurationUs": 150000,
+  "minDurationUs": 100000,
+  "maxDurationUs": 1500000,
+  "shaderFile": "recly_transition_barra_branca.frag",
+  "supportsDirection": false,
+  "parameters": [
+   {
+    "id": "direction",
+    "name": "Direção",
+    "type": "float",
+    "min": 0.0,
+    "max": 3.0,
+    "default": 0.0
+   },
+   {
+    "id": "width",
+    "name": "Largura",
+    "type": "float",
+    "min": 0.05,
+    "max": 1.0,
+    "default": 0.5
+   },
+   {
+    "id": "softness",
+    "name": "Suavidade",
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.1
+   },
+   {
+    "id": "color",
+    "name": "Cor (0 branca, 1 preta)",
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.0
+   },
+   {
+    "id": "steps",
+    "name": "Degraus (0 = contínuo)",
+    "type": "float",
+    "min": 0.0,
+    "max": 6.0,
+    "default": 2.0
+   }
+  ]
  }
 ]

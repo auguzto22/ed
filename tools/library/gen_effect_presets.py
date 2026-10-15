@@ -1,7 +1,7 @@
 """Gera os presets de efeito (effect_presets.json) combinando os efeitos de effects.json.
 
 Mantém os presets feitos à mão (os que não começam com "p_") e acrescenta combinações temáticas
-geradas de forma determinística até chegar em TARGET presets. Cada combinação usa só efeitos que
+geradas de forma determinística (GENERATED combinações, além dos feitos à mão). Cada combinação usa só efeitos que
 existem no catálogo, com valores dentro do min/max de cada parâmetro.
 
     python3 tools/library/gen_effect_presets.py
@@ -14,7 +14,8 @@ import re
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 ASSETS = os.path.join(ROOT, "editor-engine/src/main/assets/editor")
-TARGET = 1000
+# Quantos presets gerados (os feitos à mão somam a isso; antes eram 1000 no total com 20 à mão).
+GENERATED = 980
 GENERATED_PREFIX = "p_"
 
 # Parâmetros de "força": recebem uma pequena variação para cada preset ter cara própria.
@@ -164,7 +165,7 @@ def main():
     used_names = {p["name"] for p in handmade}
     used_sets = {tuple(n["assetId"] for n in p["nodes"]) for p in handmade}
     generated = []
-    need = TARGET - len(handmade)
+    need = GENERATED
     plan = themes(fx)
     planned = sum(t[3] for t in plan)
     if planned != need:
@@ -206,7 +207,7 @@ def main():
         if made < count:
             raise SystemExit(f"tema {prefix}: só {made} de {count} combinações válidas")
     presets = handmade + generated
-    assert len(presets) == TARGET, len(presets)
+    assert len(presets) == len(handmade) + GENERATED, len(presets)
     validate(fx, presets)
     path = os.path.join(ASSETS, "effect_presets.json")
     with open(path, "w", encoding="utf-8") as f:

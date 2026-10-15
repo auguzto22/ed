@@ -34869,5 +34869,59 @@
         "default": 6.0
       }
     ]
+  },
+  {
+    "id": "recly_aura_multicor",
+    "version": 1,
+    "engineVersion": 1,
+    "type": "EFFECT",
+    "name": "Aura multicor",
+    "category": "Light",
+    "engine": "LIGHT_FLASH",
+    "shader": "recly_aura_multicor.frag",
+    "license": "Recly original",
+    "cost": "LOW",
+    "parameters": [
+      {
+        "id": "amount",
+        "name": "Força",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.55
+      },
+      {
+        "id": "speed",
+        "name": "Velocidade",
+        "type": "float",
+        "min": 0.0,
+        "max": 3.0,
+        "default": 0.6
+      },
+      {
+        "id": "haze",
+        "name": "Névoa",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.45
+      },
+      {
+        "id": "vignette",
+        "name": "Vinheta",
+        "type": "float",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.35
+      },
+      {
+        "id": "palette",
+        "name": "Paleta",
+        "type": "float",
+        "min": 0.0,
+        "max": 3.0,
+        "default": 0.0
+      }
+    ]
   }
 ]
