@@ -55,7 +55,9 @@ class AutoEditExecutorTest {
             zooms = listOf(ZoomDecision(SECOND, 200_000, 1.08f, .8f, "enfase")))
         val edited = AutoEditExecutor.execute(original, 0, plan)
         assertTrue(original.videos.single().keyframes.isEmpty())
-        assertTrue(edited.videos.single().keyframes.isNotEmpty())
+        assertTrue(edited.videos.single().keyframes.isEmpty())
+        assertEquals(MotionPreset.PUNCH_IN, edited.animationClips.single().preset)
+        assertEquals(edited.videos.single().id, edited.animationClips.single().targetId)
         assertEquals(listOf(existingCaption), edited.texts)
     }
 

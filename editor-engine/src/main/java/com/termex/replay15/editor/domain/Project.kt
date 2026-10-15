@@ -763,6 +763,8 @@ data class Project(
     val captionVocabulary: Set<String> = emptySet(),
     /** Nested sequences over [videos]. Grouping is metadata only: the clips never leave this list. */
     val compounds: List<CompoundClip> = emptyList(),
+    /** Movimentos em balão sobre clipes, textos e stickers; tempo relativo ao início do alvo. */
+    val animationClips: List<AnimationClip> = emptyList(),
 ) {
     init {
         require(id.matches(Regex("[a-zA-Z0-9-]{1,80}")) && name.length <= 200)
@@ -779,6 +781,7 @@ data class Project(
         require(trackStates.size <= 64 && trackStates.keys.all { it.length in 1..100 })
         require(videos.sumOf { it.durationUs } <= MAX_PROJECT_US)
         require(compounds.size <= MAX_COMPOUNDS && compounds.map { it.id }.distinct().size == compounds.size)
+        require(animationClips.size <= MAX_ANIMATION_CLIPS && animationClips.map { it.id }.distinct().size == animationClips.size)
         val owned = compounds.flatMap { it.childIds }
         require(owned.distinct().size == owned.size) { "Um clipe nao pode pertencer a dois compounds" }
         require(owned.all { child -> videos.any { it.id == child } }) { "Compound referencia um clipe inexistente" }
@@ -900,8 +903,10 @@ data class Project(
         )
         // The outgoing transition belongs to the cut after the clip, which is now the right half's.
         val moved = transitions.map { if (it.leftClipId == clip.id) it.copy(leftClipId = rightId) else it }
+        // Animation balloons follow their halves; one that crosses the cut is split in two.
+        val split = AnimationEditing.splitTarget(copy(transitions = moved), clip.id, rightId, offset)
         // Groups survive a split; a group that would lose a child is dropped by the sanitizer.
-        return CompoundEditing.withVideos(copy(transitions = moved), result).withSanitizedTransitions()
+        return CompoundEditing.withVideos(split, result).withSanitizedTransitions()
     }
     fun splitAt(playheadUs: Long): Project = split(indexAt(playheadUs), playheadUs)
     /**

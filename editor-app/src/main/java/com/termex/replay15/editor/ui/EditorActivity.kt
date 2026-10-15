@@ -133,6 +133,7 @@ class EditorActivity : Activity() {
     private lateinit var backgroundRemovalTools: BackgroundRemovalTools
     private lateinit var transitionTools: TransitionTools
     private lateinit var animationTools: AnimationTools
+    private lateinit var animationBalloons: AnimationBalloonTools
     private lateinit var autoEditPanel: AutoEditPanel
     private lateinit var autoReframePanel: AutoReframePanel
     private lateinit var referenceStylePanel: ReferenceStylePanel
@@ -953,6 +954,9 @@ class EditorActivity : Activity() {
         }
         onMarker = { markerPanel(it) }
         onAdjustment = { effectTools.openAdjustment(it) }
+        onAnimation = { animationBalloons.open(it) }
+        onAnimationTrim = { id, start, end -> edit(AnimationEditing.setAbsoluteWindow(project, id, start, end)) }
+        onAnimationMove = { id, start, end -> edit(AnimationEditing.setAbsoluteWindow(project, id, start, end)) }
         onVideoLayer = { track, clip -> videoTrackTools.open(track, clip) }
         onLayerMove = { track, clip, start -> videoTrackTools.move(track, clip, start) }
         onLayerTrim = { track, clip, start, end -> videoTrackTools.update(track, clip.copy(inUs = start, outUs = end)) }
@@ -1328,6 +1332,7 @@ class EditorActivity : Activity() {
                 }
             }, ((endUs - startUs) / 1000L).coerceIn(300L, 4000L))
         }
+        animationBalloons = AnimationBalloonTools(this, { project }, { edit(it) }, { position }) { timeline.selectedLayerId = it }
         animationTools = AnimationTools(this, { project }, ::edit) {
             runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json"), 710) }
                 .onFailure { error("Seletor de animacoes indisponivel") }
@@ -1413,6 +1418,7 @@ class EditorActivity : Activity() {
             Triple("Ajustar", "Ajustar", { adjustmentsPanel() }),
             Triple("Velocidade", "Velocidade", { speedPanel() }),
             Triple("Animação", "Transformar", { selectedClip()?.let { animationTools.open(it.id) } }),
+            Triple("Movimento", "Transformar", { selectedClip()?.let { animationBalloons.create(it.id) } }),
             Triple("Transição", "Transicao", { transitionPanel() }),
             Triple("Dividir", "Dividir", { splitAtCursor() }),
             Triple("Volume", "Volume", { volumePanel() }),
@@ -1496,6 +1502,7 @@ class EditorActivity : Activity() {
             ToolEntry("Posição", "Onde aparece") { subtitlePositionPanel(id) },
             ToolEntry("Máscara", "Recorte do texto") { textMaskPanel(id) },
             ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
+            ToolEntry("Movimento", "Balão na timeline") { animationBalloons.create(id) },
             ToolEntry("Excluir", "Remover este texto", danger = true) {
                 edit(project.copy(texts = project.texts.filterNot { it.id == id }))
                 clearSelection()
@@ -1510,6 +1517,7 @@ class EditorActivity : Activity() {
             ToolEntry("Máscara", "Forma e recorte") { stickerMaskPanel(id) },
             ToolEntry("Remover fundo", "Recorte automático") { backgroundRemovalTools.openSticker(id) },
             ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
+            ToolEntry("Movimento", "Balão na timeline") { animationBalloons.create(id) },
             ToolEntry("Camadas", "Todas as imagens") { stickerMenu() },
             ToolEntry("Excluir", "Remover esta camada", danger = true) {
                 edit(project.copy(stickers = project.stickers.filterNot { it.id == id }))

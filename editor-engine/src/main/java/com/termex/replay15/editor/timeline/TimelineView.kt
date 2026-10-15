@@ -47,6 +47,12 @@ class TimelineView(context: Context) : View(context) {
     var onStickerKeyframeClick: (String, com.termex.replay15.editor.transform.TransformKeyframe) -> Unit = { _, _ -> }
     var onMarker: (String) -> Unit = {}
     var onAdjustment: (String) -> Unit = {}
+    /** Toque num balão de animação (lilás). */
+    var onAnimation: (String) -> Unit = {}
+    /** Janela ABSOLUTA (tempo do projeto) depois de esticar um lado do balão. */
+    var onAnimationTrim: (String, Long, Long) -> Unit = { _, _, _ -> }
+    /** Janela ABSOLUTA depois de arrastar o balão inteiro. */
+    var onAnimationMove: (String, Long, Long) -> Unit = { _, _, _ -> }
     var onVideoLayer: (String, String) -> Unit = { _, _ -> }
     var onLayerMove: (String, String, Long) -> Unit = { _, _, _ -> }
     var onLayerTrim: (String, VideoClip, Long, Long) -> Unit = { _, _, _, _ -> }
@@ -81,6 +87,12 @@ class TimelineView(context: Context) : View(context) {
     private var audioInitialFadeOutUs = 0L
     private var audioKeyframeDrag: Pair<String, Int>? = null
     private var audioKeyframeDraftTimeUs: Long? = null
+    private var animDragId: String? = null
+    private var animSide = 0
+    private var animInitialStartUs = 0L
+    private var animInitialEndUs = 0L
+    private var animDraftStartUs: Long? = null
+    private var animDraftEndUs: Long? = null
     private var keyframeDrag: Pair<Int, Int>? = null
     private var keyframeDraftSourceUs: Long? = null
     val snapper = com.termex.replay15.editor.ui.MagneticSnapper()
@@ -180,11 +192,15 @@ class TimelineView(context: Context) : View(context) {
             val packed = mutableListOf<Lane>()
             segments.sortedBy { it.start }.forEach { s ->
                 val lane = packed.firstOrNull { it.segments.last().end <= s.start }
-                    ?: Lane("$prefix${packed.size + 1}", color, type, mutableListOf(), if (type == 1) TEXT_TRACK else STICKER_TRACK).also { packed += it }
+                    ?: Lane("$prefix${packed.size + 1}", color, type, mutableListOf(), when (type) { 1 -> TEXT_TRACK; 5 -> ""; else -> STICKER_TRACK }).also { packed += it }
                 lane.segments += s
             }
             result += packed
         }
+        // Balões de animação (lilás) ficam no topo das faixas de camada.
+        pack(project.animationClips.mapNotNull { clip ->
+            AnimationEditing.absoluteWindow(project, clip)?.let { Segment(clip.id, clip.preset.label, it.first, it.last + 1) }
+        }, "AN", ANIMATION_COLOR, 5)
         pack(project.adjustmentClips.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "FX", 0xFFC9C5BA.toInt(), 4)
         project.videoTracks.withIndex().toList().asReversed().forEach { (index, track) ->
             result += Lane("V${index + 2}", 0xFF8C8880.toInt(), 3,
@@ -238,6 +254,8 @@ class TimelineView(context: Context) : View(context) {
             yieldAll(project.camera.keyframes.map { it.timeUs })
             yieldAll(project.videoTracks.flatMap { it.clips.flatMap { c -> listOf(c.startUs, c.endUs) } })
             yieldAll(project.adjustmentClips.flatMap { listOf(it.startUs, it.endUs) })
+            yieldAll(project.animationClips.filter { it.id != animDragId }
+                .mapNotNull { AnimationEditing.absoluteWindow(project, it) }.flatMap { listOf(it.first, it.last + 1) })
             yieldAll(project.texts.filter { it.id != (textDrag?.first ?: "") }.flatMap { listOf(it.startUs, it.endUs) })
             yieldAll(project.stickers.filter { it.id != (stickerDrag?.first ?: "") }.flatMap { listOf(it.startUs, it.endUs) })
             yieldAll(project.audio.filter { it.id != (audioDrag?.first ?: "") }.flatMap { listOf(it.startUs, it.endUs) })
@@ -516,13 +534,17 @@ class TimelineView(context: Context) : View(context) {
                     val isCurrentStickerDragged = isStickerTrack && stickerDrag?.first == s.id
                     val isCurrentAudioDragged = isAudioTrack && audioDrag?.first == s.id
 
+                    val isAnimationTrack = lane.type == 5
+                    val isCurrentAnimationDragged = isAnimationTrack && animDragId == s.id
                     val liveStart = when {
+                        isCurrentAnimationDragged && animDraftStartUs != null -> animDraftStartUs!!
                         isCurrentTextDragged && textDraftStartUs != null -> textDraftStartUs!!
                         isCurrentStickerDragged && stickerDraftStartUs != null -> stickerDraftStartUs!!
                         isCurrentAudioDragged && audioDraftStartUs != null -> audioDraftStartUs!!
                         else -> s.start
                     }
                     val liveEnd = when {
+                        isCurrentAnimationDragged && animDraftEndUs != null -> animDraftEndUs!!
                         isCurrentTextDragged && textDraftEndUs != null -> textDraftEndUs!!
                         isCurrentStickerDragged && stickerDraftEndUs != null -> stickerDraftEndUs!!
                         isCurrentAudioDragged -> {
@@ -758,6 +780,42 @@ class TimelineView(context: Context) : View(context) {
                             }
                         }
 
+                        if (isAnimationTrack) {
+                            val isSelectedAnimation = s.id == selectedLayerId || isCurrentAnimationDragged
+                            paint.color = (ANIMATION_COLOR and 0xFFFFFF) or 0x66000000
+                            c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint)
+                            if (isSelectedAnimation) {
+                                paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = ANIMATION_COLOR
+                                c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint)
+                                paint.style = Paint.Style.FILL
+                                val handleW = dp(14f).coerceAtMost((r - l) / 2f)
+                                if (handleW >= dp(6f)) {
+                                    paint.color = ANIMATION_COLOR
+                                    c.drawRoundRect(l, y, l + handleW, y + dp(33f), dp(6f), dp(6f), paint)
+                                    c.drawRoundRect(r - handleW, y, r, y + dp(33f), dp(6f), dp(6f), paint)
+                                    paint.color = 0xFF121213.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                                    c.drawLine(l + dp(4f), y + dp(9f), l + dp(4f), y + dp(24f), paint)
+                                    c.drawLine(r - dp(4f), y + dp(9f), r - dp(4f), y + dp(24f), paint)
+                                    paint.style = Paint.Style.FILL
+                                }
+                                if (isDragging && isCurrentAnimationDragged && gesture == 9) {
+                                    val fps = project.export.fps.coerceAtLeast(1)
+                                    val badgeText = "IN ${formatTimecodeFrames(liveStart, fps)} - OUT ${formatTimecodeFrames(liveEnd, fps)}  (DUR ${formatTimecodeFrames(liveEnd - liveStart, fps)})"
+                                    paint.textSize = dp(10.5f)
+                                    paint.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+                                    val textW = paint.measureText(badgeText)
+                                    val badgeX = (l + (r - l - textW) / 2f).coerceIn(gutter + dp(8f), (width - textW - dp(20f)).coerceAtLeast(gutter + dp(8f)))
+                                    val badgeY = if (y - dp(18f) >= dp(130f)) y - dp(6f) else y + dp(48f)
+                                    paint.color = 0xEE121213.toInt(); paint.style = Paint.Style.FILL
+                                    c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
+                                    paint.color = ANIMATION_COLOR; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
+                                    c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
+                                    paint.style = Paint.Style.FILL; paint.color = Color.WHITE
+                                    c.drawText(badgeText, badgeX, badgeY, paint)
+                                }
+                            }
+                        }
+
                         if (isTextTrack) {
                             val isSelectedText = s.id == selectedLayerId || isCurrentTextDragged
                             if (isSelectedText) {
@@ -856,7 +914,7 @@ class TimelineView(context: Context) : View(context) {
                             }
                         }
                         paint.color = lane.color; c.drawRect(l, y + dp(6f), l + dp(2f), y + dp(27f), paint)
-                        val hasHandles = (isTextTrack || isStickerTrack || isAudioTrack) && (s.id == selectedLayerId || isCurrentTextDragged || isCurrentStickerDragged || isCurrentAudioDragged)
+                        val hasHandles = (isTextTrack || isStickerTrack || isAudioTrack || isAnimationTrack) && (s.id == selectedLayerId || isCurrentTextDragged || isCurrentStickerDragged || isCurrentAudioDragged || isCurrentAnimationDragged)
                         val textPadStart = if (hasHandles) dp(16f) else 0f
                         val textPadEnd = if (hasHandles) dp(16f) else 0f
                         c.save(); c.clipRect(max(gutter, l + textPadStart), y, min(r - textPadEnd, width.toFloat()), y + dp(33f))
@@ -911,6 +969,7 @@ class TimelineView(context: Context) : View(context) {
                 snapper.reset()
                 layerDrag = null; layerTrim = 0; keyframeDrag = null; keyframeDraftSourceUs = null
                 textDrag = null; textTrimSide = 0; textDraftStartUs = null; textDraftEndUs = null
+                animDragId = null; animSide = 0; animDraftStartUs = null; animDraftEndUs = null
                 trimSide = 0
                 isPlayheadGrabbed = false
                 pendingTransition = null
@@ -947,7 +1006,7 @@ class TimelineView(context: Context) : View(context) {
                     },
                 )
 
-                when (val hit = com.termex.replay15.editor.ui.TimelineHitResolver.resolve(e.x, e.y, hitCtx)) {
+                when (val hit = if (animationDown(e.x, e.y)) null else com.termex.replay15.editor.ui.TimelineHitResolver.resolve(e.x, e.y, hitCtx)) {
                     is com.termex.replay15.editor.ui.TimelineHitTarget.StickerTrimTarget -> {
                         val sticker = project.stickers.firstOrNull { it.id == hit.stickerId }
                         if (sticker != null) {
@@ -1118,6 +1177,7 @@ class TimelineView(context: Context) : View(context) {
                     val pressedSelected = downY in dp(48f)..dp(120f) && time(downX) in selectedStart..selectedEnd
 
                     gesture = when {
+                        animDragId != null -> 9
                         lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.KEYFRAME_DRAG -> 5
                         lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.TRIM_START || lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.TRIM_END -> 1
                         lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.PLAYHEAD_GRAB -> 1
@@ -1137,6 +1197,8 @@ class TimelineView(context: Context) : View(context) {
                 if (gesture == 2) {
                     vertical = (vertical - (e.y - lastY)).coerceIn(0f, maxScroll())
                     invalidate()
+                } else if (gesture == 9) {
+                    animationMove(delta)
                 } else if (gesture == 6) {
                     selectedLayerId = textDrag?.first
                     textDrag?.let { (textId, _) ->
@@ -1286,7 +1348,14 @@ class TimelineView(context: Context) : View(context) {
             MotionEvent.ACTION_UP -> {
                 val rawDelta = delta
                 if (!scaled && isDragging) {
-                    if (gesture == 7) {
+                    if (gesture == 9) {
+                        animDragId?.let { id ->
+                            val finalStart = animDraftStartUs ?: animInitialStartUs
+                            val finalEnd = animDraftEndUs ?: animInitialEndUs
+                            if (animSide != 0) onAnimationTrim(id, finalStart, finalEnd) else onAnimationMove(id, finalStart, finalEnd)
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        }
+                    } else if (gesture == 7) {
                         stickerDrag?.let { (stickerId, _) ->
                             val finalStart = stickerDraftStartUs ?: stickerInitialStartUs
                             val finalEnd = stickerDraftEndUs ?: stickerInitialEndUs
@@ -1377,7 +1446,7 @@ class TimelineView(context: Context) : View(context) {
                     } else if (e.x < dp(40f) && downY >= dp(130f)) {
                         lanes.getOrNull(((downY - dp(132f) + vertical) / dp(39f)).toInt())?.let {
                             handledTap = true
-                            if (it.type == 4) it.segments.firstOrNull()?.let { segment -> onAdjustment(segment.id) } else onTrack(it.trackId)
+                            if (it.type == 4) it.segments.firstOrNull()?.let { segment -> onAdjustment(segment.id) } else if (it.type != 5) onTrack(it.trackId)
                         }
                     } else if (downY < dp(48f)) {
                         handledTap = true
@@ -1428,6 +1497,7 @@ class TimelineView(context: Context) : View(context) {
                                 }
                                 3 -> { selectedLayerId = s.id; onVideoLayer(lane.trackId, s.id) }
                                 4 -> onAdjustment(s.id)
+                                5 -> { selectedLayerId = s.id; onAnimation(s.id) }
                             }
                         }
                     }
@@ -1440,6 +1510,7 @@ class TimelineView(context: Context) : View(context) {
                 stickerDrag = null; stickerTrimSide = 0; stickerDraftStartUs = null; stickerDraftEndUs = null
                 audioDrag = null; audioTrimSide = 0; audioFadeSide = 0; audioDraftStartUs = null; audioDraftInUs = null; audioDraftOutUs = null; audioDraftFadeInUs = null; audioDraftFadeOutUs = null
                 audioKeyframeDrag = null; audioKeyframeDraftTimeUs = null
+                animDragId = null; animSide = 0; animDraftStartUs = null; animDraftEndUs = null
                 isPlayheadGrabbed = false
                 isDragging = false
                 pendingTransition = null
@@ -1487,6 +1558,7 @@ class TimelineView(context: Context) : View(context) {
                 lockedTarget = com.termex.replay15.editor.ui.TimelineGestureLock.NONE
                 keyframeDrag = null
                 keyframeDraftSourceUs = null
+                animDragId = null; animSide = 0; animDraftStartUs = null; animDraftEndUs = null
                 lastSnapTarget = null
                 snapper.reset()
                 invalidate()
@@ -1496,11 +1568,68 @@ class TimelineView(context: Context) : View(context) {
         }
         return true
     }
+    /**
+     * Começa o gesto de um balão de animação se o toque caiu em um. Devolve true quando o toque é
+     * dele (o resolvedor padrão não é consultado). Os lados só esticam com o balão já selecionado,
+     * como nos balões de texto e áudio, para um toque no corpo nunca esticar sem querer.
+     */
+    private fun animationDown(xx: Float, yy: Float): Boolean {
+        if (yy < dp(130f) || xx < dp(GUTTER_DP)) return false
+        val laneIndex = ((yy - dp(132f) + vertical) / dp(39f)).toInt()
+        val lane = lanes.getOrNull(laneIndex) ?: return false
+        if (lane.type != 5) return false
+        val top = dp(132f) + laneIndex * dp(39f) - vertical
+        if (yy < top || yy > top + dp(34f)) return false
+        val slop = dp(6f)
+        val seg = lane.segments.firstOrNull { xx >= x(it.start) - slop && xx <= x(it.end) + slop } ?: return false
+        val selectedNow = seg.id == selectedLayerId
+        animSide = when {
+            selectedNow && abs(xx - x(seg.start)) <= dp(18f) -> -1
+            selectedNow && abs(xx - x(seg.end)) <= dp(18f) -> 1
+            else -> 0
+        }
+        animDragId = seg.id
+        animInitialStartUs = seg.start; animInitialEndUs = seg.end
+        animDraftStartUs = seg.start; animDraftEndUs = seg.end
+        selectedLayerId = seg.id
+        if (animSide != 0) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        return true
+    }
+
+    private fun animationMove(rawDelta: Float) {
+        val id = animDragId ?: return
+        val clip = project.animationClips.firstOrNull { it.id == id } ?: return
+        val target = AnimationEditing.target(project, clip.targetId) ?: return
+        val shiftUs = (rawDelta / pixelsPerSecond * SECOND).toLong()
+        val minLen = MIN_ANIMATION_US
+        when (animSide) {
+            -1 -> {
+                val upper = (animInitialEndUs - minLen).coerceAtLeast(target.startUs)
+                animDraftStartUs = snap((animInitialStartUs + shiftUs).coerceIn(target.startUs, upper)).coerceIn(target.startUs, upper)
+                animDraftEndUs = animInitialEndUs
+            }
+            1 -> {
+                val lower = (animInitialStartUs + minLen).coerceAtMost(target.endUs)
+                animDraftEndUs = snap((animInitialEndUs + shiftUs).coerceIn(lower, target.endUs)).coerceIn(lower, target.endUs)
+                animDraftStartUs = animInitialStartUs
+            }
+            else -> {
+                val length = animInitialEndUs - animInitialStartUs
+                val maxStart = (target.endUs - length).coerceAtLeast(target.startUs)
+                val start = snap((animInitialStartUs + shiftUs).coerceIn(target.startUs, maxStart)).coerceIn(target.startUs, maxStart)
+                animDraftStartUs = start; animDraftEndUs = start + length
+            }
+        }
+        invalidate()
+    }
+
     override fun performClick(): Boolean { super.performClick(); return true }
     fun clearThumbnails() { thumbs.clear() }
     fun release() { thumbs.close(); waves.close() }
     private companion object {
         /** Left gutter: narrow, only for layer tags and the main-track header tap. */
         const val GUTTER_DP = 26f
+        /** Lilás dos balões de animação (as camadas de efeito usam rosa). */
+        const val ANIMATION_COLOR = 0xFFB388FF.toInt()
     }
 }

@@ -44,3 +44,16 @@ Track state IDs: `main`, `texts`, `stickers`, `audio:<clipId>` and video-track I
 Visibility controls visual output; mute controls audio; solo operates within each
 media group. Lock blocks content changes, not unlocking. ProjectHistory retains
 complete immutable metadata snapshots. Atomic fsync/rename saves remain in use.
+
+Schema 31 appends the animation balloons (`AnimationClip`, lilac on the timeline): up
+to 400 entries of `id`, `targetId` (main clip, overlay clip, text or sticker), `startUs`,
+`endUs` (both RELATIVE to the start of the target, so moving, rippling or reordering the
+target carries the balloon with it), the preset as a stable string id, `intensity` and the
+easing ordinal. Schema 30 and older files simply lack the section and open with no
+balloons, byte-for-byte as before. The evaluator multiplies the zoom and adds offset and
+rotation on top of the manual keyframes, identically in preview and export; outside the
+window a balloon contributes nothing. A split partitions the balloons between both halves;
+orphaned or overflowing balloons (deleted or trimmed targets) are removed or clamped by
+`AnimationEditing.sanitized`, which the session controller and the codec both apply.
+Auto Edit emits `PUNCH_IN` balloons for emphasis zooms and Ken Burns balloons (zoom
+1.0 to 1.18–1.25, alternating direction) for B-roll images instead of loose keyframes.

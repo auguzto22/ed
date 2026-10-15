@@ -43,7 +43,7 @@ const val MAIN_TRACK_B = "main_b"
 const val TEXT_TRACK = "texts"
 const val STICKER_TRACK = "stickers"
 const val MAX_PROJECT_US = 24 * 60 * 60 * SECOND
-const val PROJECT_SCHEMA = 30
+const val PROJECT_SCHEMA = 31
 
 fun Project.trackState(id: String) = trackStates[id] ?: TrackState()
 fun Project.visualEnabled(id: String): Boolean {
@@ -79,15 +79,22 @@ object TrackEditing {
 
     fun split(project: Project, trackId: String, clipId: String, timeUs: Long): Project {
         require(!project.trackState(trackId).locked) { "Desbloqueie a faixa para editar" }
-        return project.copy(videoTracks = project.videoTracks.map { track ->
+        var cut: Triple<String, String, Long>? = null
+        val split = project.copy(videoTracks = project.videoTracks.map { track ->
             if (track.id != trackId) track else track.copy(clips = track.clips.flatMap { item ->
                 if (item.clip.id != clipId) listOf(item) else {
                     val parts = Project(videos = listOf(item.clip)).split(0, timeUs - item.startUs).videos
-                    if (parts.size == 1) listOf(item) else listOf(TimedVideoClip(item.startUs, parts[0]),
-                        TimedVideoClip(item.startUs + parts[0].durationUs, parts[1]))
+                    if (parts.size == 1) listOf(item) else {
+                        cut = Triple(parts[0].id, parts[1].id, parts[0].durationUs)
+                        listOf(TimedVideoClip(item.startUs, parts[0]),
+                            TimedVideoClip(item.startUs + parts[0].durationUs, parts[1]))
+                    }
                 }
             })
         })
+        // Os balões de animação do clipe cortado se repartem entre as duas metades.
+        val c = cut ?: return split
+        return AnimationEditing.splitTarget(split, clipId, c.second, c.third)
     }
     fun reorder(project: Project, trackId: String, target: Int): Project {
         val from = project.videoTracks.indexOfFirst { it.id == trackId }

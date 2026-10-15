@@ -139,6 +139,7 @@ object ProjectComposition {
                 clip.offsetY != 0f ||
                 clip.motion != ClipMotion.NONE ||
                 clip.keyframes.isNotEmpty() ||
+                project.animationClips.any { it.targetId == clip.id } ||
                 clip.is3D ||
                 clip.transform3D != Transform3D.DEFAULT ||
                 clip.parentId != null
@@ -227,7 +228,7 @@ object ProjectComposition {
             ?.map { CaptionStyleResolver.resolve(project, it) } ?: emptyList()
         val stickers = project.stickers.takeIf { project.visualEnabled(STICKER_TRACK) } ?: emptyList()
         if (texts.isNotEmpty() || stickers.isNotEmpty()) {
-            effects += OverlayEffect(listOf(TextCanvasOverlay(context, texts, stickers, width, height)))
+            effects += OverlayEffect(listOf(TextCanvasOverlay(context, texts, stickers, width, height, project.animationClips)))
         }
         if (!project.camera.isDefault) effects += SceneCameraEffect(project.camera, project.backgroundColor)
         // This limits output cadence; it never fabricates interpolated frames.

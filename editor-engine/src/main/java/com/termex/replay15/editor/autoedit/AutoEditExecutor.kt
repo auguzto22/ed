@@ -58,6 +58,8 @@ object AutoEditExecutor {
             )
         }
 
+        val clipAnimations = animationsFor(project, source, keep, pieces.map { it.id }, plan)
+
         val newVideos = project.videos.toMutableList().apply {
             removeAt(clipIndex)
             addAll(clipIndex, pieces)
@@ -108,7 +110,8 @@ object AutoEditExecutor {
         }
         // B-roll goes on its own new layer at the top, so it covers the speaker but stays under
         // the captions (texts are drawn after every video layer) and can be moved or deleted.
-        val brollTrack = if (mappedTracks.size >= MAX_VIDEO_TRACKS) null else brollTrack(plan, clipStart, timelineEnd, mapLocal)
+        val broll = if (mappedTracks.size >= MAX_VIDEO_TRACKS) null else brollTrack(plan, clipStart, timelineEnd, mapLocal)
+        val brollTrack = broll?.track
 
         val next = project.copy(
             videos = newVideos,
@@ -122,6 +125,9 @@ object AutoEditExecutor {
             markers = project.markers.map { it.copy(timeUs = mapAbsolute(it.timeUs)) },
             videoTracks = mappedTracks + listOfNotNull(brollTrack),
             trackStates = if (brollTrack == null) project.trackStates else project.trackStates + (brollTrack.id to TrackState(BROLL_TRACK_NAME)),
+            // Zooms e Ken Burns viram balões de animação (editáveis na timeline), não keyframes soltos.
+            animationClips = (project.animationClips.filter { it.targetId != source.id } + clipAnimations +
+                broll?.animations.orEmpty()).take(MAX_ANIMATION_CLIPS),
             adjustmentClips = project.adjustmentClips.mapNotNull { adjustment ->
                 val start = mapAbsolute(adjustment.startUs); val end = mapAbsolute(adjustment.endUs)
                 if (end <= start) null else adjustment.copy(startUs = start, endUs = end)
@@ -129,15 +135,24 @@ object AutoEditExecutor {
             aspect = if (plan.options.autoReframe && plan.reframes.isNotEmpty()) 9f / 16f else project.aspect,
             canvasFill = if (plan.options.autoReframe && plan.reframes.isNotEmpty()) CanvasFill.FILL else project.canvasFill,
         )
-        return next
+        return next.withSanitizedAnimations()
     }
 
     const val MAX_VIDEO_TRACKS = 7
     const val BROLL_TRACK_NAME = "B-roll"
     /** Shorter than this after the cuts, an image reads as a glitch and is left out. */
     const val MIN_BROLL_US = 600_000L
-    /** Slow push-in over each image, like the reference. */
-    const val BROLL_PUSH_IN = 1.08f
+    /**
+     * Ken Burns das imagens de B-roll: a direção alterna entre as quatro variações e a intensidade
+     * leva o zoom final a 1.18–1.25 (veja [com.termex.replay15.editor.transform.AnimationEvaluator.KEN_BURNS_ZOOM]).
+     */
+    val BROLL_PRESETS = listOf(MotionPreset.KEN_BURNS, MotionPreset.KEN_BURNS_OUT_LEFT,
+        MotionPreset.KEN_BURNS_LEFT, MotionPreset.KEN_BURNS_OUT)
+    val BROLL_INTENSITIES = listOf(.85f, .95f, 1.05f, 1.13f)
+    /** Janela do punch-in do zoom de ênfase: antecipa 70 ms, como a rampa antiga dos keyframes. */
+    private const val ZOOM_LEAD_US = 70_000L
+    /** [MotionPreset.PUNCH_IN] chega a 1 + 0.15 * intensidade. */
+    private const val PUNCH_AMOUNT = .15f
 
     /**
      * Captions transcribed during the analysis, moved by [shiftUs] (the clip may have moved on the
@@ -180,8 +195,11 @@ object AutoEditExecutor {
         return PodcastCaptions.layer(caption.text.take(500), start, end, cues)
     }
 
-    private fun brollTrack(plan: AutoEditPlan, clipStart: Long, timelineEnd: Long, mapLocal: (Long) -> Long): VideoTrack? {
+    private class Broll(val track: VideoTrack, val animations: List<AnimationClip>)
+
+    private fun brollTrack(plan: AutoEditPlan, clipStart: Long, timelineEnd: Long, mapLocal: (Long) -> Long): Broll? {
         val clips = mutableListOf<TimedVideoClip>()
+        val animations = mutableListOf<AnimationClip>()
         var previousEnd = 0L
         plan.placedBrolls.sortedBy { it.startUs }.forEach { decision ->
             val media = decision.media ?: return@forEach
@@ -193,15 +211,53 @@ object AutoEditExecutor {
                 uri = media.uri, name = "B-roll: ${decision.keyword}".take(180),
                 sourceUs = duration, width = media.width, height = media.height,
                 image = true, inUs = 0L, outUs = duration, volume = 0f,
-                keyframes = listOf(
-                    TransformKeyframe(sourceUs = 0L, zoom = 1f, easing = Easing.LINEAR),
-                    TransformKeyframe(sourceUs = duration, zoom = BROLL_PUSH_IN, easing = Easing.LINEAR),
-                ),
             )
+            val variant = clips.size
+            animations += AnimationClip(targetId = image.id, startUs = 0L, endUs = image.durationUs,
+                preset = BROLL_PRESETS[variant % BROLL_PRESETS.size],
+                intensity = BROLL_INTENSITIES[variant % BROLL_INTENSITIES.size], easing = Easing.LINEAR)
             clips += TimedVideoClip(start, image)
             previousEnd = start + image.durationUs
         }
-        return if (clips.isEmpty()) null else VideoTrack(clips = clips.take(200))
+        if (clips.isEmpty()) return null
+        val kept = clips.take(200)
+        val keptIds = kept.mapTo(HashSet()) { it.clip.id }
+        return Broll(VideoTrack(clips = kept), animations.filter { it.targetId in keptIds })
+    }
+
+    /**
+     * Balões do clipe de origem depois dos cortes: os que já existiam atravessam os cortes (partidos
+     * entre as peças) e cada zoom de ênfase do plano vira um PUNCH_IN na peça onde cai.
+     */
+    private fun animationsFor(
+        project: Project, source: VideoClip, keep: List<LongRange>, pieceIds: List<String>, plan: AutoEditPlan,
+    ): List<AnimationClip> {
+        val result = ArrayList<AnimationClip>()
+        project.animationClips.filter { it.targetId == source.id }.forEach { clip ->
+            var keepsId = true
+            keep.forEachIndexed { index, range ->
+                val start = maxOf(clip.startUs, range.first)
+                val end = minOf(clip.endUs, range.last + 1)
+                if (end - start < MIN_ANIMATION_US) return@forEachIndexed
+                result += clip.copy(id = if (keepsId) clip.id else newId(), targetId = pieceIds[index],
+                    startUs = start - range.first, endUs = end - range.first)
+                keepsId = false
+            }
+        }
+        plan.zooms.forEach { zoom ->
+            val index = keep.indexOfFirst { zoom.timeUs in it.first..it.last }
+            if (index < 0) return@forEach
+            val range = keep[index]
+            val pieceLength = range.last + 1 - range.first
+            val start = (zoom.timeUs - ZOOM_LEAD_US - range.first).coerceAtLeast(0L)
+            val end = minOf(zoom.timeUs + zoom.durationUs - range.first, pieceLength)
+            if (end - start < MIN_ANIMATION_US) return@forEach
+            result += AnimationClip(targetId = pieceIds[index], startUs = start, endUs = end,
+                preset = MotionPreset.PUNCH_IN,
+                intensity = ((zoom.scale - 1f) / PUNCH_AMOUNT).coerceIn(MIN_ANIMATION_INTENSITY, MAX_ANIMATION_INTENSITY),
+                easing = Easing.SMOOTH)
+        }
+        return result
     }
 
     private fun keepRanges(durationUs: Long, cuts: List<CutDecision>): List<LongRange> {
@@ -225,11 +281,7 @@ object AutoEditExecutor {
                     x = x ?: base.x, y = y ?: base.y, easing = Easing.SMOOTH)
             }
         }
-        plan.zooms.forEach { zoom ->
-            place(zoom.timeUs - 70_000L)
-            place(zoom.timeUs, zoom.scale)
-            place(zoom.timeUs + zoom.durationUs)
-        }
+        // Os zooms de ênfase não geram mais keyframes: veja animationsFor.
         plan.reframes.forEach { reframe ->
             place(reframe.timeUs - 180_000L)
             place(reframe.timeUs + 180_000L, x = reframe.x, y = reframe.y)

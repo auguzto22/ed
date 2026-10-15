@@ -2,6 +2,7 @@ package com.termex.replay15.editor.preview.engine
 
 import com.termex.replay15.editor.assets.EffectInstance
 import com.termex.replay15.editor.domain.*
+import com.termex.replay15.editor.transform.AnimationEvaluator
 import com.termex.replay15.editor.transform.LayerStateEvaluator
 
 /** Immutable, GPU-facing state. The renderer never traverses Project. */
@@ -100,7 +101,10 @@ data class PreviewRenderState(
 object RenderStateEvaluator {
     fun evaluate(snapshot: ActiveClipResolver.Snapshot, project: Project, generation: Long, projectRevision: Long, width: Int, height: Int): PreviewRenderState {
         val layers = snapshot.videos.map { placed ->
-            val clip = placed.clip; val sourceUs = placed.sourceTimeUs(snapshot.projectTimeUs); val transform = clip.transformAt(sourceUs)
+            val clip = placed.clip; val sourceUs = placed.sourceTimeUs(snapshot.projectTimeUs); 
+            // Keyframes manuais primeiro; os balões ativos por cima (zoom multiplica, offset soma).
+            val transform = AnimationEvaluator.apply(clip.transformAt(sourceUs),
+                AnimationEvaluator.delta(project.animationClips, clip.id, snapshot.projectTimeUs - placed.startUs))
             PreviewRenderState.Layer(placed.key, sourceUs, clip.width, clip.height, clip.image, clip.effectivePreviewUri,
                 transform.zoom, transform.x, transform.y, transform.rotation, clip.rotation, clip.flip, transform.opacity,
                 clip.crop, VideoFilter.entries[clip.filter], clip.filterStrength, clip.brightness, clip.contrast,
@@ -121,7 +125,7 @@ object RenderStateEvaluator {
             val timing = com.termex.replay15.editor.transform.RealtimeProjectState.timing(text.id)
             val startUs = timing?.startUs ?: text.startUs
             val endUs = timing?.endUs ?: text.endUs
-            val evaluated = LayerStateEvaluator.evaluate(text, snapshot.projectTimeUs)
+            val evaluated = LayerStateEvaluator.evaluate(text, snapshot.projectTimeUs, animations = project.animationClips)
             if (!evaluated.visible) return@mapNotNull null
             val transform = evaluated.transform
             val wordState = if (text.wordCues.isEmpty()) 0L else {
@@ -151,7 +155,7 @@ object RenderStateEvaluator {
             val timing = com.termex.replay15.editor.transform.RealtimeProjectState.timing(sticker.id)
             val startUs = timing?.startUs ?: sticker.startUs
             val endUs = timing?.endUs ?: sticker.endUs
-            val evaluated = LayerStateEvaluator.evaluate(sticker, snapshot.projectTimeUs)
+            val evaluated = LayerStateEvaluator.evaluate(sticker, snapshot.projectTimeUs, animations = project.animationClips)
             if (!evaluated.visible) return@mapNotNull null
             val transform = evaluated.transform
             sticker.copy(startUs = startUs, endUs = endUs, x = transform.x, y = transform.y,

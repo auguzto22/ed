@@ -10,12 +10,15 @@ data class RenderLayer(val id: String, val clips: List<TimedVideoClip>) {
 object RenderPlan {
     /** Media3 input zero is on top. Every sequence is padded to the same end. */
     fun layers(project: Project): List<RenderLayer> {
+        // Pedaços com balão de animação nunca se fundem: o balão aponta para o id de cada pedaço.
+        val animated = project.animationClips.mapTo(HashSet()) { it.targetId }
+        fun merged(clips: List<TimedVideoClip>) = coalesce(clips, animated)
         val upper = project.videoTracks.asReversed().filter { it.clips.isNotEmpty() }
-            .map { RenderLayer(it.id, coalesce(it.clips)) }
+            .map { RenderLayer(it.id, merged(it.clips)) }
         return if (project.transitions.isEmpty()) {
             var time = 0L
             val main = project.videos.map { clip -> TimedVideoClip(time, clip).also { time += clip.durationUs } }
-            upper + RenderLayer(MAIN_TRACK, coalesce(main))
+            upper + RenderLayer(MAIN_TRACK, merged(main))
         } else {
             val mainA = mutableListOf<TimedVideoClip>()
             val mainB = mutableListOf<TimedVideoClip>()
@@ -24,8 +27,8 @@ object RenderPlan {
                 if (index % 2 == 0) mainA += timed else mainB += timed
             }
             upper + listOf(
-                RenderLayer(MAIN_TRACK_A, coalesce(mainA)),
-                RenderLayer(MAIN_TRACK_B, coalesce(mainB)),
+                RenderLayer(MAIN_TRACK_A, merged(mainA)),
+                RenderLayer(MAIN_TRACK_B, merged(mainB)),
             )
         }
     }
@@ -37,12 +40,13 @@ object RenderPlan {
     }
 
     /** A split is an editing boundary, but identical adjacent pieces need not restart a decoder. */
-    fun coalesce(clips: List<TimedVideoClip>): List<TimedVideoClip> {
+    fun coalesce(clips: List<TimedVideoClip>, animatedIds: Set<String> = emptySet()): List<TimedVideoClip> {
         if (clips.size < 2) return clips
         val result = mutableListOf<TimedVideoClip>()
         clips.forEach { placed ->
             val previous = result.lastOrNull()
-            if (previous != null && previous.endUs == placed.startUs && canCoalesce(previous.clip, placed.clip)) {
+            if (previous != null && previous.endUs == placed.startUs &&
+                previous.clip.id !in animatedIds && placed.clip.id !in animatedIds && canCoalesce(previous.clip, placed.clip)) {
                 val joined = previous.clip.copy(outUs = placed.clip.outUs, transitionOut = placed.clip.transitionOut)
                 result[result.lastIndex] = previous.copy(clip = joined)
             } else result += placed

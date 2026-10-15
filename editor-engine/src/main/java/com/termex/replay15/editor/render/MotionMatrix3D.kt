@@ -4,6 +4,7 @@ import androidx.media3.common.util.Size
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.GlMatrixTransformation
 import com.termex.replay15.editor.domain.*
+import com.termex.replay15.editor.transform.AnimationEvaluator
 
 /**
  * 2.5D / 3D OpenGL vertex transformation effect for Media3.
@@ -36,6 +37,10 @@ class MotionMatrix3D(
 
     private var aspect = 1f
 
+    /** Balões deste clipe, separados uma vez: o caminho quente não varre o projeto todo. */
+    private val ownAnimations: List<AnimationClip> =
+        initialProject?.animationClips?.filter { it.targetId == clip.id }.orEmpty()
+
     override fun configure(inputWidth: Int, inputHeight: Int): Size {
         aspect = inputWidth.toFloat() / inputHeight.coerceAtLeast(1)
         return Size(inputWidth, inputHeight)
@@ -53,7 +58,9 @@ class MotionMatrix3D(
         }
         val timelineUs = (projectTimeUs - startUs).coerceIn(0L, durationUs)
         val sourceTime = current.timeMap.sourceAt(timelineUs)
-        val key = current.transformAt(sourceTime)
+        // Keyframes manuais + balões de animação ativos (mesma conta do preview).
+        val key = AnimationEvaluator.apply(current.transformAt(sourceTime),
+            AnimationEvaluator.delta(ownAnimations, current.id, timelineUs))
 
         // Procedural clip motion (Zoom In/Out, Pan Left/Right)
         val progress = (timelineUs.toFloat() / durationUs).coerceIn(0f, 1f)
@@ -157,7 +164,8 @@ class MotionMatrix3D(
                     ?.let { project.startOf(it) } ?: 0L
             val parentTimelineUs = (timeUs - parentStartUs).coerceIn(0L, parentClip.durationUs)
             val parentSourceTime = parentClip.timeMap.sourceAt(parentTimelineUs)
-            val parentKey = parentClip.transformAt(parentSourceTime)
+            val parentKey = AnimationEvaluator.apply(parentClip.transformAt(parentSourceTime),
+                AnimationEvaluator.delta(project.animationClips, parentClip.id, parentTimelineUs))
 
             val pMat = b.parentMatrix
             Matrix4.setIdentity(pMat)

@@ -24,6 +24,8 @@ class TextCanvasOverlay(
     private val initialStickers: List<StickerClip>,
     private val width: Int,
     private val height: Int,
+    /** Balões do projeto; os que miram texto/sticker entram na mesma avaliação do preview. */
+    private val animations: List<AnimationClip> = emptyList(),
 ) : BitmapOverlay() {
     private class Motion {
         var alpha = 1f
@@ -79,7 +81,9 @@ class TextCanvasOverlay(
             it.wordCues.isNotEmpty() || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true } ||
             activeStickers.any {
                 LottieLayerRenderer.isLottieUri(it.uri) || it.animation != TextAnimation.NONE || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
-            }
+            } ||
+            (animations.isNotEmpty() && (activeTexts.any { t -> animations.any { it.targetId == t.id } } ||
+                activeStickers.any { s -> animations.any { it.targetId == s.id } }))
         if (lastStateSignature != stateSignature || animated) {
             val target = requireNotNull(canvas)
             target.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
@@ -115,7 +119,7 @@ class TextCanvasOverlay(
             val source = text.copy(x = .5f, y = .5f, rotation = 0f, scale = 1f, animation = TextAnimation.NONE)
             TextLayout.create(source, width, height, context, timeUs).also { textLayouts[text.id] = CachedTextLayout(source, it, wordBucket) }
         }
-        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(text, timeUs, realtime = false).transform
+        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(text, timeUs, realtime = false, animations = animations).transform
         val evaluatedMotion = SubtitleAnimationEvaluator.evaluate(text, timeUs, width, height)
         canvas.save()
         val effectiveAlpha = (evaluatedMotion[0] * transform.opacity).coerceIn(0f, 1f)
@@ -132,7 +136,7 @@ class TextCanvasOverlay(
     }
 
     private fun drawSticker(canvas: Canvas, sticker: StickerClip, source: Bitmap, timeUs: Long) {
-        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false).transform
+        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false, animations = animations).transform
         updateMotion(sticker.animation, sticker.startUs, sticker.endUs, timeUs)
         val targetHeight = sticker.size * height * transform.scaleY
         val targetWidth = (sticker.size * height * source.width / source.height.toFloat()) * transform.scaleX
@@ -150,7 +154,7 @@ class TextCanvasOverlay(
 
     private fun drawLottieSticker(canvas: Canvas, sticker: StickerClip, timeUs: Long) {
         val composition = LottieLayerRenderer.loadComposition(context, sticker.uri) ?: return
-        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false).transform
+        val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false, animations = animations).transform
         updateMotion(sticker.animation, sticker.startUs, sticker.endUs, timeUs)
         val compBounds = composition.bounds
         val compW = compBounds.width().toFloat().coerceAtLeast(1f)

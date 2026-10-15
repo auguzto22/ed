@@ -250,9 +250,14 @@ class AutoEditPodcastBrollTest {
         track.clips.forEach { item ->
             assertTrue(item.clip.image)
             assertEquals(0f, item.clip.volume)
-            assertEquals(1f, item.clip.keyframes.first().zoom)
-            assertEquals(AutoEditExecutor.BROLL_PUSH_IN, item.clip.keyframes.last().zoom)
+            assertTrue(item.clip.keyframes.isEmpty())
+            val animation = edited.animationClips.single { it.targetId == item.clip.id }
+            assertTrue(animation.preset in AutoEditExecutor.BROLL_PRESETS)
+            assertEquals(0L, animation.startUs)
+            assertEquals(item.clip.durationUs, animation.endUs)
         }
+        assertTrue("direcao alterna entre as imagens",
+            edited.animationClips.map { it.preset }.distinct().size == 2)
         assertEquals("B-roll: dinheiro", track.clips[0].clip.name)
         assertTrue(plan.summary().contains("2 imagens"))
 
