@@ -82,8 +82,13 @@ class VideoLayerHandlesView(context: Context) : View(context) {
     }
 
     private fun resolveTargetAt(x: Float, y: Float): Target? {
+        // Front to back, like the picture. The selected target used to win first even when it
+        // was the main clip, which fills the whole frame: with the main clip selected, a tap on
+        // a layer on top of it selected the clip behind, so every tool (e.g. Remover fundo) went
+        // to the wrong video. A selected *layer* still wins, so it can be dragged where layers
+        // overlap.
         val active = current()
-        if (active != null && hitTest(active, x, y)) {
+        if (active != null && active.track != null && hitTest(active, x, y)) {
             return active
         }
         for (track in project.videoTracks.asReversed()) {

@@ -152,6 +152,13 @@ class EditorActivity : Activity() {
     private lateinit var redo: View
     private lateinit var empty: TextView
     private var loaded = false
+    /**
+     * Resultados de seletores que chegaram antes do projeto carregar. Quando o Android recria o
+     * editor enquanto a galeria está aberta, o resultado é entregue antes da leitura assíncrona
+     * do projeto terminar; o import via "busy" era descartado em silêncio e o vídeo escolhido
+     * simplesmente não entrava na timeline. Agora é reaplicado depois do carregamento.
+     */
+    private val pendingPickerResults = mutableListOf<Triple<Int, Int, Intent?>>()
     private var resumed = false
     private var busy = false
     private var fullscreen = false
@@ -338,6 +345,7 @@ class EditorActivity : Activity() {
                                 }
                             }
                             history = ProjectHistory(loaded); baseline = loaded; selected = -1; refresh(); checkMedia(); checkAndRequestProxies(loaded)
+                            replayPendingPickerResults()
                             savedInstanceState?.getStringArrayList("importUris")?.takeIf { uris -> uris.isNotEmpty() }?.let { uris ->
                                 replaceIndex = savedInstanceState.getInt("importReplace", -1)
                                 importMedia(uris.map(Uri::parse), savedInstanceState.getBoolean("importAudio"))
@@ -1238,16 +1246,7 @@ class EditorActivity : Activity() {
             onMainSelected = { index ->
                 selectMainClip(index)
             }
-            onTrackSelected = { track, clip ->
-                videoHandles.trackId = track
-                videoHandles.clipId = clip
-                timeline.selectedLayerId = clip
-                selected = -1
-                timeline.selected = -1
-                handles.selected = null
-                stickerHandles.selected = null
-                updateContextualTools()
-            }
+            onTrackSelected = { track, clip -> selectVideoLayer(track, clip) }
         }
         frame.addView(videoHandles, FrameLayout.LayoutParams(-1, -1))
         handles = TextHandlesView(this).apply {
@@ -1358,7 +1357,7 @@ class EditorActivity : Activity() {
             { active -> busy = active; if (active) { preview.pause(); info.text = "Analisando estilo..." } else refresh(reload = false) },
         )
         videoTrackTools = VideoTrackTools(this, { project }, { position }, ::edit, ::previewEdit, ::seek, { }, ::pickVideoLayer,
-            { track, clip -> videoHandles.trackId = track; videoHandles.clipId = clip; timeline.selectedLayerId = clip }, ::pickLut,
+            ::selectVideoLayer, ::pickLut,
             { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
 
         // Barra de legenda dentro da área da prévia (substitui a tela separada de legendas do canvas).
@@ -1398,11 +1397,79 @@ class EditorActivity : Activity() {
      * Texto, Áudio, Auto Edit). Ao tocar no vídeo (prévia ou timeline) ela vira a barra do clipe,
      * com as funções mais usadas (filtros, efeitos, stickers...) e "Mais" para o resto; o X volta.
      */
+    /**
+     * Seleciona uma camada de vídeo (faixa sobreposta). Antes, abrir a camada pela timeline só
+     * mudava as alças e deixava o clipe principal selecionado: a barra continuava sendo a do
+     * clipe de trás e "Remover fundo", "Efeitos" etc. iam para ele.
+     */
+    private fun selectVideoLayer(trackId: String, clipId: String) {
+        selected = -1
+        timeline.selected = -1
+        handles.selected = null
+        stickerHandles.selected = null
+        videoHandles.mainClipIndex = -1
+        videoHandles.trackId = trackId
+        videoHandles.clipId = clipId
+        timeline.selectedLayerId = clipId
+        selectedVideoLayer()?.let { (_, clip) -> info.text = clip.name }
+        updateContextualTools()
+    }
+
+    /** A camada de vídeo selecionada (faixa e clipe), se ainda existir no projeto. */
+    private fun selectedVideoLayer(): Pair<String, VideoClip>? {
+        val trackId = videoHandles.trackId ?: return null
+        val clipId = videoHandles.clipId ?: return null
+        val clip = project.videoTracks.firstOrNull { it.id == trackId }?.clips?.firstOrNull { it.clip.id == clipId }?.clip ?: return null
+        return trackId to clip
+    }
+
+    private fun confirmDeleteVideoLayer(trackId: String, clipId: String) {
+        AlertDialog.Builder(this).setTitle("Excluir camada?").setMessage("O arquivo original continua no aparelho.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Excluir") { _, _ ->
+                val tracks = project.videoTracks.map { track ->
+                    if (track.id == trackId) track.copy(clips = track.clips.filter { it.clip.id != clipId }) else track
+                }.filter { it.clips.isNotEmpty() }
+                edit(project.copy(videoTracks = tracks))
+                clearSelection()
+            }.show()
+    }
+
     private fun updateContextualTools() {
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
         val clipSelected = selected in project.videos.indices
-        val items: List<Triple<String, String, () -> Unit>> = if (clipSelected) listOf(
+        val videoLayer = if (clipSelected) null else selectedVideoLayer()
+        val stickerId = if (clipSelected || videoLayer != null) null
+            else stickerHandles.selected?.takeIf { id -> project.stickers.any { it.id == id } }
+        val items: List<Triple<String, String, () -> Unit>> = if (videoLayer != null) {
+            // Barra da camada de vídeo: as funções agem nesta camada, não no clipe de trás.
+            val (trackId, layer) = videoLayer
+            listOf(
+                Triple("Fechar", "Fechar", { clearSelection() }),
+                Triple("Remover fundo", "Fundo", { backgroundRemovalTools.open(layer.id) }),
+                Triple("Editar", "Ajustar", { videoTrackTools.open(trackId, layer.id) }),
+                Triple("Efeitos", "Efeitos", { effectTools.open(layer.id) }),
+                Triple("Animação", "Transformar", { animationTools.open(layer.id) }),
+                Triple("Adicionar", "+ Midia", { addMediaMenu() }),
+                Triple("Camadas", "Camada", { layersMenu() }),
+                Triple("Excluir", "Excluir", { confirmDeleteVideoLayer(trackId, layer.id) }),
+            )
+        } else if (stickerId != null) {
+            // Barra da camada de imagem.
+            listOf(
+                Triple("Fechar", "Fechar", { clearSelection() }),
+                Triple("Remover fundo", "Fundo", { backgroundRemovalTools.openSticker(stickerId) }),
+                Triple("Editar", "Ajustar", { stickerPanel(stickerId) }),
+                Triple("Máscara", "Mascaras", { stickerMaskPanel(stickerId) }),
+                Triple("Adicionar", "+ Midia", { addMediaMenu() }),
+                Triple("Camadas", "Camada", { layersMenu() }),
+                Triple("Excluir", "Excluir", {
+                    edit(project.copy(stickers = project.stickers.filterNot { it.id == stickerId }))
+                    clearSelection()
+                }),
+            )
+        } else if (clipSelected) listOf(
             Triple("Fechar", "Fechar", { clearSelection() }),
             Triple("Filtros", "Filtros", { filters() }),
             Triple("Efeitos", "Efeitos", { selectedClip()?.let { effectTools.open(it.id) } }),
@@ -1469,6 +1536,8 @@ class EditorActivity : Activity() {
     /** Aparar: com um clipe, abre todas as funções de clipe; com uma camada de imagem, as dela. */
     private fun openTrimTool() {
         stickerHandles.selected?.let { stickerTools(it); return }
+        // Com uma camada de vídeo selecionada, as funções dela (antes abria as do clipe de trás).
+        selectedVideoLayer()?.let { (trackId, layer) -> videoTrackTools.open(trackId, layer.id); return }
         val clip = if (selected in project.videos.indices) selectedClip() else selectedClipAtCursor()
         if (clip != null) editTools()
     }
@@ -2026,8 +2095,11 @@ class EditorActivity : Activity() {
         if (project.durationUs <= 0) { error("Adicione um video antes da camada de imagem"); return }
         if (replaceId == null && project.stickers.size >= 24) { error("Limite de 24 camadas de imagem"); return }
         replaceStickerId = replaceId
+        // Novas camadas: várias fotos de uma vez (até completar o limite de 24 camadas).
+        val free = 24 - project.stickers.size
         startActivityForResult(GalleryPickerActivity.intent(this, GalleryPickerActivity.MODE_IMAGES,
-            title = if (replaceId != null) "Trocar imagem" else "Imagem em camada"), 702)
+            multiple = replaceId == null && free > 1, max = free.coerceAtLeast(1),
+            title = if (replaceId != null) "Trocar imagem" else "Imagens em camada"), 702)
     }
     private fun pickSubtitles() {
         if (busy || project.durationUs <= 0) return
@@ -2040,6 +2112,10 @@ class EditorActivity : Activity() {
     }
     @Deprecated("Platform document picker") override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (!loaded && requestCode in setOf(700, 701, 702, 704, 708, 711) && resultCode == RESULT_OK) {
+            pendingPickerResults.add(Triple(requestCode, resultCode, data))
+            return
+        }
         if (requestCode == 711) {
             if (resultCode == RESULT_OK && data?.data != null) {
                 val uri = data.data!!
@@ -2082,10 +2158,17 @@ class EditorActivity : Activity() {
         val uris = data.clipData?.let { clip -> List(clip.itemCount) { clip.getItemAt(it).uri } } ?: listOfNotNull(data.data)
         if (!persistPickedAccess(data, uris)) return
         when (requestCode) {
-            702 -> importSticker(uris.firstOrNull() ?: return)
+            702 -> importStickers(uris)
             704 -> importSubtitles(uris.firstOrNull() ?: return)
             else -> importMedia(uris, requestCode == 701)
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun replayPendingPickerResults() {
+        val results = pendingPickerResults.toList()
+        pendingPickerResults.clear()
+        results.forEach { (request, code, data) -> onActivityResult(request, code, data) }
     }
 
     private fun persistPickedAccess(result: Intent, uris: List<Uri>): Boolean = try {
@@ -2104,7 +2187,9 @@ class EditorActivity : Activity() {
         false
     }
     private fun importMedia(uris: List<Uri>, audio: Boolean) {
-        if (busy || uris.isEmpty()) return
+        if (uris.isEmpty()) return
+        // Antes voltava sem dizer nada e a mídia escolhida sumia.
+        if (busy) { feedback("Aguarde o processamento terminar e adicione de novo"); return }
         if (!audio && project.videos.size + uris.size > 200) { error("Limite de 200 clipes por projeto"); return }
         busy = true; preview.suspendSources(); info.text = "Importando midia..."
         val snapshot = project; val replace = replaceIndex; replaceIndex = -1; val at = position
@@ -2129,36 +2214,77 @@ class EditorActivity : Activity() {
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 busy = false; importing = null
-                result.fold({ next -> selected = if (replace >= 0) replace else selected; edit(next); consumePendingOpenTool() },
-                    { refresh(); error("Nao foi possivel importar: ${it.message}") })
+                result.fold({ next ->
+                    selected = if (replace >= 0) replace else selected
+                    edit(next)
+                    if (!audio && replace < 0) showAddedClips(snapshot.videos.size, uris.size)
+                    consumePendingOpenTool()
+                }, { refresh(); error("Nao foi possivel importar: ${it.message}") })
             }
         }
     }
-    private fun importSticker(uri: Uri) {
+    /**
+     * Importa uma ou várias imagens como camadas. Várias fotos entram no cursor, cada uma um
+     * pouco deslocada da anterior (em cascata) para não ficarem exatamente uma sobre a outra.
+     * Ao trocar a imagem de uma camada, só a primeira é usada.
+     */
+    /**
+     * Mídia nova entra no fim da timeline. Sem levar o cursor até ela, o vídeo adicionado ficava
+     * fora da tela (ou fora do clipe composto aberto, onde o cursor fica preso) e parecia que
+     * nada tinha acontecido.
+     */
+    private fun showAddedClips(firstIndex: Int, count: Int) {
+        if (firstIndex !in project.videos.indices) return
+        if (openCompoundId != null) closeCompound()
+        selectMainClip(firstIndex)
+        seek(project.startOf(firstIndex))
+        feedback(if (count > 1) "$count itens adicionados no fim da timeline" else "Adicionado no fim da timeline")
+    }
+
+    private fun importStickers(uris: List<Uri>) {
         val replacing = replaceStickerId
         replaceStickerId = null
-        if (busy || project.durationUs <= 0 || (replacing == null && project.stickers.size >= 24)) return
+        if (uris.isEmpty() || project.durationUs <= 0) return
+        if (busy) { feedback("Aguarde o processamento terminar"); return }
+        val wanted = if (replacing != null) uris.take(1) else uris.take((24 - project.stickers.size).coerceAtLeast(0))
+        if (wanted.isEmpty()) { error("Limite de 24 camadas de imagem"); return }
         busy = true
         preview.suspendSources()
-        info.text = "Importando camada de imagem..."
+        info.text = if (wanted.size > 1) "Importando ${wanted.size} imagens..." else "Importando camada de imagem..."
         val snapshot = project
         val at = minOf(position, (snapshot.durationUs - MIN_CLIP).coerceAtLeast(0))
+        val end = minOf(snapshot.durationUs, at + 5 * SECOND)
         io.execute {
-            val result = runCatching {
-                MediaImport.sticker(this, uri, at, minOf(snapshot.durationUs, at + 5 * SECOND))
-            }
+            // Cada foto é importada sozinha: uma imagem inválida não derruba as outras.
+            val results = wanted.map { uri -> runCatching { MediaImport.sticker(this, uri, at, end) } }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 busy = false
-                result.fold({ imported ->
-                    val previous = snapshot.stickers.find { it.id == replacing }
-                    val sticker = if (previous == null) imported else previous.copy(uri = imported.uri, name = imported.name)
+                val imported = results.mapNotNull { it.getOrNull() }
+                val failures = results.count { it.isFailure }
+                if (imported.isEmpty()) {
+                    refresh()
+                    error("Nao foi possivel importar a camada: ${results.firstNotNullOfOrNull { it.exceptionOrNull() }?.message}")
+                    return@runOnUiThread
+                }
+                val previous = snapshot.stickers.find { it.id == replacing }
+                val next = if (previous != null) {
+                    val sticker = previous.copy(uri = imported.first().uri, name = imported.first().name)
                     stickerHandles.selected = sticker.id
-                    handles.selected = null
-                    edit(snapshot.copy(stickers = if (previous == null) snapshot.stickers + sticker else
-                        snapshot.stickers.map { if (it.id == previous.id) sticker else it }))
-                    seek(sticker.startUs)
-                }, { refresh(); error("Nao foi possivel importar a camada: ${it.message}") })
+                    snapshot.copy(stickers = snapshot.stickers.map { if (it.id == previous.id) sticker else it })
+                } else {
+                    val placed = imported.mapIndexed { index, sticker ->
+                        val shift = (index % 6) * .06f
+                        sticker.copy(x = (sticker.x + shift).coerceIn(.1f, .9f), y = (sticker.y + shift).coerceIn(.1f, .9f))
+                    }
+                    stickerHandles.selected = placed.last().id
+                    snapshot.copy(stickers = snapshot.stickers + placed)
+                }
+                handles.selected = null
+                edit(next)
+                seek(at)
+                if (failures > 0) error("$failures imagem(ns) não puderam ser importadas")
+                else if (imported.size > 1) feedback("${imported.size} imagens adicionadas como camadas")
             }
         }
     }
