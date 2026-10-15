@@ -370,9 +370,9 @@
             android:layout_height="44dp"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Continuar sem conta (build de desenvolvimento)"
-            android:textColor="@color/recly_text_disabled"
-            android:textSize="12sp"
+            android:text="Entrar sem conta"
+            android:textColor="@color/recly_text_secondary"
+            android:textSize="14sp"
             android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

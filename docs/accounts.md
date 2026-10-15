@@ -40,7 +40,15 @@ Para testar o editor sem passar pelo login, só no **debug**, adicione ao `local
 RECLY_SKIP_LOGIN=true
 ```
 
-O release ignora essa linha e sempre exige conta.
+O release ignora essa linha.
+
+### Entrar sem conta (modo visitante)
+
+A tela de conta tem o botão **Entrar sem conta**, em qualquer build. O visitante usa o editor
+normalmente; o que gasta créditos no servidor (legendas automáticas pelo backend) continua pedindo
+conta, porque sem sessão o app não tem token para mandar. O botão de perfil da tela inicial oferece
+"Entrar ou criar conta" ao visitante. Entrar ou criar conta desliga o modo visitante, e sair da conta
+volta para a tela de login.
 Sem `SUPABASE_URL`/`SUPABASE_ANON_KEY` o app de debug mostra um aviso na tela de conta. Em build de debug aparece
 "Continuar sem conta" para você seguir desenvolvendo; em release esse botão não existe.
 

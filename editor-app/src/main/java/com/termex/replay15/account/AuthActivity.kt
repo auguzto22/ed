@@ -16,7 +16,6 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
-import com.recly.editor.BuildConfig
 import com.recly.editor.R
 import com.termex.replay15.editor.ui.EditorLibraryActivity
 import com.termex.replay15.editor.ui.EditorStyle
@@ -87,7 +86,9 @@ class AuthActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Quem já tem sessão nunca vê esta tela (ex.: voltou pelo histórico de apps).
-        if (AccountManager.isSignedIn(this) && !intent.getBooleanExtra(EXTRA_EXPIRED, false)) { goNext(); return }
+        // Exceção: o visitante que abriu a tela de propósito para entrar ou criar conta.
+        val guestWantsAccount = AccountManager.isGuest(this) && intent.hasExtra(EXTRA_MODE)
+        if (AccountManager.isSignedIn(this) && !intent.getBooleanExtra(EXTRA_EXPIRED, false) && !guestWantsAccount) { goNext(); return }
         setContentView(R.layout.activity_auth)
         bindViews()
         applyInsets()
@@ -120,14 +121,14 @@ class AuthActivity : Activity() {
             })
         }
 
+        // "Entrar sem conta": modo visitante, em qualquer build. Legendas pelo servidor continuam
+        // pedindo conta (ver AccountManager.isGuest).
+        findViewById<TextView>(R.id.btnDevSkip).apply {
+            visibility = View.VISIBLE
+            setOnClickListener { AccountManager.continueAsGuest(this@AuthActivity); goNext() }
+        }
         if (!AccountManager.isConfigured) {
             showBanner("As contas ainda não estão configuradas neste build. Defina SUPABASE_URL e SUPABASE_ANON_KEY (veja docs/accounts.md).", error = true)
-            if (BuildConfig.DEBUG) {
-                findViewById<TextView>(R.id.btnDevSkip).apply {
-                    visibility = View.VISIBLE
-                    setOnClickListener { AccountManager.enableDevBypass(this@AuthActivity); goNext() }
-                }
-            }
         } else if (intent.getBooleanExtra(EXTRA_EXPIRED, false)) {
             showBanner("Sua sessão expirou. Entre de novo para continuar.", error = false)
         }

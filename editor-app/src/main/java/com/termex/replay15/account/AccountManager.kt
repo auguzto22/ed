@@ -36,7 +36,27 @@ object AccountManager {
         return cached
     }
 
-    fun isSignedIn(context: Context): Boolean = session(context) != null || devBypass(context) || BuildConfig.SKIP_LOGIN
+    fun isSignedIn(context: Context): Boolean = session(context) != null || isGuest(context) || devBypass(context) || BuildConfig.SKIP_LOGIN
+
+    /** Tem conta de verdade (sessão do Supabase), e não só modo visitante. */
+    fun hasAccount(context: Context): Boolean = session(context) != null
+
+    /**
+     * Modo visitante ("Entrar sem conta"): usa o editor sem cadastro. Recursos que gastam créditos
+     * no servidor (legendas automáticas pelo backend) continuam pedindo conta, porque não mandam
+     * token sem sessão. Entrar ou criar conta depois desliga o modo visitante.
+     */
+    fun isGuest(context: Context): Boolean =
+        context.applicationContext.getSharedPreferences(GUEST_PREFS, Context.MODE_PRIVATE).getBoolean(GUEST, false)
+
+    fun continueAsGuest(context: Context) {
+        // commit (síncrono): a próxima tela já checa isSignedIn.
+        context.applicationContext.getSharedPreferences(GUEST_PREFS, Context.MODE_PRIVATE).edit().putBoolean(GUEST, true).commit()
+    }
+
+    private fun leaveGuest(context: Context) {
+        context.applicationContext.getSharedPreferences(GUEST_PREFS, Context.MODE_PRIVATE).edit().remove(GUEST).commit()
+    }
 
     /**
      * Só em builds de desenvolvimento sem Supabase configurado: permite usar o editor sem conta,
@@ -103,6 +123,7 @@ object AccountManager {
     fun signOut(context: Context, done: () -> Unit) {
         val current = session(context)
         clearLocal(context)
+        leaveGuest(context)
         worker.execute {
             current?.let { client.signOut(it.accessToken) }
             main.post(done)
@@ -140,6 +161,7 @@ object AccountManager {
 
     private fun store(context: Context, session: AuthSession) {
         SessionStore(context).save(session)
+        leaveGuest(context)
         cached = session; loaded = true
     }
 
@@ -158,6 +180,8 @@ object AccountManager {
         }
     }
 
+    private const val GUEST_PREFS = "recly-account-guest"
+    private const val GUEST = "guest"
     private const val DEV_PREFS = "recly-account-dev"
     private const val DEV_SKIP = "skip"
 }
