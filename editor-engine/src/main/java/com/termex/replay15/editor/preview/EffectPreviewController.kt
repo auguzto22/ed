@@ -22,6 +22,8 @@ class EffectPreviewController(
 
     companion object {
         private const val TAG = "ReclyEffectPreview"
+        private const val LOOP_MAX_SIDE = 200
+        private const val LOOP_CACHE_BYTES = 24 * 1024 * 1024
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -40,7 +42,14 @@ class EffectPreviewController(
         val job: Job,
         @Volatile var baseFrame: Bitmap? = null,
         val pendingRenders: ConcurrentHashMap<String, Future<*>> = ConcurrentHashMap(),
+        @Volatile var loopBase: Bitmap? = null,
     )
+
+    /** Loop frames per effect, bounded by bytes (12 small frames ≈ 0.5 MB per effect). */
+    private val loopCache = object : android.util.LruCache<String, List<Bitmap>>(LOOP_CACHE_BYTES) {
+        override fun sizeOf(key: String, value: List<Bitmap>): Int = value.sumOf { it.allocationByteCount }.coerceAtLeast(1)
+    }
+    private val loopWaiters = HashMap<String, MutableList<(List<Bitmap>) -> Unit>>()
 
     fun startSession(
         clip: VideoClip,
@@ -189,6 +198,47 @@ class EffectPreviewController(
         }
     }
 
+    /**
+     * Animated library preview: [onReady] receives the loop frames on the main thread (from the
+     * cache when already rendered). Requests for the same effect are merged; results of an older
+     * session are dropped.
+     */
+    fun requestEffectLoop(definition: EffectDefinition, intensity: Float = 0.7f, onReady: (List<Bitmap>) -> Unit) {
+        val session = activeSession ?: return
+        val key = loopKey(session, definition, intensity)
+        loopCache.get(key)?.let { cached -> mainHandler.post { onReady(cached) }; return }
+        val first = synchronized(loopWaiters) {
+            val waiting = loopWaiters[key]
+            if (waiting != null) { waiting += onReady; false } else { loopWaiters[key] = mutableListOf(onReady); true }
+        }
+        if (!first) return
+        controllerScope.launch(session.job) {
+            while (session.baseFrame == null && isActive) delay(20)
+            val base = session.baseFrame ?: return@launch
+            val small = session.loopBase ?: loopBaseOf(base).also { session.loopBase = it }
+            val future = renderer.renderEffectLoop(small, definition, intensity)
+            session.pendingRenders["loop:$key"] = future
+            val frames = try { runCatching { future.get() }.getOrNull() } finally { session.pendingRenders.remove("loop:$key") }
+            val callbacks = synchronized(loopWaiters) { loopWaiters.remove(key).orEmpty() }
+            if (frames.isNullOrEmpty() || session.sessionId != activeSession?.sessionId) return@launch
+            loopCache.put(key, frames)
+            mainHandler.post {
+                if (session.sessionId == activeSession?.sessionId) callbacks.forEach { it(frames) }
+            }
+        }
+    }
+
+    private fun loopKey(session: Session, definition: EffectDefinition, intensity: Float) =
+        "${session.sessionId}:${definition.id}:${definition.version}:${(intensity * 10f).toInt()}"
+
+    /** Loops are rendered small: a library cell is ~110 dp tall and 12 frames are kept per effect. */
+    private fun loopBaseOf(base: Bitmap): Bitmap {
+        val scale = minOf(1f, LOOP_MAX_SIDE.toFloat() / maxOf(base.width, base.height))
+        if (scale >= 1f) return base
+        return Bitmap.createScaledBitmap(base, (base.width * scale).toInt().coerceAtLeast(16),
+            (base.height * scale).toInt().coerceAtLeast(16), true)
+    }
+
     private fun publishPresetThumbnail(session: Session, preset: EffectPreset, bitmap: Bitmap) {
         if (session.sessionId != activeSession?.sessionId) return
         mainHandler.post {
@@ -213,6 +263,8 @@ class EffectPreviewController(
             s.pendingRenders.values.forEach { it.cancel(true) }
             s.pendingRenders.clear()
         }
+        synchronized(loopWaiters) { loopWaiters.clear() }
+        loopCache.evictAll()
         activeSession = null
     }
 

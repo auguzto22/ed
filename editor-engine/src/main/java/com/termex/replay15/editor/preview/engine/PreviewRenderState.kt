@@ -84,6 +84,9 @@ data class PreviewRenderState(
         val maskFeather: Float,
         val maskInvert: Boolean,
         val maskOpacity: Float,
+        /** Shader uTime/uProgress, by the export rule ([EffectTiming]). */
+        val timeSeconds: Float = 0f,
+        val progress: Float = 0f,
     )
     data class Transition(
         val id: String,
@@ -105,9 +108,18 @@ object RenderStateEvaluator {
                 transform.zoom, transform.x, transform.y, transform.rotation, clip.rotation, clip.flip, transform.opacity,
                 clip.crop, VideoFilter.entries[clip.filter], clip.filterStrength, clip.brightness, clip.contrast,
                 clip.saturation, clip.hue, clip.lightness, clip.temperature, clip.grade,
-                (clip.effects.filter { it.activeAt(sourceUs) }.map { it.toRenderEffect(sourceUs) } +
+                (clip.effects.filter { it.activeAt(sourceUs) }.map { effect ->
+                    effect.toRenderEffect(sourceUs, EffectTiming.evaluate(sourceUs, effect.startTimeUs, effect.endTimeUs,
+                        snapshot.projectTimeUs - placed.startUs, clip.durationUs))
+                } +
                     snapshot.adjustments.flatMap { adjustment -> adjustment.effects.filter { it.enabled && it.activeAt(snapshot.projectTimeUs) }
-                        .map { it.toRenderEffect(snapshot.projectTimeUs) } }),
+                        .map { effect ->
+                            // Export clamps an adjustment effect to its layer (ProjectComposition).
+                            val start = maxOf(adjustment.startUs, effect.startTimeUs ?: adjustment.startUs)
+                            val end = minOf(adjustment.endUs, effect.endTimeUs ?: adjustment.endUs)
+                            effect.toRenderEffect(snapshot.projectTimeUs, EffectTiming.evaluate(snapshot.projectTimeUs, start, end,
+                                snapshot.projectTimeUs - adjustment.startUs, adjustment.endUs - adjustment.startUs))
+                        } }),
                 clip.backgroundRemoval, clip.maskAt(sourceUs))
         }
         val transition = snapshot.transitions.firstOrNull()?.let { active ->
@@ -162,7 +174,7 @@ object RenderStateEvaluator {
             project.backgroundColor, project.canvasFill, layers, transition, texts, project.texts.mapTo(linkedSetOf()) { it.id }, stickers, project.camera.cameraAt(snapshot.projectTimeUs))
     }
 
-    private fun EffectInstance.toRenderEffect(sourceUs: Long) = PreviewRenderState.Effect(
+    private fun EffectInstance.toRenderEffect(sourceUs: Long, timing: EffectTiming.Value) = PreviewRenderState.Effect(
         id, assetId, version,
         (valueAt(EffectInstance.INTENSITY, sourceUs, intensity) * groupIntensity).coerceIn(0f, 1f),
         values.mapValues { (name, value) -> valueAt(name, sourceUs, value) }, blendMode.ordinal,
@@ -175,5 +187,7 @@ object RenderStateEvaluator {
         mask?.let { valueAt(EffectInstance.MASK_FEATHER, sourceUs, it.feather) } ?: .08f,
         mask?.invert ?: false,
         mask?.let { valueAt(EffectInstance.MASK_OPACITY, sourceUs, it.opacity) } ?: 1f,
+        timing.timeSeconds,
+        timing.progress,
     )
 }

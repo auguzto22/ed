@@ -26,6 +26,14 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
     companion object {
         private const val TAG = "ReclyEffectRenderer"
 
+        /** Frames in a library loop: 12 frames shown at 10 fps = a 1.2 s loop. */
+        const val LOOP_FRAMES = 12
+        /** Effect time covered by one loop (flash/strobe/punch effects pulse 1-3x per second). */
+        private const val LOOP_SECONDS = 1.2f
+        /** The base frame drifts a little so motion effects (trails, echo) have something to move. */
+        private const val LOOP_DRIFT = .02f
+        private const val LOOP_DRIFT_ZOOM = 1.06f
+
         // Flipped quad coordinates so glReadPixels directly outputs a right-side-up Bitmap
         // without requiring CPU row reversing.
         private val FLIPPED_QUAD_COORDS = floatArrayOf(
@@ -202,6 +210,105 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
         })
     }
 
+    /**
+     * Renders a short looping clip of one effect on the base frame, so the library can show the
+     * effect moving (flashes pulse, zooms punch, glitches flicker) instead of one still image.
+     *
+     * The base frame drifts slightly from frame to frame and the previous frames feed the history
+     * samplers, so motion effects (trails, echo, motion blur) have movement to work on. uTime and
+     * uProgress sweep one loop of [LOOP_SECONDS].
+     */
+    fun renderEffectLoop(
+        baseFrame: Bitmap,
+        definition: EffectDefinition,
+        intensity: Float = 0.7f,
+        frameCount: Int = LOOP_FRAMES,
+    ): Future<List<Bitmap>?> {
+        return executor.submit(Callable {
+            if (isClosed || baseFrame.isRecycled) return@Callable null
+            try {
+                renderLoopInternal(baseFrame, definition, intensity, frameCount.coerceIn(2, 24))
+            } catch (e: Throwable) {
+                Log.w(TAG, "Failed to render effect loop for ${definition.id}", e)
+                null
+            }
+        })
+    }
+
+    private fun renderLoopInternal(baseFrame: Bitmap, definition: EffectDefinition, intensity: Float, frameCount: Int): List<Bitmap>? {
+        val w = baseFrame.width
+        val h = baseFrame.height
+        if (w <= 0 || h <= 0) return null
+        val (resolvedDefinition, shaderCode) = repository.resolve(definition.id, definition.version)
+        val program = getOrCompileProgram(resolvedDefinition, shaderCode)
+        ensureSurfaceSize(w, h)
+
+        // One input texture per frame: frame i samples inputs[i], its history is i-1, i-2, i-3.
+        val inputs = IntArray(frameCount)
+        GLES20.glGenTextures(frameCount, inputs, 0)
+        try {
+            val drifted = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(drifted)
+            val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+            val matrix = android.graphics.Matrix()
+            try {
+                for (i in 0 until frameCount) {
+                    val phase = (2.0 * Math.PI * i / frameCount).toFloat()
+                    matrix.reset()
+                    matrix.postScale(LOOP_DRIFT_ZOOM, LOOP_DRIFT_ZOOM, w / 2f, h / 2f)
+                    matrix.postTranslate(kotlin.math.sin(phase) * w * LOOP_DRIFT, kotlin.math.cos(phase) * h * LOOP_DRIFT * .6f)
+                    canvas.drawColor(android.graphics.Color.BLACK)
+                    canvas.drawBitmap(baseFrame, matrix, paint)
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, inputs[i])
+                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+                    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+                    GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, drifted, 0)
+                }
+            } finally {
+                drifted.recycle()
+            }
+
+            val frames = ArrayList<Bitmap>(frameCount)
+            val effectiveIntensity = intensity.coerceIn(0f, 1f)
+            GLES20.glViewport(0, 0, w, h)
+            for (i in 0 until frameCount) {
+                if (isClosed) { frames.forEach { it.recycle() }; return null }
+                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo[0])
+                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0,
+                    GLES20.GL_TEXTURE_2D, pingPongTextures[0], 0)
+                program.use()
+                program.sampler("uTexSampler", inputs[i], 0)
+                program.sampler("uHistory0", inputs[(i - 1 + frameCount) % frameCount], 1)
+                program.sampler("uHistory1", inputs[(i - 2 + frameCount) % frameCount], 2)
+                program.sampler("uHistory2", inputs[(i - 3 + frameCount) % frameCount], 3)
+                program.scalar("uIntensity", effectiveIntensity)
+                program.vector("uResolution", floatArrayOf(w.toFloat(), h.toFloat()))
+                program.scalar("uTime", LOOP_SECONDS * i / frameCount)
+                program.scalar("uProgress", i / frameCount.toFloat())
+                program.scalar("uBlendMode", 0f)
+                program.vector("uEffectMask", floatArrayOf(0f, 0f, 0f, 0f))
+                program.vector("uEffectMaskTransform", floatArrayOf(0f, 0f, 0f, 1f))
+                program.scalar("uEffectMaskAspect", 1f)
+                resolvedDefinition.parameters.forEach { param ->
+                    program.scalar("p_${param.id}", param.default.coerceIn(param.min, param.max))
+                }
+                program.bindAttributesAndUniforms()
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+
+                val buf = pixelBuffer ?: return null
+                buf.rewind()
+                GLES20.glReadPixels(0, 0, w, h, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buf)
+                buf.rewind()
+                frames += Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply { copyPixelsFromBuffer(buf) }
+            }
+            return frames
+        } finally {
+            GLES20.glDeleteTextures(frameCount, inputs, 0)
+        }
+    }
+
     private fun renderPresetInternal(
         baseFrame: Bitmap,
         preset: EffectPreset,
@@ -239,34 +346,40 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
                     0
                 )
 
+                // Programs are cached, so another effect's program may be current: uniforms
+                // are only uploaded to the program in use.
+                program.use()
+
                 // Bind source texture
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pingPongTextures[srcTexIdx])
-                program.setSamplerTexIdUniform("uTexSampler", pingPongTextures[srcTexIdx], 0)
+                program.sampler("uTexSampler", pingPongTextures[srcTexIdx], 0)
 
                 // Also bind history samplers if shader requires them
                 for (u in 1..3) {
                     GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + u)
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pingPongTextures[srcTexIdx])
                 }
-                program.setSamplerTexIdUniform("uHistory0", pingPongTextures[srcTexIdx], 1)
-                program.setSamplerTexIdUniform("uHistory1", pingPongTextures[srcTexIdx], 2)
-                program.setSamplerTexIdUniform("uHistory2", pingPongTextures[srcTexIdx], 3)
+                program.sampler("uHistory0", pingPongTextures[srcTexIdx], 1)
+                program.sampler("uHistory1", pingPongTextures[srcTexIdx], 2)
+                program.sampler("uHistory2", pingPongTextures[srcTexIdx], 3)
 
-                // Uniforms
+                // Uniforms. Media3's GlProgram throws for a uniform the compiler removed
+                // (unused by the shader); only 1 of the 72 effect shaders reads uHistory0, so
+                // setting it unconditionally made every thumbnail fail (null = no preview).
                 val effectiveIntensity = (node.intensity * globalIntensity).coerceIn(0f, 1f)
-                program.setFloatUniform("uIntensity", effectiveIntensity)
-                program.setFloatsUniform("uResolution", floatArrayOf(w.toFloat(), h.toFloat()))
-                program.setFloatUniform("uTime", 0.5f)
-                program.setFloatUniform("uProgress", 0.5f)
-                program.setFloatUniform("uBlendMode", 0f)
-                program.setFloatsUniform("uEffectMask", floatArrayOf(0f, 0f, 0f, 0f))
-                program.setFloatsUniform("uEffectMaskTransform", floatArrayOf(0f, 0f, 0f, 1f))
-                program.setFloatUniform("uEffectMaskAspect", 1f)
+                program.scalar("uIntensity", effectiveIntensity)
+                program.vector("uResolution", floatArrayOf(w.toFloat(), h.toFloat()))
+                program.scalar("uTime", 0.5f)
+                program.scalar("uProgress", 0.5f)
+                program.scalar("uBlendMode", 0f)
+                program.vector("uEffectMask", floatArrayOf(0f, 0f, 0f, 0f))
+                program.vector("uEffectMaskTransform", floatArrayOf(0f, 0f, 0f, 1f))
+                program.scalar("uEffectMaskAspect", 1f)
 
                 definition.parameters.forEach { param ->
                     val paramVal = (node.values[param.id] ?: param.default).coerceIn(param.min, param.max)
-                    program.setFloatUniform("p_${param.id}", paramVal)
+                    program.scalar("p_${param.id}", paramVal)
                 }
 
                 // Draw quad
@@ -297,6 +410,19 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
         val outputBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         outputBitmap.copyPixelsFromBuffer(buf)
         return outputBitmap
+    }
+
+    // Uniforms the shader does not use are skipped, like PackageEffect does for export.
+    private fun GlProgram.scalar(name: String, value: Float) {
+        if (getUniformLocation(name) >= 0) setFloatUniform(name, value)
+    }
+
+    private fun GlProgram.vector(name: String, value: FloatArray) {
+        if (getUniformLocation(name) >= 0) setFloatsUniform(name, value)
+    }
+
+    private fun GlProgram.sampler(name: String, texId: Int, unit: Int) {
+        if (getUniformLocation(name) >= 0) setSamplerTexIdUniform(name, texId, unit)
     }
 
     override fun close() {

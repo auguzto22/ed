@@ -748,7 +748,7 @@ class GpuPreviewRenderer(
             bindTexture(compiled.id,"uHistory1",GLES20.GL_TEXTURE_2D,source,2)
             bindTexture(compiled.id,"uHistory2",GLES20.GL_TEXTURE_2D,source,3)
             uniform2(compiled.id,"uResolution",w.toFloat(),h.toFloat())
-            uniform1(compiled.id,"uTime",layer.sourceTimeUs/1_000_000f);uniform1(compiled.id,"uProgress",0f)
+            uniform1(compiled.id,"uTime",effect.timeSeconds);uniform1(compiled.id,"uProgress",effect.progress)
             uniform1(compiled.id,"uIntensity",effect.intensity);uniform1(compiled.id,"uBlendMode",effect.blendMode.toFloat())
             uniform4(compiled.id,"uEffectMask",effect.maskShape.toFloat(),effect.maskFeather,if(effect.maskInvert)1f else 0f,effect.maskOpacity)
             uniform4(compiled.id,"uEffectMaskTransform",effect.maskX,effect.maskY,Math.toRadians(effect.maskRotation.toDouble()).toFloat(),effect.maskSize)

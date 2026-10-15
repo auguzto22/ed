@@ -239,16 +239,31 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         body.addView(category, LinearLayout.LayoutParams(-1, dp(52)))
         val search = EditText(this).apply { hint = "Buscar efeito ou categoria"; isSingleLine = true }; body.addView(search)
         var shown = definitions
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf<String>())
-        val list = ListView(this).apply { this.adapter = adapter }; body.addView(list, LinearLayout.LayoutParams(-1, dp(320)))
+        // Each card plays the effect on a frame of this clip, like the animated caption styles.
+        val libraryClip = project().allVideos.firstOrNull { it.id == clipId }
+        val loops = libraryClip?.let { clip ->
+            val frameUs = runCatching { sourceAt(clipId) }.getOrElse { (clip.inUs + clip.outUs) / 2 }
+            runCatching {
+                com.termex.replay15.editor.preview.EffectPreviewController(activity, onPresetThumbnailReady = { _, _ -> })
+                    .also { it.startSession(clip, frameUs) }
+            }.getOrNull()
+        }
+        val adapter = EffectGridAdapter(this, loops) { repository.favorite(it) }
+        val list = GridView(this).apply {
+            numColumns = 3
+            horizontalSpacing = dp(8)
+            verticalSpacing = dp(10)
+            stretchMode = GridView.STRETCH_COLUMN_WIDTH
+            this.adapter = adapter
+        }
+        body.addView(list, LinearLayout.LayoutParams(-1, dp(380)))
         fun refresh() {
             val selected = categories[category.selectedItemPosition]
             val query = search.text.toString()
             val recent = repository.recent()
             val favorites = definitions.map { it.id }.filter { repository.favorite(it) }.toSet()
             shown = EffectCatalog.filter(definitions, selected, query, recent, favorites)
-            adapter.clear()
-            adapter.addAll(shown.map { "${if (repository.favorite(it.id)) "★ " else ""}${it.name}  •  ${EffectCatalog.canonicalCategory(it.category)}" })
+            adapter.submit(shown)
         }
         category.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -275,6 +290,84 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         refresh()
         body.addView(label("Toque para aplicar. Segure para alternar favorito.", 12f, EditorStyle.MUTED))
         dialog = sheet("Biblioteca de efeitos (${definitions.size})", body)
+        dialog.setOnDismissListener { loops?.close() }
+    }
+
+    /** Grid cells for the effects library: looping preview, name (★ when favorite) and category. */
+    private class EffectGridAdapter(
+        private val context: android.content.Context,
+        private val loops: com.termex.replay15.editor.preview.EffectPreviewController?,
+        private val isFavorite: (String) -> Boolean,
+    ) : BaseAdapter() {
+        private var items: List<EffectDefinition> = emptyList()
+
+        private class Holder(val preview: AnimatedEffectThumbnail, val placeholder: android.view.View,
+            val name: TextView, val category: TextView)
+
+        fun submit(value: List<EffectDefinition>) { items = value; notifyDataSetChanged() }
+        override fun getCount() = items.size
+        override fun getItem(position: Int) = items[position]
+        override fun getItemId(position: Int) = position.toLong()
+
+        override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+            val view = convertView ?: create()
+            val holder = view.tag as Holder
+            val definition = items[position]
+            val key = "${definition.id}:${definition.version}"
+            holder.name.text = "${if (isFavorite(definition.id)) "★ " else ""}${definition.name}"
+            holder.category.text = EffectCatalog.canonicalCategory(definition.category)
+            view.contentDescription = "${definition.name} - ${holder.category.text}"
+            if (holder.preview.boundKey != key) {
+                holder.preview.boundKey = key
+                holder.preview.setFrames(null)
+                holder.placeholder.visibility = android.view.View.VISIBLE
+                loops?.requestEffectLoop(definition) { frames ->
+                    // The cell may have been recycled for another effect while this one rendered.
+                    if (holder.preview.boundKey == key) {
+                        holder.preview.setFrames(frames)
+                        holder.placeholder.visibility = android.view.View.GONE
+                    }
+                }
+            }
+            return view
+        }
+
+        private fun create(): android.view.View = with(context) {
+            val card = column().apply {
+                setPadding(dp(4), dp(4), dp(4), dp(6))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(EditorStyle.CARD_ELEVATED)
+                    cornerRadius = dp(12).toFloat()
+                    setStroke(dp(1), EditorStyle.BORDER)
+                }
+            }
+            val frame = FrameLayout(this).apply {
+                outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
+                        outline.setRoundRect(0, 0, view.width, view.height, dp(8).toFloat())
+                    }
+                }
+                clipToOutline = true
+            }
+            val placeholder = android.view.View(this).apply { setBackgroundColor(0xFF1C1C1E.toInt()) }
+            val preview = AnimatedEffectThumbnail(this)
+            frame.addView(placeholder, FrameLayout.LayoutParams(-1, -1))
+            frame.addView(preview, FrameLayout.LayoutParams(-1, -1))
+            card.addView(frame, LinearLayout.LayoutParams(-1, dp(112)))
+            val name = TextView(this).apply {
+                textSize = 11f; setTextColor(EditorStyle.TEXT); isSingleLine = true
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+                setPadding(0, dp(5), 0, 0)
+            }
+            val category = TextView(this).apply {
+                textSize = 9f; setTextColor(EditorStyle.MUTED); isSingleLine = true
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+            }
+            card.addView(name); card.addView(category)
+            card.tag = Holder(preview, placeholder, name, category)
+            card
+        }
     }
     fun presets(clipId: String) = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with
