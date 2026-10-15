@@ -90,6 +90,7 @@ class EditorLibraryActivity : Activity() {
             window.decorView.systemUiVisibility = 0
         }
 
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.parseColor("#0F0F11")))
         thumbnails = ProjectThumbnails(this)
         homeHero = findViewById(R.id.homeHero)
         containerSettings = findViewById(R.id.containerSettings)
@@ -135,7 +136,7 @@ class EditorLibraryActivity : Activity() {
             val full = "O que vamos editar hoje?"
             val start = full.indexOf("editar")
             text = android.text.SpannableString(full).apply {
-                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#FAFAF6")), start, start + "editar".length, 0)
+                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#F2F0EA")), start, start + "editar".length, 0)
             }
         }
 
@@ -167,7 +168,6 @@ class EditorLibraryActivity : Activity() {
         val tabExtra = intent?.getStringExtra("initial_tab")
         // Abre no Início (cabeçalho + Recentes), como no canvas; "Gravações" lista os vídeos salvos.
         val initialDockTab = when (tabExtra) {
-            "RECORDINGS" -> DockTab.RECORDINGS
             "SETTINGS" -> DockTab.SETTINGS
             else -> DockTab.HOME
         }
@@ -264,7 +264,7 @@ class EditorLibraryActivity : Activity() {
                 view.background = null
                 view.elevation = 0f
                 view.outlineProvider = null
-                view.setTextColor(Color.parseColor("#9A968C"))
+                view.setTextColor(Color.parseColor("#A09C93"))
             }
         }
 
@@ -371,13 +371,13 @@ class EditorLibraryActivity : Activity() {
      * Toque abre; toque longo ou o botão ⋯ abrem as opções (renomear, duplicar, excluir).
      */
     private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore): View {
-        val tones = intArrayOf(0xFF2A2D35.toInt(), 0xFF332D28.toInt(), 0xFF2A2F2B.toInt(), 0xFF2E2B34.toInt())
-        val chipFill = Color.parseColor("#D9000000")
-        val line = Color.parseColor("#2C2C30")
+        val tones = intArrayOf(0xFF1D1D21.toInt(), 0xFF211D1E.toInt(), 0xFF1D201F.toInt(), 0xFF1F1D22.toInt())
+        val chipFill = Color.parseColor("#CC0F0F11")
+        val line = Color.parseColor("#26262B")
 
         fun chip(text: String, mono: Boolean) = TextView(this).apply {
             this.text = text
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(Color.parseColor("#F2F0EA"))
             textSize = 11f
             typeface = if (mono) android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD)
             else android.graphics.Typeface.DEFAULT_BOLD
@@ -391,7 +391,7 @@ class EditorLibraryActivity : Activity() {
         val thumb = android.widget.FrameLayout(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(tones[index % tones.size])
-                cornerRadius = dp(12).toFloat()
+                cornerRadius = dp(16).toFloat()
             }
             clipToOutline = true
             outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
@@ -417,8 +417,8 @@ class EditorLibraryActivity : Activity() {
         thumb.addView(View(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(Color.TRANSPARENT)
-                setStroke(dp(1.5f), line)
-                cornerRadius = dp(12).toFloat()
+                setStroke(dp(1), line)
+                cornerRadius = dp(16).toFloat()
             }
         }, android.widget.FrameLayout.LayoutParams(-1, -1))
         // Sombra embaixo para os textos dos chips continuarem legíveis sobre qualquer imagem.
@@ -435,7 +435,7 @@ class EditorLibraryActivity : Activity() {
             }
             addView(ImageView(this@EditorLibraryActivity).apply {
                 setImageResource(R.drawable.ic_recly_play)
-                imageTintList = ColorStateList.valueOf(Color.parseColor("#FAFAF6"))
+                imageTintList = ColorStateList.valueOf(Color.parseColor("#F2F0EA"))
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }, android.widget.FrameLayout.LayoutParams(dp(13), dp(13), Gravity.CENTER))
         }, android.widget.FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER))
@@ -447,7 +447,7 @@ class EditorLibraryActivity : Activity() {
         thumb.addView(TextView(this).apply {
             text = "⋯"
             gravity = Gravity.CENTER
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(Color.parseColor("#F2F0EA"))
             textSize = 16f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             contentDescription = "Opções de ${project.name}"
@@ -480,7 +480,7 @@ class EditorLibraryActivity : Activity() {
 
         val name = TextView(this).apply {
             text = project.name
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(Color.parseColor("#F2F0EA"))
             textSize = 14f
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
             maxLines = 1
@@ -488,7 +488,7 @@ class EditorLibraryActivity : Activity() {
         }
         val whenText = TextView(this).apply {
             text = editedLabel(project.modifiedAt)
-            setTextColor(Color.parseColor("#9A968C"))
+            setTextColor(Color.parseColor("#A09C93"))
             textSize = 12f
         }
 
@@ -498,7 +498,7 @@ class EditorLibraryActivity : Activity() {
             isFocusable = true
             contentDescription = project.name
             foreground = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x22FFFFFF), null,
-                android.graphics.drawable.GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(12).toFloat() })
+                android.graphics.drawable.GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(16).toFloat() })
             addView(thumb, LinearLayout.LayoutParams(-1, dp(168)))
             addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
             addView(whenText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(1) })
@@ -700,7 +700,7 @@ class EditorLibraryActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundResource(R.drawable.recly_card_dark)
+            setBackgroundResource(R.drawable.home_card)
             setPadding(dp(16), dp(14), dp(16), dp(14))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -723,7 +723,7 @@ class EditorLibraryActivity : Activity() {
         }
         val titleView = TextView(this).apply {
             text = title
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(Color.parseColor("#F2F0EA"))
             textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             maxLines = 1
@@ -731,7 +731,7 @@ class EditorLibraryActivity : Activity() {
         }
         val subtitleView = TextView(this).apply {
             text = subtitle
-            setTextColor(Color.parseColor("#9A968C"))
+            setTextColor(Color.parseColor("#A09C93"))
             textSize = 12f
             setPadding(0, dp(2), 0, 0)
         }
@@ -742,7 +742,7 @@ class EditorLibraryActivity : Activity() {
         if (secondaryActionText != null && onSecondaryClick != null) {
             val secButton = TextView(this).apply {
                 text = secondaryActionText
-                setTextColor(Color.parseColor("#9A968C"))
+                setTextColor(Color.parseColor("#A09C93"))
                 textSize = 13f
                 setPadding(dp(10), dp(6), dp(10), dp(6))
                 setOnClickListener { onSecondaryClick() }
@@ -771,14 +771,12 @@ class EditorLibraryActivity : Activity() {
             if (session != null) name.first().uppercase() else "?"
     }
 
-    /** "3 projetos · 2 vídeos exportados" logo abaixo do nome. */
+    /** "3 projetos" logo abaixo do nome. */
     private fun renderStats() {
         val stats = findViewById<TextView>(R.id.homeStats)
         val parts = mutableListOf<String>()
         val p = lastProjects.size
         if (p > 0) parts += if (p == 1) "1 projeto" else "$p projetos"
-        val r = lastRecordingsCount
-        if (r > 0) parts += if (r == 1) "1 vídeo exportado" else "$r vídeos exportados"
         stats.text = parts.joinToString(" · ")
         stats.visibility = if (parts.isEmpty()) View.GONE else View.VISIBLE
     }
@@ -790,9 +788,9 @@ class EditorLibraryActivity : Activity() {
     private fun renderSettings() {
         val root = containerSettings
         root.removeAllViews()
-        val text = Color.parseColor("#FAFAF6")
-        val muted = Color.parseColor("#9A968C")
-        val danger = Color.parseColor("#FF4D5E")
+        val text = Color.parseColor("#F2F0EA")
+        val muted = Color.parseColor("#A09C93")
+        val danger = Color.parseColor("#F0566A")
 
         fun title(t: String, size: Float, color: Int = text, top: Int = 0) = TextView(this).apply {
             this.text = t
@@ -811,7 +809,7 @@ class EditorLibraryActivity : Activity() {
         }
         fun card() = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.recly_card_dark)
+            setBackgroundResource(R.drawable.home_card)
         }
         fun row(label: String, value: String? = null, color: Int = text, onClick: (() -> Unit)? = null) =
             LinearLayout(this).apply {
@@ -843,7 +841,7 @@ class EditorLibraryActivity : Activity() {
                     }, LinearLayout.LayoutParams(dp(18), dp(18)))
                 }
             }
-        fun divider() = View(this).apply { setBackgroundColor(Color.parseColor("#1F1F22")) }
+        fun divider() = View(this).apply { setBackgroundColor(Color.parseColor("#26262B")) }
         fun LinearLayout.addRows(vararg rows: View) {
             rows.forEachIndexed { i, v ->
                 if (i > 0) addView(divider(), LinearLayout.LayoutParams(-1, dp(1)).apply { marginStart = dp(16) })
@@ -881,7 +879,6 @@ class EditorLibraryActivity : Activity() {
         val thumbsRow = row("Miniaturas em cache", "…")
         storage.addRows(
             projectsRow,
-            row("Vídeos exportados", lastRecordingsCount.toString(), onClick = { showDockTab(DockTab.RECORDINGS) }),
             thumbsRow,
             row("Limpar miniaturas") {
                 thumbIo.execute {

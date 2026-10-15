@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Início: bloco principal (Novo projeto), o único em vermelho Blitz. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#33FFFFFF">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFD7263D" />
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+</ripple>

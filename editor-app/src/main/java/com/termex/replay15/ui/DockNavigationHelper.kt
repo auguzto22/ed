@@ -26,8 +26,8 @@ enum class DockTab {
  */
 object DockNavigationHelper {
 
-    private val ACTIVE = Color.parseColor("#FAFAF6")
-    private val INACTIVE = Color.parseColor("#9A968C")
+    private val ACTIVE = Color.parseColor("#F2F0EA")
+    private val INACTIVE = Color.parseColor("#6E6A62")
 
     private fun tabToIndex(tab: DockTab): Int = when (tab) {
         DockTab.HOME, DockTab.RECORD -> 0
