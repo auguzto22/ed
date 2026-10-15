@@ -57,3 +57,10 @@ orphaned or overflowing balloons (deleted or trimmed targets) are removed or cla
 `AnimationEditing.sanitized`, which the session controller and the codec both apply.
 Auto Edit emits `PUNCH_IN` balloons for emphasis zooms and Ken Burns balloons (zoom
 1.0 to 1.18–1.25, alternating direction) for B-roll images instead of loose keyframes.
+Balloon edges that fall inside the target ease in/out over 250 ms (or a quarter of the
+balloon, if shorter), so a move that ends mid-clip never jumps back in one frame; edges that
+meet the target's own start or end keep full strength, since a cut is already there. When
+an edit changes what the target shows at its start (trimming the head, speed, curve or
+reverse), untouched balloons are remapped through the clip's time map so they stay on the
+same piece of media (`AnimationEditing.followSourceChanges`, applied by the session
+controller); a balloon trimmed away entirely is removed.

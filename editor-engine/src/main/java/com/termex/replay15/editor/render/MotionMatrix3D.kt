@@ -60,7 +60,7 @@ class MotionMatrix3D(
         val sourceTime = current.timeMap.sourceAt(timelineUs)
         // Keyframes manuais + balões de animação ativos (mesma conta do preview).
         val key = AnimationEvaluator.apply(current.transformAt(sourceTime),
-            AnimationEvaluator.delta(ownAnimations, current.id, timelineUs))
+            AnimationEvaluator.delta(ownAnimations, current.id, timelineUs, durationUs))
 
         // Procedural clip motion (Zoom In/Out, Pan Left/Right)
         val progress = (timelineUs.toFloat() / durationUs).coerceIn(0f, 1f)
@@ -165,7 +165,7 @@ class MotionMatrix3D(
             val parentTimelineUs = (timeUs - parentStartUs).coerceIn(0L, parentClip.durationUs)
             val parentSourceTime = parentClip.timeMap.sourceAt(parentTimelineUs)
             val parentKey = AnimationEvaluator.apply(parentClip.transformAt(parentSourceTime),
-                AnimationEvaluator.delta(project.animationClips, parentClip.id, parentTimelineUs))
+                AnimationEvaluator.delta(project.animationClips, parentClip.id, parentTimelineUs, parentClip.durationUs))
 
             val pMat = b.parentMatrix
             Matrix4.setIdentity(pMat)

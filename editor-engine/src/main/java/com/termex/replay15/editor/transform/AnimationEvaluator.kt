@@ -34,20 +34,48 @@ object AnimationEvaluator {
     private const val PAN_AMOUNT = .04f
     private const val PUNCH_AMOUNT = .15f
 
+    /**
+     * Rampa de entrada/saída nas bordas do balão que caem DENTRO do alvo. Sem ela, um zoom in que
+     * termina antes do fim do clipe "pulava" de volta ao neutro num quadro. Na borda que coincide
+     * com o começo/fim do alvo não há rampa: ali já existe um corte, então não há salto visível.
+     */
+    const val EDGE_US = 250_000L
+
     fun isActive(clip: AnimationClip, localUs: Long) = localUs >= clip.startUs && localUs < clip.endUs
 
-    /** Soma de todas as animações de [targetId] ativas em [localUs]. */
-    fun delta(animations: List<AnimationClip>, targetId: String, localUs: Long): AnimationDelta {
+    /**
+     * Soma de todas as animações de [targetId] ativas em [localUs]. [targetDurationUs] é a duração
+     * do alvo na timeline (decide se a borda final ganha rampa); 0 = desconhecida, sem rampa no fim.
+     */
+    fun delta(animations: List<AnimationClip>, targetId: String, localUs: Long, targetDurationUs: Long = 0L): AnimationDelta {
         if (animations.isEmpty()) return AnimationDelta.NONE
         var result = AnimationDelta.NONE
         for (clip in animations) {
-            if (clip.targetId == targetId && isActive(clip, localUs)) result += delta(clip, localUs)
+            if (clip.targetId == targetId && isActive(clip, localUs)) result += delta(clip, localUs, targetDurationUs)
         }
         return result
     }
 
-    fun delta(clip: AnimationClip, localUs: Long): AnimationDelta {
+    fun delta(clip: AnimationClip, localUs: Long, targetDurationUs: Long = 0L): AnimationDelta {
         if (!isActive(clip, localUs)) return AnimationDelta.NONE
+        val raw = rawDelta(clip, localUs)
+        val weight = edgeWeight(clip, localUs, targetDurationUs)
+        return if (weight >= 1f) raw else raw.scaled(weight)
+    }
+
+    /** 0 na borda interna, 1 a partir de [EDGE_US] (ou 1/4 do balão, se ele for curto). */
+    fun edgeWeight(clip: AnimationClip, localUs: Long, targetDurationUs: Long = 0L): Float {
+        val edge = minOf(EDGE_US, clip.durationUs / 4).coerceAtLeast(1L)
+        val rampIn = if (clip.startUs > 0L) (localUs - clip.startUs).toFloat() / edge else 1f
+        val rampOut = if (clip.endUs < targetDurationUs) (clip.endUs - localUs).toFloat() / edge else 1f
+        val t = minOf(rampIn, rampOut).coerceIn(0f, 1f)
+        return if (t >= 1f) 1f else com.termex.replay15.editor.domain.Easing.SMOOTH.apply(t)
+    }
+
+    private fun AnimationDelta.scaled(weight: Float) = AnimationDelta(
+        zoom = 1f + (zoom - 1f) * weight, dx = dx * weight, dy = dy * weight, rotation = rotation * weight)
+
+    private fun rawDelta(clip: AnimationClip, localUs: Long): AnimationDelta {
         val progress = ((localUs - clip.startUs).toDouble() / clip.durationUs).toFloat().coerceIn(0f, 1f)
         val k = clip.intensity
         val e = clip.easing.apply(progress)

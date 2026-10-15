@@ -21,6 +21,8 @@ class VideoTrackTools(
     private val effects: (String) -> Unit,
     private val backgroundRemoval: (String) -> Unit,
     private val animations: (String) -> Unit,
+    /** Cria um balão de movimento (lilás) neste clipe de camada. */
+    private val motion: (String) -> Unit = {},
 ) : AutoCloseable {
     private val worker = Executors.newSingleThreadExecutor()
     @Volatile private var closed = false
@@ -131,6 +133,7 @@ class VideoTrackTools(
         body.addView(action("Pilha de efeitos") { dialog.dismiss(); effects(clipId) })
         body.addView(action("Remover fundo com IA") { dialog.dismiss(); backgroundRemoval(clipId) })
         body.addView(action("Animacoes de entrada, saida e loop") { dialog.dismiss(); animations(clipId) })
+        body.addView(action("Movimento (balao na timeline)") { dialog.dismiss(); motion(clipId) })
         body.addView(action("Velocidade e curvas") { dialog.dismiss(); SpeedTools.show(this, clip) { next ->
             apply(TrackEditing.update(project(), trackId, clipId) { it.copy(clip = next) })
         } })

@@ -20,15 +20,15 @@ object AnimationKeyframes {
         val target = AnimationEditing.target(project, animation.targetId) ?: return null
         val without = project.copy(animationClips = project.animationClips.filterNot { it.id == animationId })
         project.allVideos.firstOrNull { it.id == animation.targetId }?.let { video ->
-            val keys = videoKeys(video, animation) ?: return null
+            val keys = videoKeys(video, animation, target.durationUs) ?: return null
             return without.mapVideo(video.id) { it.copy(keyframes = keys) }
         }
         project.texts.firstOrNull { it.id == animation.targetId }?.let { text ->
-            val keys = layerKeys(text.baseTransform, text.transformKeyframes, target.startUs, animation) ?: return null
+            val keys = layerKeys(text.baseTransform, text.transformKeyframes, target, animation) ?: return null
             return without.copy(texts = without.texts.map { if (it.id == text.id) it.copy(transformKeyframes = keys) else it })
         }
         project.stickers.firstOrNull { it.id == animation.targetId }?.let { sticker ->
-            val keys = layerKeys(sticker.baseTransform, sticker.transformKeyframes, target.startUs, animation) ?: return null
+            val keys = layerKeys(sticker.baseTransform, sticker.transformKeyframes, target, animation) ?: return null
             return without.copy(stickers = without.stickers.map { if (it.id == sticker.id) it.copy(transformKeyframes = keys) else it })
         }
         return null
@@ -39,7 +39,7 @@ object AnimationKeyframes {
             if (i == SAMPLES) animation.endUs - 1L else animation.startUs + animation.durationUs * i / SAMPLES
         }.distinct()
 
-    private fun videoKeys(video: VideoClip, animation: AnimationClip): List<TransformKeyframe>? {
+    private fun videoKeys(video: VideoClip, animation: AnimationClip, targetDurationUs: Long): List<TransformKeyframe>? {
         val timeMap = video.timeMap
         fun sourceOf(localUs: Long) = timeMap.sourceAt(localUs.coerceIn(0L, video.durationUs))
         val startSource = sourceOf(animation.startUs)
@@ -55,7 +55,7 @@ object AnimationKeyframes {
         sampleTimes(animation).forEach { t ->
             val source = sourceOf(t)
             val base = video.transformAt(source).copy(sourceUs = source)
-            generated += AnimationEvaluator.apply(base, AnimationEvaluator.delta(animation, t)).copy(easing = Easing.LINEAR)
+            generated += AnimationEvaluator.apply(base, AnimationEvaluator.delta(animation, t, targetDurationUs)).copy(easing = Easing.LINEAR)
         }
         if (animation.endUs < video.durationUs) {
             generated += video.transformAt(endSource).copy(sourceUs = endSource, easing = Easing.SMOOTH)
@@ -67,8 +67,9 @@ object AnimationKeyframes {
     /** Texto e sticker guardam keyframes em tempo ABSOLUTO do projeto. */
     private fun layerKeys(
         base: TransformState, existing: List<com.termex.replay15.editor.transform.TransformKeyframe>,
-        targetStartUs: Long, animation: AnimationClip,
+        target: AnimationEditing.Target, animation: AnimationClip,
     ): List<com.termex.replay15.editor.transform.TransformKeyframe>? {
+        val targetStartUs = target.startUs
         fun manual(localUs: Long) = TransformEvaluator.evaluate(base, existing, localUs, targetStartUs)
         fun key(localUs: Long, state: TransformState, easing: Easing) =
             com.termex.replay15.editor.transform.TransformKeyframe(targetStartUs + localUs, state, easing)
@@ -78,7 +79,7 @@ object AnimationKeyframes {
         val generated = ArrayList<com.termex.replay15.editor.transform.TransformKeyframe>()
         if (animation.startUs >= 1L) generated += key(animation.startUs - 1L, manual(animation.startUs - 1L), Easing.LINEAR)
         sampleTimes(animation).forEach { t ->
-            generated += key(t, AnimationEvaluator.apply(manual(t), AnimationEvaluator.delta(animation, t)), Easing.LINEAR)
+            generated += key(t, AnimationEvaluator.apply(manual(t), AnimationEvaluator.delta(animation, t, target.durationUs)), Easing.LINEAR)
         }
         generated += key(animation.endUs, manual(animation.endUs), Easing.SMOOTH)
         val all = (kept + generated).distinctBy { it.timeUs }.sortedBy { it.timeUs }

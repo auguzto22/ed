@@ -49,7 +49,7 @@ object LayerStateEvaluator {
         val transform = (if (realtime) RealtimeProjectState.transform(id) else null)
             ?: TransformEvaluator.evaluate(base, keyframes, localTimeUs, storedStartUs)
         val animated = if (animations.isEmpty()) transform
-            else AnimationEvaluator.apply(transform, AnimationEvaluator.delta(animations, id, localTimeUs))
+            else AnimationEvaluator.apply(transform, AnimationEvaluator.delta(animations, id, localTimeUs, storedEndUs - storedStartUs))
         return EvaluatedLayerState(isActive(projectTimeUs, startUs, endUs), animated)
     }
 }

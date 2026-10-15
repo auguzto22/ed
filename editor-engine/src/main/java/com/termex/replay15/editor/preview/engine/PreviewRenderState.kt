@@ -104,7 +104,7 @@ object RenderStateEvaluator {
             val clip = placed.clip; val sourceUs = placed.sourceTimeUs(snapshot.projectTimeUs); 
             // Keyframes manuais primeiro; os balões ativos por cima (zoom multiplica, offset soma).
             val transform = AnimationEvaluator.apply(clip.transformAt(sourceUs),
-                AnimationEvaluator.delta(project.animationClips, clip.id, snapshot.projectTimeUs - placed.startUs))
+                AnimationEvaluator.delta(project.animationClips, clip.id, snapshot.projectTimeUs - placed.startUs, clip.durationUs))
             PreviewRenderState.Layer(placed.key, sourceUs, clip.width, clip.height, clip.image, clip.effectivePreviewUri,
                 transform.zoom, transform.x, transform.y, transform.rotation, clip.rotation, clip.flip, transform.opacity,
                 clip.crop, VideoFilter.entries[clip.filter], clip.filterStrength, clip.brightness, clip.contrast,

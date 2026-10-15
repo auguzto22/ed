@@ -9,7 +9,8 @@ class EditorSessionController(var history: ProjectHistory = ProjectHistory(Proje
         val current = project
         // Every edit path (trim, speed, duplicate, insert, AI tools) lands here, so transitions
         // are re-validated once instead of trusting each caller to remember.
-        val next = proposed.withSanitizedTransitions().withSanitizedAnimations()
+        // Balões seguem o conteúdo do alvo (aparar o início, velocidade) e depois cabem nele.
+        val next = AnimationEditing.followSourceChanges(current, proposed.withSanitizedTransitions()).withSanitizedAnimations()
         if (next == current) return false
         require(!current.trackState(MAIN_TRACK).locked || current.videos == next.videos) { "Desbloqueie a faixa principal" }
         current.videoTracks.filter { current.trackState(it.id).locked }.forEach { track ->

@@ -1364,7 +1364,7 @@ class EditorActivity : Activity() {
         )
         videoTrackTools = VideoTrackTools(this, { project }, { position }, ::edit, ::previewEdit, ::seek, { }, ::pickVideoLayer,
             { track, clip -> videoHandles.trackId = track; videoHandles.clipId = clip; timeline.selectedLayerId = clip }, ::pickLut,
-            { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
+            { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) }, { clip -> animationBalloons.create(clip) })
 
         // Barra de legenda dentro da área da prévia (substitui a tela separada de legendas do canvas).
         monitor.addView(buildCaptionBar(), LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(dp(8), dp(2), dp(8), dp(2)) })

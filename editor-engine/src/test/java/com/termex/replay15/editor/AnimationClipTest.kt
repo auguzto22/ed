@@ -1,6 +1,8 @@
 package com.termex.replay15.editor
 
+import com.termex.replay15.editor.core.EditorSessionController
 import com.termex.replay15.editor.domain.*
+import com.termex.replay15.editor.history.ProjectHistory
 import com.termex.replay15.editor.project.ProjectCodec
 import com.termex.replay15.editor.render.RenderPlan
 import com.termex.replay15.editor.transform.AnimationDelta
@@ -186,6 +188,60 @@ class AnimationClipTest {
         assertEquals(2f, outside.transform.scaleX, 1e-4f)
         // Sem balões o resultado é exatamente o de antes.
         assertEquals(LayerStateEvaluator.evaluate(text, 13 * s, realtime = false), LayerStateEvaluator.evaluate(text, 13 * s, realtime = false, animations = emptyList()))
+    }
+
+    @Test fun innerEdgesRampInsteadOfJumping() {
+        val anim = animation("x", 2 * s, 4 * s, MotionPreset.ZOOM_IN, easing = Easing.LINEAR)
+        val target = 10 * s
+        // Meio do balão: rampa não interfere.
+        assertEquals(1.1f, AnimationEvaluator.delta(anim, 3 * s, target).zoom, 1e-5f)
+        // Último quadro antes do fim (que fica DENTRO do clipe): já voltou ao neutro, sem salto.
+        assertEquals(1f, AnimationEvaluator.delta(anim, 4 * s - 1, target).zoom, 1e-3f)
+        // Fim do balão = fim do clipe: aí há corte, então o valor vai até o fim.
+        assertEquals(1.2f, AnimationEvaluator.delta(anim, 4 * s - 1, 4 * s).zoom, 1e-3f)
+    }
+
+    @Test fun zoomOutStartingInsideTheClipEasesIn() {
+        val anim = animation("x", 2 * s, 4 * s, MotionPreset.ZOOM_OUT, easing = Easing.LINEAR)
+        assertEquals(1f, AnimationEvaluator.delta(anim, 2 * s, 10 * s).zoom, 1e-5f)
+        // Começo do alvo: sem rampa, começa já ampliado.
+        val atStart = animation("x", 0, 2 * s, MotionPreset.ZOOM_OUT, easing = Easing.LINEAR)
+        assertEquals(1.2f, AnimationEvaluator.delta(atStart, 0, 10 * s).zoom, 1e-5f)
+    }
+
+    // ---- aparar o início / velocidade ------------------------------------------------------
+
+    private fun applied(before: Project, after: Project): Project =
+        EditorSessionController(ProjectHistory(before)).also { assertTrue(it.apply(after)) }.project
+
+    @Test fun trimmingTheHeadKeepsTheBalloonOnTheSameContent() {
+        val a = clip(10)
+        val before = Project(videos = listOf(a), animationClips = listOf(animation(a.id, 4 * s, 6 * s)))
+        val after = applied(before, before.copy(videos = listOf(a.copy(inUs = 2 * s))))
+        val moved = after.animationClips.single()
+        assertEquals(2 * s to 4 * s, moved.startUs to moved.endUs)
+        // Mesmo instante da mídia antes e depois.
+        assertEquals(a.timeMap.sourceAt(4 * s), after.videos.single().timeMap.sourceAt(moved.startUs))
+    }
+
+    @Test fun trimmingAwayTheWholeBalloonRemovesIt() {
+        val a = clip(10)
+        val before = Project(videos = listOf(a), animationClips = listOf(animation(a.id, 1 * s, 3 * s)))
+        assertTrue(applied(before, before.copy(videos = listOf(a.copy(inUs = 4 * s)))).animationClips.isEmpty())
+    }
+
+    @Test fun speedingUpTheClipCompressesTheBalloon() {
+        val a = clip(10)
+        val before = Project(videos = listOf(a), animationClips = listOf(animation(a.id, 4 * s, 6 * s)))
+        val moved = applied(before, before.copy(videos = listOf(a.copy(speed = 2f)))).animationClips.single()
+        assertEquals(2 * s to 3 * s, moved.startUs to moved.endUs)
+    }
+
+    @Test fun trimmingOnlyTheTailLeavesTheBalloonAlone() {
+        val a = clip(10)
+        val before = Project(videos = listOf(a), animationClips = listOf(animation(a.id, 4 * s, 6 * s)))
+        val kept = applied(before, before.copy(videos = listOf(a.copy(outUs = 8 * s)))).animationClips.single()
+        assertEquals(4 * s to 6 * s, kept.startUs to kept.endUs)
     }
 
     // ---- export ----------------------------------------------------------------------------

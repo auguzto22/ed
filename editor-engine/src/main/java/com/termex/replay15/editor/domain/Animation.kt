@@ -172,6 +172,35 @@ object AnimationEditing {
     }
 
     /**
+     * Mantém o balão sobre o MESMO conteúdo quando o alvo muda o que mostra no começo: aparar o
+     * início (inUs), mudar velocidade/curva ou inverter. Sem isso o balão ficava no mesmo tempo
+     * relativo ao novo início e passava a cobrir outro trecho do vídeo. Só balões que a edição não
+     * tocou são remapeados (o Auto Edit e o corte já entregam os seus no lugar certo).
+     */
+    fun followSourceChanges(before: Project, after: Project): Project {
+        if (after.animationClips.isEmpty() || before.animationClips.isEmpty()) return after
+        val untouched = before.animationClips.toHashSet()
+        val was = before.allVideos.associateBy { it.id }
+        val now = after.allVideos.associateBy { it.id }
+        var changed = false
+        val result = after.animationClips.mapNotNull { clip ->
+            if (clip !in untouched) return@mapNotNull clip
+            val old = was[clip.targetId] ?: return@mapNotNull clip
+            val new = now[clip.targetId] ?: return@mapNotNull clip
+            if (old.inUs == new.inUs && old.speed == new.speed && old.speedCurve == new.speedCurve && old.reverse == new.reverse)
+                return@mapNotNull clip
+            val a = new.timeMap.timelineAt(old.timeMap.sourceAt(clip.startUs))
+            val b = new.timeMap.timelineAt(old.timeMap.sourceAt(clip.endUs))
+            val start = minOf(a, b); val end = maxOf(a, b)
+            changed = true
+            // Balão inteiro aparado fora: some (a sanitização também o tiraria).
+            if (end - start < MIN_ANIMATION_US) null
+            else if (start == clip.startUs && end == clip.endUs) clip else clip.withWindow(start, end)
+        }
+        return if (!changed) after else after.copy(animationClips = result)
+    }
+
+    /**
      * Regra única que toda edição respeita: um balão pertence a um alvo que existe e cabe dentro
      * dele. Apagar, aparar ou encurtar o alvo, ou abrir um arquivo antigo, passam por aqui (o
      * [com.termex.replay15.editor.core.EditorSessionController] e o [com.termex.replay15.editor.project.ProjectCodec]).
