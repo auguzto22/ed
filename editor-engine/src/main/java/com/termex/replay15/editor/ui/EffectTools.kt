@@ -218,7 +218,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             onApply = { preset, intensity ->
                 safely {
                     preset.nodes.forEach { repository.resolve(it.assetId, it.version) }
-                    val duration = if (preset.category.equals("Gaming", true)) impactDurationUs(preset.id) else 3 * SECOND
+                    val duration = if (preset.isTimed) impactDurationUs(preset) else 3 * SECOND
                     val end = (start + duration).coerceAtMost(snapshot.durationUs)
                     val effects = preset.nodes.map { node ->
                         EffectInstance(
@@ -390,9 +390,9 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             clip = clip,
             sessionTimestampUs = sessionTimestampUs,
             onPreview = { preset, intensity ->
-                val range = if (preset.category.equals("Gaming", true) && clip.outUs - clip.inUs >= 100_000L) {
+                val range = if (preset.isTimed && clip.outUs - clip.inUs >= 100_000L) {
                     val start = sessionTimestampUs.coerceIn(clip.inUs, (clip.outUs - 100_000L).coerceAtLeast(clip.inUs))
-                    start to (start + impactDurationUs(preset.id)).coerceAtMost(clip.outUs)
+                    start to (start + impactDurationUs(preset)).coerceAtMost(clip.outUs)
                 } else null
                 val added = preset.nodes.map { node ->
                     EffectInstance(
@@ -417,9 +417,9 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                     report("A pilha aceita no maximo 12 efeitos")
                 } else safely {
                     preset.nodes.forEach { repository.resolve(it.assetId, it.version) }
-                    val range = if (preset.category.equals("Gaming", true) && clip.outUs - clip.inUs >= 100_000L) {
+                    val range = if (preset.isTimed && clip.outUs - clip.inUs >= 100_000L) {
                         val start = sessionTimestampUs.coerceIn(clip.inUs, (clip.outUs - 100_000L).coerceAtLeast(clip.inUs))
-                        start to (start + impactDurationUs(preset.id)).coerceAtMost(clip.outUs)
+                        start to (start + impactDurationUs(preset)).coerceAtMost(clip.outUs)
                     } else null
                     val added = preset.nodes.map { node ->
                         EffectInstance(
@@ -438,7 +438,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             }
         )
     }
-    private fun impactDurationUs(id: String): Long = when (id) {
+    private fun impactDurationUs(preset: EffectPreset): Long = preset.durationMs?.let { it * 1_000L } ?: when (preset.id) {
         "damage" -> 180_000L
         "kill_impact", "headshot" -> 250_000L
         else -> 350_000L

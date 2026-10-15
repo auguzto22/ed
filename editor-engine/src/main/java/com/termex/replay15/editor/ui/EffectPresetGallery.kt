@@ -34,11 +34,13 @@ object EffectPresetGallery {
         ))
 
         val allPresets = runCatching { BuiltInEffectPresets.definitions(this) }.getOrDefault(emptyList())
-        val categories = listOf("Todos", "Cinema", "Film", "Gaming", "Retro", "Distorsao")
+        // Tabs follow the presets themselves, in order of appearance, so new categories need no code.
+        val categories = listOf("Todos") + allPresets.map { it.category }.distinct()
 
         var selectedPreset: EffectPreset? = null
         var currentIntensity = 1.0f
-        var currentCategoryIndex = 0
+        // Starts on the first category: "Todos" would queue a thumbnail render for every preset.
+        var currentCategoryIndex = if (categories.size > 1) 1 else 0
 
         val targetTimestampUs = if (sessionTimestampUs >= 0L) {
             sessionTimestampUs
