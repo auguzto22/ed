@@ -4,42 +4,55 @@ import android.animation.ValueAnimator
 import android.app.Activity
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.RadialGradient
-import android.graphics.RectF
 import android.graphics.Shader
-import android.graphics.SweepGradient
 import android.graphics.Typeface
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.PathInterpolator
+import kotlin.math.PI
 import kotlin.math.min
+import kotlin.math.sin
 
 /**
- * Opening animation shown once per cold start, continuing the Android 12 system splash.
- * The two Recly rings sweep in around a soft glow, the wordmark rises into place, then the whole
- * layer zooms slightly and fades to reveal the app. About 1.1 s, skipped with a tap.
+ * Abertura animada (uma vez por cold start), continuando a splash do Android 12.
+ * Monta o símbolo BLITZ peça por peça: as cantoneiras fecham o enquadramento, o "B" aparece já
+ * com o corte, o raio vermelho é riscado dentro do corte e o ponto de gravação "acende".
+ * Depois a camada dá um zoom e some. ~1,3 s; um toque pula.
+ *
+ * O desenho usa as mesmas coordenadas do vetor (res/drawable/ic_launcher_foreground.xml):
+ * símbolo em 100×100, "B" em 70×100 com translate(30.4, 22) e escala 0.56.
  */
 class BootSplashView(context: Context) : View(context) {
-    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
+    private val bracketPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 4f; color = WHITE
+        strokeCap = Paint.Cap.BUTT; strokeJoin = Paint.Join.MITER
     }
+    private val bPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = WHITE }
+    private val boltPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 5f; color = RED
+        strokeCap = Paint.Cap.BUTT; strokeJoin = Paint.Join.MITER
+    }
+    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = RED }
     private val subtitle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = EditorStyle.MUTED
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
+
+    private val boltMeasure = PathMeasure(BOLT, false)
+    private val boltLength = boltMeasure.length
+    private val boltSegment = Path()
+
     private var t = 0f
     private val ease = PathInterpolator(.2f, .9f, .25f, 1f)
     private var done: (() -> Unit)? = null
     private val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-        duration = 1100
+        duration = 1300
         addUpdateListener { t = it.animatedValue as Float; invalidate() }
         addListener(object : android.animation.AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: android.animation.Animator) { exit() }
@@ -49,7 +62,7 @@ class BootSplashView(context: Context) : View(context) {
     init {
         setBackgroundColor(EditorStyle.BG)
         isClickable = true
-        contentDescription = "Recly"
+        contentDescription = "BLITZ"
         setOnClickListener { animator.cancel(); exit() }
     }
 
@@ -72,35 +85,103 @@ class BootSplashView(context: Context) : View(context) {
         val w = width.toFloat(); val h = height.toFloat()
         val cx = w / 2f; val cy = h * .44f
         val r = min(w, h) * .13f
-        // Breathing glow behind the mark.
+        val side = r * 3.4f // lado do símbolo (100 unidades)
+
+        // Brilho vermelho que "respira" atrás do símbolo.
         val glowAmount = phase(0f, .5f)
         glow.shader = RadialGradient(cx, cy, r * 3.2f, intArrayOf((0x66C50022 and 0x00FFFFFF) or ((0x66 * glowAmount).toInt() shl 24), 0x00C50022), null, Shader.TileMode.CLAMP)
         canvas.drawCircle(cx, cy, r * 3.2f, glow)
-        // Outer ring (orange sweep) then inner ring (white), drawn as growing arcs.
-        val outer = phase(.02f, .55f); val inner = phase(.18f, .7f)
-        ring.strokeWidth = r * .3f
-        ring.shader = SweepGradient(cx, cy, intArrayOf(EditorStyle.ACCENT_DEEP, EditorStyle.ACCENT, EditorStyle.ACCENT_PINK, EditorStyle.ACCENT_DEEP), null)
-        canvas.save(); canvas.rotate(-90f + 120f * (1f - outer), cx, cy)
-        canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), 0f, 300f * outer, false, ring)
+
+        canvas.save()
+        canvas.translate(cx - side / 2f, cy - side / 2f)
+        canvas.scale(side / 100f, side / 100f)
+
+        // 1. Cantoneiras chegam de fora e fecham o enquadramento.
+        val pBrackets = phase(0f, .4f)
+        val slide = 16f * (1f - pBrackets)
+        bracketPaint.alpha = (115 * pBrackets).toInt() // 45% como no ícone
+        for (i in CORNERS.indices) {
+            canvas.save()
+            canvas.translate(CORNER_DIRS[i * 2] * slide, CORNER_DIRS[i * 2 + 1] * slide)
+            canvas.drawPath(CORNERS[i], bracketPaint)
+            canvas.restore()
+        }
+
+        // 4. Ponto de gravação acende com um pequeno "pulo".
+        val pDot = phase(.66f, .92f)
+        if (pDot > 0f) {
+            dotPaint.alpha = (255 * pDot).toInt()
+            val radius = 4.5f * (pDot + .45f * sin(PI * pDot).toFloat())
+            canvas.drawCircle(80f, 20f, radius, dotPaint)
+        }
+
+        canvas.save()
+        canvas.translate(30.4f, 22f)
+        canvas.scale(.56f, .56f)
+
+        // 2. O "B" cresce de 88% e aparece, já com o vão do raio.
+        val pB = phase(.14f, .56f)
+        if (pB > 0f) {
+            val s = .88f + .12f * pB
+            canvas.save()
+            canvas.scale(s, s, 35f, 50f)
+            canvas.clipOutPath(STRIP)
+            bPaint.alpha = (255 * pB).toInt()
+            canvas.drawPath(LETTER_B, bPaint)
+            canvas.restore()
+        }
+
+        // 3. O raio vermelho é riscado dentro do vão, da esquerda para a direita.
+        val pBolt = phase(.42f, .8f)
+        if (pBolt > 0f) {
+            boltSegment.reset()
+            boltMeasure.getSegment(0f, boltLength * pBolt, boltSegment, true)
+            canvas.drawPath(boltSegment, boltPaint)
+        }
+
         canvas.restore()
-        ring.shader = null; ring.color = Color.WHITE; ring.strokeWidth = r * .24f
-        val ri = r * .52f
-        canvas.save(); canvas.rotate(90f - 90f * (1f - inner), cx, cy)
-        canvas.drawArc(RectF(cx - ri, cy - ri, cx + ri, cy + ri), 0f, 290f * inner, false, ring)
         canvas.restore()
-        // Wordmark rises and sharpens.
-        val word = phase(.35f, .85f)
-        text.textSize = r * .78f
-        text.alpha = (255 * word).toInt()
-        text.letterSpacing = .18f * (1f - word) + .02f
-        text.shader = LinearGradient(cx - r * 2, 0f, cx + r * 2, 0f, Color.WHITE, 0xFFE5DEFF.toInt(), Shader.TileMode.CLAMP)
-        canvas.drawText("Recly", cx, cy + r * 2.25f + r * .5f * (1f - word), text)
+
         subtitle.textSize = r * .28f
         subtitle.alpha = (200 * phase(.55f, .95f)).toInt()
-        canvas.drawText("Editor de vídeo", cx, cy + r * 2.85f, subtitle)
+        canvas.drawText("Editor de vídeo", cx, cy + side / 2f + r * .7f, subtitle)
     }
 
     companion object {
+        private val WHITE = 0xFFFFFFFF.toInt()
+        private val RED = 0xFFC50022.toInt()
+
+        private val CORNERS = arrayOf(
+            Path().apply { moveTo(8f, 26f); lineTo(8f, 8f); lineTo(26f, 8f) },
+            Path().apply { moveTo(74f, 8f); lineTo(92f, 8f); lineTo(92f, 26f) },
+            Path().apply { moveTo(92f, 74f); lineTo(92f, 92f); lineTo(74f, 92f) },
+            Path().apply { moveTo(26f, 92f); lineTo(8f, 92f); lineTo(8f, 74f) },
+        )
+        /** Direção (x, y) de onde cada cantoneira chega. */
+        private val CORNER_DIRS = floatArrayOf(-1f, -1f, 1f, -1f, 1f, 1f, -1f, 1f)
+
+        private val LETTER_B = Path().apply {
+            fillType = Path.FillType.EVEN_ODD
+            moveTo(0f, 0f); lineTo(44f, 0f)
+            cubicTo(58f, 0f, 66f, 9f, 66f, 24f); cubicTo(66f, 35f, 61f, 42f, 53f, 46f)
+            cubicTo(64f, 50f, 70f, 58f, 70f, 72f); cubicTo(70f, 89f, 60f, 100f, 44f, 100f)
+            lineTo(0f, 100f); close()
+            moveTo(20f, 18f); lineTo(42f, 18f)
+            cubicTo(46f, 18f, 47f, 21f, 47f, 27f); cubicTo(47f, 33f, 45f, 37f, 41f, 37f)
+            lineTo(20f, 37f); close()
+            moveTo(20f, 55f); lineTo(44f, 55f)
+            cubicTo(49f, 55f, 51f, 59f, 51f, 67f); cubicTo(51f, 77f, 48f, 82f, 43f, 82f)
+            lineTo(20f, 82f); close()
+        }
+
+        /** Faixa do corte (linha do raio com 7 de cada lado, cantos em quina). */
+        private val STRIP = Path().apply {
+            moveTo(-3.34f, 68.48f); lineTo(29.28f, 55.09f); lineTo(35.35f, 69.25f); lineTo(82.81f, 48.41f)
+            lineTo(77.19f, 35.59f); lineTo(42.65f, 50.75f); lineTo(36.72f, 36.91f); lineTo(-8.66f, 55.52f); close()
+        }
+
+        private val BOLT = Path().apply { moveTo(-6f, 62f); lineTo(33f, 46f); lineTo(39f, 60f); lineTo(80f, 42f) }
+
         @Volatile private var shownThisProcess = false
 
         /** Adds the intro over [activity]'s content once per process (cold start only). */

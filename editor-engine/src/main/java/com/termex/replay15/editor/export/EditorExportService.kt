@@ -176,7 +176,7 @@ class EditorExportService : Service() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         val open = PendingIntent.getActivity(this, 510, openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val builder = Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_save_15)
+        val builder = Notification.Builder(this, CHANNEL).setSmallIcon(com.recly.core.ui.R.drawable.blitz_mark)
             .setContentTitle("Editor Replay15").setContentText(value.message).setContentIntent(open)
             .setOnlyAlertOnce(true).setOngoing(value.active)
         if (value.active) {

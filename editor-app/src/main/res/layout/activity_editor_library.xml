@@ -22,17 +22,12 @@
             android:paddingTop="22dp"
             android:paddingBottom="108dp">
 
-            <!-- Cabeçalho do canvas: marca à esquerda, perfil à direita -->
+            <!-- Cabeçalho: só o perfil, à direita (sem logo à esquerda) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/canvas_logo_tile" />
 
                 <View
                     android:layout_width="0dp"
