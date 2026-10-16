@@ -1499,6 +1499,139 @@ class EditorActivity : Activity() {
         }
     }
 
+    /**
+     * Grupo aberto na barra de baixo (jeito do CapCut): tocar em Texto, Áudio, Camadas, IA, Cor...
+     * troca a barra pela fileira daquele grupo, com ‹ no começo para voltar. [toolGroupOwner]
+     * guarda a seleção de quando o grupo abriu: se a seleção mudar, a barra volta ao normal.
+     */
+    private var toolGroup: String? = null
+    private var toolGroupOwner = ""
+
+    private fun toolSelectionKey(): String {
+        if (selected in project.videos.indices) return "clip:${project.videos[selected].id}"
+        selectedVideoLayer()?.let { (_, clip) -> return "layer:${clip.id}" }
+        stickerHandles.selected?.takeIf { id -> project.stickers.any { it.id == id } }?.let { return "sticker:$it" }
+        return "none"
+    }
+
+    private fun openToolGroup(name: String) {
+        toolGroup = name
+        toolGroupOwner = toolSelectionKey()
+        updateContextualTools()
+    }
+
+    private fun closeToolGroup() {
+        toolGroup = null
+        updateContextualTools()
+    }
+
+    /** Fileira de cada grupo. Null quando o grupo não se aplica à seleção atual. */
+    private fun toolGroupItems(group: String, clipSelected: Boolean): List<Triple<String, String, () -> Unit>>? = when (group) {
+        "Adicionar" -> listOf(
+            Triple("Vídeo ou foto", "+ Midia", { pick(false) }),
+            Triple("Vídeo em camada", "Camada", { addVideoLayer() }),
+            Triple("Música ou áudio", "Áudio", { importAudioTrack() }),
+            Triple("Gravar narração", "Áudio", { voiceoverPanel() }),
+            Triple("Adicionar texto", "Texto", { textPanel() }),
+            Triple("Importar legendas", "Texto", { pickSubtitles() }),
+            Triple("Imagem ou sticker", "Camada", { pickSticker() }),
+            Triple("Objeto Nulo", "Camada", { addNullObject() }),
+        )
+        "Texto" -> listOf(
+            Triple("Adicionar texto", "Texto", { textPanel() }),
+            Triple("Legendas autom.", "Legendas", { automaticCaptionsDialog() }),
+            Triple("Textos e legendas", "Texto", {
+                if (project.texts.isEmpty()) feedback("Nenhum texto ou legenda na timeline ainda") else textMenu()
+            }),
+            Triple("Importar legendas", "Texto", { pickSubtitles() }),
+        )
+        "Áudio" -> if (clipSelected) listOf(
+            Triple("Volume", "Volume", { volumePanel() }),
+            Triple("Extrair áudio", "Áudio", { extractAudio() }),
+            Triple("Batidas", "Áudio", { beatPanel() }),
+            Triple("Importar música", "Áudio", { importAudioTrack() }),
+            Triple("Gravar narração", "Áudio", { voiceoverPanel() }),
+        ) else listOf(
+            Triple("Importar música", "Áudio", { importAudioTrack() }),
+            Triple("Gravar narração", "Áudio", { voiceoverPanel() }),
+            Triple("Faixas de áudio", "Áudio", {
+                if (project.audio.isEmpty()) feedback("Nenhuma faixa de áudio ainda") else audioPanel()
+            }),
+        )
+        "Camadas" -> {
+            val base = listOf<Triple<String, String, () -> Unit>>(
+                Triple("Vídeo em camada", "Camada", { addVideoLayer() }),
+                Triple("Imagem em camada", "Camada", { pickSticker() }),
+                Triple("Sticker animado", "Camada", { lottieStickersPanel() }),
+                Triple("Camadas de imagem", "Camada", {
+                    if (project.stickers.isEmpty()) feedback("Nenhuma camada de imagem ainda") else stickerMenu()
+                }),
+            )
+            val clip = if (clipSelected) project.videos.getOrNull(selected) else null
+            if (clip == null) base else {
+                val compound = CompoundEditing.at(project, clipId = clip.id)
+                val groupItems: List<Triple<String, String, () -> Unit>> = if (compound == null) listOf(
+                    Triple("Criar compound", "Camada", { createCompoundPanel() }),
+                ) else listOf(
+                    Triple("Abrir grupo", "Camada", { openCompound(compound) }),
+                    Triple("Desagrupar", "Camada", {
+                        if (openCompoundId == compound.id) openCompoundId = null
+                        edit(CompoundEditing.ungroup(project, compound.id))
+                    }),
+                )
+                base + listOf<Triple<String, String, () -> Unit>>(Triple("Máscaras", "Máscaras", { masksPanel() })) + groupItems +
+                    listOf<Triple<String, String, () -> Unit>>(Triple("Copiar estilo", "Camada", { copyClipStyle() })) +
+                    (if (copiedClipStyle != null) listOf<Triple<String, String, () -> Unit>>(Triple("Colar estilo", "Camada", { pasteClipStyle() })) else emptyList())
+            }
+        }
+        "IA" -> if (!clipSelected) null else listOf(
+            Triple("Auto Edit", "canvas:autoedit", { autoEditPanel.open() }),
+            Triple("Auto Reframe", "Ajustar", { autoReframePanel.open() }),
+            Triple("Auto Cor", "Ajustar", { autoColor() }),
+            Triple("Remover fundo", "Fundo", { selectedClip()?.let { backgroundRemovalTools.open(it.id) } }),
+            Triple("Color Match", "Ajustar", { colorMatchPanel() }),
+        )
+        "Cor" -> if (!clipSelected) null else listOf(
+            Triple("Ajustar", "Ajustar", { adjustmentsPanel() }),
+            Triple("Filtros", "Filtros", { filters() }),
+            Triple("Cor e LUT", "Ajustar", { colorPanel() }),
+            Triple("Presets", "Filtros", { presetsPanel() }),
+            Triple("Navegador LUTs", "Filtros", { openLutBrowser() }),
+            Triple("Scopes", "Ajustar", { scopesPanel() }),
+        )
+        "Movimento" -> if (!clipSelected) null else listOf(
+            Triple("Animações", "Transformar", { selectedClip()?.let { animationTools.open(it.id) } }),
+            Triple("Keyframe", "Keyframe", { keyframePanel() }),
+            Triple("Transição", "Transição", { transitionPanel() }),
+            Triple("Câmera 3D", "Transformar", { cameraPanel() }),
+            Triple("Rastreamento", "Transformar", { trackingPanel() }),
+            Triple("Estabilizar", "Transformar", { stabilizeVideoPanel() }),
+            Triple("Motion Blur", "Transformar", { motionBlurPanel() }),
+            Triple("Movimento suave", "Velocidade", { smoothSlowMoPanel() }),
+        )
+        "Clipe" -> if (!clipSelected) null else listOf(
+            Triple("Transformar", "Transformar", { transformPanel() }),
+            Triple("Recorte", "Recorte", { cropPanel() }),
+            Triple("Girar", "Transformar", { edit(project.changeVideo(selected) { it.copy(rotation = (it.rotation + 90) % 360) }) }),
+            Triple("Espelhar", "Transformar", { edit(project.changeVideo(selected) { it.copy(flip = !it.flip) }) }),
+            Triple("Duplicar", "Camada", { duplicateSelected() }),
+            Triple("Congelar", "Camada", { freezeFrame() }),
+            Triple("Mover", "Transformar", { movePanel() }),
+            Triple("Substituir", "+ Midia", { pick(false, selected) }),
+        )
+        else -> null
+    }
+
+    /** Importar música respeitando o limite de faixas (antes isso ficava dentro da lista de áudio). */
+    private fun importAudioTrack() {
+        if (project.audio.size >= 8) error("Limite de 8 faixas de áudio") else pick(true)
+    }
+
+    /**
+     * Barra de ferramentas do canvas. Sem nada selecionado: Adicionar, Dividir, Aparar, Texto,
+     * Áudio, Camadas e Auto Edit. Ao tocar no vídeo ela vira a barra do clipe: primeiro as mais
+     * usadas e depois os grupos (IA, Cor, Movimento...). Grupos abrem na própria barra com ‹.
+     */
     private fun updateContextualTools() {
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
@@ -1506,68 +1639,79 @@ class EditorActivity : Activity() {
         val videoLayer = if (clipSelected) null else selectedVideoLayer()
         val stickerId = if (clipSelected || videoLayer != null) null
             else stickerHandles.selected?.takeIf { id -> project.stickers.any { it.id == id } }
-        val items: List<Triple<String, String, () -> Unit>> = if (videoLayer != null) {
+        val hasSelection = clipSelected || videoLayer != null || stickerId != null
+        if (toolGroup != null && toolGroupOwner != toolSelectionKey()) toolGroup = null
+        val groupItems = toolGroup?.let { toolGroupItems(it, clipSelected) }
+        if (toolGroup != null && groupItems == null) toolGroup = null
+        val items: List<Triple<String, String, () -> Unit>> = if (groupItems != null) groupItems
+        else if (videoLayer != null) {
             // Barra da camada de vídeo: as funções agem nesta camada, não no clipe de trás.
             val (trackId, layer) = videoLayer
             listOf(
-                Triple("Fechar", "Fechar", { clearSelection() }),
                 Triple("Remover fundo", "Fundo", { backgroundRemovalTools.open(layer.id) }),
                 Triple("Editar", "Ajustar", { videoTrackTools.open(trackId, layer.id) }),
                 Triple("Efeitos", "Efeitos", { effectTools.open(layer.id) }),
                 Triple("Animação", "Transformar", { animationTools.open(layer.id) }),
-                Triple("Adicionar", "+ Midia", { addMediaMenu() }),
-                Triple("Camadas", "Camada", { layersMenu() }),
+                Triple("Adicionar", "+ Midia", { openToolGroup("Adicionar") }),
+                Triple("Camadas", "Camada", { openToolGroup("Camadas") }),
                 Triple("Excluir", "Excluir", { confirmDeleteVideoLayer(trackId, layer.id) }),
             )
         } else if (stickerId != null) {
             // Barra da camada de imagem.
             listOf(
-                Triple("Fechar", "Fechar", { clearSelection() }),
                 Triple("Remover fundo", "Fundo", { backgroundRemovalTools.openSticker(stickerId) }),
                 Triple("Editar", "Ajustar", { stickerPanel(stickerId) }),
                 Triple("Máscara", "Mascaras", { stickerMaskPanel(stickerId) }),
-                Triple("Adicionar", "+ Midia", { addMediaMenu() }),
-                Triple("Camadas", "Camada", { layersMenu() }),
+                Triple("Adicionar", "+ Midia", { openToolGroup("Adicionar") }),
+                Triple("Camadas", "Camada", { openToolGroup("Camadas") }),
                 Triple("Excluir", "Excluir", {
                     edit(project.copy(stickers = project.stickers.filterNot { it.id == stickerId }))
                     clearSelection()
                 }),
             )
         } else if (clipSelected) listOf(
-            Triple("Fechar", "Fechar", { clearSelection() }),
+            // Barra do clipe: as mais usadas direto e o resto em grupos que abrem na barra
+            // (antes ficavam todas na janela grande do "Mais").
+            Triple("Cortar", "Cortar", { trimPanel() }),
+            Triple("Dividir", "Dividir", { splitAtCursor() }),
+            Triple("Velocidade", "Velocidade", { speedPanel() }),
+            Triple("Volume", "Volume", { volumePanel() }),
             Triple("Filtros", "Filtros", { filters() }),
             Triple("Efeitos", "Efeitos", { selectedClip()?.let { effectTools.open(it.id) } }),
             Triple("Stickers", "Camada", { lottieStickersPanel() }),
             Triple("Remover fundo", "Fundo", { selectedClip()?.let { backgroundRemovalTools.open(it.id) } }),
-            Triple("Adicionar", "+ Mídia", { addMediaMenu() }),
-            Triple("Camadas", "Camada", { layersMenu() }),
-            Triple("Ajustar", "Ajustar", { adjustmentsPanel() }),
-            Triple("Velocidade", "Velocidade", { speedPanel() }),
-            Triple("Animação", "Transformar", { selectedClip()?.let { animationTools.open(it.id) } }),
-            Triple("Transição", "Transição", { transitionPanel() }),
-            Triple("Dividir", "Dividir", { splitAtCursor() }),
-            Triple("Volume", "Volume", { volumePanel() }),
-            Triple("Recorte", "Recorte", { cropPanel() }),
-            Triple("Máscara", "Máscaras", { masksPanel() }),
+            Triple("Adicionar", "+ Mídia", { openToolGroup("Adicionar") }),
+            Triple("IA", "Ajustar", { openToolGroup("IA") }),
+            Triple("Cor", "Ajustar", { openToolGroup("Cor") }),
+            Triple("Movimento", "Transformar", { openToolGroup("Movimento") }),
+            Triple("Camadas", "Camada", { openToolGroup("Camadas") }),
+            Triple("Áudio", "Áudio", { openToolGroup("Áudio") }),
+            Triple("Clipe", "Ajustar", { openToolGroup("Clipe") }),
             Triple("Excluir", "Excluir", { confirmDeleteSelected() }),
-            Triple("Mais", "Mais", { editTools() }),
         ) else listOf(
-            Triple("Adicionar", "+ Mídia", { addMediaMenu() }),
+            Triple("Adicionar", "+ Mídia", { openToolGroup("Adicionar") }),
             Triple("Dividir", "canvas:dividir", { splitAtCursor() }),
             Triple("Aparar", "canvas:aparar", { openTrimTool() }),
             Triple("Texto", "canvas:texto", { openTextTool() }),
             Triple("Áudio", "canvas:audio", { openAudioTool() }),
-            Triple("Camadas", "Camada", { layersMenu() }),
+            Triple("Camadas", "Camada", { openToolGroup("Camadas") }),
             Triple("Auto Edit", "canvas:autoedit", { autoEditPanel.open() }),
         )
-        // Se os itens não cabem na largura da tela: largura fixa e rolagem lateral.
-        val fixedWidth = items.size * dp(66) > resources.displayMetrics.widthPixels
+        // ‹ no começo: dentro de um grupo volta para a barra anterior; com algo selecionado
+        // fecha a seleção (fazia o papel do antigo botão "Fechar").
+        val inGroup = groupItems != null
+        if (inGroup || hasSelection) {
+            contextualTools.addView(toolBackAction { if (inGroup) closeToolGroup() else clearSelection() },
+                LinearLayout.LayoutParams(dp(34), dp(62)).apply { marginEnd = dp(4) })
+        }
+        // Se os itens não cabem na largura da tela: rolagem lateral, cada botão do tamanho do nome.
+        val fixedWidth = items.size * dp(66) + (if (inGroup || hasSelection) dp(38) else 0) > resources.displayMetrics.widthPixels
         items.forEach { (name, glyph, click) ->
-            val params = if (fixedWidth) LinearLayout.LayoutParams(dp(66), -2) else LinearLayout.LayoutParams(0, -2, 1f)
+            val params = if (fixedWidth) LinearLayout.LayoutParams(-2, -2) else LinearLayout.LayoutParams(0, -2, 1f)
             contextualTools.addView(toolAction(name, click, glyph), params)
         }
         // Only animate when the tool set actually changes (selection change), not on every refresh.
-        val signature = items.joinToString("|") { it.first }
+        val signature = (toolGroup ?: "") + "#" + items.joinToString("|") { it.first }
         if (signature != lastToolSignature) {
             lastToolSignature = signature
             bottom.post { bottom.scrollTo(0, 0) }
@@ -1597,25 +1741,26 @@ class EditorActivity : Activity() {
         dialog = sheet(title, body)
     }
 
-    /** Aparar: com um clipe, abre todas as funções de clipe; com uma camada de imagem, as dela. */
+    /** Aparar: com um clipe, seleciona e abre o corte; com uma camada de imagem, as funções dela. */
     private fun openTrimTool() {
         stickerHandles.selected?.let { stickerTools(it); return }
         // Com uma camada de vídeo selecionada, as funções dela (antes abria as do clipe de trás).
         selectedVideoLayer()?.let { (trackId, layer) -> videoTrackTools.open(trackId, layer.id); return }
+        // Com um clipe: seleciona ele (a barra vira a do clipe) e abre o corte direto.
         val clip = if (selected in project.videos.indices) selectedClip() else selectedClipAtCursor()
-        if (clip != null) editTools()
+        if (clip != null) { selectMainClip(selected); trimPanel() }
     }
 
     /** Texto: com um texto ou legenda selecionado, as funções dele; senão, a lista de textos. */
     private fun openTextTool() {
         handles.selected?.let { textLayerTools(it); return }
-        textMenu()
+        openToolGroup("Texto")
     }
 
     /** Áudio: com uma faixa de áudio selecionada, as funções dela; senão, o painel de áudio. */
     private fun openAudioTool() {
         val id = timeline.selectedLayerId?.takeIf { selectedId -> project.audio.any { it.id == selectedId } }
-        if (id != null) audioLayerTools(id) else audioPanel()
+        if (id != null) audioLayerTools(id) else openToolGroup("Áudio")
     }
 
     private fun textLayerTools(id: String) {
@@ -2102,14 +2247,6 @@ class EditorActivity : Activity() {
     private fun addMediaMenu() {
         choose("Adicionar", listOf("Vídeo ou foto", "Vídeo em camada (por cima)", "Música ou áudio", "Gravar narração", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
             when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject() }
-        }
-    }
-
-    /** Camadas por cima do vídeo principal: vídeo, imagem, sticker animado e as imagens já colocadas. */
-    private fun layersMenu() {
-        val options = listOf("Vídeo em camada", "Imagem em camada", "Sticker animado", "Camadas de imagem e stickers")
-        choose("Camadas", options) {
-            when (it) { 0 -> addVideoLayer(); 1 -> pickSticker(); 2 -> lottieStickersPanel(); 3 -> stickerMenu() }
         }
     }
 
@@ -2943,96 +3080,6 @@ class EditorActivity : Activity() {
             stickerHandles.selected = newSticker.id
             feedback("Sticker '${def.name}' adicionado!")
         }
-    }
-
-    private fun editTools() {
-        val clip = selectedClip() ?: return
-        val body = column().apply { setPadding(0, dp(4), 0, dp(4)) }
-        lateinit var dialog: Dialog
-        fun runAndClose(action: () -> Unit) { dialog.dismiss(); action() }
-        body.addView(editorToolCard("Cortar", "Ajuste o início e o fim com precisão", accent = true) {
-            runAndClose { trimPanel() }
-        }, LinearLayout.LayoutParams(-1, dp(82)).apply { topMargin = dp(8); bottomMargin = dp(4) })
-
-        // Tools grouped by intent, so the 40 options read as a few short lists instead of one wall.
-        var grid = GridLayout(this)
-        fun section(title: String) {
-            body.addView(label(title.uppercase(), 11f, EditorStyle.MUTED).apply {
-                letterSpacing = .08f; setPadding(dp(4), dp(16), dp(4), dp(6))
-                typeface = EditorFonts.get(this@EditorActivity, TextFont.OUTFIT, android.graphics.Typeface.BOLD)
-            })
-            grid = GridLayout(this).apply { columnCount = 3; alignmentMode = GridLayout.ALIGN_BOUNDS }
-            body.addView(grid)
-        }
-        fun addTool(name: String, subtitle: String, danger: Boolean = false, action: () -> Unit) {
-            grid.addView(editorToolCard(name, subtitle, danger = danger) { runAndClose(action) }, GridLayout.LayoutParams().apply {
-                width = 0; height = dp(86); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                setMargins(dp(3), dp(3), dp(3), dp(3))
-            })
-        }
-        section("Essenciais")
-        addTool("Dividir", "No cursor") { splitAtCursor() }
-        addTool("Velocidade", "Constante e curvas") { speedPanel() }
-        addTool("Volume", "Som do clipe") { volumePanel() }
-        addTool("Transformar", "Zoom e posição") { transformPanel() }
-        addTool("Recorte", "Enquadramento") { cropPanel() }
-        addTool("Girar", "90 graus") { edit(project.changeVideo(selected) { it.copy(rotation = (it.rotation + 90) % 360) }) }
-        addTool("Espelhar", "Horizontal") { edit(project.changeVideo(selected) { it.copy(flip = !it.flip) }) }
-        addTool("Duplicar", "Criar cópia") { duplicateSelected() }
-        addTool("Congelar", "Foto do quadro") { freezeFrame() }
-        addTool("Mover", "Ordem do clipe") { movePanel() }
-        addTool("Substituir", "Trocar arquivo") { pick(false, selected) }
-
-        section("Inteligência artificial")
-        addTool("Auto Edit", "Edição inteligente") { autoEditPanel.open() }
-        addTool("Auto Reframe", "Enquadrar o sujeito") { autoReframePanel.open() }
-        addTool("Auto Cor", "Equilíbrio com 1 toque") { autoColor() }
-        addTool("Remover fundo", "Recorte do sujeito") { backgroundRemovalTools.open(clip.id) }
-        addTool("Color Match", "Copiar cor de outro clipe") { colorMatchPanel() }
-
-        section("Cor e efeitos")
-        addTool("Ajustar", "Cor e luz") { adjustmentsPanel() }
-        addTool("Filtros", "Looks e cores") { filters() }
-        addTool("Cor", "Curvas e LUT 3D") { colorPanel() }
-        addTool("Presets", "Looks cinematográficos") { presetsPanel() }
-        addTool("Navegador LUTs", "Comparar LUTs 3D") { openLutBrowser() }
-        addTool("Scopes", "Waveform e histograma") { scopesPanel() }
-
-        section("Movimento")
-        addTool("Animações", "Entrada, saída e loop") { animationTools.open(clip.id) }
-        addTool("Keyframe", "Animar no tempo") { keyframePanel() }
-        addTool("Transição", "Entrada e saída") { transitionPanel() }
-        addTool("Câmera 3D", "Perspectiva e visão") { cameraPanel() }
-        addTool("Rastreamento", "Seguir objeto") { trackingPanel() }
-        addTool("Estabilizar", "Remover trepidação") { stabilizeVideoPanel() }
-        addTool("Motion Blur", "Desfoque de movimento") { motionBlurPanel() }
-        addTool("Movimento suave", "Câmera lenta sem serrilhado") { smoothSlowMoPanel() }
-
-        section("Áudio")
-        addTool("Extrair áudio", "Do vídeo") { extractAudio() }
-        addTool("Batidas", "Achar o BPM e marcar") { beatPanel() }
-
-        section("Camadas e grupos")
-        addTool("Vídeo em camada", "Vídeo por cima") { addVideoLayer() }
-        addTool("Máscaras", "Forma e chroma") { masksPanel() }
-        addTool("Stickers Lottie", "Elementos animados") { lottieStickersPanel() }
-        val group = CompoundEditing.at(project, clipId = clip.id)
-        if (group == null) addTool("Criar compound", "Agrupar clipes") { createCompoundPanel() }
-        else {
-            addTool("Abrir ${group.name}", "${group.childCount} clipes") { openCompound(group) }
-            addTool("Desagrupar", "Tirar o grupo") {
-                if (openCompoundId == group.id) openCompoundId = null
-                edit(CompoundEditing.ungroup(project, group.id))
-            }
-        }
-        addTool("Copiar estilo", "Efeitos do clipe") { copyClipStyle() }
-        if (copiedClipStyle != null) addTool("Colar estilo", "Aplicar efeitos") { pasteClipStyle() }
-
-        body.addView(editorToolCard("Excluir", "Remover este clipe da timeline", danger = true) {
-            runAndClose { confirmDeleteSelected() }
-        }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(18) })
-        dialog = sheet(clip.name.ifBlank { "Editar clipe" }, body, maxHeightRatio = .78f,
-            subtitle = "${timeLabel(clip.durationUs)}  ·  Clipe ${selected + 1} de ${project.videos.size}")
     }
 
     private fun splitAtCursor() {
@@ -4314,47 +4361,198 @@ class EditorActivity : Activity() {
     }
 
     private var captionRunning = false
+    // Escolhas da folha de Legendas automáticas: ficam guardadas enquanto o editor está aberto,
+    // assim abrir "Idioma de origem" ou "Modelos" e voltar não perde o que foi marcado.
+    private var captionDraftLanguage: String? = null
+    private var captionDraftMaxWords = 4
+    private var captionDraftMaxLines = 2
+    private var captionDraftCorrection = true
+    private var captionDraftTerms = true
+    private var captionAdvancedOpen = false
+
+    private val captionLanguageCodes = listOf("pt-BR", "en-US", "auto")
+    private val captionLanguageNames = listOf("Português (Brasil)", "Inglês", "Automático")
+
+    private fun captionDraftLanguageCode(): String =
+        (captionDraftLanguage ?: project.captionLanguage).takeIf { it in captionLanguageCodes } ?: "pt-BR"
+
+    private fun startAutomaticCaptions() {
+        generateAutomaticCaptions(CaptionGenerationOptions(
+            languageCode = captionDraftLanguageCode(),
+            maxWords = captionDraftMaxWords.coerceIn(2, 12),
+            maxLines = captionDraftMaxLines.coerceIn(1, 2),
+            contextualCorrection = captionDraftCorrection,
+            recognizeNamesAndSlang = captionDraftTerms,
+        ))
+    }
+
+    /** Linha de ajuste da folha (jeito do CapCut): ícone, nome, valor à direita e ›. */
+    private fun captionSettingRow(icon: String?, title: String, value: String, onClick: () -> Unit): Pair<LinearLayout, TextView> {
+        val line = row().apply {
+            setPadding(dp(14), 0, dp(12), 0)
+            minimumHeight = dp(52)
+            isClickable = true; isFocusable = true
+            background = editorRipple(editorShape(EditorStyle.CARD_ELEVATED, 14, EditorStyle.HAIRLINE))
+            setOnClickListener { onClick() }
+        }
+        if (icon != null) line.addView(ImageView(this).apply {
+            setImageDrawable(EditorGlyph(icon, EditorStyle.TEXT, this@EditorActivity))
+        }, LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(10) })
+        line.addView(label(title, 14.5f), LinearLayout.LayoutParams(0, -2, 1f))
+        val valueView = label(value, 13f, EditorStyle.MUTED).apply { maxLines = 1; gravity = Gravity.END }
+        line.addView(valueView, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(6) })
+        line.addView(label("›", 18f, EditorStyle.MUTED))
+        return line to valueView
+    }
+
+    /**
+     * Legendas automáticas no jeito do CapCut: Idioma de origem ›, Modelos (estilos animados
+     * rolando para o lado), Opções avançadas recolhidas e o botão Gerar embaixo.
+     */
     private fun automaticCaptionsDialog() {
-        val body = column()
-        val languageNames = listOf("Português (Brasil)", "Inglês", "Automático")
-        val languageCodes = listOf("pt-BR", "en-US", "auto")
-        val language = Spinner(this).apply {
-            adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item, languageNames)
-            setSelection(languageCodes.indexOf(project.captionLanguage).coerceAtLeast(0))
-        }
-        body.addView(label("Idioma", 12f, EditorStyle.MUTED)); body.addView(language)
-        body.addView(label(if (com.termex.replay15.editor.captions.CaptionProviderFactory.isCloudConfigured()) "Modelo: Gemini 3.5 Transcribe · modo Exata"
-            else "Modelo: reconhecimento no aparelho (Gemini não configurado neste build)", 12f, EditorStyle.MUTED))
-        val maxWords = Spinner(this).apply {
-            adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item,
-                (2..12).map { count -> "$count palavras" })
-            setSelection(2)
-        }
-        body.addView(label("Máximo de palavras", 12f, EditorStyle.MUTED)); body.addView(maxWords)
-        val maxLines = Spinner(this).apply {
-            adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item, listOf("1 linha", "2 linhas"))
-            setSelection(1)
-        }
-        body.addView(label("Máximo de linhas", 12f, EditorStyle.MUTED)); body.addView(maxLines)
-        val correction = CheckBox(this).apply { text = "Correção inteligente"; isChecked = true }
-        val terms = CheckBox(this).apply { text = "Reconhecer nomes e gírias"; isChecked = true }
-        body.addView(correction); body.addView(terms)
-        body.addView(sectionTitle("Estilo animado", "Como a legenda reage à fala. Dá para trocar depois em Legenda › Legenda animada."))
-        body.addView(AnimatedCaptionPicker.build(this, captionAnimatedStyleId) { style -> captionAnimatedStyleId = style.id })
-        body.addView(label("Termos personalizados: ${project.captionVocabulary.size}. Eles são usados somente na correção, nunca junto com timestamps.", 11f, EditorStyle.MUTED))
+        val body = column().apply { setPadding(0, dp(4), 0, dp(4)) }
         lateinit var dialog: Dialog
-        body.addView(action("Gerar legendas", true) {
-            dialog.dismiss()
-            generateAutomaticCaptions(CaptionGenerationOptions(
-                languageCode = languageCodes[language.selectedItemPosition],
-                maxWords = maxWords.selectedItemPosition + 2,
-                maxLines = maxLines.selectedItemPosition + 1,
-                contextualCorrection = correction.isChecked,
-                recognizeNamesAndSlang = terms.isChecked,
-            ))
+        fun gap() = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) }
+
+        // Idioma de origem: abre a escolha em botões lado a lado, com Gerar logo embaixo.
+        lateinit var languageValue: TextView
+        val (languageRow, languageLabel) = captionSettingRow("canvas:idioma", "Idioma de origem",
+            captionLanguageNames[captionLanguageCodes.indexOf(captionDraftLanguageCode())]) {
+            captionLanguageSheet(onChange = { code ->
+                languageValue.text = captionLanguageNames[captionLanguageCodes.indexOf(code)]
+            }, onGenerate = { dialog.dismiss(); startAutomaticCaptions() })
+        }
+        languageValue = languageLabel
+        body.addView(languageRow, gap())
+
+        // Modelos: fileira de estilos animados; o › abre todos em grade.
+        val models = column().apply {
+            setPadding(dp(14), dp(12), dp(12), dp(12))
+            background = editorShape(EditorStyle.CARD_ELEVATED, 14, EditorStyle.HAIRLINE)
+        }
+        val modelsHolder = FrameLayout(this)
+        fun fillModels() {
+            modelsHolder.removeAllViews()
+            modelsHolder.addView(AnimatedCaptionPicker.buildRow(this, captionAnimatedStyleId) { style ->
+                captionAnimatedStyleId = style.id
+            }, FrameLayout.LayoutParams(-1, -2))
+        }
+        val modelsHeader = row().apply {
+            isClickable = true; isFocusable = true
+            setPadding(0, 0, 0, dp(10))
+            addView(ImageView(this@EditorActivity).apply {
+                setImageDrawable(EditorGlyph("canvas:legendas", EditorStyle.TEXT, this@EditorActivity))
+            }, LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(10) })
+            addView(label("Modelos", 14.5f), LinearLayout.LayoutParams(0, -2, 1f))
+            addView(label("›", 18f, EditorStyle.MUTED))
+            setOnClickListener {
+                val grid = column()
+                lateinit var all: Dialog
+                grid.addView(AnimatedCaptionPicker.build(this@EditorActivity, captionAnimatedStyleId) { style ->
+                    captionAnimatedStyleId = style.id
+                    all.dismiss(); fillModels()
+                })
+                all = sheet("Modelos", grid, subtitle = "Como a legenda reage à fala")
+            }
+        }
+        models.addView(modelsHeader)
+        fillModels()
+        models.addView(modelsHolder)
+        body.addView(models, gap())
+
+        // Opções avançadas: o que já existia na tela antiga, escondido até a pessoa abrir.
+        val advanced = column().apply {
+            setPadding(dp(14), 0, dp(12), 0)
+            background = editorShape(EditorStyle.CARD_ELEVATED, 14, EditorStyle.HAIRLINE)
+        }
+        val chevron = label(if (captionAdvancedOpen) "⌃" else "⌄", 16f, EditorStyle.ACTION_TEXT)
+        val advancedHeader = row().apply {
+            minimumHeight = dp(52)
+            isClickable = true; isFocusable = true
+            addView(label("◆  Opções avançadas", 14.5f, EditorStyle.ACTION_TEXT).apply {
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(chevron)
+        }
+        val advancedBody = column().apply {
+            setPadding(0, 0, 0, dp(10))
+            visibility = if (captionAdvancedOpen) View.VISIBLE else View.GONE
+        }
+        fun option(title: String, value: String, onClick: () -> Unit): TextView {
+            val line = row().apply {
+                minimumHeight = dp(44); isClickable = true; isFocusable = true
+                setOnClickListener { onClick() }
+            }
+            line.addView(label(title, 13.5f), LinearLayout.LayoutParams(0, -2, 1f))
+            val valueView = label("$value  ›", 13f, EditorStyle.MUTED)
+            line.addView(valueView)
+            advancedBody.addView(line)
+            return valueView
+        }
+        lateinit var wordsValue: TextView
+        wordsValue = option("Máximo de palavras", "$captionDraftMaxWords palavras") {
+            val counts = (2..12).toList()
+            choiceSheet("Máximo de palavras", counts.map { "$it palavras" }, counts.indexOf(captionDraftMaxWords)) { index ->
+                captionDraftMaxWords = counts[index]; wordsValue.text = "${counts[index]} palavras  ›"
+            }
+        }
+        lateinit var linesValue: TextView
+        linesValue = option("Máximo de linhas", if (captionDraftMaxLines == 1) "1 linha" else "2 linhas") {
+            choiceSheet("Máximo de linhas", listOf("1 linha", "2 linhas"), captionDraftMaxLines - 1) { index ->
+                captionDraftMaxLines = index + 1; linesValue.text = "${if (index == 0) "1 linha" else "2 linhas"}  ›"
+            }
+        }
+        advancedBody.addView(Switch(this).apply {
+            text = "Correção inteligente"; isChecked = captionDraftCorrection
+            setOnCheckedChangeListener { _, checked -> captionDraftCorrection = checked }
         })
-        body.addView(action("Editar termos personalizados") { dialog.dismiss(); captionVocabularyDialog() })
-        dialog = sheet("Legendas automáticas", body)
+        advancedBody.addView(Switch(this).apply {
+            text = "Reconhecer nomes e gírias"; isChecked = captionDraftTerms
+            setOnCheckedChangeListener { _, checked -> captionDraftTerms = checked }
+        })
+        option("Termos personalizados", "${project.captionVocabulary.size}") { dialog.dismiss(); captionVocabularyDialog() }
+        advancedBody.addView(label(if (com.termex.replay15.editor.captions.CaptionProviderFactory.isCloudConfigured()) "Modelo: Gemini 3.5 Transcribe · modo Exata"
+            else "Modelo: reconhecimento no aparelho (Gemini não configurado neste build)", 11.5f, EditorStyle.MUTED).apply {
+            setPadding(0, dp(6), 0, 0)
+        })
+        advancedHeader.setOnClickListener {
+            captionAdvancedOpen = !captionAdvancedOpen
+            advancedBody.visibility = if (captionAdvancedOpen) View.VISIBLE else View.GONE
+            chevron.text = if (captionAdvancedOpen) "⌃" else "⌄"
+        }
+        advanced.addView(advancedHeader)
+        advanced.addView(advancedBody)
+        body.addView(advanced, gap())
+
+        body.addView(action("Gerar", true) { dialog.dismiss(); startAutomaticCaptions() })
+        dialog = sheet("Legendas automáticas", body, maxHeightRatio = .8f)
+    }
+
+    /** "Idioma de origem": botões lado a lado e Gerar logo embaixo (fim do vídeo de referência). */
+    private fun captionLanguageSheet(onChange: (String) -> Unit, onGenerate: () -> Unit) {
+        val body = column()
+        lateinit var dialog: Dialog
+        val chips = row()
+        val shortNames = listOf("Português", "Inglês", "Automático")
+        fun fill() {
+            chips.removeAllViews()
+            val current = captionDraftLanguageCode()
+            captionLanguageCodes.forEachIndexed { index, code ->
+                chips.addView(optionTile(shortNames[index], code == current) {
+                    captionDraftLanguage = code
+                    onChange(code)
+                    fill()
+                }.apply { gravity = Gravity.CENTER; minHeight = dp(48) },
+                    LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
+            }
+        }
+        fill()
+        body.addView(chips, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        body.addView(label("Automático descobre o idioma sozinho.", 12f, EditorStyle.MUTED).apply {
+            setPadding(dp(4), 0, 0, dp(8))
+        })
+        body.addView(action("Gerar", true) { dialog.dismiss(); onGenerate() })
+        dialog = sheet("Idioma de origem", body)
     }
 
     private fun generateAutomaticCaptions(options: CaptionGenerationOptions, confirmedExisting: Boolean = false) {
@@ -5107,7 +5305,7 @@ class EditorActivity : Activity() {
         dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
     private fun searchTools() {
-        val tools = listOf<Pair<String, () -> Unit>>("Importar vídeo ou foto" to { pick(false) }, "Editar / Dividir / Excluir" to { editTools() },
+        val tools = listOf<Pair<String, () -> Unit>>("Importar vídeo ou foto" to { pick(false) }, "Editar / Dividir / Excluir" to { selectedClipAtCursor()?.let { selectMainClip(selected) } },
             "Auto Reframe / Enquadramento Inteligente IA" to { autoReframePanel.open() },
             "Auto Cor / Equilíbrio automático" to { autoColor() },
             "Color Match / Combinar cor com outro clipe" to { colorMatchPanel() },

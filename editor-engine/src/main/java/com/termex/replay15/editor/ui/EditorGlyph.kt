@@ -424,6 +424,53 @@ private val CANVAS_ICONS: Map<String, List<String>> = mapOf(
         "M17.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0",
     ),
     "canvas:autoedit" to listOf("M13 2L4 14h7l-1 8 9-12h-7z"),
+    // Seta do botão ‹ que volta da fileira de um grupo (jeito do CapCut).
+    "canvas:voltar" to listOf("M15 5l-7 7 7 7"),
+    // Ícones das fileiras de cada grupo (menu de baixo e menu do clipe).
+    "canvas:cortar" to listOf("M6 4v16", "M18 4v16", "M6 12h12", "M9 9l-3 3 3 3", "M15 9l3 3-3 3"),
+    "canvas:midia" to listOf("M4 5h16v14H4z", "M4 15l5-5 4 4 2-2 5 5", "M15 9.5a1.5 1.5 0 1 0 0.01 0"),
+    "canvas:video_camada" to listOf("M3 8h12v11H3z", "M15 12l5-3v9l-5-3", "M7 4h13v3"),
+    "canvas:imagem_camada" to listOf("M7 3h14v14H7z", "M3 7v14h14", "M7 13l4-4 3 3 2-2 5 5"),
+    "canvas:sticker_animado" to listOf("M12 3a9 9 0 1 0 9 9", "M21 12h-6a3 3 0 0 1-3-3V3", "M8.5 14.5a4 4 0 0 0 6 0"),
+    "canvas:nulo" to listOf("M12 3l8 4.5v9L12 21l-8-4.5v-9z", "M4 7.5l8 4.5 8-4.5", "M12 12v9"),
+    "canvas:musica" to listOf("M9 18V5l11-2v13", "M3 18a3 3 0 1 0 6 0a3 3 0 1 0-6 0", "M14 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0"),
+    "canvas:narracao" to listOf("M9 3h6v11H9z", "M5 11a7 7 0 0 0 14 0", "M12 18v3"),
+    "canvas:lista" to listOf("M9 6h11", "M9 12h11", "M9 18h11", "M4 6h1", "M4 12h1", "M4 18h1"),
+    "canvas:arquivo" to listOf("M14 3H6v18h12V7z", "M14 3v4h4", "M9 13h6", "M9 17h4"),
+    "canvas:legenda_auto" to listOf(
+        "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
+        "M7 15h6", "M15 9l1 2 2 1-2 1-1 2-1-2-2-1 2-1z",
+    ),
+    "canvas:ia" to listOf("M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z", "M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"),
+    "canvas:reframe" to listOf("M4 8V4h4", "M16 4h4v4", "M20 16v4h-4", "M8 20H4v-4", "M9 9h6v6H9z"),
+    "canvas:auto_cor" to listOf("M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z", "M12 3v18", "M12 8h5", "M12 12h7", "M12 16h5"),
+    "canvas:color_match" to listOf("M3 9a5 5 0 1 0 10 0a5 5 0 1 0-10 0", "M11 15a5 5 0 1 0 10 0a5 5 0 1 0-10 0", "M15 5h4v4", "M19 5l-4 4"),
+    "canvas:paleta" to listOf(
+        "M12 3a9 9 0 1 0 0 18c1 0 2-1 1.5-2-.6-1.2.3-2 1.5-2H18a3 3 0 0 0 3-3c0-6-4-11-9-11z",
+        "M7 11h.01", "M10 7h.01", "M15 7.5h.01",
+    ),
+    "canvas:presets" to listOf("M4 4h7v7H4z", "M13 4h7v7h-7z", "M4 13h7v7H4z", "M13 13h7v7h-7z"),
+    "canvas:lut" to listOf("M3 5h18v14H3z", "M3 12h18", "M12 5v14"),
+    "canvas:scopes" to listOf("M3 20h18", "M3 16l4-5 3 3 4-7 3 5 4-4"),
+    "canvas:keyframe" to listOf("M12 4l8 8-8 8-8-8z"),
+    "canvas:camera3d" to listOf("M12 3l8 4.5v9L12 21l-8-4.5v-9z", "M4 7.5l8 4.5 8-4.5", "M12 12v9"),
+    "canvas:rastrear" to listOf("M5 12a7 7 0 1 0 14 0a7 7 0 1 0-14 0", "M10 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "M12 2v3", "M12 19v3", "M2 12h3", "M19 12h3"),
+    "canvas:estabilizar" to listOf("M4 8h16v8H4z", "M2 12h2", "M20 12h2", "M12 4V2", "M12 22v-2"),
+    "canvas:motionblur" to listOf("M12 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0", "M3 12h6", "M5 8h5", "M5 16h5"),
+    "canvas:suave" to listOf("M3 16c3 0 3-8 6-8s3 8 6 8 3-8 6-8"),
+    "canvas:extrair_audio" to listOf("M4 10v4", "M8 7v10", "M12 4v9", "M16 15l3 3 3-3", "M19 9v9"),
+    "canvas:batidas" to listOf("M3 12h3l2-6 3 12 3-9 2 6 2-3h3"),
+    "canvas:transformar" to listOf("M4 4h6v6H4z", "M14 14h6v6h-6z", "M10 7h4a3 3 0 0 1 3 3v4"),
+    "canvas:girar" to listOf("M20 12a8 8 0 1 1-2.3-5.7", "M20 4v5h-5"),
+    "canvas:espelhar" to listOf("M12 3v18", "M9 6L4 18h5z", "M15 6l5 12h-5z"),
+    "canvas:duplicar" to listOf("M8 8h12v12H8z", "M4 16V4h12"),
+    "canvas:congelar" to listOf("M12 2v20", "M3.5 7l17 10", "M20.5 7l-17 10", "M9 4l3 2 3-2", "M9 20l3-2 3 2"),
+    "canvas:mover" to listOf("M12 3v18", "M3 12h18", "M9 6l3-3 3 3", "M9 18l3 3 3-3", "M6 9l-3 3 3 3", "M18 9l3 3-3 3"),
+    "canvas:substituir" to listOf("M4 8h14l-4-4", "M20 16H6l4 4"),
+    "canvas:grupo" to listOf("M3 7h8v10H3z", "M13 7h8v10h-8z", "M2 4h20", "M2 20h20"),
+    "canvas:copiar_estilo" to listOf("M9 9h11v11H9z", "M5 15H4V4h11v1", "M12 14l2 2 4-4"),
+    "canvas:colar_estilo" to listOf("M8 4h8v3H8z", "M6 5H4v16h16V5h-2", "M9 14l2 2 4-4"),
+    "canvas:idioma" to listOf("M4 5h9", "M8 3v2", "M6 5c1 4 4 7 7 8", "M11 5c-1 4-4 7-7 8", "M13 21l4-9 4 9", "M14.5 18h5"),
 )
 
 /** Ícones desenhados cheios (os demais são só traço). */
@@ -454,7 +501,71 @@ fun canvasIconFor(name: String): String? = when (name) {
     "Fechar" -> "canvas:fechar"
     "Mais" -> "canvas:mais"
     "Auto Edit", "Analisar" -> "canvas:autoedit"
+    // Itens das fileiras dos grupos (abrem na própria barra, com ‹ para voltar).
+    "Cortar" -> "canvas:cortar"
+    "Vídeo ou foto" -> "canvas:midia"
+    "Vídeo em camada" -> "canvas:video_camada"
+    "Imagem em camada", "Imagem ou sticker" -> "canvas:imagem_camada"
+    "Sticker animado", "Stickers Lottie" -> "canvas:sticker_animado"
+    "Camadas de imagem" -> "canvas:camadas"
+    "Objeto Nulo" -> "canvas:nulo"
+    "Música ou áudio", "Importar música" -> "canvas:musica"
+    "Gravar narração" -> "canvas:narracao"
+    "Faixas de áudio", "Textos e legendas" -> "canvas:lista"
+    "Adicionar texto" -> "canvas:texto"
+    "Legendas autom." -> "canvas:legenda_auto"
+    "Importar legendas" -> "canvas:arquivo"
+    "IA" -> "canvas:ia"
+    "Auto Reframe" -> "canvas:reframe"
+    "Auto Cor" -> "canvas:auto_cor"
+    "Color Match" -> "canvas:color_match"
+    "Cor", "Cor e LUT" -> "canvas:paleta"
+    "Presets" -> "canvas:presets"
+    "Navegador LUTs" -> "canvas:lut"
+    "Scopes" -> "canvas:scopes"
+    "Movimento", "Animações" -> "canvas:animacao"
+    "Keyframe" -> "canvas:keyframe"
+    "Câmera 3D" -> "canvas:camera3d"
+    "Rastreamento" -> "canvas:rastrear"
+    "Estabilizar" -> "canvas:estabilizar"
+    "Motion Blur" -> "canvas:motionblur"
+    "Movimento suave" -> "canvas:suave"
+    "Extrair áudio" -> "canvas:extrair_audio"
+    "Batidas" -> "canvas:batidas"
+    "Clipe" -> "canvas:presets"
+    "Transformar" -> "canvas:transformar"
+    "Girar" -> "canvas:girar"
+    "Espelhar" -> "canvas:espelhar"
+    "Duplicar" -> "canvas:duplicar"
+    "Congelar" -> "canvas:congelar"
+    "Mover" -> "canvas:mover"
+    "Substituir" -> "canvas:substituir"
+    "Máscaras" -> "canvas:mascara"
+    "Criar compound", "Abrir grupo", "Desagrupar" -> "canvas:grupo"
+    "Copiar estilo" -> "canvas:copiar_estilo"
+    "Colar estilo" -> "canvas:colar_estilo"
     else -> null
+}
+
+/**
+ * Botão ‹ no começo da barra de baixo (jeito do CapCut): volta da fileira de um grupo para a
+ * barra anterior, ou fecha a seleção do clipe. Quadradinho cinza da altura dos botões.
+ */
+fun Context.toolBackAction(click: () -> Unit): FrameLayout = FrameLayout(this).apply {
+    contentDescription = "Voltar"
+    tooltipText = "Voltar"
+    isClickable = true
+    isFocusable = true
+    background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), GradientDrawable().apply {
+        setColor(EditorStyle.CARD_ELEVATED)
+        setStroke(dp(1), EditorStyle.BORDER_LIGHT)
+        cornerRadius = dp(10).toFloat()
+    }, null)
+    addView(ImageView(context).apply {
+        setImageDrawable(EditorGlyph("canvas:voltar", EditorStyle.TEXT, context))
+        importantForAccessibility = 2
+    }, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
+    setOnClickListener { click() }
 }
 
 fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): LinearLayout = column().apply {
@@ -540,14 +651,20 @@ fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).appl
  * filtros roxo, ajustes e movimento ciano. Fechar/Mais/Editar ficam neutros.
  */
 private fun toolGroupColor(name: String): Int = when (name) {
-    "Adicionar", "Camadas", "Stickers" -> EditorStyle.TRACK_STICKER
-    "Dividir", "Aparar", "Recorte", "Velocidade" -> EditorStyle.TOOL_CUT
-    "Texto", "Legendas" -> EditorStyle.TRACK_TEXT
-    "Áudio", "Volume" -> EditorStyle.TRACK_AUDIO
-    "Filtros", "Efeitos" -> EditorStyle.TRACK_EFFECT
+    "Adicionar", "Camadas", "Stickers", "Vídeo ou foto", "Vídeo em camada", "Imagem em camada",
+    "Imagem ou sticker", "Sticker animado", "Stickers Lottie", "Camadas de imagem", "Objeto Nulo",
+    "Criar compound", "Abrir grupo", "Desagrupar", "Copiar estilo", "Colar estilo" -> EditorStyle.TRACK_STICKER
+    "Dividir", "Aparar", "Recorte", "Velocidade", "Cortar", "Clipe", "Transformar", "Girar",
+    "Espelhar", "Duplicar", "Congelar", "Mover", "Substituir" -> EditorStyle.TOOL_CUT
+    "Texto", "Legendas", "Adicionar texto", "Legendas autom.", "Textos e legendas",
+    "Importar legendas" -> EditorStyle.TRACK_TEXT
+    "Áudio", "Volume", "Música ou áudio", "Importar música", "Gravar narração", "Faixas de áudio",
+    "Extrair áudio", "Batidas" -> EditorStyle.TRACK_AUDIO
+    "Filtros", "Efeitos", "Cor", "Cor e LUT", "Presets", "Navegador LUTs", "Scopes" -> EditorStyle.TRACK_EFFECT
     "Transição" -> EditorStyle.ACTION_TEXT
-    "Ajustar", "Animação", "Máscara", "Remover fundo" -> EditorStyle.TOOL_ADJUST
-    "Auto Edit", "Analisar" -> EditorStyle.ACTION
+    "Ajustar", "Animação", "Máscara", "Máscaras", "Remover fundo", "Movimento", "Animações", "Keyframe",
+    "Câmera 3D", "Rastreamento", "Estabilizar", "Motion Blur", "Movimento suave" -> EditorStyle.TOOL_ADJUST
+    "Auto Edit", "Analisar", "IA", "Auto Reframe", "Auto Cor", "Color Match" -> EditorStyle.ACTION
     "Excluir" -> EditorStyle.DANGER
     else -> EditorStyle.TEXT
 }
