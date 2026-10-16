@@ -50,7 +50,7 @@ class EditorLibraryActivity : Activity() {
 
     private val io = Executors.newSingleThreadExecutor()
     private var currentTab = LibraryTab.PROJECTS
-    /** Ferramenta a abrir no editor depois de escolher o vídeo ("auto_edit" ou "analyze"); null = só abrir. */
+    /** Ferramenta a abrir no editor depois de escolher o vídeo ("auto_edit"); null = só abrir. */
     private var pendingOpenTool: String? = null
     /** Miniaturas reais dos projetos (quadro do primeiro clipe), com cache em memória e disco. */
     private lateinit var thumbnails: ProjectThumbnails
@@ -114,7 +114,6 @@ class EditorLibraryActivity : Activity() {
         findViewById<View>(R.id.btnNewProject).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnImportVideo).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnHomeAutoEdit).setOnClickListener { pendingOpenTool = "auto_edit"; openVideoPicker() }
-        findViewById<View>(R.id.btnHomeAnalyze).setOnClickListener { pendingOpenTool = "analyze"; openVideoPicker() }
         // Perfil: visitante pode entrar/criar conta; com conta vai direto para Config. (dados da conta).
         findViewById<View>(R.id.btnProfile).setOnClickListener {
             if (AccountManager.isGuest(this) && !AccountManager.hasAccount(this)) {
@@ -231,7 +230,6 @@ class EditorLibraryActivity : Activity() {
         // Seletor próprio do Recly no lugar do seletor de documentos do sistema.
         val title = when (pendingOpenTool) {
             "auto_edit" -> "Vídeo para o Auto Edit"
-            "analyze" -> "Vídeo para analisar"
             else -> "Novo projeto"
         }
         val mode = if (pendingOpenTool == null) GalleryPickerActivity.MODE_ANY else GalleryPickerActivity.MODE_VIDEOS

@@ -320,7 +320,7 @@ class EditorActivity : Activity() {
             getSystemService(PowerManager::class.java)?.addThermalStatusListener(thermalListener)
         }
         val retained = lastNonConfigurationInstance as? Session
-        // Atalhos da tela Início (Auto Edit / Analisar): abrem a ferramenta depois que o vídeo é importado.
+        // Atalho da tela Início (Auto Edit): abre a ferramenta depois que o vídeo é importado.
         if (retained == null && savedInstanceState == null) pendingOpenTool = intent.getStringExtra("open_tool")
         replaceIndex = retained?.replace ?: savedInstanceState?.getInt("replace", -1) ?: -1
         replaceStickerId = retained?.stickerReplace ?: savedInstanceState?.getString("stickerReplace")
@@ -453,25 +453,7 @@ class EditorActivity : Activity() {
         }
         addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Dois botões em pílula, mesma altura e raio: Analisar é secundário (cinza escuro, sem
-        // contorno chamativo) e Exportar é o único vermelho da barra, para ser a ação principal.
-        val pill = dp(18).toFloat()
-        val analyzeBtn = action("Analisar") { analyzeMenu() }.apply {
-            contentDescription = "Analisar vídeo"
-            tooltipText = "Analisar vídeo"
-            textSize = 13.5f
-            minWidth = dp(80); minimumWidth = dp(80)
-            minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(14), 0, dp(14), 0)
-            setTextColor(EditorStyle.TEXT)
-            background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), GradientDrawable().apply {
-                setColor(EditorStyle.CARD_ELEVATED)
-                setStroke(dp(1), EditorStyle.BORDER_LIGHT)
-                cornerRadius = pill
-            }, null)
-        }
-        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(8), 0) })
-
+        // Export button (vermelho de ação, texto escuro)
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
             contentDescription = "Exportar vídeo"
             tooltipText = "Exportar vídeo"
@@ -671,18 +653,8 @@ class EditorActivity : Activity() {
             if (isDestroyed) return@post
             when (tool) {
                 "auto_edit" -> if (selectedClip() != null) autoEditPanel.open()
-                "analyze" -> analyzeMenu()
             }
         }
-    }
-
-    /**
-     * Botão "Analisar" do canvas: abre a tela do Auto Edit, onde ficam o cartão de referência,
-     * os presets e as opções. "Melhores momentos" fica no menu das legendas.
-     */
-    private fun analyzeMenu() {
-        // Sem clipe selecionado o painel avisa ("Selecione um clipe"), em vez de não fazer nada.
-        autoEditPanel.open()
     }
 
     /**
