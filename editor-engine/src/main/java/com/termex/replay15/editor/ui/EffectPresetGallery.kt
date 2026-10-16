@@ -17,6 +17,8 @@ import com.termex.replay15.editor.assets.EffectPreset
 import com.termex.replay15.editor.core.isEditorDebuggable
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.preview.AtlasPreviewManager
+import com.termex.replay15.editor.preview.ReferenceEffectPreviews
+import com.termex.replay15.editor.preview.ReferenceLoopDrawable
 
 object EffectPresetGallery {
 
@@ -24,16 +26,19 @@ object EffectPresetGallery {
         activity: Activity,
         clip: VideoClip,
         sessionTimestampUs: Long = -1L,
+        moreSubtitle: String = "",
+        onMore: (() -> Unit)? = null,
         onPreview: (preset: EffectPreset, intensity: Float) -> Unit = { _, _ -> },
         onRestore: () -> Unit = {},
         onApply: (preset: EffectPreset, intensity: Float) -> Unit,
     ) = with(activity) {
         val openStartMs = System.currentTimeMillis()
         val body = column()
-        body.addView(sectionTitle(
-            "Presets de Efeitos",
-            "Combinações multi-pass prontas com prévia real no seu vídeo.",
-        ))
+        // Sem texto explicativo: o título da folha já diz o que é. "Mais efeitos" leva à
+        // biblioteca completa, aos filtros e aos efeitos já aplicados (para remover).
+        if (onMore != null) body.addRow(listRow("Mais efeitos", moreSubtitle) {
+            dialogRef?.dismiss(); onMore()
+        })
 
         val allPresets = runCatching { BuiltInEffectPresets.definitions(this) }.getOrDefault(emptyList())
         // As abas saem do próprio arquivo: com ~1000 presets em várias categorias, lista fixa ficaria velha.
@@ -52,9 +57,24 @@ object EffectPresetGallery {
 
         // Cartão visível agora para cada preset; a lista recicla, então só os da tela ficam aqui.
         val presetCardMap = mutableMapOf<String, CardViews>()
-        // Thumbnails are rendered on a frame of the user's own clip (generic atlas art only as a
-        // placeholder), so each card shows what the preset does to *this* video.
-        val ownFrames = runCatching {
+        // Prévia tipo GIF: cada preset roda sobre o vídeo de referência em loop (renderizado na GPU,
+        // quadro a quadro, com o tempo do efeito andando), igual para todo mundo, para comparar os
+        // looks. O vídeo da pessoa só recebe o preset na prévia grande, ao tocar no cartão.
+        val referencePreviews = runCatching {
+            ReferenceEffectPreviews.createOrNull(activity) { presetId, frames ->
+                presetCardMap[presetId]?.takeIf { it.boundId == presetId }?.let { views ->
+                    val firstTime = views.image.drawable !is ReferenceLoopDrawable
+                    views.image.setImageDrawable(ReferenceLoopDrawable(frames).also { it.start() })
+                    views.placeholder.visibility = View.GONE
+                    if (firstTime) {
+                        views.image.alpha = 0f
+                        views.image.animate().alpha(1f).setDuration(EditorStyle.MOTION_SELECTION).start()
+                    }
+                }
+            }
+        }.getOrNull()
+        // Sem o asset de referência: modo antigo, miniatura parada num quadro do clipe.
+        val ownFrames = if (referencePreviews != null) null else runCatching {
             com.termex.replay15.editor.preview.EffectPreviewController(activity, onPresetThumbnailReady = { preset, bitmap ->
                 presetCardMap[preset.id]?.takeIf { it.boundId == preset.id }?.let { views ->
                     views.image.setImageBitmap(bitmap)
@@ -70,7 +90,7 @@ object EffectPresetGallery {
             hint = "Buscar entre ${allPresets.size} presets"
             textSize = 13f
             isSingleLine = true
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             setHintTextColor(EditorStyle.MUTED)
             setPadding(dp(12), dp(8), dp(12), dp(8))
             background = GradientDrawable().apply {
@@ -140,7 +160,7 @@ object EffectPresetGallery {
                 }
                 val placeholder = View(activity).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF1C1C1E.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -160,7 +180,7 @@ object EffectPresetGallery {
                 cardContainer.addView(labelView)
                 val tagView = TextView(activity).apply {
                     textSize = 9f
-                    setTextColor(0xFF9A968C.toInt())
+                    setTextColor(EditorStyle.MUTED)
                     gravity = Gravity.CENTER_HORIZONTAL
                     isSingleLine = true
                 }
@@ -197,12 +217,14 @@ object EffectPresetGallery {
                         views.placeholder.visibility = View.GONE
                     }
                 }
+                referencePreviews?.request(preset)
                 ownFrames?.requestPresetThumbnail(preset)
             }
 
             override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
                 val views = holder.itemView.tag as CardViews
                 views.boundId?.let { id ->
+                    referencePreviews?.cancel(id)
                     ownFrames?.cancelPresetThumbnail(id)
                     if (presetCardMap[id] === views) presetCardMap.remove(id)
                 }
@@ -251,7 +273,7 @@ object EffectPresetGallery {
                     text = title
                     textSize = 12f
                     setPadding(dp(12), dp(6), dp(12), dp(6))
-                    setTextColor(if (isSelected) Color.WHITE else EditorStyle.MUTED)
+                    setTextColor(if (isSelected) EditorStyle.ON_ACCENT else EditorStyle.MUTED)
                     background = GradientDrawable().apply {
                         setColor(if (isSelected) EditorStyle.ACCENT else EditorStyle.CARD)
                         cornerRadius = dp(16).toFloat()
@@ -321,6 +343,7 @@ object EffectPresetGallery {
             android.util.Log.d("ReclyPerf", "EFFECT_PRESET_GALLERY_OPENED timeMs=${System.currentTimeMillis() - openStartMs} shaders=0 mediaCodec=0 ${AtlasPreviewManager.dumpMetrics()}")
         }
         dialogRef?.setOnDismissListener {
+            referencePreviews?.close()
             ownFrames?.close()
             onRestore()
         }

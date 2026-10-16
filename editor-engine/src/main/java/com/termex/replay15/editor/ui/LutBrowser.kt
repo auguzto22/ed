@@ -20,6 +20,8 @@ import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.media.CubeLut
 import com.termex.replay15.editor.preview.LutThumbnailCache
 import com.termex.replay15.editor.preview.LutThumbnailCacheKey
+import com.termex.replay15.editor.preview.ReferenceLoopDrawable
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 import com.termex.replay15.editor.preview.RepresentativeFrameProvider
 import java.io.File
 import java.lang.ref.WeakReference
@@ -30,6 +32,10 @@ import java.util.concurrent.Executors
 object LutBrowser {
     private const val PREFS = "recly_lut_browser"
     private const val FAVORITES = "favorites"
+    /** Quadros do loop de referência já com a LUT, por arquivo; 12 quadros de 128 px ≈ 770 KB cada. */
+    private val loopCache = object : android.util.LruCache<LutThumbnailCacheKey, List<Bitmap>>(10 shl 20) {
+        override fun sizeOf(key: LutThumbnailCacheKey, value: List<Bitmap>) = value.sumOf { it.allocationByteCount }
+    }
 
     fun show(
         activity: Activity,
@@ -118,6 +124,7 @@ object LutBrowser {
         fun requestThumbnail(file: File, amount: Float, target: ImageView) {
             val cacheKey = LutThumbnailCache.key(file, clip, timestampUs, amount)
             target.tag = cacheKey
+            loopCache.get(cacheKey)?.let { target.setImageDrawable(ReferenceLoopDrawable(it).also { d -> d.start() }); return }
             LutThumbnailCache.get(cacheKey)?.let { target.setImageBitmap(it); return }
             if (!pending.add(cacheKey)) return
             val targetRef = WeakReference(target)
@@ -126,6 +133,19 @@ object LutBrowser {
                     if (!active.get()) return@execute
                     val view = targetRef.get() ?: return@execute
                     if (view.tag != cacheKey) return@execute
+                    // Prévia tipo GIF: a LUT aplicada em cada quadro do vídeo de referência.
+                    val loop = ReferencePreviewFrames.loopBlocking(this)
+                    if (loop != null) {
+                        val lut = CubeLut.parse(file.reader())
+                        val frames = loop.map { render(it, lut, amount) }
+                        if (!active.get()) return@execute
+                        loopCache.put(cacheKey, frames)
+                        main.post {
+                            val current = targetRef.get()
+                            if (active.get() && current?.tag == cacheKey) current.setImageDrawable(ReferenceLoopDrawable(frames).also { it.start() })
+                        }
+                        return@execute
+                    }
                     val base = getBaseFrame() ?: return@execute
                     val bitmap = render(base, CubeLut.parse(file.reader()), amount)
                     if (!active.get()) { bitmap.recycle(); return@execute }
@@ -168,7 +188,7 @@ object LutBrowser {
                     setPadding(dp(4), dp(4), dp(4), dp(4))
                     val image = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; tag = null }
                     addView(image, LinearLayout.LayoutParams(-1, dp(68)))
-                    val name = label("", 11f, Color.WHITE).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+                    val name = label("", 11f, EditorStyle.TEXT).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
                     addView(name, LinearLayout.LayoutParams(-1, dp(28)))
                     val favorite = TextView(context).apply { gravity = Gravity.CENTER; textSize = 17f; minHeight = dp(26) }
                     addView(favorite, LinearLayout.LayoutParams(-1, dp(26)))
@@ -177,7 +197,7 @@ object LutBrowser {
                 val views = card.tag as LutCardViews
                 views.name.text = displayName(file)
                 views.favorite.text = if (file.absolutePath in favorites) "★" else "☆"
-                views.favorite.setTextColor(if (file.absolutePath in favorites) 0xFFFAFAF6.toInt() else EditorStyle.MUTED)
+                views.favorite.setTextColor(if (file.absolutePath in favorites) EditorStyle.TEXT else EditorStyle.MUTED)
                 val chosen = file.absolutePath == selectedPath
                 card.background = GradientDrawable().apply {
                     setColor(if (chosen) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
@@ -211,6 +231,8 @@ object LutBrowser {
         updateTabs = {
             allButton.background = tabBackground(!favoritesOnly)
             favoritesButton.background = tabBackground(favoritesOnly)
+            allButton.setTextColor(if (!favoritesOnly) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
+            favoritesButton.setTextColor(if (favoritesOnly) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
         }
         updateTabs()
         refreshGrid()
@@ -249,7 +271,7 @@ object LutBrowser {
     private data class LutCardViews(val image: ImageView, val name: TextView, val favorite: TextView)
 
     private fun Activity.tabBackground(selected: Boolean) = GradientDrawable().apply {
-        if (selected) setColor(Color.WHITE) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
+        if (selected) setColor(EditorStyle.ACCENT) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
         cornerRadius = dp(20).toFloat()
     }
 

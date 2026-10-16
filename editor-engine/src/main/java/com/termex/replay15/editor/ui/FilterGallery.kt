@@ -13,7 +13,10 @@ import android.widget.*
 import com.termex.replay15.editor.core.isEditorDebuggable
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.domain.VideoFilter
+import android.graphics.ColorMatrixColorFilter
 import com.termex.replay15.editor.preview.AtlasPreviewManager
+import com.termex.replay15.editor.preview.ReferenceLoopDrawable
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 import com.termex.replay15.editor.preview.RepresentativeFrameProvider
 import com.termex.replay15.editor.render.FilterColorMath
 
@@ -141,7 +144,7 @@ object FilterGallery {
                 // Placeholder view while thumbnail renders
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF1C1C1E.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -177,7 +180,7 @@ object FilterGallery {
                     },
                 )
 
-                if (filter.ordinal < AtlasPreviewManager.ATLAS_FILTER_COUNT) {
+                fun legacyThumbnail() = if (filter.ordinal < AtlasPreviewManager.ATLAS_FILTER_COUNT) {
                     // Original filters have pre-rendered thumbnails in the atlas.
                     AtlasPreviewManager.getFilterPreview(activity, filter) { drawable ->
                         imageView.setImageDrawable(drawable)
@@ -196,6 +199,20 @@ object FilterGallery {
                         }
                     }
                 }
+
+                // Prévia tipo GIF: o vídeo de referência em loop, tingido pelo filtro na hora do
+                // desenho (mesma conta do FilterColorMath). Sem o asset, volta ao modo antigo.
+                ReferencePreviewFrames.withLoop(activity) { frames ->
+                    if (frames == null) {
+                        legacyThumbnail()
+                    } else if (filterCardMap[filter]?.image === imageView) {
+                        imageView.setImageDrawable(ReferenceLoopDrawable(frames).apply {
+                            colorFilter = ColorMatrixColorFilter(FilterColorMath.colorMatrixFor(filter))
+                            start()
+                        })
+                        placeholder.visibility = View.GONE
+                    }
+                }
             }
         }
 
@@ -203,10 +220,10 @@ object FilterGallery {
             for (i in 0 until tabs.childCount) {
                 val btn = tabs.getChildAt(i) as Button
                 val isCurrent = i == category
-                btn.setTextColor(if (isCurrent) Color.BLACK else Color.WHITE)
+                btn.setTextColor(if (isCurrent) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
                 btn.background = GradientDrawable().apply {
                     if (isCurrent) {
-                        setColor(Color.WHITE)
+                        setColor(EditorStyle.ACCENT)
                         cornerRadius = dp(20).toFloat()
                     } else {
                         setColor(EditorStyle.CARD)
@@ -237,7 +254,7 @@ object FilterGallery {
 
         val all = CheckBox(this).apply {
             text = "Aplicar a todos os clipes"
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             setPadding(dp(8), 0, 0, 0)
         }
         if (allowApplyAll) {

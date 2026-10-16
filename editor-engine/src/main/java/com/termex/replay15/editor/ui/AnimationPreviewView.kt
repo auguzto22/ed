@@ -13,10 +13,14 @@ import android.view.View
 import com.termex.replay15.editor.animation.AnimationCategory
 import com.termex.replay15.editor.animation.AnimationPreset
 import com.termex.replay15.editor.animation.AnimationPreviewSampler
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 
 /**
  * Live thumbnail of an animation preset: a small "clip" card moving inside a stage, driven by
  * the same points that become keyframes. Animates only while on screen.
+ *
+ * O "clipe" que se mexe é o vídeo de referência tocando (como nas outras galerias); sem o asset,
+ * volta ao cartão vermelho com o ícone de play.
  */
 class AnimationPreviewView(context: Context, preset: AnimationPreset, durationMs: Long = defaultDuration(preset)) : View(context) {
     var preset: AnimationPreset = preset
@@ -36,6 +40,10 @@ class AnimationPreviewView(context: Context, preset: AnimationPreset, durationMs
     private val play = Path()
     private val visible = Rect()
     private var startedAt = SystemClock.uptimeMillis()
+    private var reference: List<android.graphics.Bitmap>? = null
+    private val framePaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+    private val cardPath = Path()
+    private val src = Rect()
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         stage.set(0f, 0f, w.toFloat(), h.toFloat())
@@ -47,6 +55,7 @@ class AnimationPreviewView(context: Context, preset: AnimationPreset, durationMs
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         startedAt = SystemClock.uptimeMillis()
+        if (reference == null) ReferencePreviewFrames.withLoop(context) { frames -> reference = frames; invalidate() }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -73,11 +82,25 @@ class AnimationPreviewView(context: Context, preset: AnimationPreset, durationMs
         clipPaint.alpha = alpha
         shinePaint.alpha = (alpha * .2f).toInt()
         playPaint.alpha = (alpha * .9f).toInt()
-        canvas.drawRoundRect(card, 7f * density, 7f * density, clipPaint)
-        canvas.drawRoundRect(card.left, card.top, card.right, card.top + cardH * .42f, 7f * density, 7f * density, shinePaint)
-        val s = cardH * .17f
-        play.reset(); play.moveTo(-s * .7f, -s); play.lineTo(s, 0f); play.lineTo(-s * .7f, s); play.close()
-        canvas.drawPath(play, playPaint)
+        val frames = reference
+        if (!frames.isNullOrEmpty()) {
+            val frame = frames[((SystemClock.uptimeMillis() / ReferencePreviewFrames.FRAME_MS) % frames.size).toInt()]
+            // Recorte central do quadro quadrado na proporção do cartão.
+            val side = frame.width
+            val srcH = (side * cardH / cardW).toInt().coerceAtMost(frame.height)
+            src.set(0, (frame.height - srcH) / 2, side, (frame.height + srcH) / 2)
+            cardPath.reset(); cardPath.addRoundRect(card, 7f * density, 7f * density, Path.Direction.CW)
+            framePaint.alpha = alpha
+            canvas.save(); canvas.clipPath(cardPath)
+            canvas.drawBitmap(frame, src, card, framePaint)
+            canvas.restore()
+        } else {
+            canvas.drawRoundRect(card, 7f * density, 7f * density, clipPaint)
+            canvas.drawRoundRect(card.left, card.top, card.right, card.top + cardH * .42f, 7f * density, 7f * density, shinePaint)
+            val s = cardH * .17f
+            play.reset(); play.moveTo(-s * .7f, -s); play.lineTo(s, 0f); play.lineTo(-s * .7f, s); play.close()
+            canvas.drawPath(play, playPaint)
+        }
         canvas.restore()
         canvas.restore()
 

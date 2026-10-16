@@ -25,6 +25,8 @@ import com.recly.editor.R
 import com.termex.replay15.editor.domain.Project
 import com.termex.replay15.editor.project.ProjectStore
 import com.termex.replay15.account.AccountGate
+import com.termex.replay15.account.AccountManager
+import com.termex.replay15.ui.BlitzColors
 import com.termex.replay15.ui.DockNavigationHelper
 import com.termex.replay15.ui.DockTab
 import com.termex.replay15.ui.GlassEffectHelper
@@ -32,19 +34,35 @@ import java.io.File
 import java.util.concurrent.Executors
 
 class EditorLibraryActivity : Activity() {
+    /** Tema claro/escuro escolhido em Config. > Aparência (não o do sistema): ver BlitzAppearance. */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.termex.replay15.ui.BlitzAppearance.wrap(newBase))
+    }
+
 
     companion object {
         private const val REQ_PICK_VIDEO = 810
     }
 
     private enum class LibraryTab {
-        PROJECTS, RECORDINGS, REPLAYS
+        PROJECTS, RECORDINGS, REPLAYS, SETTINGS
     }
 
     private val io = Executors.newSingleThreadExecutor()
     private var currentTab = LibraryTab.PROJECTS
-    /** Ferramenta a abrir no editor depois de escolher o vídeo ("auto_edit" ou "analyze"); null = só abrir. */
+    /** Ferramenta a abrir no editor depois de escolher o vídeo ("auto_edit"); null = só abrir. */
     private var pendingOpenTool: String? = null
+    /** Miniaturas reais dos projetos (quadro do primeiro clipe), com cache em memória e disco. */
+    private lateinit var thumbnails: ProjectThumbnails
+    /** Decodifica miniaturas sem travar a lista nem o carregamento dos projetos. */
+    private val thumbIo = Executors.newFixedThreadPool(2)
+    private var lastProjects: List<Project> = emptyList()
+    /** Versão da aparência com que a tela foi montada (-1 = não montou, ex.: portão de conta). */
+    private var builtAppearance = -1
+    private var lastRecordingsCount = 0
+
+    private lateinit var homeHero: LinearLayout
+    private lateinit var containerSettings: LinearLayout
 
     private lateinit var tabProjects: TextView
     private lateinit var tabRecordings: TextView
@@ -69,16 +87,12 @@ class EditorLibraryActivity : Activity() {
         setContentView(R.layout.activity_editor_library)
         if (savedInstanceState == null) BootSplashView.showOnce(this)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.setSystemBarsAppearance(
-                0,
-                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
-                    android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = 0
-        }
+        // Fundo e ícones das barras do sistema no tema escolhido em Config. > Aparência.
+        com.termex.replay15.ui.BlitzAppearance.applyWindow(this, BlitzColors.bg)
+        builtAppearance = com.termex.replay15.ui.BlitzAppearance.version
+        thumbnails = ProjectThumbnails(this)
+        homeHero = findViewById(R.id.homeHero)
+        containerSettings = findViewById(R.id.containerSettings)
 
         tabProjects = findViewById(R.id.tabProjects)
         tabRecordings = findViewById(R.id.tabRecordings)
@@ -100,20 +114,19 @@ class EditorLibraryActivity : Activity() {
         findViewById<View>(R.id.btnNewProject).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnImportVideo).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnHomeAutoEdit).setOnClickListener { pendingOpenTool = "auto_edit"; openVideoPicker() }
-        findViewById<View>(R.id.btnHomeAnalyze).setOnClickListener { pendingOpenTool = "analyze"; openVideoPicker() }
-        // Perfil (canvas): leva para os ajustes, o mesmo destino do último item da barra de baixo.
+        // Perfil: visitante pode entrar/criar conta; com conta vai direto para Config. (dados da conta).
         findViewById<View>(R.id.btnProfile).setOnClickListener {
-            // Visitante: oferece entrar ou criar conta antes dos ajustes.
-            if (com.termex.replay15.account.AccountManager.isGuest(this) && !com.termex.replay15.account.AccountManager.hasAccount(this)) {
-                AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            if (AccountManager.isGuest(this) && !AccountManager.hasAccount(this)) {
+                AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
                     .setTitle("Você está sem conta")
                     .setMessage("Crie uma conta ou entre para usar as legendas automáticas e guardar seu acesso.")
                     .setPositiveButton("Entrar ou criar conta") { _, _ ->
                         AccountGate.openAuth(this, null, com.termex.replay15.account.AuthActivity.MODE_SIGN_IN)
                     }
-                    .setNeutralButton("Ajustes") { _, _ -> findViewById<View>(R.id.navSettings)?.performClick() }
+                    .setNeutralButton("Config.") { _, _ -> showDockTab(DockTab.SETTINGS) }
+                    .setNegativeButton("Agora não", null)
                     .show()
-            } else findViewById<View>(R.id.navSettings)?.performClick()
+            } else showDockTab(DockTab.SETTINGS)
         }
 
         // "editar" em amarelo, como no título do canvas.
@@ -121,7 +134,7 @@ class EditorLibraryActivity : Activity() {
             val full = "O que vamos editar hoje?"
             val start = full.indexOf("editar")
             text = android.text.SpannableString(full).apply {
-                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#FAFAF6")), start, start + "editar".length, 0)
+                setSpan(android.text.style.ForegroundColorSpan(BlitzColors.text), start, start + "editar".length, 0)
             }
         }
 
@@ -151,24 +164,65 @@ class EditorLibraryActivity : Activity() {
 
     private fun handleIntentTab(intent: Intent?) {
         val tabExtra = intent?.getStringExtra("initial_tab")
+        // Consumido: senão toda recriação (girar a tela, trocar a aparência) voltaria para essa aba.
+        intent?.removeExtra("initial_tab")
         // Abre no Início (cabeçalho + Recentes), como no canvas; "Gravações" lista os vídeos salvos.
         val initialDockTab = when (tabExtra) {
-            "RECORDINGS" -> DockTab.RECORDINGS
-            "PROJECTS" -> DockTab.EDITOR
+            "SETTINGS" -> DockTab.SETTINGS
             else -> DockTab.HOME
         }
-        switchTab(if (initialDockTab == DockTab.RECORDINGS) LibraryTab.RECORDINGS else LibraryTab.PROJECTS)
-        DockNavigationHelper.bind(this, initialDockTab) { tab ->
-            when (tab) {
-                DockTab.HOME, DockTab.EDITOR -> switchTab(LibraryTab.PROJECTS)
+        showDockTab(initialDockTab)
+    }
+
+    /**
+     * Liga a barra de baixo. Antes "Editor" só repetia o Início e "Config." não fazia nada (não
+     * existia tela de ajustes); agora cada item tem destino próprio.
+     */
+    private fun showDockTab(tab: DockTab) {
+        val target = when (tab) {
+            DockTab.RECORDINGS, DockTab.LIBRARY -> LibraryTab.RECORDINGS
+            DockTab.SETTINGS -> LibraryTab.SETTINGS
+            else -> LibraryTab.PROJECTS
+        }
+        switchTab(target)
+        DockNavigationHelper.bind(this, tab) { chosen ->
+            when (chosen) {
+                DockTab.HOME, DockTab.RECORD -> switchTab(LibraryTab.PROJECTS)
                 DockTab.RECORDINGS, DockTab.LIBRARY -> switchTab(LibraryTab.RECORDINGS)
-                else -> {}
+                DockTab.SETTINGS -> switchTab(LibraryTab.SETTINGS)
+                // Editor: continua o projeto mais recente; sem projeto, começa um novo.
+                DockTab.EDITOR -> {
+                    openLatestProject()
+                    showDockTab(when (currentTab) {
+                        LibraryTab.RECORDINGS -> DockTab.RECORDINGS
+                        LibraryTab.SETTINGS -> DockTab.SETTINGS
+                        else -> DockTab.HOME
+                    })
+                }
             }
+        }
+        findViewById<ScrollView>(R.id.libraryScroll)?.scrollTo(0, 0)
+    }
+
+    private fun openLatestProject() {
+        val latest = lastProjects.maxByOrNull { it.modifiedAt }
+        if (latest != null) {
+            startActivity(Intent(this, EditorActivity::class.java).putExtra("project", latest.id))
+        } else {
+            Toast.makeText(this, "Nenhum projeto ainda. Escolha um vídeo para começar.", Toast.LENGTH_SHORT).show()
+            pendingOpenTool = null
+            openVideoPicker()
         }
     }
 
     override fun onResume() {
         super.onResume()
+        // A aparência mudou enquanto esta tela estava por trás: remonta com as cores novas.
+        if (builtAppearance != -1 && com.termex.replay15.ui.BlitzAppearance.needsRecreate(builtAppearance)) {
+            recreate()
+            return
+        }
+        renderHeader()
         loadData()
     }
 
@@ -176,7 +230,6 @@ class EditorLibraryActivity : Activity() {
         // Seletor próprio do Recly no lugar do seletor de documentos do sistema.
         val title = when (pendingOpenTool) {
             "auto_edit" -> "Vídeo para o Auto Edit"
-            "analyze" -> "Vídeo para analisar"
             else -> "Novo projeto"
         }
         val mode = if (pendingOpenTool == null) GalleryPickerActivity.MODE_ANY else GalleryPickerActivity.MODE_VIDEOS
@@ -210,12 +263,12 @@ class EditorLibraryActivity : Activity() {
             if (active) {
                 view.setBackgroundResource(R.drawable.recly_tab_active)
                 view.elevation = 0f
-                view.setTextColor(Color.WHITE)
+                view.setTextColor(Color.WHITE) // sobre a pílula vermelha
             } else {
                 view.background = null
                 view.elevation = 0f
                 view.outlineProvider = null
-                view.setTextColor(Color.parseColor("#9A968C"))
+                view.setTextColor(BlitzColors.muted)
             }
         }
 
@@ -226,6 +279,10 @@ class EditorLibraryActivity : Activity() {
         containerProjects.visibility = if (tab == LibraryTab.PROJECTS) View.VISIBLE else View.GONE
         containerRecordings.visibility = if (tab == LibraryTab.RECORDINGS) View.VISIBLE else View.GONE
         containerReplays.visibility = if (tab == LibraryTab.REPLAYS) View.VISIBLE else View.GONE
+        containerSettings.visibility = if (tab == LibraryTab.SETTINGS) View.VISIBLE else View.GONE
+        // Título e atalhos só no Início; nas outras abas a tela mostra só o conteúdo dela.
+        homeHero.visibility = if (tab == LibraryTab.PROJECTS) View.VISIBLE else View.GONE
+        if (tab == LibraryTab.SETTINGS) renderSettings()
     }
 
     private fun loadData() {
@@ -267,9 +324,13 @@ class EditorLibraryActivity : Activity() {
 
             runOnUiThread {
                 if (isDestroyed || isFinishing) return@runOnUiThread
+                lastProjects = projects
+                lastRecordingsCount = recordings.size
                 renderProjects(projects, projectStore)
                 renderRecordings(recordings)
                 renderReplays(replays)
+                renderStats()
+                if (currentTab == LibraryTab.SETTINGS) renderSettings()
             }
         }
     }
@@ -279,10 +340,12 @@ class EditorLibraryActivity : Activity() {
         if (projects.isEmpty()) {
             cardEmptyProjects.visibility = View.VISIBLE
             listProjects.visibility = View.GONE
+            findViewById<View>(R.id.recentHint).visibility = View.GONE
             return
         }
         cardEmptyProjects.visibility = View.GONE
         listProjects.visibility = View.VISIBLE
+        findViewById<View>(R.id.recentHint).visibility = View.VISIBLE
 
         // Grade de duas colunas, como em "Recentes" no canvas.
         projects.chunked(2).forEachIndexed { rowIndex, pair ->
@@ -307,17 +370,18 @@ class EditorLibraryActivity : Activity() {
     }
 
     /**
-     * Cartão de projeto do canvas: miniatura com play, duração, formato, nome e quando foi editado.
-     * Toque abre o projeto; toque longo pergunta se quer excluir (sem botões em cada cartão).
+     * Cartão de projeto: prévia real do vídeo (quadro do primeiro clipe, enquadrado inteiro sobre
+     * um fundo desfocado do próprio quadro), proporção, duração, nome e quando foi editado.
+     * Toque abre; toque longo ou o botão ⋯ abrem as opções (renomear, duplicar, excluir).
      */
     private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore): View {
-        val tones = intArrayOf(0xFF2A2D35.toInt(), 0xFF332D28.toInt(), 0xFF2A2F2B.toInt(), 0xFF2E2B34.toInt())
-        val chipFill = Color.parseColor("#D9000000")
-        val line = Color.parseColor("#2C2C30")
+        val tones = BlitzColors.tileTones
+        val chipFill = Color.parseColor("#CC0F0F11")
+        val line = BlitzColors.line
 
         fun chip(text: String, mono: Boolean) = TextView(this).apply {
             this.text = text
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(Color.parseColor("#F2F0EA"))
             textSize = 11f
             typeface = if (mono) android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD)
             else android.graphics.Typeface.DEFAULT_BOLD
@@ -331,32 +395,96 @@ class EditorLibraryActivity : Activity() {
         val thumb = android.widget.FrameLayout(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(tones[index % tones.size])
-                setStroke(dp(1.5f), line)
-                cornerRadius = dp(12).toFloat()
+                cornerRadius = dp(16).toFloat()
             }
             clipToOutline = true
             outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
         }
+        // Fundo: o mesmo quadro ampliado, escurecido (e desfocado no Android 12+), para não sobrar barra preta.
+        val backdrop = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            alpha = 0f
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            if (Build.VERSION.SDK_INT >= 31) {
+                setRenderEffect(android.graphics.RenderEffect.createBlurEffect(dp(18).toFloat(), dp(18).toFloat(), android.graphics.Shader.TileMode.CLAMP))
+            }
+        }
+        // Frente: o quadro inteiro, na proporção exata do vídeo.
+        val frame = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            alpha = 0f
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        thumb.addView(backdrop, android.widget.FrameLayout.LayoutParams(-1, -1))
+        thumb.addView(frame, android.widget.FrameLayout.LayoutParams(-1, -1))
+        // Borda por cima da imagem, para o contorno do cartão não sumir atrás do quadro.
+        thumb.addView(View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                setStroke(dp(1), line)
+                cornerRadius = dp(16).toFloat()
+            }
+        }, android.widget.FrameLayout.LayoutParams(-1, -1))
+        // Sombra embaixo para os textos dos chips continuarem legíveis sobre qualquer imagem.
+        thumb.addView(View(this).apply {
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP,
+                intArrayOf(Color.parseColor("#99000000"), Color.TRANSPARENT)
+            )
+        }, android.widget.FrameLayout.LayoutParams(-1, dp(48), Gravity.BOTTOM))
         thumb.addView(android.widget.FrameLayout(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(Color.parseColor("#CC000000"))
-                setStroke(dp(1.5f), Color.parseColor("#4A4A50"))
+                setColor(Color.parseColor("#99000000"))
             }
             addView(ImageView(this@EditorLibraryActivity).apply {
                 setImageResource(R.drawable.ic_recly_play)
-                imageTintList = ColorStateList.valueOf(Color.parseColor("#FAFAF6"))
+                imageTintList = ColorStateList.valueOf(Color.parseColor("#F2F0EA"))
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, android.widget.FrameLayout.LayoutParams(dp(14), dp(14), Gravity.CENTER))
-        }, android.widget.FrameLayout.LayoutParams(dp(36), dp(36), Gravity.CENTER))
-        thumb.addView(chip(timeLabel(project.durationUs), true),
-            android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.START or Gravity.BOTTOM).apply { setMargins(dp(7), 0, 0, dp(9)) })
+            }, android.widget.FrameLayout.LayoutParams(dp(13), dp(13), Gravity.CENTER))
+        }, android.widget.FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER))
+        thumb.addView(chip(shortDuration(project.durationUs), true),
+            android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.START or Gravity.BOTTOM).apply { setMargins(dp(8), 0, 0, dp(8)) })
         thumb.addView(chip(aspectLabel(project), false),
-            android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.END or Gravity.TOP).apply { setMargins(0, dp(7), dp(7), 0) })
+            android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.END or Gravity.TOP).apply { setMargins(0, dp(8), dp(8), 0) })
+        // Botão ⋯ (opções), canto de baixo à direita.
+        thumb.addView(TextView(this).apply {
+            text = "⋯"
+            gravity = Gravity.CENTER
+            setTextColor(Color.parseColor("#F2F0EA"))
+            textSize = 16f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            contentDescription = "Opções de ${project.name}"
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(chipFill)
+            }
+            setOnClickListener { showProjectOptions(project, projectStore) }
+        }, android.widget.FrameLayout.LayoutParams(dp(30), dp(30), Gravity.END or Gravity.BOTTOM).apply { setMargins(0, 0, dp(6), dp(6)) })
+
+        fun show(bitmap: android.graphics.Bitmap) {
+            backdrop.setImageBitmap(bitmap)
+            frame.setImageBitmap(bitmap)
+            backdrop.animate().alpha(0.45f).setDuration(180).start()
+            frame.animate().alpha(1f).setDuration(180).start()
+        }
+        val cached = thumbnails.cached(project)
+        if (cached != null) {
+            backdrop.setImageBitmap(cached); frame.setImageBitmap(cached); backdrop.alpha = 0.45f; frame.alpha = 1f
+        } else {
+            frame.tag = project.id
+            thumbIo.execute {
+                val bitmap = runCatching { thumbnails.load(project) }.getOrNull() ?: return@execute
+                runOnUiThread {
+                    // A lista pode ter sido refeita enquanto decodificava.
+                    if (!isDestroyed && frame.tag == project.id && frame.isAttachedToWindow) show(bitmap)
+                }
+            }
+        }
 
         val name = TextView(this).apply {
             text = project.name
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(BlitzColors.text)
             textSize = 14f
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
             maxLines = 1
@@ -364,7 +492,7 @@ class EditorLibraryActivity : Activity() {
         }
         val whenText = TextView(this).apply {
             text = editedLabel(project.modifiedAt)
-            setTextColor(Color.parseColor("#9A968C"))
+            setTextColor(BlitzColors.muted)
             textSize = 12f
         }
 
@@ -373,37 +501,130 @@ class EditorLibraryActivity : Activity() {
             isClickable = true
             isFocusable = true
             contentDescription = project.name
-            addView(thumb, LinearLayout.LayoutParams(-1, dp(132)))
-            addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+            foreground = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(BlitzColors.ripple), null,
+                android.graphics.drawable.GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(16).toFloat() })
+            addView(thumb, LinearLayout.LayoutParams(-1, dp(168)))
+            addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
             addView(whenText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(1) })
             setOnClickListener {
                 startActivity(Intent(this@EditorLibraryActivity, EditorActivity::class.java).putExtra("project", project.id))
             }
-            setOnLongClickListener {
-                AlertDialog.Builder(this@EditorLibraryActivity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                    .setTitle("Excluir projeto?")
-                    .setMessage("Os vídeos originais serão mantidos.")
-                    .setNegativeButton("Cancelar", null)
-                    .setPositiveButton("Excluir") { _, _ ->
-                        io.execute {
-                            projectStore.delete(project.id)
-                            loadData()
-                        }
-                    }
-                    .show()
-                true
-            }
+            setOnLongClickListener { showProjectOptions(project, projectStore); true }
         }
     }
 
-    /** "9:16", "1:1", "16:9": a proporção do projeto. */
+    /** Opções do projeto: abrir, renomear, duplicar e excluir (antes só dava para excluir segurando). */
+    private fun showProjectOptions(project: Project, projectStore: ProjectStore) {
+        val options = arrayOf("Abrir", "Renomear", "Duplicar", "Excluir")
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
+            .setTitle(project.name)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> startActivity(Intent(this, EditorActivity::class.java).putExtra("project", project.id))
+                    1 -> renameProject(project, projectStore)
+                    2 -> duplicateProject(project, projectStore)
+                    3 -> confirmDelete(project, projectStore)
+                }
+            }
+            .show()
+    }
+
+    private fun renameProject(project: Project, projectStore: ProjectStore) {
+        val input = android.widget.EditText(this).apply {
+            setText(project.name)
+            setSelectAllOnFocus(true)
+            setSingleLine()
+            filters = arrayOf(android.text.InputFilter.LengthFilter(80))
+        }
+        val box = android.widget.FrameLayout(this).apply {
+            setPadding(dp(20), dp(8), dp(20), 0)
+            addView(input)
+        }
+        val dialog = AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
+            .setTitle("Renomear projeto")
+            .setView(box)
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Salvar") { _, _ ->
+                val newName = input.text.toString().trim()
+                if (newName.isEmpty() || newName == project.name) return@setPositiveButton
+                io.execute {
+                    val ok = runCatching {
+                        // Relê do disco: o projeto pode ter mudado desde que a lista foi montada.
+                        val current = projectStore.load(project.id)
+                        projectStore.save(current.copy(name = newName, modifiedAt = System.currentTimeMillis()))
+                    }.isSuccess
+                    runOnUiThread { if (!ok) Toast.makeText(this, "Não foi possível renomear", Toast.LENGTH_SHORT).show() }
+                    loadData()
+                }
+            }
+            .create()
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dialog.show()
+        input.requestFocus()
+    }
+
+    private fun duplicateProject(project: Project, projectStore: ProjectStore) {
+        io.execute {
+            val ok = runCatching {
+                val current = projectStore.load(project.id)
+                val now = System.currentTimeMillis()
+                val baseName = current.name.take(190)
+                projectStore.save(current.copy(
+                    id = com.termex.replay15.editor.domain.newId(),
+                    name = "$baseName (cópia)",
+                    createdAt = now,
+                    modifiedAt = now
+                ))
+            }.isSuccess
+            runOnUiThread {
+                Toast.makeText(this, if (ok) "Projeto duplicado" else "Não foi possível duplicar", Toast.LENGTH_SHORT).show()
+            }
+            loadData()
+        }
+    }
+
+    private fun confirmDelete(project: Project, projectStore: ProjectStore) {
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
+            .setTitle("Excluir \"${project.name}\"?")
+            .setMessage("Os vídeos originais serão mantidos.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Excluir") { _, _ ->
+                io.execute {
+                    projectStore.delete(project.id)
+                    thumbnails.forget(project.id)
+                    loadData()
+                }
+            }
+            .show()
+    }
+
+    /** "0:05", "1:23", "1:02:03": duração curta para o chip (antes "00:05.000"). */
+    private fun shortDuration(durationUs: Long): String {
+        val total = ((durationUs.coerceAtLeast(0L) + 500_000L) / 1_000_000L)
+        val h = total / 3600
+        val m = total / 60 % 60
+        val sec = total % 60
+        return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, sec)
+        else String.format(java.util.Locale.ROOT, "%d:%02d", m, sec)
+    }
+
+    /**
+     * "9:16", "16:9", "1:1"... Encaixa nas proporções comuns com 4% de folga (antes um vídeo de
+     * celular aparecia como "0.49:1"); fora disso mostra o valor real.
+     */
     private fun aspectLabel(project: Project): String {
         val (w, h) = project.dimensions()
-        fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
-        val g = gcd(w.coerceAtLeast(1), h.coerceAtLeast(1)).coerceAtLeast(1)
-        val rw = w / g
-        val rh = h / g
-        return if (rw <= 32 && rh <= 32) "$rw:$rh" else String.format(java.util.Locale.ROOT, "%.2f:1", w.toFloat() / h.coerceAtLeast(1))
+        val ratio = w.coerceAtLeast(1).toFloat() / h.coerceAtLeast(1)
+        val common = listOf(
+            "9:16" to 9f / 16, "16:9" to 16f / 9, "1:1" to 1f, "4:5" to 4f / 5, "5:4" to 5f / 4,
+            "3:4" to 3f / 4, "4:3" to 4f / 3, "2:3" to 2f / 3, "3:2" to 3f / 2, "21:9" to 21f / 9,
+            "9:19.5" to 9f / 19.5f, "19.5:9" to 19.5f / 9, "9:20" to 9f / 20, "20:9" to 20f / 9,
+            "1.85:1" to 1.85f, "2.39:1" to 2.39f
+        )
+        val best = common.minByOrNull { kotlin.math.abs(it.second - ratio) / it.second }
+        if (best != null && kotlin.math.abs(best.second - ratio) / best.second <= 0.04f) return best.first
+        return if (ratio >= 1f) String.format(java.util.Locale.ROOT, "%.2f:1", ratio)
+        else String.format(java.util.Locale.ROOT, "1:%.2f", 1f / ratio)
     }
 
     /** "Editado há 2 h", "Ontem", "3 dias atrás". */
@@ -483,7 +704,7 @@ class EditorLibraryActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundResource(R.drawable.recly_card_dark)
+            setBackgroundResource(R.drawable.home_card)
             setPadding(dp(16), dp(14), dp(16), dp(14))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -496,7 +717,7 @@ class EditorLibraryActivity : Activity() {
         val icon = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(14) }
             setImageResource(iconRes)
-            imageTintList = ColorStateList.valueOf(Color.parseColor("#8C8880"))
+            imageTintList = ColorStateList.valueOf(BlitzColors.muted)
         }
         root.addView(icon)
 
@@ -506,7 +727,7 @@ class EditorLibraryActivity : Activity() {
         }
         val titleView = TextView(this).apply {
             text = title
-            setTextColor(Color.parseColor("#FAFAF6"))
+            setTextColor(BlitzColors.text)
             textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             maxLines = 1
@@ -514,7 +735,7 @@ class EditorLibraryActivity : Activity() {
         }
         val subtitleView = TextView(this).apply {
             text = subtitle
-            setTextColor(Color.parseColor("#9A968C"))
+            setTextColor(BlitzColors.muted)
             textSize = 12f
             setPadding(0, dp(2), 0, 0)
         }
@@ -525,7 +746,7 @@ class EditorLibraryActivity : Activity() {
         if (secondaryActionText != null && onSecondaryClick != null) {
             val secButton = TextView(this).apply {
                 text = secondaryActionText
-                setTextColor(Color.parseColor("#9A968C"))
+                setTextColor(BlitzColors.muted)
                 textSize = 13f
                 setPadding(dp(10), dp(6), dp(10), dp(6))
                 setOnClickListener { onSecondaryClick() }
@@ -537,6 +758,272 @@ class EditorLibraryActivity : Activity() {
         return root
     }
 
+    /** Canto de cima à esquerda: saudação pela hora do dia e o nome da conta; inicial no perfil. */
+    private fun renderHeader() {
+        val session = AccountManager.session(this)
+        val name = session?.displayName?.replaceFirstChar { it.titlecase() } ?: "Visitante"
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val greeting = when (hour) {
+            in 5..11 -> "BOM DIA"
+            in 12..17 -> "BOA TARDE"
+            else -> "BOA NOITE"
+        }
+        findViewById<TextView>(R.id.homeGreeting).text = greeting
+        findViewById<TextView>(R.id.homeUserName).text = name
+        // Antes a letra "M" era fixa no layout; agora é a inicial de quem entrou.
+        findViewById<TextView>(R.id.btnProfile).text =
+            if (session != null) name.first().uppercase() else "?"
+    }
+
+    /** "3 projetos" logo abaixo do nome. */
+    private fun renderStats() {
+        val stats = findViewById<TextView>(R.id.homeStats)
+        val parts = mutableListOf<String>()
+        val p = lastProjects.size
+        if (p > 0) parts += if (p == 1) "1 projeto" else "$p projetos"
+        stats.text = parts.joinToString(" · ")
+        stats.visibility = if (parts.isEmpty()) View.GONE else View.VISIBLE
+    }
+
+    /**
+     * Aba Config. (antes o botão da barra e o perfil não levavam a lugar nenhum): conta, sair,
+     * excluir conta (exigência da Play Store para apps com cadastro), armazenamento e versão.
+     */
+    private fun renderSettings() {
+        val root = containerSettings
+        root.removeAllViews()
+        val text = BlitzColors.text
+        val muted = BlitzColors.muted
+        val danger = BlitzColors.danger
+
+        fun title(t: String, size: Float, color: Int = text, top: Int = 0) = TextView(this).apply {
+            this.text = t
+            setTextColor(color)
+            textSize = size
+            typeface = android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL)
+            setPadding(0, dp(top), 0, 0)
+        }
+        fun section(label: String) = TextView(this).apply {
+            this.text = label.uppercase()
+            setTextColor(muted)
+            textSize = 11f
+            letterSpacing = 0.08f
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            setPadding(dp(4), dp(22), 0, dp(8))
+        }
+        fun card() = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.home_card)
+        }
+        fun row(label: String, value: String? = null, color: Int = text, onClick: (() -> Unit)? = null) =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = dp(52)
+                setPadding(dp(16), dp(10), dp(16), dp(10))
+                addView(TextView(this@EditorLibraryActivity).apply {
+                    this.text = label
+                    setTextColor(color)
+                    textSize = 15f
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                if (value != null) addView(TextView(this@EditorLibraryActivity).apply {
+                    this.text = value
+                    setTextColor(muted)
+                    textSize = 13f
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
+                    maxWidth = dp(200)
+                })
+                if (onClick != null) {
+                    isClickable = true
+                    isFocusable = true
+                    background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(BlitzColors.ripple), null, null)
+                    setOnClickListener { onClick() }
+                    if (value == null) addView(ImageView(this@EditorLibraryActivity).apply {
+                        setImageResource(R.drawable.ic_pro_chevron_right)
+                        imageTintList = ColorStateList.valueOf(muted)
+                    }, LinearLayout.LayoutParams(dp(18), dp(18)))
+                }
+            }
+        fun divider() = View(this).apply { setBackgroundColor(BlitzColors.line) }
+        fun LinearLayout.addRows(vararg rows: View) {
+            rows.forEachIndexed { i, v ->
+                if (i > 0) addView(divider(), LinearLayout.LayoutParams(-1, dp(1)).apply { marginStart = dp(16) })
+                addView(v)
+            }
+        }
+
+        root.addView(title("Config.", 30f))
+
+        // Aparência: tema do app e cor dos botões das ferramentas do editor.
+        root.addView(section("Aparência"))
+        val look = card()
+        val appearance = com.termex.replay15.ui.BlitzAppearance
+        look.addRows(
+            choiceRow("Tema", listOf("Escuro", "Claro"), if (appearance.isLight) 1 else 0, text, muted) { index ->
+                appearance.setTheme(this, if (index == 1) com.termex.replay15.ui.BlitzAppearance.Theme.LIGHT
+                    else com.termex.replay15.ui.BlitzAppearance.Theme.DARK)
+                reopenSettingsWithNewAppearance()
+            },
+            choiceRow("Botões do editor", listOf("Coloridos", "Pretos"), if (appearance.coloredButtons) 0 else 1, text, muted) { index ->
+                appearance.setButtons(this, if (index == 1) com.termex.replay15.ui.BlitzAppearance.Buttons.BLACK
+                    else com.termex.replay15.ui.BlitzAppearance.Buttons.COLORED)
+                reopenSettingsWithNewAppearance()
+            },
+        )
+        root.addView(look)
+        root.addView(TextView(this).apply {
+            this.text = "Coloridos: cada grupo de ferramenta com a sua cor. Pretos: todos neutros, só o Exportar continua vermelho."
+            setTextColor(muted)
+            textSize = 12f
+            setPadding(dp(4), dp(8), dp(4), 0)
+        })
+
+        // Conta
+        root.addView(section("Conta"))
+        val session = AccountManager.session(this)
+        val account = card()
+        if (session != null) {
+            account.addRows(
+                row("Nome", session.name.ifBlank { session.displayName }),
+                row("E-mail", session.email),
+                row("Sair da conta", color = text) { confirmSignOut() },
+                row("Excluir conta", color = danger) { confirmDeleteAccount() }
+            )
+        } else {
+            account.addRows(
+                row(if (AccountManager.isGuest(this)) "Você está como visitante" else "Sem conta", "Legendas pelo servidor pedem conta"),
+                row("Entrar ou criar conta") {
+                    AccountGate.openAuth(this, null, com.termex.replay15.account.AuthActivity.MODE_SIGN_IN)
+                }
+            )
+        }
+        root.addView(account)
+
+        // Armazenamento
+        root.addView(section("Armazenamento"))
+        val storage = card()
+        val projectsRow = row("Projetos salvos", lastProjects.size.toString())
+        val thumbsRow = row("Miniaturas em cache", "…")
+        storage.addRows(
+            projectsRow,
+            thumbsRow,
+            row("Limpar miniaturas") {
+                thumbIo.execute {
+                    thumbnails.clear()
+                    runOnUiThread {
+                        Toast.makeText(this, "Miniaturas apagadas. Elas são refeitas ao abrir o Início.", Toast.LENGTH_SHORT).show()
+                        if (currentTab == LibraryTab.SETTINGS) renderSettings()
+                    }
+                }
+            }
+        )
+        root.addView(storage)
+        thumbIo.execute {
+            val bytes = thumbnails.diskBytes()
+            runOnUiThread {
+                ((thumbsRow.getChildAt(1)) as? TextView)?.text = android.text.format.Formatter.formatShortFileSize(this, bytes)
+            }
+        }
+
+        // Sobre
+        root.addView(section("Sobre"))
+        val about = card()
+        about.addRows(
+            row("Versão", com.recly.editor.BuildConfig.VERSION_NAME),
+            row("Arquivos originais", "Nunca são alterados")
+        )
+        root.addView(about)
+    }
+
+    /**
+     * Linha com rótulo à esquerda e um seletor segmentado à direita (ex.: Tema: Escuro | Claro).
+     * A opção marcada fica em vermelho Blitz.
+     */
+    private fun choiceRow(label: String, options: List<String>, selected: Int, textColor: Int, mutedColor: Int, onPick: (Int) -> Unit): View =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(56)
+            setPadding(dp(16), dp(10), dp(12), dp(10))
+            addView(TextView(this@EditorLibraryActivity).apply {
+                this.text = label
+                setTextColor(textColor)
+                textSize = 15f
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            val segments = LinearLayout(this@EditorLibraryActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(3), dp(3), dp(3), dp(3))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(com.termex.replay15.ui.BlitzColors.surfaceRaised)
+                    cornerRadius = dp(12).toFloat()
+                }
+            }
+            options.forEachIndexed { index, option ->
+                val on = index == selected
+                segments.addView(TextView(this@EditorLibraryActivity).apply {
+                    this.text = option
+                    textSize = 13f
+                    gravity = Gravity.CENTER
+                    minWidth = dp(76)
+                    setPadding(dp(12), dp(7), dp(12), dp(7))
+                    typeface = android.graphics.Typeface.create("sans-serif-medium",
+                        if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                    setTextColor(if (on) Color.WHITE else mutedColor)
+                    background = if (on) android.graphics.drawable.GradientDrawable().apply {
+                        setColor(0xFFE5163A.toInt())
+                        cornerRadius = dp(9).toFloat()
+                    } else null
+                    contentDescription = "$label: $option" + if (on) ", selecionado" else ""
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { if (!on) onPick(index) }
+                })
+            }
+            addView(segments)
+        }
+
+    /** Remonta o Início já com as cores novas e volta para a aba Config. */
+    private fun reopenSettingsWithNewAppearance() {
+        intent.putExtra("initial_tab", "SETTINGS")
+        recreate()
+    }
+
+    private fun confirmSignOut() {
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
+            .setTitle("Sair da conta?")
+            .setMessage("Seus projetos continuam neste aparelho.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Sair") { _, _ ->
+                AccountManager.signOut(this) {
+                    if (!isDestroyed) AccountGate.openAuth(this, null, com.termex.replay15.account.AuthActivity.MODE_SIGN_IN)
+                }
+            }
+            .show()
+    }
+
+    private fun confirmDeleteAccount() {
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
+            .setTitle("Excluir conta?")
+            .setMessage("Sua conta e seus dados de acesso serão apagados de vez. Os projetos e vídeos deste aparelho continuam aqui.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Excluir conta") { _, _ ->
+                AccountManager.deleteAccount(this) { result ->
+                    if (isDestroyed) return@deleteAccount
+                    result.fold(
+                        onSuccess = {
+                            Toast.makeText(this, "Conta excluída", Toast.LENGTH_LONG).show()
+                            AccountGate.openAuth(this, null, com.termex.replay15.account.AuthActivity.MODE_SIGN_UP)
+                        },
+                        onFailure = { error ->
+                            Toast.makeText(this, error.message ?: "Não foi possível excluir a conta", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+            }
+            .show()
+    }
+
     private fun formatDuration(durationMs: Long): String {
         val totalSec = (durationMs / 1000).coerceAtLeast(0)
         val min = totalSec / 60
@@ -546,6 +1033,7 @@ class EditorLibraryActivity : Activity() {
 
     override fun onDestroy() {
         io.shutdown()
+        thumbIo.shutdownNow()
         super.onDestroy()
     }
 

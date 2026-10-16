@@ -20,7 +20,7 @@ class EasingGraphView(context: Context) : View(context) {
     init { isFocusable = true; contentDescription = "Gráfico de interpolação. Bezier tem duas alcas arrastáveis, também editáveis nos campos abaixo." }
     override fun onDraw(canvas: Canvas) {
         paint.color = EditorStyle.BG; canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), 18f, 18f, paint)
-        paint.color = EditorStyle.CARD; paint.strokeWidth = 1f
+        paint.color = EditorStyle.CARD_PRESSED; paint.strokeWidth = 1f
         for (value in -2..3) canvas.drawLine(x(0f), y(value.toFloat()), x(1f), y(value.toFloat()), paint)
         for (index in 0..4) canvas.drawLine(x(index / 4f), pad, x(index / 4f), height - pad, paint)
         paint.color = EditorStyle.MUTED; canvas.drawLine(x(0f), y(0f), x(1f), y(1f), paint)
@@ -32,22 +32,22 @@ class EasingGraphView(context: Context) : View(context) {
         paint.color = EditorStyle.ACCENT; paint.style = Paint.Style.STROKE; paint.strokeWidth = context.dp(2).toFloat()
         canvas.drawPath(path, paint); paint.style = Paint.Style.FILL
         if (easing == Easing.BEZIER) {
-            paint.color = Color.WHITE
+            paint.color = EditorStyle.TEXT
             canvas.drawLine(x(0f), y(0f), x(bezier.x1), y(bezier.y1), paint)
             canvas.drawLine(x(1f), y(1f), x(bezier.x2), y(bezier.y2), paint)
             val p1x = x(bezier.x1); val p1y = y(bezier.y1)
             val p2x = x(bezier.x2); val p2y = y(bezier.y2)
             if (active == 0) {
-                paint.color = 0x44C50022.toInt()
+                paint.color = EditorStyle.alpha(EditorStyle.ACTION, 0x44)
                 canvas.drawCircle(p1x, p1y, context.dp(14).toFloat(), paint)
             }
             if (active == 1) {
-                paint.color = 0x44C50022.toInt()
+                paint.color = EditorStyle.alpha(EditorStyle.ACTION, 0x44)
                 canvas.drawCircle(p2x, p2y, context.dp(14).toFloat(), paint)
             }
-            paint.color = if (active == 0) Color.WHITE else 0xFFC50022.toInt()
+            paint.color = if (active == 0) EditorStyle.TEXT else EditorStyle.ACTION
             canvas.drawCircle(p1x, p1y, context.dp(7).toFloat(), paint)
-            paint.color = if (active == 1) Color.WHITE else 0xFFC50022.toInt()
+            paint.color = if (active == 1) EditorStyle.TEXT else EditorStyle.ACTION
             canvas.drawCircle(p2x, p2y, context.dp(7).toFloat(), paint)
         }
         paint.textSize = context.dp(11).toFloat(); paint.color = EditorStyle.MUTED

@@ -33,6 +33,14 @@ import kotlinx.coroutines.launch
  * recuperar senha e a espera pela confirmação de e-mail, sem trocar de tela.
  */
 class AuthActivity : Activity() {
+    /**
+     * A tela de conta continua escura (ainda não tem versão clara). Fixar aqui evita que ela pegue
+     * o tema claro do sistema pelos recursos de values-notnight/.
+     */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.termex.replay15.ui.BlitzAppearance.wrap(newBase, alwaysDark = true))
+    }
+
 
     companion object {
         const val EXTRA_NEXT = "recly_auth_next"
@@ -378,11 +386,12 @@ class AuthActivity : Activity() {
 
     private fun showBanner(message: String, error: Boolean) {
         banner.text = message
-        banner.setTextColor(if (error) EditorStyle.ACTION_TEXT else EditorStyle.TEXT)
+        // Tela de conta é sempre escura: cores fixas do tema escuro, não as do tema escolhido.
+        banner.setTextColor(if (error) 0xFFFF5A6E.toInt() else 0xFFF5F5F7.toInt())
         banner.background = GradientDrawable().apply {
-            setColor(EditorStyle.CARD)
+            setColor(0xFF111113.toInt())
             cornerRadius = dp(12).toFloat()
-            setStroke(dp(1.5f), if (error) EditorStyle.ACTION else EditorStyle.BORDER)
+            setStroke(dp(1.5f), if (error) EditorStyle.ACTION else 0xFF2A2A2E.toInt())
         }
         banner.visibility = View.VISIBLE
         banner.announceForAccessibility(message)

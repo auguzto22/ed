@@ -1,5 +1,6 @@
 package com.termex.replay15.editor.preview
 
+import com.termex.replay15.editor.ui.EditorStyle
 import android.content.Context
 import android.graphics.*
 import android.os.Build
@@ -164,7 +165,7 @@ class StickerHandlesView(context: Context) : View(context) {
         // Draw Snapping Guide Lines
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
-        paint.color = 0xFFFAFAF6.toInt()
+        paint.color = EditorStyle.WHITE
 
         if (snappedX != null) {
             val sx = width * snappedX!!
@@ -180,13 +181,13 @@ class StickerHandlesView(context: Context) : View(context) {
         canvas.rotate(transform.rotation, centerX, centerY)
 
         // Bounding Rectangle
-        paint.color = 0xFFFAFAF6.toInt()
+        paint.color = EditorStyle.WHITE
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE
         canvas.drawRoundRect(rect, 4f * density, 4f * density, paint)
 
         // Rotation Stem & Knob
-        paint.color = 0xFFFAFAF6.toInt()
+        paint.color = EditorStyle.WHITE
         paint.strokeWidth = 1.5f * density
         canvas.drawLine(centerX, rect.top, centerX, rect.top - stemLength, paint)
 
@@ -195,7 +196,7 @@ class StickerHandlesView(context: Context) : View(context) {
         paint.color = Color.WHITE
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
         paint.style = Paint.Style.STROKE
-        paint.color = 0xFFFAFAF6.toInt()
+        paint.color = EditorStyle.WHITE
         paint.strokeWidth = 2f * density
         canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
 
@@ -211,7 +212,7 @@ class StickerHandlesView(context: Context) : View(context) {
             paint.color = Color.WHITE
             canvas.drawCircle(cx, cy, cornerRadius, paint)
             paint.style = Paint.Style.STROKE
-            paint.color = 0xFFFAFAF6.toInt()
+            paint.color = EditorStyle.WHITE
             paint.strokeWidth = 2f * density
             canvas.drawCircle(cx, cy, cornerRadius, paint)
         }

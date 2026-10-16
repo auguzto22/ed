@@ -1,5 +1,6 @@
 package com.termex.replay15.editor.preview
 
+import com.termex.replay15.editor.ui.EditorStyle
 import com.termex.replay15.editor.core.PreviewPacingProbe
 import android.content.Context
 import android.graphics.*
@@ -131,7 +132,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         // Motion Path Trajectory
         if (target.clip.keyframes.size >= 2) {
             val pathPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xAAC50022.toInt()
+                color = EditorStyle.alpha(EditorStyle.ACTION, 0xAA)
                 strokeWidth = 1.5f * density
                 style = Paint.Style.STROKE
                 pathEffect = DashPathEffect(floatArrayOf(6f * density, 4f * density), 0f)
@@ -144,7 +145,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
             }
             canvas.drawPath(motionPath, pathPaint)
             val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFFC50022.toInt()
+                color = EditorStyle.ACTION
                 style = Paint.Style.FILL
             }
             target.clip.keyframes.forEach { kf ->
@@ -155,7 +156,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         }
 
         val isNull = target.clip.isNullObject
-        val strokeColor = if (isNull) 0xFFFAFAF6.toInt() else Color.WHITE
+        val strokeColor = if (isNull) EditorStyle.WHITE else Color.WHITE
         paint.color = strokeColor; paint.strokeWidth = 1.5f * density; paint.style = Paint.Style.STROKE
         if (isNull) {
             paint.pathEffect = DashPathEffect(floatArrayOf(8f * density, 4f * density), 0f)
@@ -174,7 +175,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         // Draw Anchor Point Pivot Crosshair
         val anchorPx = rect.centerX() + value.anchorX * (rect.width() / 2f)
         val anchorPy = rect.centerY() + value.anchorY * (rect.height() / 2f)
-        paint.color = 0xFFFAFAF6.toInt()
+        paint.color = EditorStyle.WHITE
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
         canvas.drawCircle(anchorPx, anchorPy, 6f * density, paint)
@@ -192,7 +193,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
             paint.color = 0xD9000000.toInt()
             paint.style = Paint.Style.FILL
             canvas.drawRoundRect(badgeLeft, badgeTop, badgeLeft + badgeWidth + 8f * density, badgeTop + 14f * density, 4f * density, 4f * density, paint)
-            paint.color = if (isNull) 0xFFFAFAF6.toInt() else 0xFFC50022.toInt()
+            paint.color = if (isNull) EditorStyle.WHITE else EditorStyle.ACTION
             canvas.drawText(badgeText, badgeLeft + 4f * density, badgeTop + 11f * density, paint)
         }
 

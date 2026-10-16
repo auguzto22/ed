@@ -323,7 +323,7 @@ object StudioPanels {
                     if (!isDownloaded) append(", toque para baixar")
                     if (isFav) append(", favorita")
                 }
-                holder.tile.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                holder.tile.background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), GradientDrawable().apply {
                     setColor(EditorStyle.CARD)
                     setStroke(if (selected) dp(2) else dp(1), if (selected) EditorStyle.ACTION else EditorStyle.BORDER)
                     cornerRadius = dp(10).toFloat()
@@ -373,13 +373,13 @@ object StudioPanels {
                 // Rebuild tab highlight
                 for (i in 0 until tabRow.childCount) {
                     (tabRow.getChildAt(i) as? Button)?.let { btn ->
-                        btn.setTextColor(if (i == index) 0xFFFFFFFF.toInt() else 0x99FFFFFF.toInt())
+                        btn.setTextColor(if (i == index) EditorStyle.ON_ACTION else EditorStyle.alpha(EditorStyle.TEXT, 0x99))
                     }
                 }
                 adapter.refresh()
             }.apply {
                 textSize = 13f
-                setTextColor(if (index == selectedTab) 0xFFFFFFFF.toInt() else 0x99FFFFFF.toInt())
+                setTextColor(if (index == selectedTab) EditorStyle.ON_ACTION else EditorStyle.alpha(EditorStyle.TEXT, 0x99))
                 setPadding(dp(14), dp(8), dp(14), dp(8))
             }
             tabRow.addView(tabBtn, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(44)).apply { marginEnd = dp(4) })

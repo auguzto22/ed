@@ -49,7 +49,7 @@ object StickerLibrary {
 
         val search = EditText(this).apply {
             hint = "Buscar sticker (ex.: seta, fogo, festa)"; isSingleLine = true
-            setTextColor(Color.WHITE); setHintTextColor(EditorStyle.MUTED)
+            setTextColor(EditorStyle.TEXT); setHintTextColor(EditorStyle.MUTED)
         }
         body.addView(search)
 
@@ -74,7 +74,19 @@ object StickerLibrary {
                     setPadding(dp(4), dp(6), dp(4), dp(4))
                     background = GradientDrawable().apply { setColor(EditorStyle.CARD); cornerRadius = dp(12).toFloat(); setStroke(dp(1), EditorStyle.BORDER) }
                 }
-                val image = ImageView(this@with).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+                val image = ImageView(this@with).apply {
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    // Figurinha por cima do vídeo de referência tocando: mostra como fica no vídeo.
+                    outlineProvider = object : android.view.ViewOutlineProvider() {
+                        override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
+                            outline.setRoundRect(0, 0, view.width, view.height, dp(8).toFloat())
+                        }
+                    }
+                    clipToOutline = true
+                    com.termex.replay15.editor.preview.ReferencePreviewFrames.withLoop(this@with) { frames ->
+                        if (frames != null) background = com.termex.replay15.editor.preview.ReferenceLoopDrawable(frames).also { it.start() }
+                    }
+                }
                 val name = label("", 10f, EditorStyle.MUTED).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
                 card.addView(image, android.widget.LinearLayout.LayoutParams(dp(52), dp(52)))
                 card.addView(name, android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
@@ -116,10 +128,10 @@ object StickerLibrary {
         val chipViews = mutableListOf<Pair<TextView, () -> Boolean>>()
         fun styleChips() = chipViews.forEach { (view, active) ->
             val on = active()
-            view.setTextColor(if (on) Color.BLACK else Color.WHITE)
+            view.setTextColor(if (on) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
             view.background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
-                if (on) setColor(Color.WHITE) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
+                if (on) setColor(EditorStyle.ACCENT) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
             }
         }
         fun chip(text: String, active: () -> Boolean, click: () -> Unit) {

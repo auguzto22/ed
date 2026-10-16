@@ -115,7 +115,7 @@ class AutoEditPanel(
         }
         addView(View(activity).apply {
             background = GradientDrawable().apply {
-                setColor(0xFF2E2B34.toInt())
+                setColor(EditorStyle.CARD_PRESSED)
                 setStroke(activity.dp(1.5f), EditorStyle.BORDER)
                 cornerRadius = activity.dp(8).toFloat()
             }
@@ -343,7 +343,7 @@ class AutoEditPanel(
         preview(edited)
         val body = activity.column().apply { setPadding(activity.dp(8), 0, activity.dp(8), activity.dp(8)) }
         body.addView(activity.sectionTitle("Preview pronto", plan.summary()))
-        if (plan.warnings.isNotEmpty()) body.addView(activity.label(plan.warnings.joinToString("\n"), 11f, 0xFFFAFAF6.toInt()))
+        if (plan.warnings.isNotEmpty()) body.addView(activity.label(plan.warnings.joinToString("\n"), 11f, EditorStyle.TEXT))
         val compare = activity.row()
         compare.addView(activity.action("Original") { preview(original) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f).apply { rightMargin = activity.dp(4) })
         compare.addView(activity.action("Editado", true) { preview(edited) }, LinearLayout.LayoutParams(0, activity.dp(46), 1f).apply { leftMargin = activity.dp(4) })

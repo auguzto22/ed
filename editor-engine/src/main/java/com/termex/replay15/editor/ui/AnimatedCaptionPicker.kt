@@ -13,6 +13,8 @@ import com.termex.replay15.editor.captions.AnimatedCaptionStyle
 import com.termex.replay15.editor.captions.AnimatedCaptionStyles
 import com.termex.replay15.editor.domain.SubtitleWordCue
 import com.termex.replay15.editor.domain.TextClip
+import com.termex.replay15.editor.preview.ReferenceLoopDrawable
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 import com.termex.replay15.editor.render.TextLayout
 
 /**
@@ -69,6 +71,7 @@ object AnimatedCaptionPicker {
         fun paint(selected: String?) = tiles.forEach { (id, tile) ->
             val on = id == selected
             tile.background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                // Fundo escuro nos dois temas: é a prévia da legenda como ela fica sobre o vídeo.
                 setColor(0xFF0A0A0B.toInt())
                 setStroke(dp(if (on) 2 else 1), if (on) EditorStyle.ACTION else EditorStyle.BORDER)
                 cornerRadius = dp(12).toFloat()
@@ -83,6 +86,19 @@ object AnimatedCaptionPicker {
                     isClickable = true
                     isFocusable = true
                     clipToOutline = true
+                    // Legenda por cima do vídeo de referência tocando, levemente escurecido,
+                    // para ver como o estilo se lê sobre imagem de verdade.
+                    val backdrop = android.widget.ImageView(context).apply {
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    }
+                    addView(backdrop, FrameLayout.LayoutParams(-1, -1))
+                    ReferencePreviewFrames.withLoop(context) { frames ->
+                        if (frames != null) backdrop.setImageDrawable(ReferenceLoopDrawable(frames).apply {
+                            colorFilter = android.graphics.PorterDuffColorFilter(0x59000000, android.graphics.PorterDuff.Mode.SRC_ATOP)
+                            start()
+                        })
+                    }
                     addView(AnimatedCaptionPreview(context, style), FrameLayout.LayoutParams(-1, -1))
                     setOnClickListener {
                         paint(style.id)
@@ -93,7 +109,7 @@ object AnimatedCaptionPicker {
                 }
                 tiles += style.id to tile
                 cell.addView(tile, LinearLayout.LayoutParams(-1, dp(68)))
-                cell.addView(label(style.name, 11f, Color.WHITE).apply {
+                cell.addView(label(style.name, 11f, EditorStyle.TEXT).apply {
                     gravity = Gravity.CENTER; maxLines = 1; setPadding(0, dp(4), 0, 0)
                 }, LinearLayout.LayoutParams(-1, -2))
                 line.addView(cell, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), dp(3), dp(3), dp(6)) })
