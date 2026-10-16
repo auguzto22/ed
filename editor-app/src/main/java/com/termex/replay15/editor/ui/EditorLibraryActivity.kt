@@ -48,6 +48,11 @@ class EditorLibraryActivity : Activity() {
         PROJECTS, RECORDINGS, REPLAYS, SETTINGS
     }
 
+    /** Filtros da galeria do Início. */
+    private enum class GalleryFilter(val label: String) {
+        ALL("Todos"), VERTICAL("Verticais"), HORIZONTAL("Horizontais")
+    }
+
     private val io = Executors.newSingleThreadExecutor()
     private var currentTab = LibraryTab.PROJECTS
     /** Ferramenta a abrir no editor depois de escolher o vídeo ("auto_edit"); null = só abrir. */
@@ -60,6 +65,10 @@ class EditorLibraryActivity : Activity() {
     /** Versão da aparência com que a tela foi montada (-1 = não montou, ex.: portão de conta). */
     private var builtAppearance = -1
     private var lastRecordingsCount = 0
+    private var galleryFilter = GalleryFilter.ALL
+    /** Espaço ocupado pelos projetos salvos (só os arquivos do Blitz, não os vídeos originais). */
+    private var projectsBytes = 0L
+    private var lastProjectStore: ProjectStore? = null
 
     private lateinit var homeHero: LinearLayout
     private lateinit var containerSettings: LinearLayout
@@ -111,9 +120,10 @@ class EditorLibraryActivity : Activity() {
         listReplays = findViewById(R.id.listReplays)
 
         val pickVideoAction = View.OnClickListener { pendingOpenTool = null; openVideoPicker() }
-        findViewById<View>(R.id.btnNewProject).setOnClickListener(pickVideoAction)
         findViewById<View>(R.id.btnImportVideo).setOnClickListener(pickVideoAction)
-        findViewById<View>(R.id.btnHomeAutoEdit).setOnClickListener { pendingOpenTool = "auto_edit"; openVideoPicker() }
+        // Auto Edit: tela própria (vídeo, estilo, formato e opções) antes de abrir o editor.
+        findViewById<View>(R.id.btnHomeAutoEdit).setOnClickListener { openAutoEdit() }
+        renderFilters()
         // Perfil: visitante pode entrar/criar conta; com conta vai direto para Config. (dados da conta).
         findViewById<View>(R.id.btnProfile).setOnClickListener {
             if (AccountManager.isGuest(this) && !AccountManager.hasAccount(this)) {
@@ -127,15 +137,6 @@ class EditorLibraryActivity : Activity() {
                     .setNegativeButton("Agora não", null)
                     .show()
             } else showDockTab(DockTab.SETTINGS)
-        }
-
-        // "editar" em amarelo, como no título do canvas.
-        findViewById<TextView>(R.id.homeTitle).apply {
-            val full = "O que vamos editar hoje?"
-            val start = full.indexOf("editar")
-            text = android.text.SpannableString(full).apply {
-                setSpan(android.text.style.ForegroundColorSpan(BlitzColors.text), start, start + "editar".length, 0)
-            }
         }
 
         tabProjects.setOnClickListener { switchTab(LibraryTab.PROJECTS) }
@@ -185,7 +186,11 @@ class EditorLibraryActivity : Activity() {
             else -> LibraryTab.PROJECTS
         }
         switchTab(target)
-        DockNavigationHelper.bind(this, tab) { chosen ->
+        DockNavigationHelper.bind(
+            this, tab,
+            onNewClick = { pendingOpenTool = null; openVideoPicker() },
+            onAutoEditClick = { openAutoEdit() },
+        ) { chosen ->
             when (chosen) {
                 DockTab.HOME, DockTab.RECORD -> switchTab(LibraryTab.PROJECTS)
                 DockTab.RECORDINGS, DockTab.LIBRARY -> switchTab(LibraryTab.RECORDINGS)
@@ -202,6 +207,10 @@ class EditorLibraryActivity : Activity() {
             }
         }
         findViewById<ScrollView>(R.id.libraryScroll)?.scrollTo(0, 0)
+    }
+
+    private fun openAutoEdit() {
+        startActivity(Intent(this, AutoEditSetupActivity::class.java))
     }
 
     private fun openLatestProject() {
@@ -289,6 +298,9 @@ class EditorLibraryActivity : Activity() {
         io.execute {
             val projectStore = ProjectStore(File(filesDir, "editor-projects"))
             val projects = runCatching { projectStore.list() }.getOrDefault(emptyList())
+            val bytes = runCatching {
+                File(filesDir, "editor-projects").walkTopDown().filter { it.isFile }.sumOf { it.length() }
+            }.getOrDefault(0L)
 
             val recordings = mutableListOf<VideoItem>()
             val replays = mutableListOf<VideoItem>()
@@ -325,6 +337,8 @@ class EditorLibraryActivity : Activity() {
             runOnUiThread {
                 if (isDestroyed || isFinishing) return@runOnUiThread
                 lastProjects = projects
+                projectsBytes = bytes
+                lastProjectStore = projectStore
                 lastRecordingsCount = recordings.size
                 renderProjects(projects, projectStore)
                 renderRecordings(recordings)
@@ -335,38 +349,95 @@ class EditorLibraryActivity : Activity() {
         }
     }
 
+    /** Filtros Todos / Verticais / Horizontais (pílula branca no selecionado, como no canvas). */
+    private fun renderFilters() {
+        val row = findViewById<LinearLayout>(R.id.homeFilters) ?: return
+        row.removeAllViews()
+        GalleryFilter.entries.forEachIndexed { index, filter ->
+            val on = filter == galleryFilter
+            row.addView(TextView(this).apply {
+                text = filter.label
+                textSize = 13f
+                gravity = Gravity.CENTER
+                setPadding(dp(14), 0, dp(14), 0)
+                typeface = android.graphics.Typeface.create("sans-serif-medium",
+                    if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                setTextColor(if (on) BlitzColors.bg else BlitzColors.muted)
+                background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(BlitzColors.ripple),
+                    android.graphics.drawable.GradientDrawable().apply {
+                        cornerRadius = dp(18).toFloat()
+                        if (on) setColor(BlitzColors.text) else { setColor(Color.TRANSPARENT); setStroke(dp(1), BlitzColors.line) }
+                    }, null)
+                contentDescription = "Mostrar ${filter.label.lowercase()}" + if (on) ", selecionado" else ""
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    if (galleryFilter == filter) return@setOnClickListener
+                    galleryFilter = filter
+                    renderFilters()
+                    lastProjectStore?.let { store -> renderProjects(lastProjects, store) }
+                }
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT).apply {
+                if (index > 0) marginStart = dp(8)
+            })
+        }
+    }
+
+    private fun projectRatio(project: Project): Float {
+        val (w, h) = project.dimensions()
+        return w.coerceAtLeast(1).toFloat() / h.coerceAtLeast(1)
+    }
+
     private fun renderProjects(projects: List<Project>, projectStore: ProjectStore) {
         listProjects.removeAllViews()
+        val filters = findViewById<View>(R.id.homeFilters)?.parent as? View
         if (projects.isEmpty()) {
             cardEmptyProjects.visibility = View.VISIBLE
             listProjects.visibility = View.GONE
-            findViewById<View>(R.id.recentHint).visibility = View.GONE
+            filters?.visibility = View.GONE
             return
         }
         cardEmptyProjects.visibility = View.GONE
         listProjects.visibility = View.VISIBLE
-        findViewById<View>(R.id.recentHint).visibility = View.VISIBLE
+        filters?.visibility = View.VISIBLE
 
-        // Grade de duas colunas, como em "Recentes" no canvas.
-        projects.chunked(2).forEachIndexed { rowIndex, pair ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = dp(14) }
-            }
-            pair.forEachIndexed { column, project ->
-                val tile = buildProjectTile(project, rowIndex * 2 + column, projectStore)
-                row.addView(tile, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    if (column == 0) marginEnd = dp(7) else marginStart = dp(7)
-                })
-            }
-            if (pair.size == 1) {
-                row.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f).apply { marginStart = dp(7) })
-            }
-            listProjects.addView(row)
+        val sorted = projects.sortedByDescending { it.modifiedAt }
+        val shown = when (galleryFilter) {
+            GalleryFilter.ALL -> sorted
+            GalleryFilter.VERTICAL -> sorted.filter { projectRatio(it) < 1f }
+            GalleryFilter.HORIZONTAL -> sorted.filter { projectRatio(it) >= 1f }
         }
+        if (shown.isEmpty()) {
+            listProjects.addView(TextView(this).apply {
+                text = if (galleryFilter == GalleryFilter.VERTICAL) "Nenhum projeto vertical" else "Nenhum projeto horizontal"
+                setTextColor(BlitzColors.muted)
+                textSize = 13f
+                gravity = Gravity.CENTER
+                setPadding(0, dp(32), 0, dp(32))
+            }, LinearLayout.LayoutParams(-1, -2))
+            return
+        }
+
+        // Galeria em mosaico (duas colunas independentes): vertical alto, horizontal baixo.
+        // Cada cartão entra na coluna mais curta, como na direção C do canvas.
+        val columns = listOf(LinearLayout(this), LinearLayout(this)).onEach { it.orientation = LinearLayout.VERTICAL }
+        val heights = intArrayOf(0, 0)
+        shown.forEachIndexed { index, project ->
+            val ratio = projectRatio(project)
+            val thumbHeight = when {
+                ratio < 0.8f -> dp(250)
+                ratio <= 1.25f -> dp(170)
+                else -> dp(120)
+            }
+            val column = if (heights[0] <= heights[1]) 0 else 1
+            val tile = buildProjectTile(project, index, projectStore, thumbHeight)
+            columns[column].addView(tile, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            heights[column] += thumbHeight + dp(40)
+        }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        row.addView(columns[0], LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(6) })
+        row.addView(columns[1], LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(6) })
+        listProjects.addView(row, LinearLayout.LayoutParams(-1, -2))
     }
 
     /**
@@ -374,7 +445,7 @@ class EditorLibraryActivity : Activity() {
      * um fundo desfocado do próprio quadro), proporção, duração, nome e quando foi editado.
      * Toque abre; toque longo ou o botão ⋯ abrem as opções (renomear, duplicar, excluir).
      */
-    private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore): View {
+    private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore, thumbHeight: Int): View {
         val tones = BlitzColors.tileTones
         val chipFill = Color.parseColor("#CC0F0F11")
         val line = BlitzColors.line
@@ -395,7 +466,7 @@ class EditorLibraryActivity : Activity() {
         val thumb = android.widget.FrameLayout(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(tones[index % tones.size])
-                cornerRadius = dp(16).toFloat()
+                cornerRadius = dp(18).toFloat()
             }
             clipToOutline = true
             outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
@@ -490,22 +561,16 @@ class EditorLibraryActivity : Activity() {
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
-        val whenText = TextView(this).apply {
-            text = editedLabel(project.modifiedAt)
-            setTextColor(BlitzColors.muted)
-            textSize = 12f
-        }
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             isClickable = true
             isFocusable = true
-            contentDescription = project.name
+            contentDescription = "${project.name}, ${editedLabel(project.modifiedAt)}"
             foreground = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(BlitzColors.ripple), null,
                 android.graphics.drawable.GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(16).toFloat() })
-            addView(thumb, LinearLayout.LayoutParams(-1, dp(168)))
-            addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-            addView(whenText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(1) })
+            addView(thumb, LinearLayout.LayoutParams(-1, thumbHeight))
+            addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
             setOnClickListener {
                 startActivity(Intent(this@EditorLibraryActivity, EditorActivity::class.java).putExtra("project", project.id))
             }
@@ -758,31 +823,23 @@ class EditorLibraryActivity : Activity() {
         return root
     }
 
-    /** Canto de cima à esquerda: saudação pela hora do dia e o nome da conta; inicial no perfil. */
+    /** Perfil no canto de cima: inicial de quem entrou ("?" sem conta). */
     private fun renderHeader() {
         val session = AccountManager.session(this)
         val name = session?.displayName?.replaceFirstChar { it.titlecase() } ?: "Visitante"
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val greeting = when (hour) {
-            in 5..11 -> "BOM DIA"
-            in 12..17 -> "BOA TARDE"
-            else -> "BOA NOITE"
-        }
-        findViewById<TextView>(R.id.homeGreeting).text = greeting
-        findViewById<TextView>(R.id.homeUserName).text = name
         // Antes a letra "M" era fixa no layout; agora é a inicial de quem entrou.
         findViewById<TextView>(R.id.btnProfile).text =
             if (session != null) name.first().uppercase() else "?"
     }
 
-    /** "3 projetos" logo abaixo do nome. */
+    /** "7 projetos · 1,2 GB usados" logo abaixo de "Seus projetos". */
     private fun renderStats() {
         val stats = findViewById<TextView>(R.id.homeStats)
-        val parts = mutableListOf<String>()
         val p = lastProjects.size
-        if (p > 0) parts += if (p == 1) "1 projeto" else "$p projetos"
-        stats.text = parts.joinToString(" · ")
-        stats.visibility = if (parts.isEmpty()) View.GONE else View.VISIBLE
+        stats.text = if (p == 0) "Nenhum projeto ainda" else buildString {
+            append(if (p == 1) "1 projeto" else "$p projetos")
+            if (projectsBytes > 0) append(" · ").append(android.text.format.Formatter.formatShortFileSize(this@EditorLibraryActivity, projectsBytes)).append(" usados")
+        }
     }
 
     /**

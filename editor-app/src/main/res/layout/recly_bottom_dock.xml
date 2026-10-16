@@ -8,14 +8,17 @@
     android:layout_height="wrap_content"
     android:layout_gravity="bottom"
     android:background="@drawable/home_bottom_bar"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:orientation="vertical"
     tools:ignore="UseAppTint">
 
-    <!-- Container dos 4 itens da barra de navegação -->
+    <!-- Itens da barra: Início, Editor, + (novo projeto, saltado no meio), Auto Edit e Config. -->
     <LinearLayout
         android:id="@+id/bottomDock"
         android:layout_width="match_parent"
         android:layout_height="64dp"
+        android:clipChildren="false"
         android:gravity="center"
         android:orientation="horizontal">
 
@@ -113,7 +116,66 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- 4. Configurações -->
+        <!-- 4. Botão do meio: novo projeto (círculo vermelho saltado acima da barra) -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clipChildren="false">
+
+            <FrameLayout
+                android:id="@+id/navNew"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginTop="-18dp"
+                android:background="@drawable/home_nav_new"
+                android:clickable="true"
+                android:contentDescription="Novo projeto"
+                android:elevation="6dp"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_canvas_plus"
+                    android:tint="#FFFFFF" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <!-- 5. Auto Edit (atalho; o raio fica sempre vermelho) -->
+        <LinearLayout
+            android:id="@+id/navAutoEdit"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Auto Edit"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_canvas_bolt"
+                android:tint="#FFE5163A" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Auto Edit"
+                android:textColor="@color/blitz_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- 6. Configurações -->
         <LinearLayout
             android:id="@+id/navSettings"
             android:layout_width="0dp"

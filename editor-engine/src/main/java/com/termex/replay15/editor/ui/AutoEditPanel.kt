@@ -101,6 +101,21 @@ class AutoEditPanel(
         dialog = activity.sheet("Auto Edit", body)
     }
 
+    /**
+     * Roda o Auto Edit no clipe selecionado com opções já escolhidas (tela Auto Edit do Início),
+     * sem abrir a folha de opções. O resultado aparece na mesma prévia de sempre (Aplicar / Gerar
+     * outra versão / Cancelar).
+     */
+    fun run(options: AutoEditOptions) {
+        val snapshot = project()
+        val index = selectedIndex()
+        val clip = snapshot.videos.getOrNull(index) ?: run {
+            Toast.makeText(activity, "Selecione um clipe existente", Toast.LENGTH_SHORT).show(); return
+        }
+        val words = ClipAnalyzer.wordsFromCaptions(snapshot.texts, snapshot.startOf(index), clip.durationUs)
+        generate(snapshot, index, words, options)
+    }
+
     private class Choice(var index: Int)
 
     /** Cartão "Referência" do canvas: etiqueta azul, título, linha de apoio e o botão para trocar. */
