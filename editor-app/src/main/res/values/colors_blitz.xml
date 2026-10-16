@@ -22,4 +22,8 @@
     <color name="blitz_control">#FF9A968C</color>
     <color name="blitz_hint">#FF6E6B64</color>
     <color name="blitz_picker_nav">#FF0B0B0C</color>
+    <!-- Cartão do Auto Edit no Início -->
+    <color name="blitz_autoedit_bg">#FF1F0A0E</color>
+    <color name="blitz_autoedit_line">#FF5A1420</color>
+    <color name="blitz_autoedit_hint">#FFFF9AAA</color>
 </resources>

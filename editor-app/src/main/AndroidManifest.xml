@@ -49,6 +49,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Auto Edit do Início: vídeo, estilo, formato e opções antes de abrir o editor -->
+        <activity
+            android:name="com.termex.replay15.editor.ui.AutoEditSetupActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Replay15.Editor" />
+
         <!-- Conta (Supabase): cadastro na primeira abertura, login, recuperar senha -->
         <activity
             android:name="com.termex.replay15.account.AuthActivity"

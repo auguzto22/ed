@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/blitz_bg"
+    android:clipChildren="false"
     tools:ignore="UseAppTint">
 
     <ScrollView
@@ -22,11 +23,19 @@
             android:paddingTop="22dp"
             android:paddingBottom="108dp">
 
-            <!-- Cabeçalho: saudação com o nome da conta à esquerda e o perfil à direita -->
+            <!-- Início (direção C do canvas "Blitz – Tela inicial"): título "Seus projetos", cartão
+                 do Auto Edit e filtros. Some nas abas Gravações e Config. -->
+            <LinearLayout
+                android:id="@+id/homeHero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <!-- Cabeçalho: título e contagem à esquerda, perfil à direita -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
+                android:gravity="top"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -36,36 +45,23 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/homeGreeting"
+                        android:id="@+id/homeTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.08"
-                        android:text="BOA TARDE"
-                        android:textColor="@color/blitz_muted"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/homeUserName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
                         android:fontFamily="sans-serif-black"
-                        android:maxLines="1"
-                        android:text="Visitante"
+                        android:letterSpacing="-0.02"
+                        android:text="Seus projetos"
                         android:textColor="@color/blitz_text"
-                        android:textSize="18sp" />
+                        android:textSize="30sp" />
 
                     <TextView
                         android:id="@+id/homeStats"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text=""
-                        android:textColor="@color/blitz_faint"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
+                        android:layout_marginTop="4dp"
+                        android:text="Nenhum projeto ainda"
+                        android:textColor="@color/blitz_muted"
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <TextView
@@ -84,116 +80,81 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Bloco do Início (título, atalhos). Some nas abas Gravações e Config. -->
+            <!-- Cartão do Auto Edit: abre a tela de configurar a edição automática -->
             <LinearLayout
-                android:id="@+id/homeHero"
+                android:id="@+id/btnHomeAutoEdit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_marginTop="18dp"
+                android:background="@drawable/home_autoedit_card"
+                android:clickable="true"
+                android:contentDescription="Auto Edit: escolha um vídeo e a IA monta o corte"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
 
-            <!-- Título (a palavra "editar" fica amarela, definida no código) -->
-            <TextView
-                android:id="@+id/homeTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:fontFamily="sans-serif-black"
-                android:letterSpacing="-0.03"
-                android:lineSpacingMultiplier="0.95"
-                android:text="O que vamos editar hoje?"
-                android:textColor="@color/blitz_text"
-                android:textSize="34sp" />
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/home_autoedit_icon">
 
-            <!-- Dois blocos: Novo projeto e Auto Edit -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="128dp"
-                android:layout_marginTop="20dp"
-                android:orientation="horizontal">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_canvas_bolt"
+                        android:tint="#FFFFFF" />
+                </FrameLayout>
 
                 <LinearLayout
-                    android:id="@+id/btnNewProject"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="6dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:background="@drawable/home_tile_primary"
-                    android:clickable="true"
-                    android:contentDescription="Novo projeto"
-                    android:focusable="true"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <FrameLayout
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@drawable/home_icon_chip_light">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_gravity="center"
-                            android:importantForAccessibility="no"
-                            android:src="@drawable/ic_canvas_plus" />
-                    </FrameLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-black"
-                        android:lineSpacingMultiplier="0.95"
-                        android:text="Novo\nprojeto"
-                        android:textColor="#FFFFFF"
-                        android:textSize="19sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/btnHomeAutoEdit"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/home_tile_surface"
-                    android:clickable="true"
-                    android:contentDescription="Auto Edit"
-                    android:focusable="true"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <FrameLayout
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@drawable/home_icon_chip_accent">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="center"
-                            android:importantForAccessibility="no"
-                            android:src="@drawable/ic_canvas_bolt"
-                            android:tint="#D7263D" />
-                    </FrameLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:lineSpacingMultiplier="0.95"
-                        android:text="Auto\nEdit"
+                        android:text="Auto Edit"
                         android:textColor="@color/blitz_text"
-                        android:textSize="19sp" />
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Escolha um vídeo e a IA monta o corte"
+                        android:textColor="@color/blitz_autoedit_hint"
+                        android:textSize="12sp" />
                 </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_pro_chevron_right"
+                    android:tint="@color/blitz_autoedit_hint" />
             </LinearLayout>
+
+            <!-- Filtros da galeria (montados no código: Todos, Verticais, Horizontais) -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:overScrollMode="never"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/homeFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
 
             </LinearLayout>
 
@@ -214,7 +175,7 @@
                 android:id="@+id/containerProjects"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="16dp"
                 android:orientation="vertical">
 
                 <TextView
@@ -226,7 +187,8 @@
                     android:letterSpacing="-0.02"
                     android:text="Recentes"
                     android:textColor="@color/blitz_text"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/recentHint"

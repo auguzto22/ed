@@ -321,7 +321,10 @@ class EditorActivity : Activity() {
         }
         val retained = lastNonConfigurationInstance as? Session
         // Atalho da tela Início (Auto Edit): abre a ferramenta depois que o vídeo é importado.
-        if (retained == null && savedInstanceState == null) pendingOpenTool = intent.getStringExtra("open_tool")
+        if (retained == null && savedInstanceState == null) {
+            pendingOpenTool = intent.getStringExtra("open_tool")
+            pendingAutoEdit = AutoEditLaunch.from(intent)
+        }
         replaceIndex = retained?.replace ?: savedInstanceState?.getInt("replace", -1) ?: -1
         replaceStickerId = retained?.stickerReplace ?: savedInstanceState?.getString("stickerReplace")
         pendingLutClipId = savedInstanceState?.getString("lutClip")
@@ -641,6 +644,8 @@ class EditorActivity : Activity() {
     }
 
     private var pendingOpenTool: String? = null
+    /** Escolhas da tela Auto Edit do Início: roda direto, sem abrir a folha de opções. */
+    private var pendingAutoEdit: AutoEditLaunch? = null
 
     /** Estilo de legenda animada da sessão (usado ao gerar legendas e como seleção do painel). */
     private var captionAnimatedStyleId = "karaoke"
@@ -653,7 +658,22 @@ class EditorActivity : Activity() {
         main.post {
             if (isDestroyed) return@post
             when (tool) {
-                "auto_edit" -> if (selectedClip() != null) autoEditPanel.open()
+                "auto_edit" -> {
+                    val launch = pendingAutoEdit
+                    pendingAutoEdit = null
+                    if (selectedClip() == null) return@post
+                    if (launch == null) { autoEditPanel.open(); return@post }
+                    // 1:1 e 16:9: troca a tela antes (o Auto Edit mantém essa proporção). 9:16 fica
+                    // com o Auto Reframe do próprio Auto Edit; Original não mexe.
+                    val ratio = launch.format.ratio
+                    if (launch.format != AutoEditLaunch.Format.VERTICAL && ratio > 0f && project.aspect != ratio) {
+                        val sourceRatio = project.copy(aspect = 0f).dimensions().let { (w, h) -> w.toFloat() / h }
+                        // Mesma orientação: preenche (corta só as bordas). Orientação oposta: ajusta, sem cortar o assunto.
+                        val sameOrientation = (sourceRatio >= 1f) == (ratio >= 1f)
+                        edit(project.copy(aspect = ratio, canvasFill = if (sameOrientation || ratio == 1f) CanvasFill.FILL else CanvasFill.FIT))
+                    }
+                    autoEditPanel.run(launch.options())
+                }
             }
         }
     }

@@ -52,6 +52,10 @@ object DockNavigationHelper {
         activity: Activity,
         currentTab: DockTab,
         onRecordClick: (() -> Unit)? = null,
+        /** Botão "+" do meio da barra (novo projeto). Sem ação, o botão some. */
+        onNewClick: (() -> Unit)? = null,
+        /** Atalho Auto Edit da barra. Sem ação, o item some. */
+        onAutoEditClick: (() -> Unit)? = null,
         onTabChanged: ((DockTab) -> Unit)? = null
     ) {
         // A barra encosta na borda de baixo; o espaço dos botões do sistema vira padding interno.
@@ -83,6 +87,16 @@ object DockNavigationHelper {
                 onTabChanged?.invoke(tab)
             }
         }
+        // Ações (não são abas): não mudam o item marcado.
+        activity.findViewById<View>(R.id.navNew)?.let { button ->
+            (button.parent as? View)?.visibility = if (onNewClick != null) View.VISIBLE else View.GONE
+            button.setOnClickListener { onNewClick?.invoke() }
+        }
+        activity.findViewById<View>(R.id.navAutoEdit)?.let { item ->
+            item.visibility = if (onAutoEditClick != null) View.VISIBLE else View.GONE
+            item.setOnClickListener { onAutoEditClick?.invoke() }
+        }
+
         wire(navHome, DockTab.HOME)
         wire(navRecordings, DockTab.RECORDINGS)
         wire(navEditor, DockTab.EDITOR)
