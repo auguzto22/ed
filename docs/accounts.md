@@ -17,20 +17,30 @@ excluída, senha trocada, sessão revogada) ou quando a pessoa toca em "Sair da 
 | `account/AuthActivity.kt` + `layout/activity_auth.xml` | Tela única com os modos criar conta, entrar, recuperar senha e confirmar e-mail. |
 | `account/AccountGate.kt` | Portão usado pela tela inicial e pelo editor: sem conta, abre o cadastro e volta para onde a pessoa ia. |
 
-## 1. Criar o projeto no Supabase
+## 1. Projeto no Supabase
 
-1. Crie o projeto em https://supabase.com e abra **Project Settings › API**.
-2. Copie a **Project URL** e a chave **anon public** para o `local.properties` na raiz do repositório
-   (esse arquivo não vai para o git):
+O projeto oficial já está configurado: `SUPABASE_URL` e `SUPABASE_ANON_KEY` ficam no
+`gradle.properties` da raiz e o app usa esses valores sem nenhum passo manual. O banco é criado pelas
+migrations em `supabase/migrations/` (já aplicadas no projeto oficial):
 
-   ```properties
-   SUPABASE_URL=https://SEU-PROJETO.supabase.co
-   SUPABASE_ANON_KEY=eyJ...
-   GOOGLE_WEB_CLIENT_ID=123456789-abc.apps.googleusercontent.com
-   ```
+| Migration | O que faz |
+|---|---|
+| `…01_delete_user.sql` | Função `delete_user()` usada por **Ajustes › Excluir conta**. |
+| `…02_profiles.sql` | Tabela `profiles` (nome e foto), criada sozinha no cadastro e apagada junto com a conta. RLS: cada pessoa só lê e edita o próprio perfil. |
+| `…03_lock_rls_auto_enable.sql` | Fecha a função padrão `rls_auto_enable()` para quem chama pela API. |
 
-   Também funciona com `-PSUPABASE_URL=...` no Gradle ou no CI. A chave anon é pública por
-   desenho; o que protege os dados são as políticas RLS. **Nunca** coloque a chave `service_role` no app.
+Para apontar para outro projeto (ou um Supabase local), coloque no `local.properties`, que tem
+prioridade e não vai para o git:
+
+```properties
+SUPABASE_URL=https://SEU-PROJETO.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+GOOGLE_WEB_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+```
+
+Num projeto novo, rode as migrations em ordem (SQL Editor ou `supabase db push`). A chave anon é
+pública por desenho; o que protege os dados são as políticas RLS. **Nunca** coloque a chave
+`service_role` no app.
 
 Um build **release** sem esses dois valores falha de propósito (senão ninguém conseguiria entrar).
 
@@ -85,50 +95,17 @@ Os modelos de e-mail ficam em **Authentication › Email Templates** (dá para t
 ## 4. Excluir conta (exigido pelo Google Play)
 
 O Play exige que apps com cadastro permitam excluir a conta pelo app. O botão está em
-**Ajustes › Excluir conta** e chama esta função. Rode uma vez em **SQL Editor**:
-
-```sql
-create or replace function public.delete_user()
-returns void
-language sql
-security definer
-set search_path = public
-as $$
-  delete from auth.users where id = auth.uid();
-$$;
-
-revoke all on function public.delete_user() from public, anon;
-grant execute on function public.delete_user() to authenticated;
-```
+**Ajustes › Excluir conta** e chama a função `delete_user()` (migration `…01_delete_user.sql`).
 
 Sem essa função o app avisa "A exclusão de conta ainda não foi ativada no servidor". O Play também
 pede um link na web para pedir a exclusão; ele vai na ficha da loja.
 
-## 5. Perfil (opcional)
+## 5. Perfil
 
-O nome digitado no cadastro vai em `user_metadata.full_name`. Se quiser uma tabela de perfis:
-
-```sql
-create table public.profiles (
-  id uuid primary key references auth.users on delete cascade,
-  full_name text,
-  created_at timestamptz default now()
-);
-alter table public.profiles enable row level security;
-create policy "dono lê" on public.profiles for select using (auth.uid() = id);
-create policy "dono edita" on public.profiles for update using (auth.uid() = id);
-
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.profiles (id, full_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'));
-  return new;
-end; $$;
-
-create trigger on_auth_user_created after insert on auth.users
-for each row execute procedure public.handle_new_user();
-```
+O nome digitado no cadastro vai em `user_metadata.full_name` e o trigger `on_auth_user_created`
+copia para `public.profiles` (no login com Google usa `name` e `picture`). Para ler o perfil pelo app:
+`GET /rest/v1/profiles?select=*` com `apikey` e `Authorization: Bearer <access token>`; a RLS já
+devolve só a linha da pessoa.
 
 ## Usar a conta em outros serviços
 
