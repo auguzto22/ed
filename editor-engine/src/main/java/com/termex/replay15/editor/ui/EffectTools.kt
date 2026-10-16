@@ -22,7 +22,6 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
     private val repository = AssetRepository(activity)
     private val worker = Executors.newSingleThreadExecutor()
     @Volatile private var closed = false
-    private var download: AssetDownloadManager? = null
     private sealed interface Target {
         data class Clip(val id: String) : Target
         data class Adjustment(val id: String) : Target
@@ -58,7 +57,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         }
     }
     private fun reopen(target: Target) = when (target) {
-        is Target.Clip -> open(target.id)
+        is Target.Clip -> manage(target.id)
         is Target.Adjustment -> openAdjustment(target.id)
     }
     private fun sourceAt(clipId: String): Long {
@@ -70,14 +69,18 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         } }
         error("Clipe não encontrado")
     }
-    fun open(clipId: String): Unit = with(activity) {
+    /** Botão "Efeitos" da barra: vai direto para os presets, que é o que mais se usa. */
+    fun open(clipId: String) { presets(clipId) }
+
+    /** "Mais efeitos": biblioteca completa, filtros de cor e os efeitos já aplicados no clipe. */
+    fun manage(clipId: String): Unit = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with
         val body = column(); lateinit var dialog: Dialog
-        body.addView(sectionTitle("Pilha de efeitos", "Processados de cima para baixo. Todos entram na prévia e na exportação."))
+        if (clip.effects.size < 12) body.addRow(listRow("Biblioteca de efeitos", "Glitch, luz, distorção e mais") { dialog.dismiss(); library(clipId) })
         openFilters?.let { opener ->
-            body.addRow(listRow("Filtros de cor", "Looks com prévia real no vídeo") { dialog.dismiss(); opener(clipId) })
+            body.addRow(listRow("Filtros de cor", "Looks prontos para o vídeo") { dialog.dismiss(); opener(clipId) })
         }
-        body.addRow(listRow("Presets de efeitos", "Combinações prontas com prévia real") { dialog.dismiss(); presets(clipId) })
+        if (clip.effects.isNotEmpty()) body.addView(sectionTitle("Aplicados", ""))
         if (clip.effects.isNotEmpty()) body.addView(action("Comparar sem efeitos (bypass)") {
             previewApply(project().mapVideo(clipId) { current -> current.copy(effects = current.effects.map { it.copy(enabled = false) }) })
         })
@@ -85,23 +88,18 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             val name = runCatching { repository.resolve(effect.assetId, effect.version).first.name }.getOrDefault(effect.assetId)
             body.addView(action("${index + 1}. $name ${if (effect.enabled) "" else "(desligado)"}") { dialog.dismiss(); parameters(Target.Clip(clipId), effect) })
             val controls = row()
-            controls.addView(action(if (effect.enabled) "Desligar" else "Ligar") { change(clipId, clip.effects.map { if (it.id == effect.id) it.copy(enabled = !it.enabled) else it }); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            if (index > 0) controls.addView(action("Subir") { val effects = clip.effects.toMutableList(); effects.add(index - 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            if (index < clip.effects.lastIndex) controls.addView(action("Descer") { val effects = clip.effects.toMutableList(); effects.add(index + 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            controls.addView(action("Excluir") { change(clipId, clip.effects.filter { it.id != effect.id }); dialog.dismiss(); open(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            controls.addView(action(if (effect.enabled) "Desligar" else "Ligar") { change(clipId, clip.effects.map { if (it.id == effect.id) it.copy(enabled = !it.enabled) else it }); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            if (index > 0) controls.addView(action("Subir") { val effects = clip.effects.toMutableList(); effects.add(index - 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            if (index < clip.effects.lastIndex) controls.addView(action("Descer") { val effects = clip.effects.toMutableList(); effects.add(index + 1, effects.removeAt(index)); change(clipId, effects); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            controls.addView(action("Excluir") { change(clipId, clip.effects.filter { it.id != effect.id }); dialog.dismiss(); manage(clipId) }, LinearLayout.LayoutParams(0, dp(48), 1f))
             body.addView(controls)
             if (clip.effects.size < 12) body.addView(action("Duplicar $name") {
                 val duplicate = effect.copy(id = newId())
                 val effects = clip.effects.toMutableList().apply { add(index + 1, duplicate) }
-                change(clipId, effects); dialog.dismiss(); open(clipId)
+                change(clipId, effects); dialog.dismiss(); manage(clipId)
             })
         }
-        presetIntensityControls(body, Target.Clip(clipId), clip.effects) { dialog.dismiss(); open(clipId) }
-        if (clip.effects.size < 12) body.addView(action("Adicionar efeito", true) { dialog.dismiss(); library(clipId) })
-        if (clip.effects.size < 12) body.addView(action("Presets compostos (com prévia real)") { dialog.dismiss(); presets(clipId) })
-        body.addView(action("Camadas de ajuste") { dialog.dismiss(); adjustments() })
-        body.addView(action("Importar pacote .reclyfx") { dialog.dismiss(); pickPackage() })
-        body.addView(action("Abrir catálogo HTTPS") { dialog.dismiss(); online() })
+        presetIntensityControls(body, Target.Clip(clipId), clip.effects) { dialog.dismiss(); manage(clipId) }
         dialog = sheet("Efeitos", body)
         dialog.setOnDismissListener { previewApply(project()) }
     }
@@ -280,6 +278,9 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             activity = this,
             clip = clip,
             sessionTimestampUs = sessionTimestampUs,
+            moreSubtitle = if (clip.effects.isEmpty()) "Biblioteca e filtros de cor"
+                else "${clip.effects.size} aplicado${if (clip.effects.size > 1) "s" else ""} neste clipe",
+            onMore = { stopLoop(); previewApply(project()); manage(clipId) },
             onPreview = { preset, intensity ->
                 val range = if (preset.category.equals("Gaming", true) && clip.outUs - clip.inUs >= 100_000L) {
                     val start = sessionTimestampUs.coerceIn(clip.inUs, (clip.outUs - 100_000L).coerceAtLeast(clip.inUs))
@@ -324,7 +325,6 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                         )
                     }
                     change(clipId, clip.effects + added)
-                    open(clipId)
                 }
             }
         )
@@ -535,41 +535,5 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
             activity.runOnUiThread { result.fold({ report("Efeito instalado: ${it.name}") }, { report("Pacote recusado: ${it.message}") }) }
         }
     }
-    private fun online() = with(activity) {
-        val input = EditText(this).apply { hint = "https://seu-servidor/catalogo.json"; isSingleLine = true }
-        AlertDialog.Builder(this).setTitle("Catálogo de efeitos").setMessage("Informe o endereco de um catálogo Blitz. Nenhum vídeo será enviado.")
-            .setView(input).setNegativeButton("Cancelar", null).setPositiveButton("Abrir") { _, _ ->
-                val manager = AssetDownloadManager(); download?.cancelled?.set(true); download = manager
-                val url = input.text.toString().trim()
-                worker.execute {
-                    val result = runCatching { manager.catalog(url) }
-                    runOnUiThread { if (!closed) result.fold(::onlineList, { report("Catálogo indisponível: ${it.message}") }) }
-                }
-            }.show()
-    }
-    private fun onlineList(assets: List<OnlineAsset>) = with(activity) {
-        val body = column()
-        val status = label("Toque em um pacote para baixar", 13f, EditorStyle.MUTED).apply { setPadding(dp(2), dp(4), dp(2), dp(8)) }
-        body.addView(status)
-        var downloading = false
-        val manager = AssetDownloadManager(); download = manager
-        if (assets.isEmpty()) body.addView(emptyState("Nenhum pacote neste catálogo."))
-        assets.forEach { asset ->
-            body.addRow(listRow(asset.name, "${asset.bytes / 1024} KB") {
-                if (!downloading) {
-                    downloading = true
-                    manager.cancelled.set(false)
-                    worker.execute {
-                        val file = File.createTempFile("download-", ".reclyfx", cacheDir)
-                        val result = runCatching { manager.download(asset, file) { percent -> runOnUiThread { if (!closed) status.text = "${asset.name}: $percent%" } }; repository.install(file, asset) }
-                        file.delete()
-                        runOnUiThread { downloading = false; if (!closed) status.text = result.fold({ "Instalado: ${it.name}" }, { "Falha: ${it.message}" }) }
-                    }
-                }
-            })
-        }
-        body.addView(action("Cancelar download") { manager.cancelled.set(true) })
-        sheet("Catálogo online", body)
-    }
-    override fun close() { closed = true; download?.cancelled?.set(true); worker.shutdownNow() }
+    override fun close() { closed = true; worker.shutdownNow() }
 }
