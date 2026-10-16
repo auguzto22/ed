@@ -314,7 +314,7 @@ class EditorActivity : Activity() {
             getSystemService(PowerManager::class.java)?.addThermalStatusListener(thermalListener)
         }
         val retained = lastNonConfigurationInstance as? Session
-        // Atalhos da tela Início (Auto Edit / Analisar): abrem a ferramenta depois que o vídeo é importado.
+        // Atalho da tela Início (Auto Edit): abre a ferramenta depois que o vídeo é importado.
         if (retained == null && savedInstanceState == null) pendingOpenTool = intent.getStringExtra("open_tool")
         replaceIndex = retained?.replace ?: savedInstanceState?.getInt("replace", -1) ?: -1
         replaceStickerId = retained?.stickerReplace ?: savedInstanceState?.getString("stickerReplace")
@@ -443,22 +443,6 @@ class EditorActivity : Activity() {
             setOnClickListener { projectMenu() }
         }
         addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
-
-        // Analisar (canvas): contorno azul-acinzentado, abre as análises que já existem no editor.
-        val analyzeBtn = action("Analisar") { analyzeMenu() }.apply {
-            contentDescription = "Analisar vídeo"
-            tooltipText = "Analisar vídeo"
-            minWidth = dp(74); minimumWidth = dp(74)
-            minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(10), dp(2), dp(10), dp(2))
-            setTextColor(0xFFFAFAF6.toInt())
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1.5f), EditorStyle.VIDEO)
-                cornerRadius = dp(10).toFloat()
-            }, null)
-        }
-        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(6), 0) })
 
         // Export button (vermelho de ação, texto escuro)
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
@@ -656,18 +640,8 @@ class EditorActivity : Activity() {
             if (isDestroyed) return@post
             when (tool) {
                 "auto_edit" -> if (selectedClip() != null) autoEditPanel.open()
-                "analyze" -> analyzeMenu()
             }
         }
-    }
-
-    /**
-     * Botão "Analisar" do canvas: abre a tela do Auto Edit, onde ficam o cartão de referência,
-     * os presets e as opções. "Melhores momentos" fica no menu das legendas.
-     */
-    private fun analyzeMenu() {
-        // Sem clipe selecionado o painel avisa ("Selecione um clipe"), em vez de não fazer nada.
-        autoEditPanel.open()
     }
 
     /**
