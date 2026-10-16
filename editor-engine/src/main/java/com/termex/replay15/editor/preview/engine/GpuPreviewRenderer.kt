@@ -535,7 +535,10 @@ class GpuPreviewRenderer(
             // Make sure a paused preview re-evaluates once the bound expires.
             handler.postDelayed({ requestRender() }, MAX_HOLD_NS / 1_000_000L + 1L)
         }
-        if (now - holdSinceNs < MAX_HOLD_NS) return true
+        // Todos os vídeos ainda mostram a busca anterior: desenhar agora só daria o fundo preto.
+        // Com GOP longo a busca passa de 400 ms; segura o último quadro bom até o limite do decoder.
+        val holdLimitNs = if (noneReady && seekInFlight) MAX_SEEK_HOLD_NS else MAX_HOLD_NS
+        if (now - holdSinceNs < holdLimitNs) return true
         holdExpired = true
         return false
     }
@@ -1015,6 +1018,8 @@ class GpuPreviewRenderer(
         private const val MISSED_FRAME_MS = 34.0
         /** Longest time a seek/transition may keep the previous frame on screen before drawing partially. */
         private const val MAX_HOLD_NS = 400_000_000L
+        /** Busca em andamento sem nenhum vídeo pronto: o decoder acusa erro em 5 s sem saída. */
+        private const val MAX_SEEK_HOLD_NS = 5_000_000_000L
         private val IDENTITY=floatArrayOf(1f,0f,0f,0f,0f,1f,0f,0f,0f,0f,1f,0f,0f,0f,0f,1f)
         private val FBO_FLIP_Y=floatArrayOf(1f,0f,0f,0f,0f,-1f,0f,0f,0f,0f,1f,0f,0f,1f,0f,1f)
         private const val VERTEX="attribute vec2 aPosition; attribute vec2 aUv; uniform mat4 uMvp; uniform mat4 uTexMatrix; varying vec2 vUv; void main(){ gl_Position=uMvp*vec4(aPosition,0.,1.); vUv=(uTexMatrix*vec4(aUv,0.,1.)).xy; }"

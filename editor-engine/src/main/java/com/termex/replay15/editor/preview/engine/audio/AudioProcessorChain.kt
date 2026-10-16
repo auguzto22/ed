@@ -38,6 +38,11 @@ class AudioProcessorChain(
                 sonic.flush()
                 isConfigured = true
             }
+        } else {
+            // O Media3 só cria o Sonic interno (e só aplica speed/pitch novos) no flush, e só
+            // quando já não é 1x. Configurado em 1x e mudado depois sem flush, queueInput dava
+            // NullPointerException a cada bloco: o áudio com velocidade nunca tocava.
+            sonic.flush()
         }
     }
 

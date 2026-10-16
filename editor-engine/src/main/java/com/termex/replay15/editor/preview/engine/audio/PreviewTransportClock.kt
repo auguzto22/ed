@@ -17,12 +17,20 @@ class PreviewTransportClock(
     private var running = false
     private var lastAudioUs: Long? = null
     private var lastAudioAdvanceNs = 0L
+    /** Maior posição já entregue desde o último seek/start: o relógio tocando nunca anda para trás. */
+    private var lastReturnedUs = 0L
     val transportGeneration = AtomicLong(0L)
 
     @Synchronized
     fun positionUs(): Long {
         if (!running) return anchorUs
+        // O AudioTrack começa a contar uns 150 ms depois do play e informa a posição inicial.
+        // Aceitar isso fazia o relógio voltar: a prévia via um alvo para trás, o decoder fazia
+        // flush e voltava ao quadro-chave, e o vídeo travava. Segura até o áudio alcançar.
+        return monotonicPositionUs().coerceAtLeast(lastReturnedUs).also { lastReturnedUs = it }
+    }
 
+    private fun monotonicPositionUs(): Long {
         // 1. Audio Master Clock
         val fallbackUs = anchorUs + ((nowNs() - anchorNs) / 1_000L).coerceAtLeast(0)
         val now = nowNs()
@@ -65,6 +73,7 @@ class PreviewTransportClock(
         require(durationUs >= 0)
         anchorUs = positionUs().coerceAtMost(durationUs)
         anchorNs = nowNs()
+        lastReturnedUs = anchorUs
         this.durationUs = durationUs
         if (anchorUs >= durationUs) running = false
     }
@@ -74,6 +83,7 @@ class PreviewTransportClock(
         anchorUs = projectTimeUs.coerceIn(0, durationUs)
         anchorNs = nowNs()
         lastAudioUs = null
+        lastReturnedUs = anchorUs
         if (anchorUs >= durationUs) running = false
     }
 
@@ -82,6 +92,7 @@ class PreviewTransportClock(
         if (running || anchorUs >= durationUs) return
         anchorNs = nowNs()
         lastAudioAdvanceNs = anchorNs
+        lastReturnedUs = anchorUs
         running = true
     }
 

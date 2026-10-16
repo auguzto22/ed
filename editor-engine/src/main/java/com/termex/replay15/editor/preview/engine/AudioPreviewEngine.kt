@@ -153,7 +153,9 @@ class AudioPreviewEngine(context: Context, private val onError: (Throwable) -> U
                 if (!running.get()) break
             } catch (failure: Throwable) {
                 diagnostics.event("AUDIO_PIPELINE_ERROR ${failure.javaClass.simpleName}: ${failure.message}")
-                onError(failure); await(20L)
+                onError(failure)
+                // Fora do try: o close() interrompe a thread e a InterruptedException derrubava o app.
+                try { await(20L) } catch (_: InterruptedException) { if (!running.get()) break }
             }
         }
     }

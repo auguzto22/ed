@@ -55,7 +55,9 @@ class EditorPreviewEngine(
     private var projectSnapshot=ProjectSnapshot(projectRevision,project)
     private var generation=0L;private var closed=false;private var scrubbing=false
     @Volatile var state:State=State.EMPTY;private set
-    val isPlaying:Boolean get()=clock.isPlaying()
+    /** Play pedido durante uma busca: o relógio só parte quando o quadro dela aparece. */
+    private var playPending=false
+    val isPlaying:Boolean get()=playPending||clock.isPlaying()
     val playWhenReady:Boolean get()=isPlaying
     val isScrubbing:Boolean get()=scrubbing
     val positionUs:Long get()=clock.positionUs()
@@ -143,9 +145,17 @@ class EditorPreviewEngine(
     }
     fun beginScrub(){checkMain();if(scrubbing)return;scrubbing=true;pause();audio.beginScrub()}
     fun endScrub(finalPositionUs:Long,resumePlayback:Boolean?=null){checkMain();scrubbing=false;val target=finalPositionUs.coerceIn(0,project.durationUs);clock.seek(target);audio.endScrub();request(clock.positionUs(),SeekMailbox.Mode.PRECISE,true);if(resumePlayback==true)play() else if(resumePlayback==false)pause()}
-    fun play(){checkMain();if(closed||project.allVideos.isEmpty())return;if(clock.positionUs()>=project.durationUs)clock.seek(0);diagnostics.playRequested();audio.play(clock.positionUs());clock.start();state=State.PLAYING;cancelTick();scheduleTick()}
+    fun play(){
+        checkMain();if(closed||project.allVideos.isEmpty())return;if(clock.positionUs()>=project.durationUs)clock.seek(0);diagnostics.playRequested()
+        // Com GOP longo (vídeo do TikTok: quadro-chave a cada ~7 s) a busca leva quase 1 s. Se o
+        // relógio partisse já, o alvo do decoder andava junto, todo quadro ficava "atrasado" e a
+        // prévia segurava a imagem velha (depois preto) e pulava o trecho. Espera o quadro da busca.
+        if(presentedGeneration!=generation||seekScheduled){playPending=true;diagnostics.event("PLAY_DEFERRED generation=$generation");return}
+        startPlayback()
+    }
+    private fun startPlayback(){playPending=false;audio.play(clock.positionUs());clock.start();state=State.PLAYING;cancelTick();scheduleTick()}
     fun pause(){pause(false)}
-    private fun pause(keepPreparing:Boolean){checkMain();clock.pause();audio.pause();cancelTick();if(!keepPreparing&&state!=State.EMPTY&&state!=State.ERROR)state=if(hasPresentedFrame)State.PAUSED else State.PREPARING_SOURCE}
+    private fun pause(keepPreparing:Boolean){checkMain();playPending=false;clock.pause();audio.pause();cancelTick();if(!keepPreparing&&state!=State.EMPTY&&state!=State.ERROR)state=if(hasPresentedFrame)State.PAUSED else State.PREPARING_SOURCE}
     fun toggle(durationUs:Long){if(isPlaying)pause()else{if(positionUs>=durationUs-50_000)seek(0);play()}}
     fun redraw(){
         checkMain();if(closed || redrawScheduled)return
@@ -157,6 +167,7 @@ class EditorPreviewEngine(
     fun metrics():String="${diagnostics.summary()} ${audio.diagnostics.summary()}"
 
     private var hasPresentedFrame=false
+    private var presentedGeneration=-1L
     private fun request(positionUs:Long,mode:SeekMailbox.Mode,newGeneration:Boolean){
         if (closed) return
         if (newGeneration) cancelScheduledSeek()
@@ -176,6 +187,8 @@ class EditorPreviewEngine(
     private fun onFramePresented(timeUs:Long){
         if(closed||!mailbox.isCurrent(generation))return
         hasPresentedFrame=true
+        presentedGeneration=generation
+        if(playPending&&!seekScheduled){diagnostics.event("PLAY_DEFERRED_START generation=$generation");startPlayback()}
         state=if(clock.isPlaying())State.PLAYING else State.FRAME_READY
         val curAudio=audio.getPlaybackPositionUs()?:clock.positionUs()
         audio.diagnostics.syncSample(clock.positionUs(),curAudio,timeUs,timeUs-curAudio,audio.diagnostics.audioQueuedDurationUs.get()/1000L)
