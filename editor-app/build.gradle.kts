@@ -4,14 +4,16 @@ plugins {
     id("com.android.application")
 }
 
-// Contas (Supabase Auth). Os valores vêm do local.properties (não versionado) ou de -P na linha de
-// comando. A chave anon do Supabase é pública por natureza; a segurança vem das políticas RLS.
+// Contas (Supabase Auth). Ordem: local.properties (não versionado, para apontar para outro projeto
+// ou um Supabase local) > -P na linha de comando > gradle.properties (projeto oficial do Blitz).
+// A chave anon do Supabase é pública por natureza; a segurança vem das políticas RLS.
 val accountProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.isFile) file.inputStream().use { load(it) }
 }
 fun accountSetting(name: String): String =
-    providers.gradleProperty(name).orNull ?: accountProperties.getProperty(name, "")
+    accountProperties.getProperty(name)?.takeIf { it.isNotBlank() }
+        ?: providers.gradleProperty(name).orNull.orEmpty()
 // Um release sem Supabase deixaria todo mundo preso na tela de conta: falha o build em vez disso.
 if (gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) } &&
     (accountSetting("SUPABASE_URL").isBlank() || accountSetting("SUPABASE_ANON_KEY").isBlank())) {
