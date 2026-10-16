@@ -102,6 +102,8 @@ private const val MARKER_MERGE_US = 200_000L
 private const val MAX_EXTRAPOLATION_US = 50_000L
 /** Salto acima disso é seek ou loop: o cursor vai direto, sem suavizar. */
 private const val SEEK_JUMP_US = 150_000L
+/** Diferença (cerca de 1 quadro) entre a posição da tela e a da prévia que faz o play realinhar. */
+private const val PLAY_RESYNC_US = 40_000L
 
 
 @android.annotation.SuppressLint("GestureBackNavigation")
@@ -729,7 +731,12 @@ class EditorActivity : Activity() {
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
             }, FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER))
             setOnClickListener {
-                preview.endScrub(position)
+                // Antes chamava endScrub sempre: cada play/pause virava uma busca nova (flush do
+                // decodificador e volta ao quadro-chave), a prévia ficava preta e só andava depois
+                // que o decodificador alcançava o relógio. Agora só fecha uma busca de verdade, ou
+                // alinha a prévia se a posição da tela ficou diferente da dela.
+                if (preview.isScrubbing) preview.endScrub(position)
+                else if (!preview.isPlaying && kotlin.math.abs(preview.positionUs - position) > PLAY_RESYNC_US) preview.seek(position)
                 if (project.allVideos.isNotEmpty()) preview.toggle(project.durationUs)
                 animate().cancel()
                 scaleX = .82f; scaleY = .82f
