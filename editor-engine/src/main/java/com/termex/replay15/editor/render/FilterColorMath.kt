@@ -194,6 +194,55 @@ object FilterColorMath {
     }
 
     /**
+     * O filtro (força 100%) como matriz 4x5 no formato do android.graphics.ColorMatrix.
+     *
+     * Tudo antes do clamp final é afim (brilho, contraste, saturação, matiz, ganho por canal e
+     * luminosidade), e o ColorMatrixColorFilter também só limita no fim, então o resultado bate com
+     * [applyFilter]. As galerias usam isso para tingir os quadros do vídeo de referência na hora do
+     * desenho, sem gerar uma imagem por filtro.
+     */
+    fun colorMatrixFor(preset: VideoFilter): FloatArray {
+        if (preset == VideoFilter.ORIGINAL) {
+            return floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f)
+        }
+        val p = parametersFor(preset)
+        val o = unclamped(0f, 0f, 0f, p)
+        val r = unclamped(1f, 0f, 0f, p)
+        val g = unclamped(0f, 1f, 0f, p)
+        val b = unclamped(0f, 0f, 1f, p)
+        return FloatArray(20).also { m ->
+            for (row in 0..2) {
+                m[row * 5] = r[row] - o[row]
+                m[row * 5 + 1] = g[row] - o[row]
+                m[row * 5 + 2] = b[row] - o[row]
+                m[row * 5 + 4] = o[row] * 255f
+            }
+            m[18] = 1f
+        }
+    }
+
+    /** Mesma conta de [applyFilter], sem o clamp nem a mistura com a força. */
+    private fun unclamped(sourceR: Float, sourceG: Float, sourceB: Float, p: FilterParameters): FloatArray {
+        if (p.mode > 1.5f) return floatArrayOf(1f - sourceR, 1f - sourceG, 1f - sourceB)
+        val k = 1f + p.contrast
+        var r = (sourceR + p.brightness - 0.5f) * k + 0.5f
+        var g = (sourceG + p.brightness - 0.5f) * k + 0.5f
+        var b = (sourceB + p.brightness - 0.5f) * k + 0.5f
+        val gray = r * 0.2126f + g * 0.7152f + b * 0.0722f
+        val sat = max(0f, 1f + p.saturation)
+        r = gray + (r - gray) * sat
+        g = gray + (g - gray) * sat
+        b = gray + (b - gray) * sat
+        val c = cos(p.hueRadians)
+        val s = sin(p.hueRadians)
+        val axis = (r + g + b) * ONE_THIRD * (1f - c)
+        val hr = r * c + INV_SQRT3 * (g - b) * s + axis
+        val hg = g * c + INV_SQRT3 * (b - r) * s + axis
+        val hb = b * c + INV_SQRT3 * (r - g) * s + axis
+        return floatArrayOf(hr * p.red + p.lightness, hg * p.green + p.lightness, hb * p.blue + p.lightness)
+    }
+
+    /**
      * Renders a filtered copy of the source Bitmap.
      */
     fun renderFilteredBitmap(

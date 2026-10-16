@@ -13,7 +13,10 @@ import android.widget.*
 import com.termex.replay15.editor.core.isEditorDebuggable
 import com.termex.replay15.editor.domain.VideoClip
 import com.termex.replay15.editor.domain.VideoFilter
+import android.graphics.ColorMatrixColorFilter
 import com.termex.replay15.editor.preview.AtlasPreviewManager
+import com.termex.replay15.editor.preview.ReferenceLoopDrawable
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 import com.termex.replay15.editor.preview.RepresentativeFrameProvider
 import com.termex.replay15.editor.render.FilterColorMath
 
@@ -177,7 +180,7 @@ object FilterGallery {
                     },
                 )
 
-                if (filter.ordinal < AtlasPreviewManager.ATLAS_FILTER_COUNT) {
+                fun legacyThumbnail() = if (filter.ordinal < AtlasPreviewManager.ATLAS_FILTER_COUNT) {
                     // Original filters have pre-rendered thumbnails in the atlas.
                     AtlasPreviewManager.getFilterPreview(activity, filter) { drawable ->
                         imageView.setImageDrawable(drawable)
@@ -194,6 +197,20 @@ object FilterGallery {
                                 placeholder.visibility = View.GONE
                             }
                         }
+                    }
+                }
+
+                // Prévia tipo GIF: o vídeo de referência em loop, tingido pelo filtro na hora do
+                // desenho (mesma conta do FilterColorMath). Sem o asset, volta ao modo antigo.
+                ReferencePreviewFrames.withLoop(activity) { frames ->
+                    if (frames == null) {
+                        legacyThumbnail()
+                    } else if (filterCardMap[filter]?.image === imageView) {
+                        imageView.setImageDrawable(ReferenceLoopDrawable(frames).apply {
+                            colorFilter = ColorMatrixColorFilter(FilterColorMath.colorMatrixFor(filter))
+                            start()
+                        })
+                        placeholder.visibility = View.GONE
                     }
                 }
             }

@@ -202,10 +202,35 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
         })
     }
 
+    /**
+     * Renderiza o preset em cada quadro de uma sequência (o loop de referência), avançando o tempo
+     * do efeito junto, para a galeria tocar a prévia como um GIF. Null se algum quadro falhar.
+     */
+    fun renderPresetFrames(
+        frames: List<Bitmap>,
+        preset: EffectPreset,
+        globalIntensity: Float = 1.0f,
+        timeSecAt: (Int) -> Float,
+    ): Future<List<Bitmap>?> {
+        return executor.submit(Callable {
+            if (isClosed || frames.isEmpty()) return@Callable null
+            try {
+                frames.mapIndexed { index, frame ->
+                    if (isClosed || frame.isRecycled || Thread.currentThread().isInterrupted) return@Callable null
+                    renderPresetInternal(frame, preset, globalIntensity, timeSecAt(index)) ?: return@Callable null
+                }
+            } catch (e: Throwable) {
+                Log.w(TAG, "Failed to render animated preset preview for ${preset.id}", e)
+                null
+            }
+        })
+    }
+
     private fun renderPresetInternal(
         baseFrame: Bitmap,
         preset: EffectPreset,
         globalIntensity: Float,
+        timeSec: Float = 0.5f,
     ): Bitmap? {
         val w = baseFrame.width
         val h = baseFrame.height
@@ -257,7 +282,7 @@ class EffectThumbnailRenderer(private val context: Context) : AutoCloseable {
                 val effectiveIntensity = (node.intensity * globalIntensity).coerceIn(0f, 1f)
                 program.setFloatUniform("uIntensity", effectiveIntensity)
                 program.setFloatsUniform("uResolution", floatArrayOf(w.toFloat(), h.toFloat()))
-                program.setFloatUniform("uTime", 0.5f)
+                program.setFloatUniform("uTime", timeSec)
                 program.setFloatUniform("uProgress", 0.5f)
                 program.setFloatUniform("uBlendMode", 0f)
                 program.setFloatsUniform("uEffectMask", floatArrayOf(0f, 0f, 0f, 0f))

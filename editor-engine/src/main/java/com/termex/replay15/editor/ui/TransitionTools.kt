@@ -12,6 +12,7 @@ import com.termex.replay15.editor.assets.*
 import com.termex.replay15.editor.core.isEditorDebuggable
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.preview.AtlasPreviewManager
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 
 class TransitionTools(
     private val activity: Activity,
@@ -111,6 +112,38 @@ class TransitionTools(
         val catalogContainer = row().apply { gravity = Gravity.TOP }
         catalogScroll.addView(catalogContainer)
         body.addView(catalogScroll, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(4) })
+
+        // Prévias tipo GIF (foto de referência → vídeo de referência). Todos os cartões nascem com a
+        // miniatura parada do atlas; só os que estão na tela trocam para a animação, e voltam à
+        // parada quando saem — com 200+ transições na fita, animar todas pesaria na memória.
+        class PreviewSlot(val id: String, val image: ImageView, val placeholder: View) {
+            var still: android.graphics.drawable.Drawable? = null
+            var animated = false
+            var loading = false
+        }
+        val previewSlots = mutableListOf<PreviewSlot>()
+        val visibleRect = android.graphics.Rect()
+        fun refreshAnimatedPreviews() {
+            previewSlots.forEach { slot ->
+                val onScreen = slot.image.isShown && slot.image.getGlobalVisibleRect(visibleRect)
+                if (onScreen && !slot.animated && !slot.loading) {
+                    slot.loading = true
+                    ReferencePreviewFrames.loadTransition(this, slot.id) { animatedDrawable ->
+                        slot.loading = false
+                        if (animatedDrawable != null && slot in previewSlots) {
+                            slot.image.setImageDrawable(animatedDrawable)
+                            slot.placeholder.visibility = View.GONE
+                            slot.animated = true
+                        }
+                    }
+                } else if (!onScreen && slot.animated) {
+                    (slot.image.drawable as? android.graphics.drawable.Animatable)?.stop()
+                    slot.image.setImageDrawable(slot.still)
+                    slot.animated = false
+                }
+            }
+        }
+        catalogScroll.setOnScrollChangeListener { _, _, _, _, _ -> refreshAnimatedPreviews() }
 
         val configContainer = column()
         body.addView(configContainer)
@@ -226,6 +259,8 @@ class TransitionTools(
 
         fun renderCatalog(animate: Boolean = true) {
             catalogContainer.removeAllViews()
+            previewSlots.forEach { (it.image.drawable as? android.graphics.drawable.Animatable)?.stop() }
+            previewSlots.clear()
 
             val recentIds = TransitionCatalog.getRecents(this)
             val favIds = TransitionCatalog.getFavorites(this)
@@ -284,8 +319,10 @@ class TransitionTools(
                 imageFrame.addView(imageView, FrameLayout.LayoutParams(-1, dp(64)))
                 card.addView(imageFrame, LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(4); bottomMargin = dp(6) })
 
+                val slot = PreviewSlot(item.id, imageView, placeholder).also { previewSlots += it }
                 AtlasPreviewManager.getTransitionPreview(this@with, item.id) { drawable ->
-                    imageView.setImageDrawable(drawable)
+                    slot.still = drawable
+                    if (!slot.animated) imageView.setImageDrawable(drawable)
                     placeholder.visibility = View.GONE
                 }
 
@@ -311,6 +348,7 @@ class TransitionTools(
                 catalogContainer.addView(card, LinearLayout.LayoutParams(dp(104), -2).apply { marginEnd = dp(8) })
             }
             if (animate) staggerChildren(catalogContainer, stepMs = 14L)
+            catalogScroll.postDelayed({ refreshAnimatedPreviews() }, 120L)
             // Keep the chosen transition in view.
             chosenView?.let { view -> catalogScroll.post { catalogScroll.smoothScrollTo((view.left - dp(24)).coerceAtLeast(0), 0) } }
         }

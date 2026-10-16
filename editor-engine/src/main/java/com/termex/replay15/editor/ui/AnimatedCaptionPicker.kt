@@ -13,6 +13,8 @@ import com.termex.replay15.editor.captions.AnimatedCaptionStyle
 import com.termex.replay15.editor.captions.AnimatedCaptionStyles
 import com.termex.replay15.editor.domain.SubtitleWordCue
 import com.termex.replay15.editor.domain.TextClip
+import com.termex.replay15.editor.preview.ReferenceLoopDrawable
+import com.termex.replay15.editor.preview.ReferencePreviewFrames
 import com.termex.replay15.editor.render.TextLayout
 
 /**
@@ -84,6 +86,19 @@ object AnimatedCaptionPicker {
                     isClickable = true
                     isFocusable = true
                     clipToOutline = true
+                    // Legenda por cima do vídeo de referência tocando, levemente escurecido,
+                    // para ver como o estilo se lê sobre imagem de verdade.
+                    val backdrop = android.widget.ImageView(context).apply {
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    }
+                    addView(backdrop, FrameLayout.LayoutParams(-1, -1))
+                    ReferencePreviewFrames.withLoop(context) { frames ->
+                        if (frames != null) backdrop.setImageDrawable(ReferenceLoopDrawable(frames).apply {
+                            colorFilter = android.graphics.PorterDuffColorFilter(0x59000000, android.graphics.PorterDuff.Mode.SRC_ATOP)
+                            start()
+                        })
+                    }
                     addView(AnimatedCaptionPreview(context, style), FrameLayout.LayoutParams(-1, -1))
                     setOnClickListener {
                         paint(style.id)
