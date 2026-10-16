@@ -211,15 +211,7 @@ object TrackingTools {
         region: TrackingRegion,
         onComplete: (TrackingTrack) -> Unit,
     ) {
-        val safeStartUs = startUs.coerceAtLeast(0L)
-        val safeEndUs = endUs.coerceAtLeast(safeStartUs + stepUs)
-
-        val times = ArrayList<Long>()
-        var cur = safeStartUs
-        while (cur <= safeEndUs && times.size < TrackingTrack.MAX_POINTS) {
-            times.add(cur)
-            cur += stepUs
-        }
+        val times = sampleTimes(startUs, endUs, stepUs)
 
         if (times.isEmpty()) {
             Toast.makeText(activity, "Intervalo de tempo inválido para rastreamento", Toast.LENGTH_SHORT).show()
@@ -261,6 +253,59 @@ object TrackingTools {
         progressDialog.window?.setLayout((activity.resources.displayMetrics.widthPixels * 0.85).toInt(), -2)
         progressDialog.show()
 
+        runTracker(activity, clip.uri, times, region, isCancelled,
+            onProgress = { currentIndex, totalCount ->
+                if (progressDialog.isShowing) {
+                    progressBar.progress = currentIndex
+                    val percent = (currentIndex * 100) / totalCount
+                    progressText.text = "Analisando quadros... ($currentIndex / $totalCount - $percent%)"
+                }
+            },
+            onDone = { track ->
+                if (progressDialog.isShowing) progressDialog.dismiss()
+                if (!isCancelled.get() && track != null && track.points.isNotEmpty()) {
+                    onComplete(track)
+                } else if (!isCancelled.get()) {
+                    Toast.makeText(activity, "Não foi possível ler os quadros deste clipe", Toast.LENGTH_LONG).show()
+                }
+            },
+            onError = { message ->
+                if (progressDialog.isShowing) progressDialog.dismiss()
+                if (!isCancelled.get()) Toast.makeText(activity, "Erro no rastreamento: $message", Toast.LENGTH_LONG).show()
+            },
+            onCancelled = { if (progressDialog.isShowing) progressDialog.dismiss() },
+        )
+    }
+
+    /** Tempos (no arquivo de origem) a analisar de [startUs] a [endUs], no máximo MAX_POINTS. */
+    fun sampleTimes(startUs: Long, endUs: Long, stepUs: Long): List<Long> {
+        val safeStartUs = startUs.coerceAtLeast(0L)
+        val safeEndUs = endUs.coerceAtLeast(safeStartUs + stepUs)
+        val times = ArrayList<Long>()
+        var cur = safeStartUs
+        while (cur <= safeEndUs && times.size < TrackingTrack.MAX_POINTS) {
+            times.add(cur)
+            cur += stepUs
+        }
+        return times
+    }
+
+    /**
+     * Decodifica [times] de [uri] numa thread de fundo e roda o rastreador sobre [region] (espaço
+     * do quadro de origem). Os callbacks voltam na thread principal. Usado pelo rastreamento da
+     * máscara do clipe e pelo rastreamento de sticker.
+     */
+    fun runTracker(
+        activity: Activity,
+        uri: String,
+        times: List<Long>,
+        region: TrackingRegion,
+        isCancelled: AtomicBoolean,
+        onProgress: (done: Int, total: Int) -> Unit,
+        onDone: (TrackingTrack?) -> Unit,
+        onError: (String) -> Unit,
+        onCancelled: () -> Unit = {},
+    ) {
         trackingExecutor.execute {
             val targetW = 320
             val targetH = 320
@@ -275,24 +320,17 @@ object TrackingTools {
                     if (current == null) session = tracker.Session(frame, region) else current.next(frame)
                 } finally { bitmap.recycle() }
                 processed++
-                val currentIndex = processed
-                val totalCount = times.size
-                activity.runOnUiThread {
-                    if (progressDialog.isShowing) {
-                        progressBar.progress = currentIndex
-                        val percent = (currentIndex * 100) / totalCount
-                        progressText.text = "Analisando quadros... ($currentIndex / $totalCount - $percent%)"
-                    }
-                }
+                val done = processed
+                activity.runOnUiThread { onProgress(done, times.size) }
             }
             var retriever: MediaMetadataRetriever? = null
             try {
                 // One sequential decode for the whole range (fit inside 320x320, display-oriented).
-                val handled = SequentialFrameReader.read(activity, clip.uri, times, targetW, targetH,
+                val handled = SequentialFrameReader.read(activity, uri, times, targetW, targetH,
                     { if (isCancelled.get()) throw InterruptedException("Rastreamento cancelado") }, ::push)
                 if (handled < times.size && !isCancelled.get()) {
                     val fallback = MediaMetadataRetriever().also { retriever = it }
-                    fallback.setDataSource(activity, Uri.parse(clip.uri))
+                    fallback.setDataSource(activity, Uri.parse(uri))
                     for (timeUs in times.subList(handled, times.size)) {
                         if (isCancelled.get()) break
                         val bitmap = fallback.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, targetW, targetH)
@@ -302,23 +340,11 @@ object TrackingTools {
                     }
                 }
                 val track = session?.result()
-                activity.runOnUiThread {
-                    if (progressDialog.isShowing) progressDialog.dismiss()
-                    if (!isCancelled.get() && track != null && track.points.isNotEmpty()) {
-                        onComplete(track)
-                    } else if (!isCancelled.get()) {
-                        Toast.makeText(activity, "Não foi possível ler os quadros deste clipe", Toast.LENGTH_LONG).show()
-                    }
-                }
+                activity.runOnUiThread { if (isCancelled.get()) onCancelled() else onDone(track) }
             } catch (cancelled: InterruptedException) {
-                activity.runOnUiThread { if (progressDialog.isShowing) progressDialog.dismiss() }
+                activity.runOnUiThread { onCancelled() }
             } catch (e: Exception) {
-                activity.runOnUiThread {
-                    if (progressDialog.isShowing) progressDialog.dismiss()
-                    if (!isCancelled.get()) {
-                        Toast.makeText(activity, "Erro no rastreamento: ${e.message ?: "falha na extração"}", Toast.LENGTH_LONG).show()
-                    }
-                }
+                activity.runOnUiThread { onError(e.message ?: "falha na extração") }
             } finally {
                 runCatching { retriever?.release() }
             }

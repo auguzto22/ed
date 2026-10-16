@@ -13,7 +13,6 @@ import androidx.media3.effect.BitmapOverlay
 import com.termex.replay15.editor.backgroundremoval.BitmapMaskApplier
 import com.termex.replay15.editor.domain.*
 import com.termex.replay15.editor.lottie.LottieLayerRenderer
-import kotlin.math.min
 import java.util.LinkedHashMap
 
 /** Composes every timed text and image layer into one GPU overlay texture. */
@@ -25,12 +24,6 @@ class TextCanvasOverlay(
     private val width: Int,
     private val height: Int,
 ) : BitmapOverlay() {
-    private class Motion {
-        var alpha = 1f
-        var scale = 1f
-        var offsetX = 0f
-        var offsetY = 0f
-    }
     private data class CachedTextLayout(val source: TextClip, val block: TextLayout.Block, val wordBucket: Long)
 
     private var bitmap: Bitmap? = null
@@ -38,7 +31,6 @@ class TextCanvasOverlay(
     private var lastStateSignature = Long.MIN_VALUE
     private val activeTexts = ArrayList<TextClip>()
     private val activeStickers = ArrayList<StickerClip>()
-    private val motion = Motion()
     private val stickerRect = RectF()
     private val textLayouts = object : LinkedHashMap<String, CachedTextLayout>(16, .75f, true) {
         override fun removeEldestEntry(
@@ -78,7 +70,7 @@ class TextCanvasOverlay(
             it.duringAnimation != TextAnimation.NONE || it.exitAnimation != TextAnimation.NONE ||
             it.wordCues.isNotEmpty() || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true } ||
             activeStickers.any {
-                LottieLayerRenderer.isLottieUri(it.uri) || it.animation != TextAnimation.NONE || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
+                LottieLayerRenderer.isLottieUri(it.uri) || StickerMotion.isAnimated(it) || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
             }
         if (lastStateSignature != stateSignature || animated) {
             val target = requireNotNull(canvas)
@@ -133,14 +125,14 @@ class TextCanvasOverlay(
 
     private fun drawSticker(canvas: Canvas, sticker: StickerClip, source: Bitmap, timeUs: Long) {
         val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false).transform
-        updateMotion(sticker.animation, sticker.startUs, sticker.endUs, timeUs)
+        val motion = StickerMotion.evaluate(sticker, timeUs)
         val targetHeight = sticker.size * height * transform.scaleY
         val targetWidth = (sticker.size * height * source.width / source.height.toFloat()) * transform.scaleX
         stickerPaint.alpha = (255 * transform.opacity * motion.alpha).toInt().coerceIn(0, 255)
         canvas.save()
-        canvas.translate(transform.x * width + motion.offsetX, transform.y * height + motion.offsetY)
-        canvas.rotate(transform.rotation)
-        canvas.scale(if (sticker.flip) -motion.scale else motion.scale, motion.scale)
+        canvas.translate(transform.x * width + motion.offsetX * width, transform.y * height + motion.offsetY * height)
+        canvas.rotate(transform.rotation + motion.rotation)
+        canvas.scale(if (sticker.flip) -motion.scaleX else motion.scaleX, motion.scaleY)
         stickerRect.set(-targetWidth / 2, -targetHeight / 2, targetWidth / 2, targetHeight / 2)
         CanvasLayerMask.draw(canvas, stickerRect, sticker.maskAt(timeUs)) {
             canvas.drawBitmap(source, null, stickerRect, stickerPaint)
@@ -151,7 +143,7 @@ class TextCanvasOverlay(
     private fun drawLottieSticker(canvas: Canvas, sticker: StickerClip, timeUs: Long) {
         val composition = LottieLayerRenderer.loadComposition(context, sticker.uri) ?: return
         val transform = com.termex.replay15.editor.transform.LayerStateEvaluator.evaluate(sticker, timeUs, realtime = false).transform
-        updateMotion(sticker.animation, sticker.startUs, sticker.endUs, timeUs)
+        val motion = StickerMotion.evaluate(sticker, timeUs)
         val compBounds = composition.bounds
         val compW = compBounds.width().toFloat().coerceAtLeast(1f)
         val compH = compBounds.height().toFloat().coerceAtLeast(1f)
@@ -162,9 +154,9 @@ class TextCanvasOverlay(
         val progress = (rawProgress % 1.0f).let { if (it < 0f) it + 1f else it }
 
         canvas.save()
-        canvas.translate(transform.x * width + motion.offsetX, transform.y * height + motion.offsetY)
-        canvas.rotate(transform.rotation)
-        canvas.scale(if (sticker.flip) -motion.scale else motion.scale, motion.scale)
+        canvas.translate(transform.x * width + motion.offsetX * width, transform.y * height + motion.offsetY * height)
+        canvas.rotate(transform.rotation + motion.rotation)
+        canvas.scale(if (sticker.flip) -motion.scaleX else motion.scaleX, motion.scaleY)
         stickerRect.set(-targetWidth / 2f, -targetHeight / 2f, targetWidth / 2f, targetHeight / 2f)
         CanvasLayerMask.draw(canvas, stickerRect, sticker.maskAt(timeUs)) {
             LottieLayerRenderer.draw(canvas, composition, progress, stickerRect, transform.opacity * motion.alpha)
@@ -172,20 +164,6 @@ class TextCanvasOverlay(
         canvas.restore()
     }
 
-    private fun updateMotion(animation: TextAnimation, startUs: Long, endUs: Long, timeUs: Long) {
-        val progressIn = ((timeUs - startUs) / 350_000f).coerceIn(0f, 1f)
-        val progressOut = ((endUs - timeUs) / 250_000f).coerceIn(0f, 1f)
-        val progress = min(progressIn, progressOut)
-        motion.alpha = if (animation == TextAnimation.NONE) 1f else progress
-        motion.scale = if (animation == TextAnimation.POP) .72f + .28f * overshoot(progress) else 1f
-        motion.offsetX = if (animation == TextAnimation.SLIDE_LEFT) (1f - progress) * width * .09f else 0f
-        motion.offsetY = if (animation == TextAnimation.SLIDE_UP) (1f - progress) * height * .07f else 0f
-    }
-
-    private fun overshoot(value: Float): Float {
-        val shifted = value - 1f
-        return shifted * shifted * (2.2f * shifted + 2.2f) + 1f
-    }
 
     private fun sameTextLayout(a: TextClip, b: TextClip): Boolean =
         a.text == b.text && a.size == b.size && a.color == b.color && a.bold == b.bold &&

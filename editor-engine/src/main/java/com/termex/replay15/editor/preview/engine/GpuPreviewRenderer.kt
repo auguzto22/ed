@@ -22,7 +22,7 @@ import com.termex.replay15.editor.assets.BuiltInTransitions
 import com.termex.replay15.editor.assets.TransitionCatalog
 import com.termex.replay15.editor.backgroundremoval.BitmapMaskApplier
 import com.termex.replay15.editor.domain.CanvasFill
-import com.termex.replay15.editor.domain.TextAnimation
+import com.termex.replay15.editor.domain.StickerMotion
 import com.termex.replay15.editor.domain.chromaKeyState
 import com.termex.replay15.editor.domain.maskAt
 import com.termex.replay15.editor.render.EffectShaderHeaders
@@ -124,7 +124,6 @@ class GpuPreviewRenderer(
     }
     private val stMatrix = FloatArray(16)
     private val mvp = FloatArray(16)
-    private val motionBuf = FloatArray(4) // reusable buffer for overlayMotion, avoids per-frame allocation
     @Volatile private var lastRenderedState: PreviewRenderState? = null
     // Render-thread only: bounded hold of the presented buffer while a composition is incomplete.
     private var holdSinceNs = 0L
@@ -835,19 +834,19 @@ class GpuPreviewRenderer(
                     val duration = sticker.durationUs.coerceAtLeast(1L)
                     val rawProgress = (render.timeUs - sticker.startUs).toFloat() / duration.toFloat()
                     val progress = (rawProgress % 1.0f).let { if (it < 0f) it + 1f else it }
-                    val motion = overlayMotion(sticker.animation, sticker.startUs, sticker.endUs, render.timeUs, render.width, render.height)
+                    val motion = StickerMotion.evaluate(sticker, render.timeUs)
                     canvas.save()
-                    canvas.translate(transform.x * render.width + motion[2], transform.y * render.height + motion[3])
+                    canvas.translate(transform.x * render.width + motion.offsetX * render.width, transform.y * render.height + motion.offsetY * render.height)
                     // The overlay is sampled with FBO_FLIP_Y, which only undoes GL's bottom-up rows: the
                     // bitmap is shown upright, not mirrored. Rotation therefore keeps the Canvas sign used
                     // by the sticker handles and by export (TextCanvasOverlay); negating it turned the
                     // sticker the opposite way of the finger.
-                    canvas.rotate(transform.rotation)
-                    canvas.scale((if (sticker.flip) -1f else 1f) * motion[1], motion[1])
+                    canvas.rotate(transform.rotation + motion.rotation)
+                    canvas.scale((if (sticker.flip) -1f else 1f) * motion.scaleX, motion.scaleY)
                     val lottieRect = RectF(-w / 2f, -h / 2f, w / 2f, h / 2f)
                     CanvasLayerMask.draw(canvas, lottieRect, sticker.maskAt(render.timeUs)) {
                         com.termex.replay15.editor.lottie.LottieLayerRenderer.draw(
-                            canvas, composition, progress, lottieRect, transform.opacity * motion[0]
+                            canvas, composition, progress, lottieRect, transform.opacity * motion.alpha
                         )
                     }
                     canvas.restore()
@@ -869,13 +868,13 @@ class GpuPreviewRenderer(
                 val h = sticker.size * render.height * transform.scaleY
                 val baseW = sticker.size * render.height * image.width / image.height.toFloat()
                 val w = baseW * transform.scaleX
-                val motion = overlayMotion(sticker.animation, sticker.startUs, sticker.endUs, render.timeUs, render.width, render.height)
-                paint.alpha = (255 * transform.opacity * motion[0]).toInt().coerceIn(0, 255)
+                val motion = StickerMotion.evaluate(sticker, render.timeUs)
+                paint.alpha = (255 * transform.opacity * motion.alpha).toInt().coerceIn(0, 255)
                 canvas.save()
-                canvas.translate(transform.x * render.width + motion[2], transform.y * render.height + motion[3])
+                canvas.translate(transform.x * render.width + motion.offsetX * render.width, transform.y * render.height + motion.offsetY * render.height)
                 // Same sign as the handles and export; see the Lottie branch above.
-                canvas.rotate(transform.rotation)
-                canvas.scale((if (sticker.flip) -1f else 1f) * motion[1], motion[1])
+                canvas.rotate(transform.rotation + motion.rotation)
+                canvas.scale((if (sticker.flip) -1f else 1f) * motion.scaleX, motion.scaleY)
                 rect.set(-w / 2, -h / 2, w / 2, h / 2)
                 CanvasLayerMask.draw(canvas, rect, sticker.maskAt(render.timeUs)) {
                     canvas.drawBitmap(image, null, rect, paint)
@@ -904,18 +903,10 @@ class GpuPreviewRenderer(
     private fun signature(s: PreviewRenderState): Long {
         val animated = s.stickers.any {
             com.termex.replay15.editor.lottie.LottieLayerRenderer.isLottieUri(it.uri) ||
-            it.animation != TextAnimation.NONE || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
+            StickerMotion.isAnimated(it) || it.transformKeyframes.isNotEmpty() || it.mask?.keyframes?.isNotEmpty() == true
         }
         val timeBucket = if (animated) s.timeUs / 33_333L else 0L
         return ((31L * timeBucket + s.stickers.hashCode()) * 31 + s.width) * 31 + s.height
-    }
-    private fun overlayMotion(animation:TextAnimation,startUs:Long,endUs:Long,timeUs:Long,width:Int,height:Int):FloatArray{
-        val enter=((timeUs-startUs)/350_000f).coerceIn(0f,1f);val leave=((endUs-timeUs)/250_000f).coerceIn(0f,1f);val progress=minOf(enter,leave)
-        val alpha=if(animation==TextAnimation.NONE)1f else progress
-        val shifted=progress-1f;val overshoot=shifted*shifted*(2.2f*shifted+2.2f)+1f
-        return floatArrayOf(alpha,if(animation==TextAnimation.POP).72f+.28f*overshoot else 1f,
-            if(animation==TextAnimation.SLIDE_LEFT)(1f-progress)*width*.09f else 0f,
-            if(animation==TextAnimation.SLIDE_UP)(1f-progress)*height*.07f else 0f)
     }
     private fun upload(bitmap: Bitmap): Int {
         makeCurrent()

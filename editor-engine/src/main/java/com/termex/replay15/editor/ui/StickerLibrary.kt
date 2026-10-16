@@ -39,16 +39,35 @@ object StickerLibrary {
         bitmap
     }.getOrNull()
 
-    fun show(activity: Activity, onPick: (StickerDef) -> Unit) = with(activity) {
+    /**
+     * Painel "Adesivos" (como o do CapCut). [onGallery] abre a aba Galeria para usar uma imagem
+     * própria como sticker; sem ela a aba não aparece.
+     */
+    fun show(activity: Activity, onGallery: (() -> Unit)? = null, onPick: (StickerDef) -> Unit) = with(activity) {
         val body = column()
         lateinit var dialog: Dialog
         val categories: List<StickerCategory?> = listOf(null) + StickerCategory.entries.filter { StickerCatalog.byCategory(it).isNotEmpty() }
         var category: StickerCategory? = null
         var showFavorites = false
+        var showRecents = false
         var shown: List<StickerDef> = emptyList()
 
+        if (onGallery != null) {
+            // Abas Adesivos · Galeria no topo, como no CapCut.
+            val tabs = row().apply { setPadding(0, 0, 0, dp(6)) }
+            tabs.addView(label("Adesivos", 15f).apply {
+                setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(dp(2), dp(4), dp(18), dp(4))
+            })
+            tabs.addView(label("Galeria", 15f, EditorStyle.MUTED).apply {
+                setPadding(dp(2), dp(4), dp(18), dp(4)); isClickable = true
+                contentDescription = "Usar uma imagem da galeria como sticker"
+                setOnClickListener { dialog.dismiss(); onGallery() }
+            })
+            body.addView(tabs)
+        }
+
         val search = EditText(this).apply {
-            hint = "Buscar sticker (ex.: seta, fogo, festa)"; isSingleLine = true
+            hint = "Buscar adesivo (ex.: seta, fogo, mão, festa)"; isSingleLine = true
             setTextColor(EditorStyle.TEXT); setHintTextColor(EditorStyle.MUTED)
         }
         body.addView(search)
@@ -116,10 +135,11 @@ object StickerLibrary {
             val query = search.text.toString()
             val base = when {
                 showFavorites -> StickerCatalog.favorites()
+                showRecents -> StickerCatalog.recents()
                 query.isNotBlank() -> StickerCatalog.search(query)
                 else -> StickerCatalog.all()
             }
-            shown = if (category != null && !showFavorites) base.filter { it.category == category } else base
+            shown = if (category != null && !showFavorites && !showRecents) base.filter { it.category == category } else base
             adapter.notifyDataSetChanged()
             grid.scrollToPosition(0)
             countLabel.text = "${shown.size} stickers  •  toque longo para favoritar"
@@ -142,19 +162,20 @@ object StickerLibrary {
             chipViews += view to active
             chips.addView(view, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(6) })
         }
-        chip("Todos", { category == null && !showFavorites }) { category = null; showFavorites = false }
-        chip("★ Favoritos", { showFavorites }) { showFavorites = true }
-        categories.filterNotNull().forEach { c -> chip(c.label, { category == c && !showFavorites }) { category = c; showFavorites = false } }
+        chip("Todos", { category == null && !showFavorites && !showRecents }) { category = null; showFavorites = false; showRecents = false }
+        if (StickerCatalog.recents().isNotEmpty()) chip("Recentes", { showRecents }) { showRecents = true; showFavorites = false }
+        chip("★ Favoritos", { showFavorites }) { showFavorites = true; showRecents = false }
+        categories.filterNotNull().forEach { c -> chip(c.label, { category == c && !showFavorites && !showRecents }) { category = c; showFavorites = false; showRecents = false } }
         styleChips()
 
         search.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { showFavorites = false; styleChips(); refresh() }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { showFavorites = false; showRecents = false; styleChips(); refresh() }
             override fun afterTextChanged(s: Editable?) {}
         })
         body.addView(grid, android.widget.LinearLayout.LayoutParams(-1, dp(360)))
         body.addView(countLabel, android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         refresh()
-        dialog = sheet("Stickers animados (${StickerCatalog.all().size})", body, maxHeightRatio = .85f)
+        dialog = sheet("Adesivos", body, maxHeightRatio = .85f, subtitle = "${StickerCatalog.all().size} stickers animados")
     }
 }
