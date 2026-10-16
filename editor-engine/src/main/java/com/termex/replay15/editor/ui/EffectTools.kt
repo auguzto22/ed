@@ -233,7 +233,17 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         body.addView(results, LinearLayout.LayoutParams(-1, -2))
         val more = action("Mostrar mais") {}
         body.addView(more, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        // Cada efeito ganha uma prévia tipo GIF no vídeo de referência (renderizada na GPU, com os
+        // valores padrão), inclusive os instalados por pacote.
+        val thumbs = mutableMapOf<String, ImageView>()
+        val previews = runCatching {
+            com.termex.replay15.editor.preview.ReferenceEffectPreviews.createOrNull(this) { id, frames ->
+                thumbs[id]?.setImageDrawable(com.termex.replay15.editor.preview.ReferenceLoopDrawable(frames).also { it.start() })
+            }
+        }.getOrNull()
         fun refresh() {
+            thumbs.keys.forEach { previews?.cancel(it) }
+            thumbs.clear()
             val recent = repository.recent()
             val favorites = definitions.map { it.id }.filter { repository.favorite(it) }.toSet()
             val shown = EffectCatalog.filter(definitions, selected, search.text.toString(), recent, favorites)
@@ -247,6 +257,19 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
                     val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@listRow
                     safely { require(clip.effects.size < 12); val instance = EffectInstance(newId(), definition.id, definition.version)
                         change(clipId, clip.effects + instance); repository.used(definition.id); dialog.dismiss(); parameters(clipId, instance) }
+                }
+                if (previews != null) {
+                    val thumb = ImageView(this).apply {
+                        scaleType = ImageView.ScaleType.CENTER_CROP
+                        background = android.graphics.drawable.GradientDrawable().apply {
+                            setColor(EditorStyle.CARD); cornerRadius = dp(8).toFloat()
+                        }
+                        clipToOutline = true
+                        importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    }
+                    row.addView(thumb, 0, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(12) })
+                    thumbs[definition.id] = thumb
+                    previews.requestEffect(definition)
                 }
                 row.setOnLongClickListener {
                     repository.toggleFavorite(definition.id)
@@ -272,6 +295,7 @@ class EffectTools(private val activity: Activity, private val project: () -> Pro
         })
         renderChips(); refresh()
         dialog = sheet("Efeitos", body, subtitle = "${definitions.size} efeitos · toque para aplicar, segure para favoritar")
+        dialog.setOnDismissListener { previews?.close() }
     }
     fun presets(clipId: String) = with(activity) {
         val clip = project().allVideos.firstOrNull { it.id == clipId } ?: return@with

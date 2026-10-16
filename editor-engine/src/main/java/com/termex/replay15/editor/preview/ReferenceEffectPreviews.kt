@@ -5,13 +5,15 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
+import com.termex.replay15.editor.assets.EffectDefinition
 import com.termex.replay15.editor.assets.EffectPreset
+import com.termex.replay15.editor.assets.EffectPresetNode
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
 /**
- * Prévias animadas dos presets de efeito sobre o vídeo de referência.
+ * Prévias animadas dos presets de efeito (e dos efeitos avulsos) sobre o vídeo de referência.
  *
  * Cada preset é renderizado na GPU do aparelho sobre os 12 quadros do loop de referência (com o
  * tempo do efeito andando junto), então glitch, partículas e luz aparecem se mexendo — como um GIF —
@@ -52,9 +54,9 @@ class ReferenceEffectPreviews private constructor(
     @Volatile private var closed = false
 
     /** Pede a prévia animada; [onReady] chega na main thread (na hora, se já estiver no cache). */
-    fun request(preset: EffectPreset, intensity: Float = 1f) {
+    fun request(preset: EffectPreset, intensity: Float = 1f, keyPrefix: String = "") {
         if (closed) return
-        val key = key(preset, intensity)
+        val key = keyPrefix + key(preset, intensity)
         cache.get(key)?.let { frames -> onReady(preset.id, frames); return }
         if (pending[preset.id]?.isDone == false) return
         pending[preset.id] = worker.submit(Runnable {
@@ -71,6 +73,23 @@ class ReferenceEffectPreviews private constructor(
                 pending.remove(preset.id)
             }
         })
+    }
+
+    /**
+     * Prévia de um efeito avulso da biblioteca (inclusive os instalados por pacote), com os valores
+     * padrão dele — mesmo jeito que o EffectThumbnailRenderer.renderEffect monta. [onReady] recebe o id do efeito.
+     */
+    fun requestEffect(definition: EffectDefinition, intensity: Float = .7f) {
+        val single = runCatching {
+            EffectPreset(
+                id = definition.id, name = definition.name, category = definition.category.ifBlank { "Efeito" },
+                nodes = listOf(EffectPresetNode(
+                    assetId = definition.id, version = definition.version, intensity = intensity.coerceIn(0f, 1f),
+                    values = definition.parameters.associate { it.id to it.default },
+                )),
+            )
+        }.getOrNull() ?: return
+        request(single, 1f, keyPrefix = "fx:")
     }
 
     /** O cartão saiu da tela: tira da fila (rolar 1000 presets rápido não pode enfileirar todos). */

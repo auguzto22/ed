@@ -157,6 +157,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('video'); ap.add_argument('photo'); ap.add_argument('work')
     ap.add_argument('--presets-sample', type=int, default=0, help='renderiza N presets por categoria em WORK/presets (conferência)')
+    ap.add_argument('--effects-sample', type=int, default=0, help='renderiza N efeitos avulsos por categoria em WORK/presets (conferência)')
     ap.add_argument('--skip-transitions', action='store_true')
     a = ap.parse_args()
     os.makedirs(a.work, exist_ok=True); os.makedirs(f'{OUT}/transitions', exist_ok=True)
@@ -191,13 +192,20 @@ def main():
             jobs.append({'id': 'tr:' + t['id'], 'w': TR_W, 'h': TR_H, 'passes': [{'fragment': frag, 'uniforms': uni}], 'frames': frames})
 
     # 3. Amostra de presets (só conferência; no app eles são renderizados na GPU do aparelho).
-    if a.presets_sample:
+    if a.presets_sample or a.effects_sample:
         effects = {e['id']: e for e in json.load(open(f'{ED}/effects.json'))}
-        presets = json.load(open(f'{ED}/effect_presets.json'))
+        presets = json.load(open(f'{ED}/effect_presets.json'))[:0 if not a.presets_sample else None]
+        # Efeito avulso = preset de um nó com os valores padrão e intensidade 0,7 (como no app).
+        seen = {}
+        for e in effects.values():
+            if a.effects_sample and seen.setdefault(e['category'], 0) < a.effects_sample:
+                seen[e['category']] += 1
+                presets.append({'id': 'fx_' + e['id'], 'name': e['name'], 'category': 'Efeito · ' + e['category'],
+                                'nodes': [{'assetId': e['id'], 'intensity': .7}]})
         per_cat = {}
         for p in presets:
             per_cat.setdefault(p['category'], [])
-            if len(per_cat[p['category']]) < a.presets_sample: per_cat[p['category']].append(p)
+            if p['id'].startswith('fx_') or len(per_cat[p['category']]) < a.presets_sample: per_cat[p['category']].append(p)
         for cat, ps in per_cat.items():
             for p in ps:
                 passes = []
