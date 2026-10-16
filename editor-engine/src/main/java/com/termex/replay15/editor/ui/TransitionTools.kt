@@ -89,7 +89,7 @@ class TransitionTools(
         val searchBox = EditText(this).apply {
             hint = "Buscar transições..."
             textSize = 13f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             setHintTextColor(EditorStyle.MUTED)
             background = GradientDrawable().apply {
                 setColor(EditorStyle.CARD)
@@ -273,7 +273,7 @@ class TransitionTools(
                 }
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF222226.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -289,7 +289,7 @@ class TransitionTools(
                     placeholder.visibility = View.GONE
                 }
 
-                card.addView(label(item.name, 13f, Color.WHITE).apply {
+                card.addView(label(item.name, 13f, EditorStyle.TEXT).apply {
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                     maxLines = 1
                 })
@@ -323,7 +323,7 @@ class TransitionTools(
                     text = cat
                     textSize = 12f
                     isAllCaps = false
-                    setTextColor(if (active) Color.WHITE else EditorStyle.MUTED)
+                    setTextColor(if (active) EditorStyle.TEXT else EditorStyle.MUTED)
                     background = GradientDrawable().apply {
                         setColor(if (active) EditorStyle.CARD else Color.TRANSPARENT)
                         cornerRadius = dp(14).toFloat()

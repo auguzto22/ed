@@ -37,11 +37,11 @@ object SpeedTools {
         lateinit var curveMode: Button
         fun styleChoice(button: Button, selected: Boolean) {
             button.background = GradientDrawable().apply {
-                setColor(if (selected) Color.WHITE else EditorStyle.CARD)
-                setStroke(dp(1), if (selected) Color.WHITE else EditorStyle.BORDER)
+                setColor(if (selected) EditorStyle.ACCENT else EditorStyle.CARD)
+                setStroke(dp(1), if (selected) EditorStyle.ACCENT else EditorStyle.BORDER)
                 cornerRadius = dp(12).toFloat()
             }
-            button.setTextColor(if (selected) Color.BLACK else Color.WHITE)
+            button.setTextColor(if (selected) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
         }
         fun showMode(curve: Boolean) {
             normalPanel.visibility = if (curve) View.GONE else View.VISIBLE

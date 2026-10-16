@@ -117,7 +117,7 @@ class ReferenceStylePanel(
             runCatching { store.rename(profile.id, name.text.toString()) }.fold({ Toast.makeText(activity, "Estilo salvo", Toast.LENGTH_SHORT).show() }, { name.error = it.message })
         })
         body.addView(activity.action("Aplicar ao clipe selecionado", true) { dialog?.dismiss(); applyProfile(profile) }, LinearLayout.LayoutParams(-1, activity.dp(52)))
-        if (profile.warnings.isNotEmpty()) body.addView(activity.label(profile.warnings.joinToString("\n"), 11f, 0xFFFAFAF6.toInt()))
+        if (profile.warnings.isNotEmpty()) body.addView(activity.label(profile.warnings.joinToString("\n"), 11f, EditorStyle.TEXT))
         dialog = activity.sheet("Reference Style", body)
     }
 
@@ -209,7 +209,7 @@ class ReferenceStylePanel(
         }
         if (plan.skipped.isNotEmpty()) {
             body.addView(activity.sectionTitle("Não aplicado"))
-            body.addView(activity.label(plan.skipped.joinToString("\n") { "• $it" }, 12f, 0xFFFAFAF6.toInt()))
+            body.addView(activity.label(plan.skipped.joinToString("\n") { "• $it" }, 12f, EditorStyle.TEXT))
         }
         if (plan.applied.isEmpty()) body.addView(activity.label("Nada da referência pode ser aplicado a este clipe.", 12f, EditorStyle.MUTED))
         val compare = activity.row()

@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@color/blitz_bg"
     tools:ignore="UseAppTint">
 
     <ScrollView
@@ -22,33 +22,74 @@
             android:paddingTop="22dp"
             android:paddingBottom="108dp">
 
-            <!-- Cabeçalho: só o perfil, à direita (sem logo à esquerda) -->
+            <!-- Cabeçalho: saudação com o nome da conta à esquerda e o perfil à direita -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <View
+                <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/homeGreeting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.08"
+                        android:text="BOA TARDE"
+                        android:textColor="@color/blitz_muted"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/homeUserName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-black"
+                        android:maxLines="1"
+                        android:text="Visitante"
+                        android:textColor="@color/blitz_text"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/homeStats"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text=""
+                        android:textColor="@color/blitz_faint"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/btnProfile"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
-                    android:background="@drawable/canvas_circle_line"
+                    android:background="@drawable/home_profile_circle"
                     android:clickable="true"
-                    android:contentDescription="Perfil"
+                    android:contentDescription="Perfil e conta"
                     android:focusable="true"
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
-                    android:text="M"
-                    android:textColor="#FAFAF6"
+                    android:text="?"
+                    android:textColor="@color/blitz_text"
                     android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <!-- Bloco do Início (título, atalhos). Some nas abas Gravações e Config. -->
+            <LinearLayout
+                android:id="@+id/homeHero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
             <!-- Título (a palavra "editar" fica amarela, definida no código) -->
             <TextView
@@ -60,14 +101,14 @@
                 android:letterSpacing="-0.03"
                 android:lineSpacingMultiplier="0.95"
                 android:text="O que vamos editar hoje?"
-                android:textColor="#FAFAF6"
+                android:textColor="@color/blitz_text"
                 android:textSize="34sp" />
 
             <!-- Dois blocos: Novo projeto e Auto Edit -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="118dp"
-                android:layout_marginTop="18dp"
+                android:layout_height="128dp"
+                android:layout_marginTop="20dp"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -76,17 +117,17 @@
                     android:layout_height="match_parent"
                     android:layout_marginEnd="6dp"
                     android:layout_weight="1"
-                    android:background="@drawable/canvas_tile_action"
+                    android:background="@drawable/home_tile_primary"
                     android:clickable="true"
                     android:contentDescription="Novo projeto"
                     android:focusable="true"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="16dp">
 
                     <FrameLayout
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="@drawable/canvas_circle_ink">
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/home_icon_chip_light">
 
                         <ImageView
                             android:layout_width="20dp"
@@ -117,24 +158,25 @@
                     android:layout_height="match_parent"
                     android:layout_marginStart="6dp"
                     android:layout_weight="1"
-                    android:background="@drawable/canvas_tile_video"
+                    android:background="@drawable/home_tile_surface"
                     android:clickable="true"
                     android:contentDescription="Auto Edit"
                     android:focusable="true"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="16dp">
 
                     <FrameLayout
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="@drawable/canvas_circle_ink">
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/home_icon_chip_accent">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
                             android:layout_gravity="center"
                             android:importantForAccessibility="no"
-                            android:src="@drawable/ic_canvas_bolt" />
+                            android:src="@drawable/ic_canvas_bolt"
+                            android:tint="#D7263D" />
                     </FrameLayout>
 
                     <View
@@ -148,7 +190,7 @@
                         android:fontFamily="sans-serif-black"
                         android:lineSpacingMultiplier="0.95"
                         android:text="Auto\nEdit"
-                        android:textColor="#141414"
+                        android:textColor="@color/blitz_text"
                         android:textSize="19sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -159,24 +201,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
-                android:background="@drawable/recly_card_dark"
+                android:background="@drawable/home_card"
                 android:clickable="true"
                 android:contentDescription="Analisar vídeo que vende"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="14dp">
+                android:padding="16dp">
 
                 <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/canvas_analyze_box">
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:background="@drawable/home_icon_box">
 
                     <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
                         android:importantForAccessibility="no"
-                        android:src="@drawable/ic_canvas_bars" />
+                        android:src="@drawable/home_bars_icon" />
                 </FrameLayout>
 
                 <LinearLayout
@@ -191,7 +234,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="Analisar vídeo que vende"
-                        android:textColor="#FAFAF6"
+                        android:textColor="@color/blitz_text"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
@@ -201,14 +244,14 @@
                         android:layout_marginTop="2dp"
                         android:lineSpacingMultiplier="1.1"
                         android:text="Descubra o gancho, o ritmo e o que segura quem assiste."
-                        android:textColor="#9A968C"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
                 </LinearLayout>
 
                 <FrameLayout
                     android:layout_width="44dp"
                     android:layout_height="44dp"
-                    android:background="@drawable/canvas_circle_raised">
+                    android:background="@drawable/home_arrow_circle">
 
                     <ImageView
                         android:layout_width="18dp"
@@ -217,6 +260,8 @@
                         android:importantForAccessibility="no"
                         android:src="@drawable/ic_canvas_arrow" />
                 </FrameLayout>
+            </LinearLayout>
+
             </LinearLayout>
 
             <!-- As abas Projetos / Gravações / Replays ficam na barra de baixo; estes ids seguem existindo. -->
@@ -236,7 +281,7 @@
                 android:id="@+id/containerProjects"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="28dp"
                 android:orientation="vertical">
 
                 <TextView
@@ -247,15 +292,26 @@
                     android:fontFamily="sans-serif-black"
                     android:letterSpacing="-0.02"
                     android:text="Recentes"
-                    android:textColor="#FAFAF6"
+                    android:textColor="@color/blitz_text"
                     android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/recentHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="-8dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="Toque para abrir · segure ou use ⋯ para mais opções"
+                    android:textColor="@color/blitz_faint"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <!-- Empty State Card -->
                 <LinearLayout
                     android:id="@+id/cardEmptyProjects"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/recly_card_dark"
+                    android:background="@drawable/home_card"
                     android:elevation="0dp"
                     android:gravity="center"
                     android:orientation="vertical"
@@ -265,7 +321,7 @@
                     <FrameLayout
                         android:layout_width="96dp"
                         android:layout_height="96dp"
-                        android:background="@drawable/recly_circle_glow">
+                        android:background="@drawable/home_icon_chip_accent">
 
                         <ImageView
                             android:layout_width="54dp"
@@ -281,7 +337,7 @@
                         android:fontFamily="sans-serif-bold"
                         android:gravity="center"
                         android:text="Seu próximo projeto&#10;começa aqui."
-                        android:textColor="#FAFAF6"
+                        android:textColor="@color/blitz_text"
                         android:textSize="18sp" />
 
                     <TextView
@@ -290,7 +346,7 @@
                         android:layout_marginTop="8dp"
                         android:gravity="center"
                         android:text="Importe um vídeo e edite sem&#10;alterar o original."
-                        android:textColor="#9A968C"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
 
                     <!-- Import Video Button -->
@@ -299,7 +355,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="44dp"
                         android:layout_marginTop="20dp"
-                        android:background="@drawable/recly_pill_secondary"
+                        android:background="@drawable/home_tile_primary"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
@@ -318,7 +374,7 @@
                             android:layout_marginStart="8dp"
                             android:fontFamily="sans-serif-medium"
                             android:text="Importar vídeo"
-                            android:textColor="#FAFAF6"
+                            android:textColor="#F2F0EA"
                             android:textSize="14sp" />
                     </LinearLayout>
 
@@ -334,14 +390,14 @@
                             android:layout_width="16dp"
                             android:layout_height="16dp"
                             android:src="@drawable/ic_pro_shield"
-                            android:tint="#9A968C" />
+                            android:tint="@color/blitz_muted" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
                             android:text="Seus arquivos originais são preservados."
-                            android:textColor="#9A968C"
+                            android:textColor="@color/blitz_muted"
                             android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -360,9 +416,27 @@
                 android:id="@+id/containerRecordings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="22dp"
                 android:orientation="vertical"
                 android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="-0.03"
+                    android:text="Gravações"
+                    android:textColor="@color/blitz_text"
+                    android:textSize="30sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Vídeos exportados pelo Blitz. Toque para editar de novo."
+                    android:textColor="@color/blitz_muted"
+                    android:textSize="13sp" />
 
                 <LinearLayout
                     android:id="@+id/cardEmptyRecordings"
@@ -378,7 +452,7 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@drawable/ic_pro_video"
-                        android:tint="#52525B" />
+                        android:tint="@color/blitz_faint2" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -386,7 +460,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhum vídeo ainda"
-                        android:textColor="#FAFAF6"
+                        android:textColor="@color/blitz_text"
                         android:textSize="16sp" />
 
                     <TextView
@@ -394,7 +468,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Os vídeos que você importar ou exportar aparecerão aqui."
-                        android:textColor="#9A968C"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -429,7 +503,7 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@drawable/ic_save_15"
-                        android:tint="#52525B" />
+                        android:tint="@color/blitz_faint2" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -437,7 +511,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhum replay salvo"
-                        android:textColor="#FAFAF6"
+                        android:textColor="@color/blitz_text"
                         android:textSize="16sp" />
 
                     <TextView
@@ -445,7 +519,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Seus replays instantâneos aparecerão aqui."
-                        android:textColor="#9A968C"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -456,6 +530,15 @@
                     android:orientation="vertical"
                     android:visibility="gone" />
             </LinearLayout>
+
+            <!-- Container 4: Config. (montado no código: conta, app, sobre) -->
+            <LinearLayout
+                android:id="@+id/containerSettings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

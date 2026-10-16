@@ -26,8 +26,9 @@ enum class DockTab {
  */
 object DockNavigationHelper {
 
-    private val ACTIVE = Color.parseColor("#FAFAF6")
-    private val INACTIVE = Color.parseColor("#9A968C")
+    // Lidas a cada troca de aba (não guardadas), para seguir o tema claro/escuro escolhido.
+    private val ACTIVE: Int get() = BlitzColors.text
+    private val INACTIVE: Int get() = BlitzColors.faint
 
     private fun tabToIndex(tab: DockTab): Int = when (tab) {
         DockTab.HOME, DockTab.RECORD -> 0

@@ -106,6 +106,11 @@ private const val SEEK_JUMP_US = 150_000L
 
 @android.annotation.SuppressLint("GestureBackNavigation")
 class EditorActivity : Activity() {
+    /** Tema claro/escuro escolhido em Config. > Aparência (não o do sistema): ver BlitzAppearance. */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.termex.replay15.ui.BlitzAppearance.wrap(newBase))
+    }
+
     private data class ImportRequest(val uris: List<String>, val audio: Boolean, val replace: Int)
     private data class Session(val history: ProjectHistory, val baseline: Project, val position: Long, val selected: Int,
         val replace: Int, val stickerReplace: String?, val importing: ImportRequest?)
@@ -146,6 +151,7 @@ class EditorActivity : Activity() {
     private lateinit var projectMetaView: TextView
     private lateinit var captionAutoChip: Button
     private lateinit var clock: TextView
+    private lateinit var transportRuler: TransportRulerView
     private lateinit var play: View
     private lateinit var undo: View
     private lateinit var redo: View
@@ -375,13 +381,16 @@ class EditorActivity : Activity() {
 
     @Suppress("DEPRECATION")
     private fun configureEdgeToEdge() {
+        // Ícones das barras do sistema escuros no tema claro e claros no escuro.
+        val lightBars = EditorStyle.IS_LIGHT
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
-            window.insetsController?.setSystemBarsAppearance(0,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS)
+            val mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(if (lightBars) mask else 0, mask)
         } else {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                (if (lightBars) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
         }
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
@@ -406,7 +415,7 @@ class EditorActivity : Activity() {
                 setStroke(dp(1.5f), EditorStyle.BORDER)
                 cornerRadius = dp(12).toFloat()
             }
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
+            background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), bg, null)
             val icon = ImageView(context).apply {
                 setImageResource(R.drawable.ic_recly_close)
                 imageTintList = ColorStateList.valueOf(EditorStyle.TEXT)
@@ -444,29 +453,34 @@ class EditorActivity : Activity() {
         }
         addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Analisar (canvas): contorno azul-acinzentado, abre as análises que já existem no editor.
+        // Dois botões em pílula, mesma altura e raio: Analisar é secundário (cinza escuro, sem
+        // contorno chamativo) e Exportar é o único vermelho da barra, para ser a ação principal.
+        val pill = dp(18).toFloat()
         val analyzeBtn = action("Analisar") { analyzeMenu() }.apply {
             contentDescription = "Analisar vídeo"
             tooltipText = "Analisar vídeo"
-            minWidth = dp(74); minimumWidth = dp(74)
+            textSize = 13.5f
+            minWidth = dp(80); minimumWidth = dp(80)
             minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(10), dp(2), dp(10), dp(2))
-            setTextColor(0xFFFAFAF6.toInt())
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                setColor(EditorStyle.CARD)
-                setStroke(dp(1.5f), EditorStyle.VIDEO)
-                cornerRadius = dp(10).toFloat()
+            setPadding(dp(14), 0, dp(14), 0)
+            setTextColor(EditorStyle.TEXT)
+            background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), GradientDrawable().apply {
+                setColor(EditorStyle.CARD_ELEVATED)
+                setStroke(dp(1), EditorStyle.BORDER_LIGHT)
+                cornerRadius = pill
             }, null)
         }
-        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(6), 0) })
+        addView(analyzeBtn, LinearLayout.LayoutParams(-2, dp(36)).apply { setMargins(0, 0, dp(8), 0) })
 
-        // Export button (vermelho de ação, texto escuro)
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
             contentDescription = "Exportar vídeo"
             tooltipText = "Exportar vídeo"
-            minWidth = dp(74); minimumWidth = dp(74)
+            textSize = 13.5f
+            minWidth = dp(84); minimumWidth = dp(84)
             minHeight = dp(36); minimumHeight = dp(36)
-            setPadding(dp(10), dp(2), dp(10), dp(2))
+            setPadding(dp(16), 0, dp(16), 0)
+            setTextColor(EditorStyle.ON_ACTION)
+            background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), EditorStyle.accentGradient(pill), null)
         }
         addView(exportBtn, LinearLayout.LayoutParams(-2, dp(36)))
     }
@@ -491,7 +505,7 @@ class EditorActivity : Activity() {
             }
         }
 
-        fun chipBackground(fill: Int, stroke: Int) = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+        fun chipBackground(fill: Int, stroke: Int) = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), GradientDrawable().apply {
             setColor(fill)
             if (stroke != Color.TRANSPARENT) setStroke(dp(1.5f), stroke)
             cornerRadius = dp(8).toFloat()
@@ -550,7 +564,7 @@ class EditorActivity : Activity() {
             textSize = 12f
             minWidth = dp(44); minimumWidth = dp(44)
             setPadding(dp(10), 0, dp(10), 0)
-            setTextColor(EditorStyle.CAPTION)
+            setTextColor(EditorStyle.CAPTION_TEXT)
             background = chipBackground(Color.TRANSPARENT, Color.TRANSPARENT)
         }
         bar.addView(captionAutoChip, LinearLayout.LayoutParams(-2, dp(34)))
@@ -575,8 +589,9 @@ class EditorActivity : Activity() {
         isFocusable = true
         contentDescription = "Estilo $name"
         val box = FrameLayout(this@EditorActivity).apply {
+            // Fundo escuro nos dois temas: a amostra mostra a legenda como ela fica sobre o vídeo.
             this.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                setColor(EditorStyle.CARD_ELEVATED)
+                setColor(EditorStyle.SAMPLE_BG)
                 setStroke(dp(1.5f), EditorStyle.BORDER)
                 cornerRadius = dp(10).toFloat()
             }, null)
@@ -609,7 +624,7 @@ class EditorActivity : Activity() {
     private fun paintCaptionStyleChips() {
         captionStyleChips.forEachIndexed { index, chip ->
             chip.background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                setColor(EditorStyle.BG)
+                setColor(EditorStyle.SAMPLE_BG)
                 setStroke(dp(1.5f), if (index == captionStyleSelected) EditorStyle.CAPTION else EditorStyle.BORDER)
                 cornerRadius = dp(8).toFloat()
             }, null)
@@ -629,7 +644,7 @@ class EditorActivity : Activity() {
         Triple("Contorno", SubtitleStylePatch(fontWeight = 800, color = EditorStyle.CAPTION, backgroundColor = Color.TRANSPARENT,
             outlineColor = Color.BLACK, outlineWidth = .012f, shadow = true), EditorStyle.CAPTION to EditorStyle.BG),
         Triple("Caixa", SubtitleStylePatch(fontWeight = 700, color = Color.WHITE, backgroundColor = 0xE6141414.toInt(),
-            outlineWidth = 0f, shadow = false), EditorStyle.INK to EditorStyle.TEXT),
+            outlineWidth = 0f, shadow = false), EditorStyle.INK to EditorStyle.WHITE),
     )
 
     private fun applyCaptionQuickStyle(patch: SubtitleStylePatch) {
@@ -674,21 +689,31 @@ class EditorActivity : Activity() {
      * Transporte do canvas: timecode mono à esquerda, play branco redondo no centro e
      * desfazer / refazer à direita.
      */
-    private fun buildPlaybackControls(): LinearLayout = row().apply {
+    /**
+     * Barra do play: régua de segundos correndo por trás (mini timeline) e, por cima, play,
+     * contador em duas linhas no centro e desfazer/refazer.
+     */
+    private fun buildPlaybackControls(): View = FrameLayout(this).apply {
+        setBackgroundColor(EditorStyle.BG)
+        transportRuler = TransportRulerView(this@EditorActivity)
+        addView(transportRuler, FrameLayout.LayoutParams(-1, -1))
+        addView(buildPlaybackRow(), FrameLayout.LayoutParams(-1, -1))
+    }
+
+    private fun buildPlaybackRow(): LinearLayout = row().apply {
         gravity = Gravity.CENTER_VERTICAL
         setPadding(dp(14), 0, dp(10), 0)
-        setBackgroundColor(EditorStyle.BG)
 
         fun iconBtn(name: String, iconRes: Int, callback: () -> Unit): View = FrameLayout(this@EditorActivity).apply {
             contentDescription = name
             tooltipText = name
             isClickable = true
             isFocusable = true
-            background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), null,
+            background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), null,
                 GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(18).toFloat() })
             addView(ImageView(context).apply {
                 setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
+                imageTintList = ColorStateList.valueOf(EditorStyle.TEXT)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
             }, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
             setOnClickListener { callback() }
@@ -702,12 +727,12 @@ class EditorActivity : Activity() {
             tooltipText = "Reproduzir"
             isClickable = true
             isFocusable = true
-            background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), null,
+            background = RippleDrawable(ColorStateList.valueOf(EditorStyle.alpha(EditorStyle.TEXT, 0x33)), null,
                 GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) })
             addView(ImageView(context).apply {
                 id = R.id.recly_transport_icon
                 setImageResource(R.drawable.ic_recly_play)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
+                imageTintList = ColorStateList.valueOf(EditorStyle.TEXT)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
             }, FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER))
             setOnClickListener {
@@ -721,14 +746,21 @@ class EditorActivity : Activity() {
         left.addView(play, LinearLayout.LayoutParams(dp(44), dp(44)))
         addView(left, LinearLayout.LayoutParams(0, -1, 1f))
 
-        // Contador "0:03 / 0:09": atual em destaque, total apagado, dígitos tabulares (não "pulam").
+        // Contador em duas linhas: atual em cima (destaque), total embaixo (apagado), dígitos
+        // tabulares (não "pulam"). Fundo preto atrás para a régua passar por trás dele.
         clock = TextView(this@EditorActivity).apply {
             text = clockText(0L, 0L)
             textSize = 15f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             gravity = Gravity.CENTER
             includeFontPadding = false
-            maxLines = 1
+            maxLines = 2
+            setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(dp(14), dp(4), dp(14), dp(4))
+            background = GradientDrawable().apply {
+                setColor(EditorStyle.alpha(EditorStyle.BG, 0xE6))
+                cornerRadius = dp(6).toFloat()
+            }
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
             fontFeatureSettings = "tnum"
             letterSpacing = .01f
@@ -748,16 +780,17 @@ class EditorActivity : Activity() {
         addView(right, LinearLayout.LayoutParams(0, -1, 1f))
     }
 
-    /** Formato do Instagram Edits: "0:03 / 0:09" (h:mm:ss acima de uma hora), atual em destaque. */
+    /** "00:05" em cima (atual, branco) e "01:12" embaixo (total, apagado); h:mm:ss acima de uma hora. */
     private fun clockText(positionUs: Long, durationUs: Long): CharSequence {
         val current = editsTime(positionUs)
         val total = editsTime(durationUs)
         return android.text.SpannableStringBuilder().apply {
             append(current)
-            setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.ForegroundColorSpan(EditorStyle.TEXT), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             val from = length
-            append(" / $total")
+            append("\n$total")
             setSpan(android.text.style.ForegroundColorSpan(EditorStyle.MUTED), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.RelativeSizeSpan(.9f), from, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
@@ -765,7 +798,7 @@ class EditorActivity : Activity() {
         val totalSec = us.coerceAtLeast(0L) / 1_000_000L
         val h = totalSec / 3600; val m = (totalSec % 3600) / 60; val sec = totalSec % 60
         return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, sec)
-        else String.format(java.util.Locale.ROOT, "%d:%02d", m, sec)
+        else String.format(java.util.Locale.ROOT, "%02d:%02d", m, sec)
     }
 
     private fun buildDivider(workspace: LinearLayout, monitor: LinearLayout, landscape: Boolean): View = View(this).apply {
@@ -989,7 +1022,7 @@ class EditorActivity : Activity() {
         val back = TextView(this@EditorActivity).apply {
             text = "‹  Projeto"
             textSize = 12f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
             setPadding(dp(10), dp(6), dp(10), dp(6))
             isClickable = true; isFocusable = true
@@ -997,12 +1030,12 @@ class EditorActivity : Activity() {
             setOnClickListener { closeCompound() }
         }
         addView(back)
-        addView(label("", 12f, 0xFFFAFAF6.toInt()).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
+        addView(label("", 12f, EditorStyle.TEXT).apply { id = R.id.recly_compound_label; setPadding(dp(6), 0, 0, 0) },
             LinearLayout.LayoutParams(0, -2, 1f))
         addView(TextView(this@EditorActivity).apply {
             text = "⋯"
             textSize = 15f
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             setPadding(dp(10), dp(4), dp(10), dp(4))
             isClickable = true; isFocusable = true
             contentDescription = "Opções do compound"
@@ -1039,7 +1072,7 @@ class EditorActivity : Activity() {
     private fun compoundMenu(compound: CompoundClip) {
         val children = CompoundEditing.children(project, compound)
         val body = column().apply { setPadding(dp(16), 0, dp(16), dp(8)) }
-        body.addView(label(compound.name, 16f, Color.WHITE).apply {
+        body.addView(label(compound.name, 16f, EditorStyle.TEXT).apply {
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
         })
         body.addView(label("${children.size} clipes  •  ${timeLabel(CompoundEditing.durationUs(project, compound))}", 12f, EditorStyle.MUTED).apply {
@@ -1221,7 +1254,7 @@ class EditorActivity : Activity() {
         workspace.addView(monitor, if (landscape) LinearLayout.LayoutParams(0, -1, 1.3f) else LinearLayout.LayoutParams(-1, 0, 0.67f))
 
         previewBox = FrameLayout(this).apply {
-            setBackgroundColor(Color.BLACK)
+            setBackgroundColor(EditorStyle.STAGE)
             // Tocar fora do vídeo (faixas pretas) tira a seleção e volta a barra normal.
             setOnClickListener { if (selected in project.videos.indices) clearSelection() }
         }
@@ -1362,11 +1395,11 @@ class EditorActivity : Activity() {
             ::selectVideoLayer, ::pickLut,
             { clip -> effectTools.open(clip) }, { clip -> backgroundRemovalTools.open(clip) }, { clip -> animationTools.open(clip) })
 
-        // Barra de legenda dentro da área da prévia (substitui a tela separada de legendas do canvas).
-        monitor.addView(buildCaptionBar(), LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(dp(8), dp(2), dp(8), dp(2)) })
+        // Sem barra de legenda na frente do vídeo (editor mais limpo): legendas automáticas e
+        // estilos continuam pela ferramenta Texto/Legendas da barra de baixo.
 
         val playbackControls = buildPlaybackControls()
-        monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(46)))
+        monitor.addView(playbackControls, LinearLayout.LayoutParams(-1, dp(56)))
 
         timeline = createTimelineView()
         timelinePane = buildTimelineContainer(landscape)
@@ -1898,6 +1931,7 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
+        if (::transportRuler.isInitialized) { transportRuler.durationUs = project.durationUs; transportRuler.positionUs = position }
         val clockKey = (position / 1_000_000L) * 1_000_003L + project.durationUs / 1_000_000L
         if (clockKey != lastClockKey) {
             lastClockKey = clockKey
@@ -4158,7 +4192,7 @@ class EditorActivity : Activity() {
         ))
 
         if (result.warnings.isNotEmpty()) {
-            body.addView(label(result.warnings.joinToString("\n"), 11f, EditorStyle.CAPTION))
+            body.addView(label(result.warnings.joinToString("\n"), 11f, EditorStyle.CAPTION_TEXT))
         }
 
         lateinit var dialog: Dialog
@@ -4617,7 +4651,7 @@ class EditorActivity : Activity() {
     private fun fontStrip(current: () -> String, onPick: (String) -> Unit): HorizontalScrollView {
         val strip = row().apply { setPadding(0, dp(2), 0, dp(2)) }
         val boxes = mutableListOf<Pair<String, FrameLayout>>()
-        fun boxBackground(selected: Boolean) = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+        fun boxBackground(selected: Boolean) = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), GradientDrawable().apply {
             setColor(if (selected) EditorStyle.CARD_ELEVATED else EditorStyle.CARD)
             setStroke(dp(if (selected) 2 else 1), if (selected) EditorStyle.ACTION else EditorStyle.BORDER)
             cornerRadius = dp(12).toFloat()

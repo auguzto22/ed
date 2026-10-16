@@ -23,7 +23,7 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:statusBarColor">@color/recly_bg_main</item>
         <item name="android:navigationBarColor">@color/recly_bg_main</item>
-        <item name="android:colorAccent">#FFC50022</item>
+        <item name="android:colorAccent">#FFE5163A</item>
         <item name="android:colorControlNormal">#FF9A968C</item>
         <item name="android:textColorHint">#FF6E6B64</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>

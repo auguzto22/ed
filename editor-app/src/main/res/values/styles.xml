@@ -18,7 +18,7 @@
         <item name="android:statusBarColor">@color/recly_bg_main</item>
         <item name="android:navigationBarColor">@color/recly_bg_main</item>
         <!-- Controles nativos (checkbox, switch, cursor, seleção de texto) no vermelho de ação do Recly. -->
-        <item name="android:colorAccent">#FFC50022</item>
+        <item name="android:colorAccent">#FFE5163A</item>
         <item name="android:colorControlNormal">#FF9A968C</item>
         <item name="android:textColorHint">#FF6E6B64</item>
         <item name="android:windowBackground">@color/recly_bg_main</item>
@@ -46,7 +46,7 @@
         <item name="android:navigationBarColor">#FF0B0B0C</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:colorAccent">#FFC50022</item>
+        <item name="android:colorAccent">#FFE5163A</item>
         <item name="android:backgroundDimEnabled">false</item>
     </style>
 

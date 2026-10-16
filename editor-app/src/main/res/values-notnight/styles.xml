@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tema CLARO (Config. > Aparência > Claro). BlitzAppearance força "não noturno" nas telas quando
+     a pessoa escolhe o claro, e estes temas substituem os de values/styles.xml. Mesmos nomes. -->
+<resources>
+    <style name="Theme.Replay15" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/blitz_bg</item>
+        <item name="android:navigationBarColor">@color/blitz_bg</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:colorAccent">#FFE5163A</item>
+        <item name="android:windowBackground">@color/blitz_bg</item>
+        <item name="android:alertDialogTheme">@style/Theme.Replay15.Editor.Alert</item>
+    </style>
+
+    <style name="Theme.Replay15.Editor" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">@color/blitz_editor_bg</item>
+        <item name="android:navigationBarColor">@color/blitz_editor_bg</item>
+        <item name="android:colorAccent">#FFE5163A</item>
+        <item name="android:colorControlNormal">@color/blitz_control</item>
+        <item name="android:textColorHint">@color/blitz_hint</item>
+        <item name="android:windowBackground">@color/blitz_editor_bg</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:alertDialogTheme">@style/Theme.Replay15.Editor.Alert</item>
+    </style>
+
+    <style name="Theme.Replay15.Editor.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorBackground">@color/blitz_dialog_bg</item>
+        <item name="android:dialogCornerRadius">24dp</item>
+        <item name="android:colorAccent">#FFD0103A</item>
+        <item name="android:textColorPrimary">@color/blitz_dialog_text</item>
+        <item name="android:textColorSecondary">@color/blitz_dialog_text2</item>
+        <item name="android:backgroundDimAmount">0.35</item>
+    </style>
+
+    <style name="Theme.Replay15.Picker" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/blitz_picker_nav</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:colorAccent">#FFE5163A</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

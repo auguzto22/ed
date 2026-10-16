@@ -49,7 +49,7 @@ object StickerLibrary {
 
         val search = EditText(this).apply {
             hint = "Buscar sticker (ex.: seta, fogo, festa)"; isSingleLine = true
-            setTextColor(Color.WHITE); setHintTextColor(EditorStyle.MUTED)
+            setTextColor(EditorStyle.TEXT); setHintTextColor(EditorStyle.MUTED)
         }
         body.addView(search)
 
@@ -116,10 +116,10 @@ object StickerLibrary {
         val chipViews = mutableListOf<Pair<TextView, () -> Boolean>>()
         fun styleChips() = chipViews.forEach { (view, active) ->
             val on = active()
-            view.setTextColor(if (on) Color.BLACK else Color.WHITE)
+            view.setTextColor(if (on) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
             view.background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
-                if (on) setColor(Color.WHITE) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
+                if (on) setColor(EditorStyle.ACCENT) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
             }
         }
         fun chip(text: String, active: () -> Boolean, click: () -> Unit) {
