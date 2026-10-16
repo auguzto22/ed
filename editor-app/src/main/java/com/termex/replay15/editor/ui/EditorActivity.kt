@@ -1320,7 +1320,10 @@ class EditorActivity : Activity() {
                 timeline.selectedLayerId = cleanId; this.selected = cleanId
                 updateContextualTools()
             }
-            onEdit = { stickerPanel(it) }
+            onEdit = { stickerBasicPanel(it) }
+            onDelete = { deleteSticker(it) }
+            onMirror = { mirrorSticker(it) }
+            onDuplicate = { duplicateSticker(it) }
         }
         frame.addView(stickerHandles, FrameLayout.LayoutParams(-1, -1))
         trackingOverlay = TrackingOverlayView(this).apply {
@@ -1677,17 +1680,20 @@ class EditorActivity : Activity() {
                 Triple("Excluir", "Excluir", { confirmDeleteVideoLayer(trackId, layer.id) }),
             )
         } else if (stickerId != null) {
-            // Barra da camada de imagem.
+            // Barra do sticker, na ordem do CapCut: Dividir, Animações, Duplicar, Excluir,
+            // Espelhar, Básico, Camadas, Rastreamento; depois as funções extras do Blitz.
             listOf(
+                Triple("Dividir", "Dividir", { splitSticker(stickerId) }),
+                Triple("Animações", "Transformar", { stickerAnimationsPanel(stickerId) }),
+                Triple("Duplicar", "Camada", { duplicateSticker(stickerId) }),
+                Triple("Excluir", "Excluir", { deleteSticker(stickerId) }),
+                Triple("Espelhar", "Transformar", { mirrorSticker(stickerId) }),
+                Triple("Básico", "Transformar", { stickerBasicPanel(stickerId) }),
+                Triple("Camadas", "Camada", { stickerLayersPanel(stickerId) }),
+                Triple("Rastreamento", "Transformar", { stickerTrackingPanel(stickerId) }),
                 Triple("Remover fundo", "Fundo", { backgroundRemovalTools.openSticker(stickerId) }),
-                Triple("Editar", "Ajustar", { stickerPanel(stickerId) }),
                 Triple("Máscara", "Mascaras", { stickerMaskPanel(stickerId) }),
-                Triple("Adicionar", "+ Midia", { openToolGroup("Adicionar") }),
-                Triple("Camadas", "Camada", { openToolGroup("Camadas") }),
-                Triple("Excluir", "Excluir", {
-                    edit(project.copy(stickers = project.stickers.filterNot { it.id == stickerId }))
-                    clearSelection()
-                }),
+                Triple("Substituir", "Substituir", { pickSticker(stickerId) }),
             )
         } else if (clipSelected) listOf(
             // Barra do clipe: as mais usadas direto e o resto em grupos que abrem na barra
@@ -1713,6 +1719,7 @@ class EditorActivity : Activity() {
             Triple("Dividir", "canvas:dividir", { splitAtCursor() }),
             Triple("Aparar", "canvas:aparar", { openTrimTool() }),
             Triple("Texto", "canvas:texto", { openTextTool() }),
+            Triple("Stickers", "canvas:stickers", { lottieStickersPanel() }),
             Triple("Áudio", "canvas:audio", { openAudioTool() }),
             Triple("Camadas", "Camada", { openToolGroup("Camadas") }),
             Triple("Auto Edit", "canvas:autoedit", { autoEditPanel.open() }),
@@ -1804,7 +1811,10 @@ class EditorActivity : Activity() {
     private fun stickerTools(id: String) {
         val sticker = project.stickers.firstOrNull { it.id == id } ?: return
         toolSheet("Camada", sticker.name.take(40), listOf(
-            ToolEntry("Editar", "Tamanho e posição") { stickerPanel(id) },
+            ToolEntry("Básico", "Posição, zoom e giro") { stickerBasicPanel(id) },
+            ToolEntry("Animações", "Entrada, saída e loop") { stickerAnimationsPanel(id) },
+            ToolEntry("Rastreamento", "Seguir um objeto") { stickerTrackingPanel(id) },
+            ToolEntry("Editar", "Tempo e detalhes") { stickerPanel(id) },
             ToolEntry("Máscara", "Forma e recorte") { stickerMaskPanel(id) },
             ToolEntry("Remover fundo", "Recorte automático") { backgroundRemovalTools.openSticker(id) },
             ToolEntry("Keyframe", "Animar no tempo") { addOrToggleKeyframeAtPlayhead() },
@@ -3080,10 +3090,148 @@ class EditorActivity : Activity() {
         }
     }
 
+    // ── Sticker no jeito do CapCut ──────────────────────────────────────────────────────
+
+    private fun selectSticker(id: String) {
+        selected = -1; timeline.selected = -1; handles.selected = null
+        stickerHandles.selected = id
+        timeline.selectedLayerId = id
+        updateContextualTools()
+    }
+
+    /** Dividir: corta o sticker no cursor; a parte da direita fica selecionada. */
+    private fun splitSticker(id: String) {
+        val sticker = project.stickers.firstOrNull { it.id == id } ?: return
+        if (project.stickers.size >= MAX_STICKERS) { error("Limite de $MAX_STICKERS camadas de imagem"); return }
+        val result = StickerEditing.split(project, id, position)
+        if (result == null) {
+            error(if (position <= sticker.startUs || position >= sticker.endUs) "Coloque o cursor em cima do sticker para dividir."
+                else "Muito perto da borda do sticker para dividir.")
+            return
+        }
+        edit(result.first)
+        selectSticker(result.second)
+    }
+
+    private fun duplicateSticker(id: String) {
+        val result = StickerEditing.duplicate(project, id)
+        if (result == null) { error("Limite de $MAX_STICKERS camadas de imagem"); return }
+        edit(result.first)
+        selectSticker(result.second)
+    }
+
+    private fun deleteSticker(id: String) {
+        edit(StickerEditing.delete(project, id))
+        clearSelection()
+    }
+
+    private fun mirrorSticker(id: String) {
+        edit(StickerEditing.mirror(project, id))
+    }
+
+    private fun replaceStickerDraft(changed: StickerClip): Project =
+        project.copy(stickers = project.stickers.map { if (it.id == changed.id) changed else it })
+
+    /** Animações: abas Entrada · Saída · Loop, tocando o trecho da animação na prévia. */
+    private fun stickerAnimationsPanel(id: String) {
+        val sticker = project.stickers.firstOrNull { it.id == id } ?: return
+        selectSticker(id)
+        val originalPosition = position
+        StickerAnimationTools.show(this, sticker,
+            preview = { draft, kind ->
+                previewEdit(replaceStickerDraft(draft))
+                val a = draft.animations
+                val (from, to) = when (kind) {
+                    StickerAnimationKind.IN -> draft.startUs to (draft.startUs + a.enterUs + 400_000L)
+                    StickerAnimationKind.OUT -> (draft.endUs - a.exitUs - 400_000L) to draft.endUs
+                    StickerAnimationKind.LOOP -> draft.startUs to (draft.startUs + a.loopUs * 2)
+                }
+                startPreviewLoop(from.coerceIn(draft.startUs, draft.endUs), to.coerceIn(draft.startUs, draft.endUs))
+            },
+            restore = {
+                stopPreviewLoop()
+                previewDraft = null
+                preview.update(project)
+                seek(originalPosition)
+            },
+        ) { changed ->
+            stopPreviewLoop()
+            edit(replaceStickerDraft(changed))
+            seek(originalPosition)
+            feedback(if (changed.animations.isNone) "Animações removidas" else "Animação aplicada")
+        }
+    }
+
+    /** Básico: Posição (Eixo X/Y), Zoom, Girar e Opacidade em réguas. */
+    private fun stickerBasicPanel(id: String) {
+        val sticker = project.stickers.firstOrNull { it.id == id } ?: return
+        selectSticker(id)
+        val (w, h) = project.dimensions()
+        StickerBasicTools.show(this, sticker, position, w, h,
+            preview = { draft -> previewEdit(replaceStickerDraft(draft)); stickerHandles.stickers = previewDraft?.stickers ?: project.stickers },
+            restore = {
+                previewDraft = null
+                preview.update(project)
+                stickerHandles.stickers = project.stickers
+            },
+        ) { changed -> edit(replaceStickerDraft(changed)) }
+    }
+
+    /** Organizar camadas: arrastar para mudar quem fica na frente. */
+    private fun stickerLayersPanel(id: String) {
+        selectSticker(id)
+        StickerLayerTools.show(this, StickerEditing.frontToBack(project), id,
+            onSelect = { selectSticker(it) },
+        ) { ids -> edit(StickerEditing.reorder(project, ids)) }
+    }
+
+    /** Rastreamento: o sticker segue um objeto do vídeo de baixo. */
+    private fun stickerTrackingPanel(id: String) {
+        val sticker = project.stickers.firstOrNull { it.id == id } ?: return
+        selectSticker(id)
+        val at = if (position in sticker.startUs until sticker.endUs) position else sticker.startUs
+        val index = project.indexAt(at)
+        val clip = project.videos.getOrNull(index)
+        if (clip == null || clip.image) { error("Coloque o sticker sobre um vídeo para rastrear."); return }
+        if (clip.reverse) { error("O rastreamento não funciona em clipe reverso."); return }
+        val clipStart = project.startOf(index)
+        val clipEnd = clipStart + clip.durationUs
+        val endUs = minOf(sticker.endUs, clipEnd)
+        if (endUs - at < 300_000L) { error("O sticker precisa ficar mais tempo sobre o vídeo para rastrear."); return }
+        val sourceStart = clip.timeMap.sourceAt((at - clipStart).coerceIn(0L, clip.durationUs))
+        val sourceEnd = clip.timeMap.sourceAt((endUs - clipStart).coerceIn(0L, clip.durationUs))
+        val (canvasW, canvasH) = project.dimensions()
+        val fill = project.canvasFill
+        val video = StickerTrackingTools.VideoUnder(
+            uri = clip.uri,
+            sourceStartUs = minOf(sourceStart, sourceEnd),
+            sourceEndUs = maxOf(sourceStart, sourceEnd),
+            timelineAt = { sourceUs ->
+                if (sourceUs < clip.inUs || sourceUs > clip.outUs) null
+                else clipStart + clip.timeMap.timelineAt(sourceUs)
+            },
+            geometryAt = { sourceUs ->
+                val transform = clip.transformAt(sourceUs)
+                com.termex.replay15.editor.tracking.LayerGeometry(
+                    sourceWidth = clip.width, sourceHeight = clip.height, crop = clip.crop,
+                    fixedRotation = clip.rotation, flip = clip.flip, zoom = transform.zoom,
+                    x = transform.x, y = transform.y, rotation = transform.rotation,
+                    canvasWidth = canvasW, canvasHeight = canvasH, fill = fill,
+                )
+            },
+        )
+        val start = sticker.transformAt(at)
+        seek(at)
+        StickerTrackingTools.show(this, sticker, start.x, start.y, video, trackingOverlay) { changed ->
+            edit(replaceStickerDraft(changed))
+            seek(at)
+        }
+    }
+
     private fun lottieStickersPanel() {
         if (project.durationUs <= 0) { error("Adicione um vídeo antes do sticker"); return }
         if (project.stickers.size >= 24) { error("Limite de 24 camadas visuais atingido"); return }
-        StickerLibrary.show(this) { def ->
+        StickerLibrary.show(this, onGallery = { pickSticker() }) { def ->
             val start = position.coerceIn(0L, (project.durationUs - SECOND).coerceAtLeast(0L))
             val end = (start + def.defaultDurationUs).coerceAtMost(project.durationUs)
             val newSticker = StickerClip(
@@ -3835,7 +3983,6 @@ class EditorActivity : Activity() {
         var rotation = sticker.rotation.toInt()
         var horizontal = (sticker.x * 100).toInt()
         var vertical = (sticker.y * 100).toInt()
-        var animation = sticker.animation
         slider(body, "Tamanho (%)", size, 150, minimum = 3) { size = it }
         slider(body, "Opacidade (%)", opacity, 100, minimum = 5) { opacity = it }
         slider(body, "Rotação", rotation + 180, 360) { rotation = it - 180 }
@@ -3843,18 +3990,13 @@ class EditorActivity : Activity() {
         slider(body, "Vertical (%)", vertical, 100) { vertical = it }
         val flip = CheckBox(this).apply { this.text = "Espelhar horizontalmente"; isChecked = sticker.flip }
         body.addView(flip)
-        lateinit var animationButton: Button
-        animationButton = action("Animação: ${animation.label}") {
-            choose("Animação da camada", TextAnimation.entries.map { it.label }) { index ->
-                animation = TextAnimation.entries[index]
-                animationButton.text = "Animação: ${animation.label}"
-            }
-        }
-        body.addView(animationButton, LinearLayout.LayoutParams(-1, dp(54)))
+        lateinit var dialog: Dialog
+        // As animações agora ficam no painel próprio (Entrada · Saída · Loop).
+        body.addView(action("Animações (entrada, saída e loop)") { dialog.dismiss(); stickerAnimationsPanel(id) },
+            LinearLayout.LayoutParams(-1, dp(54)))
         val start = numberField(body, "Início na timeline (s)", sticker.startUs / SECOND.toDouble())
         val end = numberField(body, "Fim na timeline (s)", sticker.endUs / SECOND.toDouble())
         body.addView(label("Arraste na prévia para posicionar, pince para redimensionar e toque duas vezes para editar.", 11f, EditorStyle.MUTED))
-        lateinit var dialog: Dialog
         body.addView(action("Aplicar camada", true) {
             runCatching {
                 val startUs = seconds(start)
@@ -3863,7 +4005,7 @@ class EditorActivity : Activity() {
                 sticker.copy(
                     startUs = startUs, endUs = endUs, x = horizontal / 100f, y = vertical / 100f,
                     size = size / 100f, rotation = rotation.toFloat(), opacity = opacity / 100f,
-                    flip = flip.isChecked, animation = animation,
+                    flip = flip.isChecked,
                 )
             }.fold({ changed ->
                 edit(project.copy(stickers = project.stickers.map { if (it.id == id) changed else it }))

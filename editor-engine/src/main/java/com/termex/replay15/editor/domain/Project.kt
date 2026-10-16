@@ -608,6 +608,8 @@ data class StickerClip(
     val scale: Float = 1f,
     val backgroundRemoval: BackgroundRemovalEffect = BackgroundRemovalEffect(),
     val mask: MaskState? = null,
+    /** Entrada, saída e loop (painel Animações). Salvo pelo StickerAnimationCodec (schema 31). */
+    val animations: StickerAnimations = StickerAnimations(),
 ) {
     val durationUs: Long
         get() = (endUs - startUs).coerceAtLeast(0L)

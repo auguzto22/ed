@@ -533,7 +533,7 @@ fun canvasIconFor(name: String): String? = when (name) {
     "Extrair áudio" -> "canvas:extrair_audio"
     "Batidas" -> "canvas:batidas"
     "Clipe" -> "canvas:presets"
-    "Transformar" -> "canvas:transformar"
+    "Transformar", "Básico" -> "canvas:transformar"
     "Girar" -> "canvas:girar"
     "Espelhar" -> "canvas:espelhar"
     "Duplicar" -> "canvas:duplicar"

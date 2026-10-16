@@ -74,6 +74,22 @@ data class LayerGeometry(
         return (crop.left + u * (crop.right - crop.left)) to (crop.top + vDown * (crop.bottom - crop.top))
     }
 
+    /**
+     * Inverse of [canvasToSource]: source frame point (0..1, y down) -> canvas point (0..1, y down).
+     * Used to make a sticker follow a tracked object, since the sticker lives in canvas space.
+     */
+    fun sourceToCanvas(sourceX: Float, sourceY: Float): Pair<Float, Float> {
+        val cropW = (crop.right - crop.left).coerceAtLeast(1e-4f)
+        val cropH = (crop.bottom - crop.top).coerceAtLeast(1e-4f)
+        val u = (sourceX - crop.left) / cropW
+        val vDown = (sourceY - crop.top) / cropH
+        val qx = u * 2f - 1f
+        val qy = 1f - vDown * 2f
+        val nx = m00 * qx + m01 * qy + tx
+        val ny = m10 * qx + m11 * qy + ty
+        return (nx + 1f) / 2f to (1f - ny) / 2f
+    }
+
     /** Bounding box of the selection mapped into the source frame, clamped to valid values. */
     fun regionToSource(region: TrackingRegion): TrackingRegion {
         val corners = listOf(-1f to -1f, 1f to -1f, -1f to 1f, 1f to 1f).map { (dx, dy) ->

@@ -16,7 +16,8 @@ import kotlin.math.*
 /**
  * Professional direct manipulation overlay for sticker and image layers on preview.
  *
- * Provides rotation-aware hit-testing, bounding box with corner handles and top rotation knob,
+ * Provides rotation-aware hit-testing, a bounding box with CapCut-style corner buttons (delete,
+ * mirror, duplicate and a rotate/scale knob),
  * translation drag with magnetic snapping, two-finger pinch-scale and rotation,
  * frame-coalesced realtime updates via RealtimeProjectState, and clean single-commit undo.
  */
@@ -45,6 +46,28 @@ class StickerHandlesView(context: Context) : View(context) {
     var onCancelPreview: () -> Unit = {}
     var onSelected: (String) -> Unit = {}
     var onEdit: (String) -> Unit = {}
+    /** Botões nos cantos da caixa, como no CapCut: excluir, espelhar e duplicar. */
+    var onDelete: (String) -> Unit = {}
+    var onMirror: (String) -> Unit = {}
+    var onDuplicate: (String) -> Unit = {}
+
+    /**
+     * Proporção (largura/altura) de cada sticker, lida em segundo plano na primeira vez.
+     * A caixa tem o mesmo tamanho do desenho da prévia/exportação: altura = size × altura do quadro.
+     */
+    private val aspects = java.util.concurrent.ConcurrentHashMap<String, Float>()
+    private val aspectPending = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+
+    private fun aspectOf(sticker: StickerClip): Float {
+        aspects[sticker.uri]?.let { return it }
+        if (aspectPending.add(sticker.uri)) aspectWorker.execute {
+            val aspect = runCatching { readAspect(context, sticker.uri) }.getOrNull()?.takeIf { it.isFinite() && it > 0f } ?: 1f
+            aspects[sticker.uri] = aspect
+            aspectPending.remove(sticker.uri)
+            postInvalidateOnAnimation()
+        }
+        return 1f
+    }
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -54,6 +77,11 @@ class StickerHandlesView(context: Context) : View(context) {
         MOVE,
         CORNER_SCALE,
         ROTATION_HANDLE,
+        /** Canto de baixo à direita: arrastar gira e muda o tamanho ao mesmo tempo. */
+        ROTATE_SCALE,
+        BUTTON_DELETE,
+        BUTTON_MIRROR,
+        BUTTON_DUPLICATE,
         PINCH,
     }
 
@@ -124,9 +152,9 @@ class StickerHandlesView(context: Context) : View(context) {
     }
 
     private fun bounds(sticker: StickerClip, transform: TransformState = currentTransform(sticker)): RectF {
-        val side = sticker.size * minOf(width, height)
-        val scaledW = side * transform.scaleX
-        val scaledH = side * transform.scaleY
+        // Mesmo tamanho do desenho (GpuPreviewRenderer/TextCanvasOverlay): altura = size × H.
+        val scaledH = sticker.size * height * transform.scaleY
+        val scaledW = sticker.size * height * aspectOf(sticker) * transform.scaleX
         val centerX = width * transform.x
         val centerY = height * transform.y
         val pad = 6f * resources.displayMetrics.density
@@ -158,10 +186,6 @@ class StickerHandlesView(context: Context) : View(context) {
         val centerX = rect.centerX()
         val centerY = rect.centerY()
 
-        val stemLength = 26f * density
-        val knobRadius = 6.5f * density
-        val cornerRadius = 5.5f * density
-
         // Draw Snapping Guide Lines
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
@@ -186,36 +210,7 @@ class StickerHandlesView(context: Context) : View(context) {
         paint.style = Paint.Style.STROKE
         canvas.drawRoundRect(rect, 4f * density, 4f * density, paint)
 
-        // Rotation Stem & Knob
-        paint.color = EditorStyle.WHITE
-        paint.strokeWidth = 1.5f * density
-        canvas.drawLine(centerX, rect.top, centerX, rect.top - stemLength, paint)
-
-        // Rotation Knob
-        paint.style = Paint.Style.FILL
-        paint.color = Color.WHITE
-        canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
-        paint.style = Paint.Style.STROKE
-        paint.color = EditorStyle.WHITE
-        paint.strokeWidth = 2f * density
-        canvas.drawCircle(centerX, rect.top - stemLength, knobRadius, paint)
-
-        // Corner Handles
-        val corners = listOf(
-            rect.left to rect.top,
-            rect.right to rect.top,
-            rect.left to rect.bottom,
-            rect.right to rect.bottom,
-        )
-        for ((cx, cy) in corners) {
-            paint.style = Paint.Style.FILL
-            paint.color = Color.WHITE
-            canvas.drawCircle(cx, cy, cornerRadius, paint)
-            paint.style = Paint.Style.STROKE
-            paint.color = EditorStyle.WHITE
-            paint.strokeWidth = 2f * density
-            canvas.drawCircle(cx, cy, cornerRadius, paint)
-        }
+        drawCornerButtons(canvas, rect, density)
 
         canvas.restore()
 
@@ -223,6 +218,57 @@ class StickerHandlesView(context: Context) : View(context) {
         if (isDragging && pressedClip != null) {
             drawHud(canvas, transform, density)
         }
+    }
+
+    /** Cantos da caixa (no espaço sem rotação): excluir, espelhar, duplicar, girar/redimensionar. */
+    private fun cornerButtons(rect: RectF): List<Pair<TouchMode, PointF>> = listOf(
+        TouchMode.BUTTON_DELETE to PointF(rect.left, rect.top),
+        TouchMode.BUTTON_MIRROR to PointF(rect.right, rect.top),
+        TouchMode.BUTTON_DUPLICATE to PointF(rect.left, rect.bottom),
+        TouchMode.ROTATE_SCALE to PointF(rect.right, rect.bottom),
+    )
+
+    private fun drawCornerButtons(canvas: Canvas, rect: RectF, density: Float) {
+        val radius = 11f * density
+        val glyph = 4.5f * density
+        cornerButtons(rect).forEach { (mode, point) ->
+            paint.style = Paint.Style.FILL
+            paint.color = 0xF0FFFFFF.toInt()
+            canvas.drawCircle(point.x, point.y, radius, paint)
+            paint.style = Paint.Style.STROKE
+            paint.color = 0xFF141414.toInt()
+            paint.strokeWidth = 1.7f * density
+            paint.strokeCap = Paint.Cap.ROUND
+            val cx = point.x; val cy = point.y
+            when (mode) {
+                TouchMode.BUTTON_DELETE -> {
+                    canvas.drawLine(cx - glyph, cy - glyph, cx + glyph, cy + glyph, paint)
+                    canvas.drawLine(cx + glyph, cy - glyph, cx - glyph, cy + glyph, paint)
+                }
+                TouchMode.BUTTON_MIRROR -> {
+                    canvas.drawLine(cx, cy - glyph * 1.2f, cx, cy + glyph * 1.2f, paint)
+                    val path = Path().apply {
+                        moveTo(cx - 1.5f * density, cy - glyph); lineTo(cx - glyph * 1.4f, cy + glyph); lineTo(cx - 1.5f * density, cy + glyph); close()
+                        moveTo(cx + 1.5f * density, cy - glyph); lineTo(cx + glyph * 1.4f, cy + glyph); lineTo(cx + 1.5f * density, cy + glyph); close()
+                    }
+                    canvas.drawPath(path, paint)
+                }
+                TouchMode.BUTTON_DUPLICATE -> {
+                    canvas.drawLine(cx - glyph, cy, cx + glyph, cy, paint)
+                    canvas.drawLine(cx, cy - glyph, cx, cy + glyph, paint)
+                }
+                else -> {
+                    // Seta circular: girar e redimensionar.
+                    val arc = RectF(cx - glyph, cy - glyph, cx + glyph, cy + glyph)
+                    canvas.drawArc(arc, -60f, 280f, false, paint)
+                    val tipAngle = Math.toRadians(-60.0)
+                    val tx = cx + glyph * cos(tipAngle).toFloat(); val ty = cy + glyph * sin(tipAngle).toFloat()
+                    canvas.drawLine(tx, ty, tx - 3f * density, ty - .5f * density, paint)
+                    canvas.drawLine(tx, ty, tx + .5f * density, ty + 3f * density, paint)
+                }
+            }
+        }
+        paint.strokeCap = Paint.Cap.BUTT
     }
 
     private fun drawHud(canvas: Canvas, transform: TransformState, density: Float) {
@@ -288,31 +334,18 @@ class StickerHandlesView(context: Context) : View(context) {
                 val lx = local[0]
                 val ly = local[1]
 
-                val stemLength = 26f * density
-                val knobX = rect.centerX()
-                val knobY = rect.top - stemLength
-                val distToKnob = hypot(lx - knobX, ly - knobY)
-
-                if (distToKnob <= hitRadius) {
+                val buttonHit = cornerButtons(rect)
+                    .map { (mode, point) -> mode to hypot(lx - point.x, ly - point.y) }
+                    .filter { it.second <= hitRadius }
+                    .minByOrNull { it.second }
+                if (buttonHit != null) {
                     resolvedTarget = selectedCandidate
-                    resolvedMode = TouchMode.ROTATION_HANDLE
+                    resolvedMode = buttonHit.first
                     initialRotationKnobAngle = atan2(event.y - rect.centerY(), event.x - rect.centerX())
-                } else {
-                    val corners = listOf(
-                        rect.left to rect.top,
-                        rect.right to rect.top,
-                        rect.left to rect.bottom,
-                        rect.right to rect.bottom,
-                    )
-                    val minCornerDist = corners.minOfOrNull { (cx, cy) -> hypot(lx - cx, ly - cy) } ?: Float.MAX_VALUE
-                    if (minCornerDist <= hitRadius) {
-                        resolvedTarget = selectedCandidate
-                        resolvedMode = TouchMode.CORNER_SCALE
-                        initialCornerDist = hypot(event.x - rect.centerX(), event.y - rect.centerY()).coerceAtLeast(1f)
-                    } else if (rect.contains(lx, ly) || containsBody(selectedCandidate, t, event.x, event.y)) {
-                        resolvedTarget = selectedCandidate
-                        resolvedMode = TouchMode.MOVE
-                    }
+                    initialCornerDist = hypot(event.x - rect.centerX(), event.y - rect.centerY()).coerceAtLeast(1f)
+                } else if (rect.contains(lx, ly) || containsBody(selectedCandidate, t, event.x, event.y)) {
+                    resolvedTarget = selectedCandidate
+                    resolvedMode = TouchMode.MOVE
                 }
             }
 
@@ -394,6 +427,17 @@ class StickerHandlesView(context: Context) : View(context) {
                         val newRotation = ((initialTransform!!.rotation + angleDiff + 180f) % 360f + 360f) % 360f - 180f
                         movingTransform = (movingTransform ?: initialTransform!!).copy(rotation = newRotation)
                     }
+                    touchMode == TouchMode.ROTATE_SCALE -> {
+                        val curAngle = atan2(event.y - centerY, event.x - centerX)
+                        val angleDiff = Math.toDegrees((curAngle - initialRotationKnobAngle).toDouble()).toFloat()
+                        val newRotation = ((initialTransform!!.rotation + angleDiff + 180f) % 360f + 360f) % 360f - 180f
+                        val curDist = hypot(event.x - centerX, event.y - centerY)
+                        val ratio = (curDist / initialCornerDist).coerceIn(0.05f, 20f)
+                        val newScale = (initialTransform!!.scaleX * ratio).coerceIn(0.05f, 10f)
+                        movingTransform = (movingTransform ?: initialTransform!!).copy(rotation = newRotation, scaleX = newScale, scaleY = newScale)
+                    }
+                    touchMode == TouchMode.BUTTON_DELETE || touchMode == TouchMode.BUTTON_MIRROR ||
+                        touchMode == TouchMode.BUTTON_DUPLICATE -> Unit
                     touchMode == TouchMode.CORNER_SCALE -> {
                         val curDist = hypot(event.x - centerX, event.y - centerY)
                         val ratio = (curDist / initialCornerDist).coerceIn(0.05f, 20f)
@@ -438,7 +482,19 @@ class StickerHandlesView(context: Context) : View(context) {
                 pendingTransform = null
                 frameScheduled = false
 
-                if (isDragging && finalTransform != initialTransform) {
+                val button = touchMode
+                val isButtonTap = hypot(event.x - downX, event.y - downY) < 12f * density
+                if (button == TouchMode.BUTTON_DELETE || button == TouchMode.BUTTON_MIRROR || button == TouchMode.BUTTON_DUPLICATE) {
+                    onCancelPreview()
+                    if (isButtonTap) {
+                        performHaptic()
+                        when (button) {
+                            TouchMode.BUTTON_DELETE -> onDelete(clip.id)
+                            TouchMode.BUTTON_MIRROR -> onMirror(clip.id)
+                            else -> onDuplicate(clip.id)
+                        }
+                    }
+                } else if (isDragging && finalTransform != initialTransform) {
                     val committedClip = applyTransformToClip(clip, finalTransform)
                     onChange(committedClip)
                 } else {
@@ -530,5 +586,31 @@ class StickerHandlesView(context: Context) : View(context) {
     override fun performClick(): Boolean {
         super.performClick()
         return true
+    }
+
+    companion object {
+        private val aspectWorker = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "sticker-aspect").apply { isDaemon = true } }
+
+        /** Largura/altura do sticker, igual ao que a prévia e a exportação desenham. */
+        internal fun readAspect(context: Context, uri: String): Float? {
+            if (com.termex.replay15.editor.lottie.LottieLayerRenderer.isLottieUri(uri)) {
+                val bounds = com.termex.replay15.editor.lottie.LottieLayerRenderer.loadComposition(context, uri)?.bounds ?: return null
+                return bounds.width().toFloat() / bounds.height().coerceAtLeast(1)
+            }
+            val isAsset = uri.startsWith("asset:///") || uri.startsWith("file:///android_asset/") ||
+                (uri.startsWith("editor/") && !uri.startsWith("/"))
+            val source = if (isAsset) {
+                ImageDecoder.createSource(context.assets, uri.removePrefix("file:///android_asset/").removePrefix("asset:///").removePrefix("/"))
+            } else ImageDecoder.createSource(context.contentResolver, android.net.Uri.parse(uri))
+            var aspect: Float? = null
+            runCatching {
+                ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                    aspect = info.size.width.toFloat() / info.size.height.coerceAtLeast(1)
+                    // Só o cabeçalho interessa: decodifica num tamanho mínimo.
+                    decoder.setTargetSize(1, 1)
+                }.recycle()
+            }
+            return aspect
+        }
     }
 }
