@@ -61,6 +61,42 @@ class AnimatedCaptionPreview(context: Context, private val style: AnimatedCaptio
 }
 
 object AnimatedCaptionPicker {
+    /** Fundo do quadradinho: moldura vermelha no escolhido, como os chips selecionados do canvas. */
+    private fun Context.paintTile(tile: FrameLayout, on: Boolean) {
+        tile.background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+            // Fundo escuro nos dois temas: é a prévia da legenda como ela fica sobre o vídeo.
+            setColor(0xFF0A0A0B.toInt())
+            setStroke(dp(if (on) 2 else 1), if (on) EditorStyle.ACTION else EditorStyle.BORDER)
+            cornerRadius = dp(12).toFloat()
+        }, null)
+    }
+
+    /** Quadradinho de um estilo: legenda animada por cima do vídeo de referência tocando. */
+    private fun Context.styleTile(style: AnimatedCaptionStyle, onTap: () -> Unit): FrameLayout = FrameLayout(this).apply {
+        contentDescription = "Estilo ${style.name}"
+        isClickable = true
+        isFocusable = true
+        clipToOutline = true
+        // Levemente escurecido, para ver como o estilo se lê sobre imagem de verdade.
+        val backdrop = android.widget.ImageView(context).apply {
+            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        addView(backdrop, FrameLayout.LayoutParams(-1, -1))
+        ReferencePreviewFrames.withLoop(context) { frames ->
+            if (frames != null) backdrop.setImageDrawable(ReferenceLoopDrawable(frames).apply {
+                colorFilter = android.graphics.PorterDuffColorFilter(0x59000000, android.graphics.PorterDuff.Mode.SRC_ATOP)
+                start()
+            })
+        }
+        addView(AnimatedCaptionPreview(context, style), FrameLayout.LayoutParams(-1, -1))
+        setOnClickListener {
+            animate().cancel(); scaleX = .94f; scaleY = .94f
+            animate().scaleX(1f).scaleY(1f).setDuration(160).start()
+            onTap()
+        }
+    }
+
     /**
      * Grade de estilos (3 por linha). [onPick] recebe o estilo tocado; a moldura vermelha marca
      * o escolhido, como os chips selecionados do canvas.
@@ -68,45 +104,12 @@ object AnimatedCaptionPicker {
     fun build(context: Context, selectedId: String?, onPick: (AnimatedCaptionStyle) -> Unit): LinearLayout = with(context) {
         val grid = column()
         val tiles = mutableListOf<Pair<String, FrameLayout>>()
-        fun paint(selected: String?) = tiles.forEach { (id, tile) ->
-            val on = id == selected
-            tile.background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
-                // Fundo escuro nos dois temas: é a prévia da legenda como ela fica sobre o vídeo.
-                setColor(0xFF0A0A0B.toInt())
-                setStroke(dp(if (on) 2 else 1), if (on) EditorStyle.ACTION else EditorStyle.BORDER)
-                cornerRadius = dp(12).toFloat()
-            }, null)
-        }
+        fun paint(selected: String?) = tiles.forEach { (id, tile) -> paintTile(tile, id == selected) }
         AnimatedCaptionStyles.all.chunked(3).forEach { rowStyles ->
             val line = row()
             rowStyles.forEach { style ->
                 val cell = column().apply { gravity = Gravity.CENTER_HORIZONTAL }
-                val tile = FrameLayout(this).apply {
-                    contentDescription = "Estilo ${style.name}"
-                    isClickable = true
-                    isFocusable = true
-                    clipToOutline = true
-                    // Legenda por cima do vídeo de referência tocando, levemente escurecido,
-                    // para ver como o estilo se lê sobre imagem de verdade.
-                    val backdrop = android.widget.ImageView(context).apply {
-                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                    }
-                    addView(backdrop, FrameLayout.LayoutParams(-1, -1))
-                    ReferencePreviewFrames.withLoop(context) { frames ->
-                        if (frames != null) backdrop.setImageDrawable(ReferenceLoopDrawable(frames).apply {
-                            colorFilter = android.graphics.PorterDuffColorFilter(0x59000000, android.graphics.PorterDuff.Mode.SRC_ATOP)
-                            start()
-                        })
-                    }
-                    addView(AnimatedCaptionPreview(context, style), FrameLayout.LayoutParams(-1, -1))
-                    setOnClickListener {
-                        paint(style.id)
-                        animate().cancel(); scaleX = .94f; scaleY = .94f
-                        animate().scaleX(1f).scaleY(1f).setDuration(160).start()
-                        onPick(style)
-                    }
-                }
+                val tile = styleTile(style) { paint(style.id); onPick(style) }
                 tiles += style.id to tile
                 cell.addView(tile, LinearLayout.LayoutParams(-1, dp(68)))
                 cell.addView(label(style.name, 11f, EditorStyle.TEXT).apply {
@@ -119,5 +122,34 @@ object AnimatedCaptionPicker {
         }
         paint(selectedId)
         grid
+    }
+
+    /**
+     * Os mesmos estilos numa fileira só, rolando para o lado (cartão "Modelos" da folha de
+     * Legendas automáticas, jeito do CapCut). O escolhido vem primeiro na tela.
+     */
+    fun buildRow(context: Context, selectedId: String?, onPick: (AnimatedCaptionStyle) -> Unit): android.widget.HorizontalScrollView = with(context) {
+        val strip = row()
+        val tiles = mutableListOf<Pair<String, FrameLayout>>()
+        fun paint(selected: String?) = tiles.forEach { (id, tile) -> paintTile(tile, id == selected) }
+        AnimatedCaptionStyles.all.forEach { style ->
+            val cell = column().apply { gravity = Gravity.CENTER_HORIZONTAL }
+            val tile = styleTile(style) { paint(style.id); onPick(style) }
+            tiles += style.id to tile
+            cell.addView(tile, LinearLayout.LayoutParams(dp(78), dp(62)))
+            cell.addView(label(style.name, 10.5f, EditorStyle.MUTED).apply {
+                gravity = Gravity.CENTER; maxLines = 1; setPadding(0, dp(4), 0, 0)
+            }, LinearLayout.LayoutParams(dp(78), -2))
+            strip.addView(cell, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
+        }
+        paint(selectedId)
+        val scroller = android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(strip)
+        }
+        val index = AnimatedCaptionStyles.all.indexOfFirst { it.id == selectedId }
+        if (index > 0) scroller.post { scroller.scrollTo(index * dp(86), 0) }
+        scroller
     }
 }
