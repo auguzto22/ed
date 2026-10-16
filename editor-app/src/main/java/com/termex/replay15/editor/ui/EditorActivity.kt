@@ -453,7 +453,8 @@ class EditorActivity : Activity() {
         }
         addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
 
-        // Export button (vermelho de ação, texto escuro)
+        // Exportar: pílula vermelha, a única ação principal da barra.
+        val pill = dp(18).toFloat()
         val exportBtn = action("Exportar", true) { exportPanel(true) }.apply {
             contentDescription = "Exportar vídeo"
             tooltipText = "Exportar vídeo"
