@@ -259,7 +259,7 @@ class TimelineView(context: Context) : View(context) {
         val s = (totalSec % 60).toInt()
         return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", m, s, frames)
     }
-    private fun text(c: Canvas, value: String, xx: Float, yy: Float, color: Int = Color.WHITE, size: Float = 10f) {
+    private fun text(c: Canvas, value: String, xx: Float, yy: Float, color: Int = EditorStyle.TEXT, size: Float = 10f) {
         paint.color = color; paint.textSize = dp(size); paint.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         c.drawText(value, xx, yy, paint)
     }
@@ -309,11 +309,11 @@ class TimelineView(context: Context) : View(context) {
             val xx = x(tick)
             if (tick % labelStep == 0L) {
                 // O rótulo que passa sob a agulha acende; os outros ficam discretos.
-                paint.color = if (abs(xx - width / 2f) < dp(16f)) Color.WHITE else 0x8CFFFFFF.toInt()
+                paint.color = if (abs(xx - width / 2f) < dp(16f)) EditorStyle.TEXT else EditorStyle.alpha(EditorStyle.TEXT, 0x8C)
                 val secs = tick / SECOND
                 c.drawText(String.format(java.util.Locale.ROOT, "%d:%02d", secs / 60, secs % 60), xx, rulerY, paint)
             } else {
-                paint.color = 0x59FFFFFF
+                paint.color = EditorStyle.alpha(EditorStyle.TEXT, 0x59)
                 c.drawCircle(xx, rulerY - dp(3.5f), dp(1.5f), paint)
             }
             tick += dotStep
@@ -322,13 +322,13 @@ class TimelineView(context: Context) : View(context) {
         project.camera.keyframes.forEach { key ->
             val xx = x(key.timeUs)
             if (xx >= gutter && xx <= width) text(c, "◆", xx - dp(4f), dp(30f),
-                if (kotlin.math.abs(key.timeUs - positionUs) <= 20_000L) Color.WHITE else EditorStyle.ACTION, 10f)
+                if (kotlin.math.abs(key.timeUs - positionUs) <= 20_000L) EditorStyle.TEXT else EditorStyle.ACTION, 10f)
         }
         // Magnetic snap guide line
         snapper.activeSnapTarget?.let { snapT ->
             val sx = x(snapT)
             if (sx in gutter..width.toFloat()) {
-                paint.color = Color.WHITE
+                paint.color = EditorStyle.ACCENT
                 paint.strokeWidth = dp(1.5f)
                 c.drawLine(sx, dp(22f), sx, height.toFloat(), paint)
                 paint.style = Paint.Style.FILL
@@ -337,7 +337,7 @@ class TimelineView(context: Context) : View(context) {
         }
         project.markers.filter { it.timeUs <= project.durationUs }.forEach { m ->
             val xx = x(m.timeUs); paint.color = m.color; c.drawCircle(xx, dp(34f), dp(4f), paint)
-            text(c, m.name, xx + dp(7f), dp(37f), m.color, 9f)
+            text(c, m.name, xx + dp(7f), dp(37f), EditorStyle.onBackground(m.color), 9f)
         }
         project.videos.forEachIndexed { index, clip ->
             val l = x(visualStart(index)); val r = x(visualEnd(index))
@@ -345,7 +345,7 @@ class TimelineView(context: Context) : View(context) {
                 // Each clip is a rounded strip of centre-cropped frames (no stretching), with a
                 // small duration pill instead of a black name bar covering the bottom third.
                 val clipRect = RectF(l, dp(50f), r - dp(2f), dp(116f))
-                paint.color = 0xFF1C1C1E.toInt(); c.drawRoundRect(clipRect, dp(9f), dp(9f), paint)
+                paint.color = EditorStyle.CARD_PRESSED; c.drawRoundRect(clipRect, dp(9f), dp(9f), paint)
                 c.save()
                 clipPath.reset(); clipPath.addRoundRect(clipRect, dp(9f), dp(9f), Path.Direction.CW)
                 c.clipPath(clipPath)
@@ -455,7 +455,7 @@ class TimelineView(context: Context) : View(context) {
                 paint.color = EditorStyle.TIMELINE_BG
                 c.drawRoundRect(rect, radius, radius, paint)
                 paint.style = Paint.Style.FILL
-                paint.color = if (trans != null) EditorStyle.ACTION else Color.WHITE
+                paint.color = if (trans != null) EditorStyle.ACTION else EditorStyle.ACCENT
                 c.drawRoundRect(rect, radius, radius, paint)
                 // Raio de corte: desce em zigue-zague pelo meio da pílula.
                 val u = dp(1f)
@@ -500,7 +500,7 @@ class TimelineView(context: Context) : View(context) {
         lanes.forEachIndexed { i, lane ->
             val y = dp(132f) + i * dp(39f) - vertical
             if (y + dp(35f) >= dp(130f) && y < height) {
-                paint.color = 0xFF000000.toInt(); c.drawRect(gutter, y, width.toFloat(), y + dp(34f), paint)
+                paint.color = EditorStyle.LANE; c.drawRect(gutter, y, width.toFloat(), y + dp(34f), paint)
                 lane.segments.forEach { s ->
                     val isTextTrack = lane.type == 1
                     val isStickerTrack = lane.type == 2
@@ -853,7 +853,7 @@ class TimelineView(context: Context) : View(context) {
                         val textPadStart = if (hasHandles) dp(16f) else 0f
                         val textPadEnd = if (hasHandles) dp(16f) else 0f
                         c.save(); c.clipRect(max(gutter, l + textPadStart), y, min(r - textPadEnd, width.toFloat()), y + dp(33f))
-                        text(c, s.name, max(gutter, l + textPadStart) + dp(7f), y + dp(21f), lane.color)
+                        text(c, s.name, max(gutter, l + textPadStart) + dp(7f), y + dp(21f), EditorStyle.onBackground(lane.color))
                         drawSpeedBadge(c, s.speedBadge, max(gutter, l), min(r, width.toFloat()), y, y + dp(33f)); c.restore()
                     }
                 }
@@ -861,7 +861,7 @@ class TimelineView(context: Context) : View(context) {
         }
         if (lanes.isEmpty()) text(c, "Adicione audio, texto ou uma camada", width / 2f - dp(88f), dp(166f), EditorStyle.MUTED)
         c.restore(); c.restore()
-        paint.color = 0xFF000000.toInt(); c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
+        paint.color = EditorStyle.LANE; c.drawRect(0f, 0f, gutter, height.toFloat(), paint)
         // No "V1" label on the main track: it is always the large strip. Layer lanes keep a
         // compact coloured tag so their type stays recognisable.
         c.save(); c.clipRect(0f, dp(130f), gutter, height.toFloat())
@@ -869,7 +869,7 @@ class TimelineView(context: Context) : View(context) {
             val ly = dp(132f) + i * dp(39f) - vertical
             paint.color = lane.color
             c.drawRoundRect(dp(4f), ly + dp(8f), dp(7f), ly + dp(25f), dp(1.5f), dp(1.5f), paint)
-            text(c, lane.label, dp(9.5f), ly + dp(20.5f), lane.color, 8.5f)
+            text(c, lane.label, dp(9.5f), ly + dp(20.5f), EditorStyle.onBackground(lane.color), 8.5f)
         }; c.restore()
         // Agulha do Recly: linha vermelha que atravessa da régua até o fim, com uma "pílula"
         // vermelha no topo marcada por um traço branco. Ao segurar, a pílula cresce com halo.

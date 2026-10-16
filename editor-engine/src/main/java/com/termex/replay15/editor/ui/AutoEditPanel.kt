@@ -115,7 +115,7 @@ class AutoEditPanel(
         }
         addView(View(activity).apply {
             background = GradientDrawable().apply {
-                setColor(0xFF2E2B34.toInt())
+                setColor(EditorStyle.CARD_PRESSED)
                 setStroke(activity.dp(1.5f), EditorStyle.BORDER)
                 cornerRadius = activity.dp(8).toFloat()
             }

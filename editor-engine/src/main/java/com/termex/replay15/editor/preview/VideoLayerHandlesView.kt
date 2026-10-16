@@ -156,7 +156,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         }
 
         val isNull = target.clip.isNullObject
-        val strokeColor = if (isNull) EditorStyle.TEXT else Color.WHITE
+        val strokeColor = if (isNull) EditorStyle.WHITE else Color.WHITE
         paint.color = strokeColor; paint.strokeWidth = 1.5f * density; paint.style = Paint.Style.STROKE
         if (isNull) {
             paint.pathEffect = DashPathEffect(floatArrayOf(8f * density, 4f * density), 0f)
@@ -175,7 +175,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
         // Draw Anchor Point Pivot Crosshair
         val anchorPx = rect.centerX() + value.anchorX * (rect.width() / 2f)
         val anchorPy = rect.centerY() + value.anchorY * (rect.height() / 2f)
-        paint.color = EditorStyle.TEXT
+        paint.color = EditorStyle.WHITE
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
         canvas.drawCircle(anchorPx, anchorPy, 6f * density, paint)
@@ -193,7 +193,7 @@ class VideoLayerHandlesView(context: Context) : View(context) {
             paint.color = 0xD9000000.toInt()
             paint.style = Paint.Style.FILL
             canvas.drawRoundRect(badgeLeft, badgeTop, badgeLeft + badgeWidth + 8f * density, badgeTop + 14f * density, 4f * density, 4f * density, paint)
-            paint.color = if (isNull) EditorStyle.TEXT else EditorStyle.ACTION
+            paint.color = if (isNull) EditorStyle.WHITE else EditorStyle.ACTION
             canvas.drawText(badgeText, badgeLeft + 4f * density, badgeTop + 11f * density, paint)
         }
 

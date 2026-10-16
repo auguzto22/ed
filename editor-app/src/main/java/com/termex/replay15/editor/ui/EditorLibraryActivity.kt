@@ -26,6 +26,7 @@ import com.termex.replay15.editor.domain.Project
 import com.termex.replay15.editor.project.ProjectStore
 import com.termex.replay15.account.AccountGate
 import com.termex.replay15.account.AccountManager
+import com.termex.replay15.ui.BlitzColors
 import com.termex.replay15.ui.DockNavigationHelper
 import com.termex.replay15.ui.DockTab
 import com.termex.replay15.ui.GlassEffectHelper
@@ -33,6 +34,11 @@ import java.io.File
 import java.util.concurrent.Executors
 
 class EditorLibraryActivity : Activity() {
+    /** Tema claro/escuro escolhido em Config. > Aparência (não o do sistema): ver BlitzAppearance. */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.termex.replay15.ui.BlitzAppearance.wrap(newBase))
+    }
+
 
     companion object {
         private const val REQ_PICK_VIDEO = 810
@@ -51,6 +57,8 @@ class EditorLibraryActivity : Activity() {
     /** Decodifica miniaturas sem travar a lista nem o carregamento dos projetos. */
     private val thumbIo = Executors.newFixedThreadPool(2)
     private var lastProjects: List<Project> = emptyList()
+    /** Versão da aparência com que a tela foi montada (-1 = não montou, ex.: portão de conta). */
+    private var builtAppearance = -1
     private var lastRecordingsCount = 0
 
     private lateinit var homeHero: LinearLayout
@@ -79,18 +87,9 @@ class EditorLibraryActivity : Activity() {
         setContentView(R.layout.activity_editor_library)
         if (savedInstanceState == null) BootSplashView.showOnce(this)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.setSystemBarsAppearance(
-                0,
-                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
-                    android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = 0
-        }
-
-        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.parseColor("#0F0F11")))
+        // Fundo e ícones das barras do sistema no tema escolhido em Config. > Aparência.
+        com.termex.replay15.ui.BlitzAppearance.applyWindow(this, BlitzColors.bg)
+        builtAppearance = com.termex.replay15.ui.BlitzAppearance.version
         thumbnails = ProjectThumbnails(this)
         homeHero = findViewById(R.id.homeHero)
         containerSettings = findViewById(R.id.containerSettings)
@@ -119,7 +118,7 @@ class EditorLibraryActivity : Activity() {
         // Perfil: visitante pode entrar/criar conta; com conta vai direto para Config. (dados da conta).
         findViewById<View>(R.id.btnProfile).setOnClickListener {
             if (AccountManager.isGuest(this) && !AccountManager.hasAccount(this)) {
-                AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
                     .setTitle("Você está sem conta")
                     .setMessage("Crie uma conta ou entre para usar as legendas automáticas e guardar seu acesso.")
                     .setPositiveButton("Entrar ou criar conta") { _, _ ->
@@ -136,7 +135,7 @@ class EditorLibraryActivity : Activity() {
             val full = "O que vamos editar hoje?"
             val start = full.indexOf("editar")
             text = android.text.SpannableString(full).apply {
-                setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#F2F0EA")), start, start + "editar".length, 0)
+                setSpan(android.text.style.ForegroundColorSpan(BlitzColors.text), start, start + "editar".length, 0)
             }
         }
 
@@ -166,6 +165,8 @@ class EditorLibraryActivity : Activity() {
 
     private fun handleIntentTab(intent: Intent?) {
         val tabExtra = intent?.getStringExtra("initial_tab")
+        // Consumido: senão toda recriação (girar a tela, trocar a aparência) voltaria para essa aba.
+        intent?.removeExtra("initial_tab")
         // Abre no Início (cabeçalho + Recentes), como no canvas; "Gravações" lista os vídeos salvos.
         val initialDockTab = when (tabExtra) {
             "SETTINGS" -> DockTab.SETTINGS
@@ -217,6 +218,11 @@ class EditorLibraryActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        // A aparência mudou enquanto esta tela estava por trás: remonta com as cores novas.
+        if (builtAppearance != -1 && com.termex.replay15.ui.BlitzAppearance.needsRecreate(builtAppearance)) {
+            recreate()
+            return
+        }
         renderHeader()
         loadData()
     }
@@ -259,12 +265,12 @@ class EditorLibraryActivity : Activity() {
             if (active) {
                 view.setBackgroundResource(R.drawable.recly_tab_active)
                 view.elevation = 0f
-                view.setTextColor(Color.WHITE)
+                view.setTextColor(Color.WHITE) // sobre a pílula vermelha
             } else {
                 view.background = null
                 view.elevation = 0f
                 view.outlineProvider = null
-                view.setTextColor(Color.parseColor("#A09C93"))
+                view.setTextColor(BlitzColors.muted)
             }
         }
 
@@ -371,9 +377,9 @@ class EditorLibraryActivity : Activity() {
      * Toque abre; toque longo ou o botão ⋯ abrem as opções (renomear, duplicar, excluir).
      */
     private fun buildProjectTile(project: Project, index: Int, projectStore: ProjectStore): View {
-        val tones = intArrayOf(0xFF1D1D21.toInt(), 0xFF211D1E.toInt(), 0xFF1D201F.toInt(), 0xFF1F1D22.toInt())
+        val tones = BlitzColors.tileTones
         val chipFill = Color.parseColor("#CC0F0F11")
-        val line = Color.parseColor("#26262B")
+        val line = BlitzColors.line
 
         fun chip(text: String, mono: Boolean) = TextView(this).apply {
             this.text = text
@@ -480,7 +486,7 @@ class EditorLibraryActivity : Activity() {
 
         val name = TextView(this).apply {
             text = project.name
-            setTextColor(Color.parseColor("#F2F0EA"))
+            setTextColor(BlitzColors.text)
             textSize = 14f
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
             maxLines = 1
@@ -488,7 +494,7 @@ class EditorLibraryActivity : Activity() {
         }
         val whenText = TextView(this).apply {
             text = editedLabel(project.modifiedAt)
-            setTextColor(Color.parseColor("#A09C93"))
+            setTextColor(BlitzColors.muted)
             textSize = 12f
         }
 
@@ -497,7 +503,7 @@ class EditorLibraryActivity : Activity() {
             isClickable = true
             isFocusable = true
             contentDescription = project.name
-            foreground = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x22FFFFFF), null,
+            foreground = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(BlitzColors.ripple), null,
                 android.graphics.drawable.GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(16).toFloat() })
             addView(thumb, LinearLayout.LayoutParams(-1, dp(168)))
             addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
@@ -512,7 +518,7 @@ class EditorLibraryActivity : Activity() {
     /** Opções do projeto: abrir, renomear, duplicar e excluir (antes só dava para excluir segurando). */
     private fun showProjectOptions(project: Project, projectStore: ProjectStore) {
         val options = arrayOf("Abrir", "Renomear", "Duplicar", "Excluir")
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
             .setTitle(project.name)
             .setItems(options) { _, which ->
                 when (which) {
@@ -536,7 +542,7 @@ class EditorLibraryActivity : Activity() {
             setPadding(dp(20), dp(8), dp(20), 0)
             addView(input)
         }
-        val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        val dialog = AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
             .setTitle("Renomear projeto")
             .setView(box)
             .setNegativeButton("Cancelar", null)
@@ -580,7 +586,7 @@ class EditorLibraryActivity : Activity() {
     }
 
     private fun confirmDelete(project: Project, projectStore: ProjectStore) {
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
             .setTitle("Excluir \"${project.name}\"?")
             .setMessage("Os vídeos originais serão mantidos.")
             .setNegativeButton("Cancelar", null)
@@ -713,7 +719,7 @@ class EditorLibraryActivity : Activity() {
         val icon = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(14) }
             setImageResource(iconRes)
-            imageTintList = ColorStateList.valueOf(Color.parseColor("#8C8880"))
+            imageTintList = ColorStateList.valueOf(BlitzColors.muted)
         }
         root.addView(icon)
 
@@ -723,7 +729,7 @@ class EditorLibraryActivity : Activity() {
         }
         val titleView = TextView(this).apply {
             text = title
-            setTextColor(Color.parseColor("#F2F0EA"))
+            setTextColor(BlitzColors.text)
             textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             maxLines = 1
@@ -731,7 +737,7 @@ class EditorLibraryActivity : Activity() {
         }
         val subtitleView = TextView(this).apply {
             text = subtitle
-            setTextColor(Color.parseColor("#A09C93"))
+            setTextColor(BlitzColors.muted)
             textSize = 12f
             setPadding(0, dp(2), 0, 0)
         }
@@ -742,7 +748,7 @@ class EditorLibraryActivity : Activity() {
         if (secondaryActionText != null && onSecondaryClick != null) {
             val secButton = TextView(this).apply {
                 text = secondaryActionText
-                setTextColor(Color.parseColor("#A09C93"))
+                setTextColor(BlitzColors.muted)
                 textSize = 13f
                 setPadding(dp(10), dp(6), dp(10), dp(6))
                 setOnClickListener { onSecondaryClick() }
@@ -788,9 +794,9 @@ class EditorLibraryActivity : Activity() {
     private fun renderSettings() {
         val root = containerSettings
         root.removeAllViews()
-        val text = Color.parseColor("#F2F0EA")
-        val muted = Color.parseColor("#A09C93")
-        val danger = Color.parseColor("#F0566A")
+        val text = BlitzColors.text
+        val muted = BlitzColors.muted
+        val danger = BlitzColors.danger
 
         fun title(t: String, size: Float, color: Int = text, top: Int = 0) = TextView(this).apply {
             this.text = t
@@ -833,7 +839,7 @@ class EditorLibraryActivity : Activity() {
                 if (onClick != null) {
                     isClickable = true
                     isFocusable = true
-                    background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x1FFFFFFF), null, null)
+                    background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(BlitzColors.ripple), null, null)
                     setOnClickListener { onClick() }
                     if (value == null) addView(ImageView(this@EditorLibraryActivity).apply {
                         setImageResource(R.drawable.ic_pro_chevron_right)
@@ -841,7 +847,7 @@ class EditorLibraryActivity : Activity() {
                     }, LinearLayout.LayoutParams(dp(18), dp(18)))
                 }
             }
-        fun divider() = View(this).apply { setBackgroundColor(Color.parseColor("#26262B")) }
+        fun divider() = View(this).apply { setBackgroundColor(BlitzColors.line) }
         fun LinearLayout.addRows(vararg rows: View) {
             rows.forEachIndexed { i, v ->
                 if (i > 0) addView(divider(), LinearLayout.LayoutParams(-1, dp(1)).apply { marginStart = dp(16) })
@@ -850,6 +856,30 @@ class EditorLibraryActivity : Activity() {
         }
 
         root.addView(title("Config.", 30f))
+
+        // Aparência: tema do app e cor dos botões das ferramentas do editor.
+        root.addView(section("Aparência"))
+        val look = card()
+        val appearance = com.termex.replay15.ui.BlitzAppearance
+        look.addRows(
+            choiceRow("Tema", listOf("Escuro", "Claro"), if (appearance.isLight) 1 else 0, text, muted) { index ->
+                appearance.setTheme(this, if (index == 1) com.termex.replay15.ui.BlitzAppearance.Theme.LIGHT
+                    else com.termex.replay15.ui.BlitzAppearance.Theme.DARK)
+                reopenSettingsWithNewAppearance()
+            },
+            choiceRow("Botões do editor", listOf("Coloridos", "Pretos"), if (appearance.coloredButtons) 0 else 1, text, muted) { index ->
+                appearance.setButtons(this, if (index == 1) com.termex.replay15.ui.BlitzAppearance.Buttons.BLACK
+                    else com.termex.replay15.ui.BlitzAppearance.Buttons.COLORED)
+                reopenSettingsWithNewAppearance()
+            },
+        )
+        root.addView(look)
+        root.addView(TextView(this).apply {
+            this.text = "Coloridos: cada grupo de ferramenta com a sua cor. Pretos: todos neutros, só o Exportar continua vermelho."
+            setTextColor(muted)
+            textSize = 12f
+            setPadding(dp(4), dp(8), dp(4), 0)
+        })
 
         // Conta
         root.addView(section("Conta"))
@@ -908,8 +938,61 @@ class EditorLibraryActivity : Activity() {
         root.addView(about)
     }
 
+    /**
+     * Linha com rótulo à esquerda e um seletor segmentado à direita (ex.: Tema: Escuro | Claro).
+     * A opção marcada fica em vermelho Blitz.
+     */
+    private fun choiceRow(label: String, options: List<String>, selected: Int, textColor: Int, mutedColor: Int, onPick: (Int) -> Unit): View =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(56)
+            setPadding(dp(16), dp(10), dp(12), dp(10))
+            addView(TextView(this@EditorLibraryActivity).apply {
+                this.text = label
+                setTextColor(textColor)
+                textSize = 15f
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            val segments = LinearLayout(this@EditorLibraryActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(3), dp(3), dp(3), dp(3))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(com.termex.replay15.ui.BlitzColors.surfaceRaised)
+                    cornerRadius = dp(12).toFloat()
+                }
+            }
+            options.forEachIndexed { index, option ->
+                val on = index == selected
+                segments.addView(TextView(this@EditorLibraryActivity).apply {
+                    this.text = option
+                    textSize = 13f
+                    gravity = Gravity.CENTER
+                    minWidth = dp(76)
+                    setPadding(dp(12), dp(7), dp(12), dp(7))
+                    typeface = android.graphics.Typeface.create("sans-serif-medium",
+                        if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                    setTextColor(if (on) Color.WHITE else mutedColor)
+                    background = if (on) android.graphics.drawable.GradientDrawable().apply {
+                        setColor(0xFFE5163A.toInt())
+                        cornerRadius = dp(9).toFloat()
+                    } else null
+                    contentDescription = "$label: $option" + if (on) ", selecionado" else ""
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { if (!on) onPick(index) }
+                })
+            }
+            addView(segments)
+        }
+
+    /** Remonta o Início já com as cores novas e volta para a aba Config. */
+    private fun reopenSettingsWithNewAppearance() {
+        intent.putExtra("initial_tab", "SETTINGS")
+        recreate()
+    }
+
     private fun confirmSignOut() {
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
             .setTitle("Sair da conta?")
             .setMessage("Seus projetos continuam neste aparelho.")
             .setNegativeButton("Cancelar", null)
@@ -922,7 +1005,7 @@ class EditorLibraryActivity : Activity() {
     }
 
     private fun confirmDeleteAccount() {
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        AlertDialog.Builder(this, com.termex.replay15.ui.BlitzAppearance.dialogTheme)
             .setTitle("Excluir conta?")
             .setMessage("Sua conta e seus dados de acesso serão apagados de vez. Os projetos e vídeos deste aparelho continuam aqui.")
             .setNegativeButton("Cancelar", null)

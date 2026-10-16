@@ -135,7 +135,7 @@ object SurfaceTokens {
      * Returns a dialog theme resource ID compatible with the AlertDialog.Builder style.
      */
     @StyleRes
-    fun dialogStyle(context: Context): Int = android.R.style.Theme_DeviceDefault_Dialog_Alert
+    fun dialogStyle(context: Context): Int = com.termex.replay15.ui.BlitzAppearance.dialogTheme
 
     /**
      * Apply frosted glass panel appearance to a view (backdrop + blur simulation).

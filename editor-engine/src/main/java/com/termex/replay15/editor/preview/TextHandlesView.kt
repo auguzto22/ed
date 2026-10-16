@@ -209,7 +209,7 @@ class TextHandlesView(context: Context) : View(context) {
         canvas.rotate(transform.rotation, centerX, centerY)
 
         // Bounding Rectangle — legendas usam a moldura amarela tracejada do canvas; textos mantêm o roxo.
-        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else EditorStyle.TEXT
+        val frameColor = if (activeClip.isCaption) CAPTION_FRAME else EditorStyle.WHITE
         paint.color = frameColor
         paint.strokeWidth = 2f * density
         paint.style = Paint.Style.STROKE

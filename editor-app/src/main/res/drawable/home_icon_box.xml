@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Caixa do ícone dos cartões do Início. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#FF222226" />
+    <solid android:color="@color/blitz_icon_box" />
     <corners android:radius="14dp" />
 </shape>

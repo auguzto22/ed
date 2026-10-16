@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cores do tema ESCURO (padrão). O tema claro sobrescreve em values-notnight/colors_blitz.xml; a escolha vem de Config. > Aparência (BlitzAppearance força o modo noturno da tela). -->
+<resources>
+    <color name="blitz_bg">#FF0F0F11</color>
+    <color name="blitz_surface">#FF19191C</color>
+    <color name="blitz_line">#FF26262B</color>
+    <color name="blitz_line_soft">#FF1E1E22</color>
+    <color name="blitz_icon_box">#FF222226</color>
+    <color name="blitz_chip_accent">#FF2E1519</color>
+    <color name="blitz_chip_accent_line">#FF4A1F27</color>
+    <color name="blitz_text">#FFF2F0EA</color>
+    <color name="blitz_muted">#FFA09C93</color>
+    <color name="blitz_faint">#FF6E6A62</color>
+    <color name="blitz_faint2">#FF52525B</color>
+    <color name="blitz_ripple">#1FFFFFFF</color>
+    <color name="blitz_ripple_strong">#26FFFFFF</color>
+    <color name="blitz_icon">#FFFAFAF6</color>
+    <color name="blitz_dialog_bg">#FF121213</color>
+    <color name="blitz_dialog_text">#FFFAFAF6</color>
+    <color name="blitz_dialog_text2">#FF9A968C</color>
+    <color name="blitz_editor_bg">#FF000000</color>
+    <color name="blitz_control">#FF9A968C</color>
+    <color name="blitz_hint">#FF6E6B64</color>
+    <color name="blitz_picker_nav">#FF0B0B0C</color>
+</resources>

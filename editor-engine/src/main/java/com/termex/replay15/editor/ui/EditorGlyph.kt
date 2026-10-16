@@ -469,13 +469,14 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
 
     // Cada grupo de ferramenta tem a sua cor: ícone colorido sobre um quadradinho com fundo e
     // contorno leves da mesma cor. Auto Edit continua cheio de vermelho (ação principal).
-    val hot = name == "Auto Edit" || name == "Analisar"
+    // Com botões pretos o Auto Edit também fica neutro (só o Exportar segue vermelho).
+    val hot = (name == "Auto Edit" || name == "Analisar") && EditorStyle.COLORED_BUTTONS
     val color = toolColor(name)
     val tint = if (hot) EditorStyle.ON_ACTION else color
     val box = FrameLayout(context).apply {
         importantForAccessibility = 2
         isDuplicateParentStateEnabled = true
-        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else EditorStyle.alpha(color, 0x40)),
+        background = RippleDrawable(ColorStateList.valueOf(if (hot) 0x33000000 else if (color == EditorStyle.TEXT) EditorStyle.RIPPLE else EditorStyle.alpha(color, 0x40)),
             if (hot) EditorStyle.accentGradient(dp(12).toFloat())
             else GradientDrawable().apply {
                 setColor(if (color == EditorStyle.TEXT) EditorStyle.CARD_ELEVATED else EditorStyle.alpha(color, 0x24))
@@ -522,9 +523,9 @@ fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).appl
         setStroke(dp(1), EditorStyle.BORDER)
         cornerRadius = dp(14).toFloat()
     }
-    background = RippleDrawable(ColorStateList.valueOf(0x26FFFFFF), bg, null)
+    background = RippleDrawable(ColorStateList.valueOf(EditorStyle.RIPPLE), bg, null)
     val icon = ImageView(context).apply {
-        setImageDrawable(EditorGlyph(name, Color.WHITE, context))
+        setImageDrawable(EditorGlyph(name, EditorStyle.TEXT, context))
         scaleType = ImageView.ScaleType.CENTER_INSIDE
     }
     addView(icon, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
@@ -538,7 +539,7 @@ fun Context.iconAction(name: String, click: () -> Unit) = FrameLayout(this).appl
  * mídia e camadas azul, corte e tempo laranja, texto amarelo, áudio verde, efeitos e
  * filtros roxo, ajustes e movimento ciano. Fechar/Mais/Editar ficam neutros.
  */
-fun toolColor(name: String): Int = when (name) {
+private fun toolGroupColor(name: String): Int = when (name) {
     "Adicionar", "Camadas", "Stickers" -> EditorStyle.TRACK_STICKER
     "Dividir", "Aparar", "Recorte", "Velocidade" -> EditorStyle.TOOL_CUT
     "Texto", "Legendas" -> EditorStyle.TRACK_TEXT
@@ -549,4 +550,16 @@ fun toolColor(name: String): Int = when (name) {
     "Auto Edit", "Analisar" -> EditorStyle.ACTION
     "Excluir" -> EditorStyle.DANGER
     else -> EditorStyle.TEXT
+}
+
+/**
+ * Cor do botão da ferramenta respeitando a escolha em Config. > Aparência: coloridos (cor do
+ * grupo; um pouco mais fechada no tema claro para não sumir no branco) ou pretos (todos
+ * neutros, só Excluir continua vermelho como aviso).
+ */
+fun toolColor(name: String): Int {
+    val group = toolGroupColor(name)
+    if (!EditorStyle.COLORED_BUTTONS) return if (name == "Excluir") EditorStyle.DANGER else EditorStyle.TEXT
+    if (group == EditorStyle.TEXT || !EditorStyle.IS_LIGHT) return group
+    return EditorStyle.darken(group, .32f)
 }

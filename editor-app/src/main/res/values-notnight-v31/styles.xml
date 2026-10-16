@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tema CLARO no Android 12+: igual a values-notnight/styles.xml, mais a splash do sistema
+     (continua preta com a marca BLITZ, porque aparece antes de o app ler a escolha). -->
+<resources>
+    <style name="Theme.Replay15" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/blitz_bg</item>
+        <item name="android:navigationBarColor">@color/blitz_bg</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:colorAccent">#FFE5163A</item>
+        <item name="android:windowBackground">@color/blitz_bg</item>
+        <item name="android:alertDialogTheme">@style/Theme.Replay15.Editor.Alert</item>
+        <item name="android:windowSplashScreenBackground">#FF000000</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF000000</item>
+        <item name="android:windowSplashScreenAnimationDuration">600</item>
+    </style>
+
+    <style name="Theme.Replay15.Editor" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">@color/blitz_editor_bg</item>
+        <item name="android:navigationBarColor">@color/blitz_editor_bg</item>
+        <item name="android:colorAccent">#FFE5163A</item>
+        <item name="android:colorControlNormal">@color/blitz_control</item>
+        <item name="android:textColorHint">@color/blitz_hint</item>
+        <item name="android:windowBackground">@color/blitz_editor_bg</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:alertDialogTheme">@style/Theme.Replay15.Editor.Alert</item>
+        <item name="android:windowSplashScreenBackground">#FF000000</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF000000</item>
+        <item name="android:windowSplashScreenAnimationDuration">600</item>
+    </style>
+</resources>

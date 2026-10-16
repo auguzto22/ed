@@ -69,6 +69,7 @@ object AnimatedCaptionPicker {
         fun paint(selected: String?) = tiles.forEach { (id, tile) ->
             val on = id == selected
             tile.background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF), GradientDrawable().apply {
+                // Fundo escuro nos dois temas: é a prévia da legenda como ela fica sobre o vídeo.
                 setColor(0xFF0A0A0B.toInt())
                 setStroke(dp(if (on) 2 else 1), if (on) EditorStyle.ACTION else EditorStyle.BORDER)
                 cornerRadius = dp(12).toFloat()
@@ -93,7 +94,7 @@ object AnimatedCaptionPicker {
                 }
                 tiles += style.id to tile
                 cell.addView(tile, LinearLayout.LayoutParams(-1, dp(68)))
-                cell.addView(label(style.name, 11f, Color.WHITE).apply {
+                cell.addView(label(style.name, 11f, EditorStyle.TEXT).apply {
                     gravity = Gravity.CENTER; maxLines = 1; setPadding(0, dp(4), 0, 0)
                 }, LinearLayout.LayoutParams(-1, -2))
                 line.addView(cell, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), dp(3), dp(3), dp(6)) })

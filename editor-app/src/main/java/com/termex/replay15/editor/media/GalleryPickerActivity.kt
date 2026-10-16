@@ -60,6 +60,11 @@ import java.util.concurrent.Executors
  * O atalho "Arquivos" abre o seletor do sistema e repassa o resultado dele sem mudanças.
  */
 class GalleryPickerActivity : Activity() {
+    /** Tema claro/escuro escolhido em Config. > Aparência (não o do sistema): ver BlitzAppearance. */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.termex.replay15.ui.BlitzAppearance.wrap(newBase))
+    }
+
 
     companion object {
         const val EXTRA_MODE = "gallery_mode"
@@ -89,8 +94,9 @@ class GalleryPickerActivity : Activity() {
     }
 
     // ── Cores (paleta do canvas) ────────────────────────────────────────────────
-    private val sheetColor = 0xFF0B0B0C.toInt()
-    private val tileColor = 0xFF1C1C1E.toInt()
+    // Folha e quadradinhos no tema escolhido (Config. > Aparência).
+    private val sheetColor = if (EditorStyle.IS_LIGHT) 0xFFFFFFFF.toInt() else 0xFF0B0B0C.toInt()
+    private val tileColor = if (EditorStyle.IS_LIGHT) 0xFFEDEDF0.toInt() else 0xFF1C1C1E.toInt()
     private val red = EditorStyle.ACTION
     private val fg = EditorStyle.TEXT
     private val muted = EditorStyle.MUTED
@@ -141,6 +147,11 @@ class GalleryPickerActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.navigationBarColor = sheetColor
+        // Tema claro: ícones da barra de navegação escuros sobre a folha branca.
+        if (EditorStyle.IS_LIGHT && android.os.Build.VERSION.SDK_INT >= 30) {
+            val flag = android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(flag, flag)
+        }
         segment = if (mode == MODE_ANY) MODE_ANY else mode
         setContentView(buildRoot())
         animateIn()
@@ -168,7 +179,7 @@ class GalleryPickerActivity : Activity() {
     private fun buildRoot(): View {
         val root = FrameLayout(this)
         scrim = View(this).apply {
-            setBackgroundColor(0xB8000000.toInt())
+            setBackgroundColor(if (EditorStyle.IS_LIGHT) 0x80000000.toInt() else 0xB8000000.toInt())
             alpha = 0f
             setOnClickListener { close(null) }
         }
@@ -188,7 +199,7 @@ class GalleryPickerActivity : Activity() {
         root.addView(sheet, FrameLayout.LayoutParams(-1, sheetHeight, Gravity.BOTTOM))
 
         sheet.addView(View(this).apply {
-            background = GradientDrawable().apply { setColor(0xFF3A3A3E.toInt()); cornerRadius = dpf(2f) }
+            background = GradientDrawable().apply { setColor(EditorStyle.HANDLE); cornerRadius = dpf(2f) }
         }, LinearLayout.LayoutParams(dp(40), dp(4)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(10) })
 
         sheet.addView(buildHeader())
@@ -277,7 +288,7 @@ class GalleryPickerActivity : Activity() {
         contentDescription = description
         isClickable = true
         isFocusable = true
-        background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF),
+        background = RippleDrawable(android.content.res.ColorStateList.valueOf(EditorStyle.RIPPLE),
             GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }, null)
         addView(ImageView(context).apply { setImageDrawable(PickerIcon(icon, fg)) }, FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER))
         setOnClickListener { click() }
@@ -318,8 +329,8 @@ class GalleryPickerActivity : Activity() {
             val tab = segmentRow.getChildAt(i) as TextView
             val active = tab.tag == segment
             // Ativo em branco com texto escuro, como o bloco "Auto Edit" do canvas.
-            tab.background = if (active) GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dpf(10f) } else null
-            tab.setTextColor(if (active) EditorStyle.INK else muted)
+            tab.background = if (active) GradientDrawable().apply { setColor(EditorStyle.ACCENT); cornerRadius = dpf(10f) } else null
+            tab.setTextColor(if (active) EditorStyle.ON_ACCENT else muted)
             if (active) { tab.scaleX = .94f; tab.scaleY = .94f; tab.animate().scaleX(1f).scaleY(1f).setDuration(180).start() }
         }
     }
@@ -347,7 +358,7 @@ class GalleryPickerActivity : Activity() {
     private fun buildBottomBar(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         // Degradê do fundo da folha para transparente, para a grade "sumir" atrás do botão.
-        background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(sheetColor, sheetColor, 0x000B0B0C))
+        background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(sheetColor, sheetColor, sheetColor and 0x00FFFFFF))
         setPadding(dp(16), dp(28), dp(16), dp(16))
         trayScroll = HorizontalScrollView(context).apply {
             isHorizontalScrollBarEnabled = false
@@ -530,7 +541,7 @@ class GalleryPickerActivity : Activity() {
         }, LinearLayout.LayoutParams(-2, -1))
     }
 
-    private fun chipBackground(active: Boolean) = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF),
+    private fun chipBackground(active: Boolean) = RippleDrawable(android.content.res.ColorStateList.valueOf(EditorStyle.RIPPLE),
         GradientDrawable().apply {
             setColor(if (active) red else EditorStyle.CARD)
             if (!active) setStroke(dp(1), EditorStyle.BORDER)
@@ -606,7 +617,7 @@ class GalleryPickerActivity : Activity() {
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setTextColor(fg)
-                background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x26FFFFFF),
+                background = RippleDrawable(android.content.res.ColorStateList.valueOf(EditorStyle.RIPPLE),
                     GradientDrawable().apply { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER); cornerRadius = dpf(16f) }, null)
                 setOnClickListener { action() }
             }, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(10) })

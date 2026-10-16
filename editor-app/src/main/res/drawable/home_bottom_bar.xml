@@ -3,12 +3,12 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#FF1E1E22" />
+            <solid android:color="@color/blitz_line_soft" />
         </shape>
     </item>
     <item android:top="1dp">
         <shape android:shape="rectangle">
-            <solid android:color="#FF0F0F11" />
+            <solid android:color="@color/blitz_bg" />
         </shape>
     </item>
 </layer-list>

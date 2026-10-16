@@ -37,7 +37,7 @@
                 android:layout_height="24dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_pro_home"
-                android:tint="#F2F0EA" />
+                android:tint="@color/blitz_text" />
 
             <TextView
                 android:id="@+id/navHomeText"
@@ -46,7 +46,7 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Início"
-                android:textColor="#F2F0EA"
+                android:textColor="@color/blitz_text"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -69,7 +69,7 @@
                 android:layout_height="24dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_pro_video"
-                android:tint="#A09C93" />
+                android:tint="@color/blitz_muted" />
 
             <TextView
                 android:id="@+id/navRecordingsText"
@@ -78,7 +78,7 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Gravações"
-                android:textColor="#A09C93"
+                android:textColor="@color/blitz_muted"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -100,7 +100,7 @@
                 android:layout_height="24dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_pro_scissors"
-                android:tint="#A09C93" />
+                android:tint="@color/blitz_muted" />
 
             <TextView
                 android:id="@+id/navEditorText"
@@ -109,7 +109,7 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Editor"
-                android:textColor="#A09C93"
+                android:textColor="@color/blitz_muted"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -131,7 +131,7 @@
                 android:layout_height="24dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_pro_gear"
-                android:tint="#A09C93" />
+                android:tint="@color/blitz_muted" />
 
             <TextView
                 android:id="@+id/navSettingsText"
@@ -140,7 +140,7 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Config."
-                android:textColor="#A09C93"
+                android:textColor="@color/blitz_muted"
                 android:textSize="11sp" />
         </LinearLayout>
 

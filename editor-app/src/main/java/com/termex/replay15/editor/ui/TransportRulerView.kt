@@ -38,11 +38,11 @@ class TransportRulerView(context: Context) : View(context) {
     private val density = resources.displayMetrics.density
 
     private val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x40FFFFFF
+        color = EditorStyle.alpha(EditorStyle.TEXT, 0x40)
         strokeWidth = 1f * density
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x8CFFFFFF.toInt()
+        color = EditorStyle.alpha(EditorStyle.TEXT, 0x8C)
         textSize = 13f * density
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         fontFeatureSettings = "tnum"

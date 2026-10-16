@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cores do tema CLARO (Config. > Aparência > Claro). Mesmos nomes de values/colors_blitz.xml. -->
+<resources>
+    <color name="blitz_bg">#FFF4F4F6</color>
+    <color name="blitz_surface">#FFFFFFFF</color>
+    <color name="blitz_line">#FFDDDDE2</color>
+    <color name="blitz_line_soft">#FFE4E4E8</color>
+    <color name="blitz_icon_box">#FFEFEFF2</color>
+    <color name="blitz_chip_accent">#FFFCE4E8</color>
+    <color name="blitz_chip_accent_line">#FFF5C2CB</color>
+    <color name="blitz_text">#FF141416</color>
+    <color name="blitz_muted">#FF6B6B71</color>
+    <color name="blitz_faint">#FF8E8E94</color>
+    <color name="blitz_faint2">#FFA1A1AA</color>
+    <color name="blitz_ripple">#1F000000</color>
+    <color name="blitz_ripple_strong">#26000000</color>
+    <color name="blitz_icon">#FF141416</color>
+    <color name="blitz_dialog_bg">#FFFFFFFF</color>
+    <color name="blitz_dialog_text">#FF141416</color>
+    <color name="blitz_dialog_text2">#FF6B6B71</color>
+    <color name="blitz_editor_bg">#FFF4F4F6</color>
+    <color name="blitz_control">#FF8E8E94</color>
+    <color name="blitz_hint">#FF9A9AA0</color>
+    <color name="blitz_picker_nav">#FFFFFFFF</color>
+</resources>

@@ -70,7 +70,7 @@ object EffectPresetGallery {
             hint = "Buscar entre ${allPresets.size} presets"
             textSize = 13f
             isSingleLine = true
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             setHintTextColor(EditorStyle.MUTED)
             setPadding(dp(12), dp(8), dp(12), dp(8))
             background = GradientDrawable().apply {
@@ -140,7 +140,7 @@ object EffectPresetGallery {
                 }
                 val placeholder = View(activity).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF1C1C1E.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -160,7 +160,7 @@ object EffectPresetGallery {
                 cardContainer.addView(labelView)
                 val tagView = TextView(activity).apply {
                     textSize = 9f
-                    setTextColor(0xFF9A968C.toInt())
+                    setTextColor(EditorStyle.MUTED)
                     gravity = Gravity.CENTER_HORIZONTAL
                     isSingleLine = true
                 }
@@ -251,7 +251,7 @@ object EffectPresetGallery {
                     text = title
                     textSize = 12f
                     setPadding(dp(12), dp(6), dp(12), dp(6))
-                    setTextColor(if (isSelected) Color.WHITE else EditorStyle.MUTED)
+                    setTextColor(if (isSelected) EditorStyle.ON_ACCENT else EditorStyle.MUTED)
                     background = GradientDrawable().apply {
                         setColor(if (isSelected) EditorStyle.ACCENT else EditorStyle.CARD)
                         cornerRadius = dp(16).toFloat()

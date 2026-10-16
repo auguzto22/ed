@@ -168,7 +168,7 @@ object LutBrowser {
                     setPadding(dp(4), dp(4), dp(4), dp(4))
                     val image = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; tag = null }
                     addView(image, LinearLayout.LayoutParams(-1, dp(68)))
-                    val name = label("", 11f, Color.WHITE).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+                    val name = label("", 11f, EditorStyle.TEXT).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
                     addView(name, LinearLayout.LayoutParams(-1, dp(28)))
                     val favorite = TextView(context).apply { gravity = Gravity.CENTER; textSize = 17f; minHeight = dp(26) }
                     addView(favorite, LinearLayout.LayoutParams(-1, dp(26)))
@@ -211,6 +211,8 @@ object LutBrowser {
         updateTabs = {
             allButton.background = tabBackground(!favoritesOnly)
             favoritesButton.background = tabBackground(favoritesOnly)
+            allButton.setTextColor(if (!favoritesOnly) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
+            favoritesButton.setTextColor(if (favoritesOnly) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
         }
         updateTabs()
         refreshGrid()
@@ -249,7 +251,7 @@ object LutBrowser {
     private data class LutCardViews(val image: ImageView, val name: TextView, val favorite: TextView)
 
     private fun Activity.tabBackground(selected: Boolean) = GradientDrawable().apply {
-        if (selected) setColor(Color.WHITE) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
+        if (selected) setColor(EditorStyle.ACCENT) else { setColor(EditorStyle.CARD); setStroke(dp(1), EditorStyle.BORDER) }
         cornerRadius = dp(20).toFloat()
     }
 

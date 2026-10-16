@@ -141,7 +141,7 @@ object FilterGallery {
                 // Placeholder view while thumbnail renders
                 val placeholder = View(this).apply {
                     background = GradientDrawable().apply {
-                        setColor(0xFF1C1C1E.toInt())
+                        setColor(EditorStyle.CARD_ELEVATED)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
@@ -203,10 +203,10 @@ object FilterGallery {
             for (i in 0 until tabs.childCount) {
                 val btn = tabs.getChildAt(i) as Button
                 val isCurrent = i == category
-                btn.setTextColor(if (isCurrent) Color.BLACK else Color.WHITE)
+                btn.setTextColor(if (isCurrent) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
                 btn.background = GradientDrawable().apply {
                     if (isCurrent) {
-                        setColor(Color.WHITE)
+                        setColor(EditorStyle.ACCENT)
                         cornerRadius = dp(20).toFloat()
                     } else {
                         setColor(EditorStyle.CARD)
@@ -237,7 +237,7 @@ object FilterGallery {
 
         val all = CheckBox(this).apply {
             text = "Aplicar a todos os clipes"
-            setTextColor(Color.WHITE)
+            setTextColor(EditorStyle.TEXT)
             setPadding(dp(8), 0, 0, 0)
         }
         if (allowApplyAll) {

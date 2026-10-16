@@ -11,47 +11,79 @@ import android.widget.*
 import com.recly.editor.engine.R
 import com.termex.replay15.editor.domain.TextFont
 import com.termex.replay15.editor.render.EditorFonts
+import com.termex.replay15.ui.BlitzAppearance
 
 object EditorStyle {
-    // Paleta Blitz: preto de fundo, neutros num tom só (sem mistura de cinza quente com frio),
+    // Paleta Blitz em dois temas (escolha em Config. > Aparência, ver BlitzAppearance):
+    // escuro (preto de fundo) e claro (cinza bem claro com cartões brancos). Neutros num tom só,
     // um vermelho de ação e uma cor por tipo de faixa da timeline.
-    const val BG = 0xFF000000.toInt()
-    const val PANEL = 0xFF111113.toInt()
-    const val CARD = 0xFF111113.toInt()
-    const val CARD_ELEVATED = 0xFF1C1C1F.toInt()
+    //
+    // Os neutros (fundo, cartões, texto, bordas) mudam com o tema. As cores de conteúdo (vermelho,
+    // amarelo das legendas, cores das faixas, WHITE/INK) são iguais nos dois, porque também
+    // aparecem dentro do vídeo e no que é exportado.
+    private val light: Boolean get() = BlitzAppearance.isLight
+    private fun pick(dark: Int, light: Int): Int = if (this.light) light else dark
+
+    val BG: Int get() = pick(0xFF000000.toInt(), 0xFFF4F4F6.toInt())
+    val PANEL: Int get() = pick(0xFF111113.toInt(), 0xFFFFFFFF.toInt())
+    val CARD: Int get() = pick(0xFF111113.toInt(), 0xFFFFFFFF.toInt())
+    val CARD_ELEVATED: Int get() = pick(0xFF1C1C1F.toInt(), 0xFFEDEDF0.toInt())
     /** Botão secundário apertado / item ativo sobre cartão. */
-    const val CARD_PRESSED = 0xFF2A2A2E.toInt()
-    const val TIMELINE_BG = 0xFF0A0A0B.toInt()
-    const val BORDER = 0xFF2A2A2E.toInt()
-    const val BORDER_LIGHT = 0x22FFFFFF.toInt()
+    val CARD_PRESSED: Int get() = pick(0xFF2A2A2E.toInt(), 0xFFE0E0E5.toInt())
+    val TIMELINE_BG: Int get() = pick(0xFF0A0A0B.toInt(), 0xFFEBEBEF.toInt())
+    val BORDER: Int get() = pick(0xFF2A2A2E.toInt(), 0xFFD6D6DC.toInt())
+    val BORDER_LIGHT: Int get() = pick(0x22FFFFFF, 0x1F000000)
     /** Very subtle 1 dp outline that separates cards from the panel without boxing them in. */
-    const val HAIRLINE = 0x17FFFFFF
-    const val TEXT = 0xFFF5F5F7.toInt()
-    const val MUTED = 0xFF8E8E93.toInt()
-    const val DISABLED = 0xFF636366.toInt()
-    const val ACCENT = 0xFFFFFFFF.toInt()
+    val HAIRLINE: Int get() = pick(0x17FFFFFF, 0x17000000)
+    val TEXT: Int get() = pick(0xFFF5F5F7.toInt(), 0xFF111113.toInt())
+    val MUTED: Int get() = pick(0xFF8E8E93.toInt(), 0xFF6A6A70.toInt())
+    val DISABLED: Int get() = pick(0xFF636366.toInt(), 0xFFAEAEB2.toInt())
+    /** Neutro mais forte do tema: branco no escuro, quase preto no claro (seleção, destaques). */
+    val ACCENT: Int get() = pick(0xFFFFFFFF.toInt(), 0xFF111113.toInt())
+    /** Texto e ícones sobre um preenchimento [ACCENT]. */
+    val ON_ACCENT: Int get() = pick(0xFF141414.toInt(), 0xFFFFFFFF.toInt())
+    /** Onda do toque: clara sobre o escuro, escura sobre o claro. */
+    val RIPPLE: Int get() = pick(0x26FFFFFF, 0x1A000000)
+    /** Véu atrás de folhas e diálogos. */
+    val SCRIM: Int get() = pick(0x99000000.toInt(), 0x66000000)
+    /** Trilho de sliders/chaves desligadas e "alça" das folhas. */
+    val CONTROL_TRACK: Int get() = pick(0xFF2C2C30.toInt(), 0xFFD9D9DE.toInt())
+    val HANDLE: Int get() = pick(0xFF3A3A3F.toInt(), 0xFFC7C7CD.toInt())
+    val HINT: Int get() = pick(0xFF6E6B64.toInt(), 0xFF9A9AA0.toInt())
+    /** Bolinha da chave desligada. */
+    val SWITCH_OFF: Int get() = pick(0xFFBDBAB2.toInt(), 0xFFFFFFFF.toInt())
+    /** Fundo das amostras de estilo de texto/legenda ("Aa"): escuro nos dois temas, como sobre o vídeo. */
+    const val SAMPLE_BG = 0xFF1C1C1F.toInt()
+    /** Fundo de cada linha de faixa da timeline (e da coluna das etiquetas). */
+    val LANE: Int get() = pick(0xFF000000.toInt(), 0xFFFFFFFF.toInt())
+    /** Texto/etiqueta na cor de uma faixa: no tema claro fica mais fechado para ser lido no branco. */
+    fun onBackground(color: Int): Int = if (light) darken(color, .42f) else color
+    /** Fundo atrás da prévia do vídeo (as faixas pretas/brancas fora do quadro). */
+    val STAGE: Int get() = pick(0xFF000000.toInt(), 0xFFE6E6EA.toInt())
     const val WHITE = 0xFFFFFFFF.toInt()
     const val INK = 0xFF141414.toInt()
     /** Texto e ícones sobre o vermelho de ação. */
     const val ON_ACTION = 0xFFFFFFFF.toInt()
-    /** Vermelho mais claro, para texto pequeno sobre o preto. */
-    const val ACTION_TEXT = 0xFFFF5A6E.toInt()
+    /** Vermelho para texto pequeno sobre o fundo (mais claro no escuro, mais fechado no claro). */
+    val ACTION_TEXT: Int get() = pick(0xFFFF5A6E.toInt(), 0xFFD0103A.toInt())
 
     /** Vermelho Blitz: ações principais (Exportar, aplicar, agulha, item selecionado). */
     const val ACTION = 0xFFE5163A.toInt()
     /** Vermelho apertado / borda escura do botão principal. */
     const val ACTION_PRESSED = 0xFFB8102E.toInt()
-    /** Legenda e texto: amarelo, como no CapCut/Edits. */
+    /** Legenda e texto: amarelo, como no CapCut/Edits. Igual nos dois temas (vai para o vídeo). */
     const val CAPTION = 0xFFFFC94A.toInt()
-    /** Vídeo e análise (secundário neutro claro). */
-    const val VIDEO = 0xFFC7C7CC.toInt()
+    /** Amarelo das legendas quando usado como texto sobre o fundo do editor. */
+    val CAPTION_TEXT: Int get() = pick(CAPTION, 0xFF946500.toInt())
+    /** Vídeo e análise (secundário neutro). */
+    val VIDEO: Int get() = pick(0xFFC7C7CC.toInt(), 0xFF636366.toInt())
     /** Botões com texto branco sobre cor de vídeo: usa o vermelho de ação. */
     const val VIDEO_DEEP = ACTION
     const val DANGER = 0xFFFF453A.toInt()
     const val GREEN = 0xFF3DD68C.toInt()
 
     // Cores das faixas da timeline (uma por tipo; a versão LIGHT é para alças e keyframes).
-    const val TRACK_LAYER = 0xFFC7C7CC.toInt()
+    val TRACK_LAYER: Int get() = pick(0xFFC7C7CC.toInt(), 0xFF9A9AA1.toInt())
     const val TRACK_AUDIO = 0xFF3DD68C.toInt()
     const val TRACK_AUDIO_LIGHT = 0xFF8BEBB8.toInt()
     const val TRACK_TEXT = 0xFFFFC94A.toInt()
@@ -63,8 +95,24 @@ object EditorStyle {
     /** Ferramentas de ajuste e movimento (Ajustar, Animação, Máscara, Remover fundo). */
     const val TOOL_ADJUST = 0xFF40C8E0.toInt()
 
+    /** Botões das ferramentas coloridos (uma cor por grupo) ou pretos/neutros. */
+    val COLORED_BUTTONS: Boolean get() = BlitzAppearance.coloredButtons
+    val IS_LIGHT: Boolean get() = light
+
     /** Mesma cor com outro alfa (0..255), para sombras, brilhos e faixas translúcidas. */
     fun alpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
+
+    /**
+     * Escurece uma cor (0..1), mantendo o alfa. No tema claro os ícones coloridos ficam um pouco
+     * mais fechados, senão amarelo e ciano somem sobre o branco.
+     */
+    fun darken(color: Int, amount: Float): Int {
+        val k = 1f - amount.coerceIn(0f, 1f)
+        val r = (((color shr 16) and 0xFF) * k).toInt()
+        val g = (((color shr 8) and 0xFF) * k).toInt()
+        val b = ((color and 0xFF) * k).toInt()
+        return (color and 0xFF000000.toInt()) or (r shl 16) or (g shl 8) or b
+    }
 
     const val RADIUS_PANEL = 20
     const val RADIUS_CONTROL = 12
@@ -76,9 +124,9 @@ object EditorStyle {
 
     // Nomes antigos ainda usados pelo editor: agora todos apontam para o vermelho de ação.
     const val ACCENT_DEEP = ACTION
-    const val ACCENT_PINK = ACTION_TEXT
+    val ACCENT_PINK: Int get() = ACTION_TEXT
     const val ACCENT_SOFT = 0x33E5163A
-    const val CYAN = MUTED
+    val CYAN: Int get() = MUTED
 
     /** Preenchimento dos botões principais: vermelho Blitz com um leve brilho em cima. */
     fun accentGradient(radius: Float): GradientDrawable = GradientDrawable(
@@ -88,7 +136,7 @@ object EditorStyle {
 
 fun Context.dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 fun Context.dp(value: Float) = (value * resources.displayMetrics.density).toInt()
-fun Context.label(value: String, size: Float = 14f, color: Int = Color.WHITE) = TextView(this).apply {
+fun Context.label(value: String, size: Float = 14f, color: Int = EditorStyle.TEXT) = TextView(this).apply {
     text = value; textSize = size; setTextColor(color); setPadding(dp(8), dp(5), dp(8), dp(5))
     typeface = EditorFonts.get(this@label, TextFont.OUTFIT)
     setLineSpacing(0f, 1.12f)
@@ -103,7 +151,8 @@ fun Context.editorShape(fill: Int, radiusDp: Int = EditorStyle.RADIUS_CONTROL, s
     }
 
 fun Context.editorRipple(content: android.graphics.drawable.Drawable, light: Boolean = true) = RippleDrawable(
-    android.content.res.ColorStateList.valueOf(if (light) 0x26FFFFFF else 0x33000000), content, null,
+    // light = onda clara (sobre fundo escuro); no tema claro a onda padrão do tema já é escura.
+    android.content.res.ColorStateList.valueOf(if (light) EditorStyle.RIPPLE else 0x33000000), content, null,
 )
 
 /**
@@ -157,7 +206,7 @@ fun Activity.sheet(title: String, body: LinearLayout, dim: Float = .42f, maxHeig
             cornerRadii = floatArrayOf(radius, radius, radius, radius, 0f, 0f, 0f, 0f)
             setStroke(dp(1), EditorStyle.HAIRLINE)
         }
-        addView(View(context).apply { background = editorShape(0xFF3A3A3F.toInt(), 2) },
+        addView(View(context).apply { background = editorShape(EditorStyle.HANDLE, 2) },
             LinearLayout.LayoutParams(dp(36), dp(4)).apply { gravity = Gravity.CENTER; bottomMargin = dp(12) })
         val heading = row().apply { setPadding(0, 0, 0, dp(10)) }
         val titles = column()
@@ -224,8 +273,8 @@ fun Context.polishControls(view: View) {
     when (view) {
         is Switch -> {
             styleCompound(view)
-            view.thumbTintList = checkedTint(EditorStyle.WHITE, 0xFFBDBAB2.toInt())
-            view.trackTintList = checkedTint(EditorStyle.ACTION, 0xFF3A3A3F.toInt())
+            view.thumbTintList = checkedTint(EditorStyle.WHITE, EditorStyle.SWITCH_OFF)
+            view.trackTintList = checkedTint(EditorStyle.ACTION, EditorStyle.HANDLE)
         }
         is CompoundButton -> {
             styleCompound(view)
@@ -261,7 +310,7 @@ private fun Context.styleCompound(view: CompoundButton) {
 fun Context.styleField(view: EditText) {
     view.background = editorShape(EditorStyle.CARD_ELEVATED, 14, EditorStyle.HAIRLINE)
     view.setTextColor(EditorStyle.TEXT)
-    view.setHintTextColor(0xFF6E6B64.toInt())
+    view.setHintTextColor(EditorStyle.HINT)
     view.textSize = 14.5f
     view.typeface = EditorFonts.get(this, TextFont.OUTFIT)
     view.minHeight = dp(48)
@@ -399,7 +448,7 @@ fun staggerChildren(group: ViewGroup, startDelay: Long = 0L, stepMs: Long = 22L,
 /** Thin rounded track with a red fill, shared by every slider. */
 private fun Context.sliderTrack(): android.graphics.drawable.LayerDrawable {
     val height = dp(4)
-    val track = editorShape(0xFF2C2C30.toInt(), 2)
+    val track = editorShape(EditorStyle.CONTROL_TRACK, 2)
     val fill = android.graphics.drawable.ClipDrawable(editorShape(EditorStyle.ACTION, 2), Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL)
     return android.graphics.drawable.LayerDrawable(arrayOf(track, fill)).apply {
         setId(0, android.R.id.background); setId(1, android.R.id.progress)
@@ -522,7 +571,7 @@ fun Context.editorToolCard(name: String, subtitle: String, accent: Boolean = fal
         setPadding(dp(14), dp(12), dp(12), dp(11))
         isClickable = true; isFocusable = true; contentDescription = "$name. $subtitle"
         background = RippleDrawable(
-            android.content.res.ColorStateList.valueOf(0x26FFFFFF),
+            android.content.res.ColorStateList.valueOf(EditorStyle.RIPPLE),
             GradientDrawable().apply {
                 setColor(if (danger) 0x14EF4444 else EditorStyle.CARD_ELEVATED)
                 setStroke(dp(1), when { danger -> 0x66EF4444; accent -> EditorStyle.BORDER_LIGHT; else -> EditorStyle.HAIRLINE })
@@ -531,10 +580,10 @@ fun Context.editorToolCard(name: String, subtitle: String, accent: Boolean = fal
             null,
         )
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.WHITE; else -> EditorStyle.TEXT }, context))
+            setImageDrawable(EditorGlyph(name, when { danger -> EditorStyle.DANGER; accent -> EditorStyle.ACCENT; else -> EditorStyle.TEXT }, context))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }, LinearLayout.LayoutParams(dp(25), dp(25)))
-        addView(label(name, 13f, when { danger -> EditorStyle.DANGER; else -> Color.WHITE }).apply {
+        addView(label(name, 13f, when { danger -> EditorStyle.DANGER; else -> EditorStyle.ACCENT }).apply {
             setPadding(0, dp(5), 0, 0); setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
         addView(label(subtitle, 11f, EditorStyle.MUTED).apply { setPadding(0, dp(1), 0, 0); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
@@ -562,7 +611,7 @@ fun Context.editorIconButton(
         }
     }
     background = RippleDrawable(
-        android.content.res.ColorStateList.valueOf(if (accent) 0x33000000 else 0x26FFFFFF),
+        android.content.res.ColorStateList.valueOf(if (accent) 0x33000000 else EditorStyle.RIPPLE),
         bg,
         null,
     )
@@ -620,8 +669,8 @@ fun Context.pillButton(value: String, active: Boolean = false, onClick: () -> Un
         }
         cornerRadius = dp(12).toFloat()
     }
-    background = RippleDrawable(android.content.res.ColorStateList.valueOf(0x22FFFFFF), bg, null)
-    setTextColor(if (active) Color.WHITE else EditorStyle.MUTED)
+    background = RippleDrawable(android.content.res.ColorStateList.valueOf(EditorStyle.RIPPLE), bg, null)
+    setTextColor(if (active) EditorStyle.ACCENT else EditorStyle.MUTED)
     setOnClickListener { onClick() }
 }
 

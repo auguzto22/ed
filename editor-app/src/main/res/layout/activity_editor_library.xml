@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F0F11"
+    android:background="@color/blitz_bg"
     tools:ignore="UseAppTint">
 
     <ScrollView
@@ -42,7 +42,7 @@
                         android:fontFamily="sans-serif-medium"
                         android:letterSpacing="0.08"
                         android:text="BOA TARDE"
-                        android:textColor="#A09C93"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="11sp" />
 
                     <TextView
@@ -54,7 +54,7 @@
                         android:fontFamily="sans-serif-black"
                         android:maxLines="1"
                         android:text="Visitante"
-                        android:textColor="#F2F0EA"
+                        android:textColor="@color/blitz_text"
                         android:textSize="18sp" />
 
                     <TextView
@@ -63,7 +63,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text=""
-                        android:textColor="#6E6A62"
+                        android:textColor="@color/blitz_faint"
                         android:textSize="12sp"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -79,7 +79,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:text="?"
-                    android:textColor="#F2F0EA"
+                    android:textColor="@color/blitz_text"
                     android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -101,7 +101,7 @@
                 android:letterSpacing="-0.03"
                 android:lineSpacingMultiplier="0.95"
                 android:text="O que vamos editar hoje?"
-                android:textColor="#F2F0EA"
+                android:textColor="@color/blitz_text"
                 android:textSize="34sp" />
 
             <!-- Dois blocos: Novo projeto e Auto Edit -->
@@ -190,7 +190,7 @@
                         android:fontFamily="sans-serif-black"
                         android:lineSpacingMultiplier="0.95"
                         android:text="Auto\nEdit"
-                        android:textColor="#F2F0EA"
+                        android:textColor="@color/blitz_text"
                         android:textSize="19sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -234,7 +234,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="Analisar vídeo que vende"
-                        android:textColor="#F2F0EA"
+                        android:textColor="@color/blitz_text"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
@@ -244,7 +244,7 @@
                         android:layout_marginTop="2dp"
                         android:lineSpacingMultiplier="1.1"
                         android:text="Descubra o gancho, o ritmo e o que segura quem assiste."
-                        android:textColor="#A09C93"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -292,7 +292,7 @@
                     android:fontFamily="sans-serif-black"
                     android:letterSpacing="-0.02"
                     android:text="Recentes"
-                    android:textColor="#F2F0EA"
+                    android:textColor="@color/blitz_text"
                     android:textSize="20sp" />
 
                 <TextView
@@ -302,7 +302,7 @@
                     android:layout_marginTop="-8dp"
                     android:layout_marginBottom="12dp"
                     android:text="Toque para abrir · segure ou use ⋯ para mais opções"
-                    android:textColor="#6E6A62"
+                    android:textColor="@color/blitz_faint"
                     android:textSize="12sp"
                     android:visibility="gone" />
 
@@ -337,7 +337,7 @@
                         android:fontFamily="sans-serif-bold"
                         android:gravity="center"
                         android:text="Seu próximo projeto&#10;começa aqui."
-                        android:textColor="#F2F0EA"
+                        android:textColor="@color/blitz_text"
                         android:textSize="18sp" />
 
                     <TextView
@@ -346,7 +346,7 @@
                         android:layout_marginTop="8dp"
                         android:gravity="center"
                         android:text="Importe um vídeo e edite sem&#10;alterar o original."
-                        android:textColor="#A09C93"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
 
                     <!-- Import Video Button -->
@@ -390,14 +390,14 @@
                             android:layout_width="16dp"
                             android:layout_height="16dp"
                             android:src="@drawable/ic_pro_shield"
-                            android:tint="#A09C93" />
+                            android:tint="@color/blitz_muted" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
                             android:text="Seus arquivos originais são preservados."
-                            android:textColor="#A09C93"
+                            android:textColor="@color/blitz_muted"
                             android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -426,7 +426,7 @@
                     android:fontFamily="sans-serif-black"
                     android:letterSpacing="-0.03"
                     android:text="Gravações"
-                    android:textColor="#F2F0EA"
+                    android:textColor="@color/blitz_text"
                     android:textSize="30sp" />
 
                 <TextView
@@ -435,7 +435,7 @@
                     android:layout_marginTop="2dp"
                     android:layout_marginBottom="16dp"
                     android:text="Vídeos exportados pelo Blitz. Toque para editar de novo."
-                    android:textColor="#A09C93"
+                    android:textColor="@color/blitz_muted"
                     android:textSize="13sp" />
 
                 <LinearLayout
@@ -452,7 +452,7 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@drawable/ic_pro_video"
-                        android:tint="#52525B" />
+                        android:tint="@color/blitz_faint2" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -460,7 +460,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhum vídeo ainda"
-                        android:textColor="#F2F0EA"
+                        android:textColor="@color/blitz_text"
                         android:textSize="16sp" />
 
                     <TextView
@@ -468,7 +468,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Os vídeos que você importar ou exportar aparecerão aqui."
-                        android:textColor="#A09C93"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -503,7 +503,7 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@drawable/ic_save_15"
-                        android:tint="#52525B" />
+                        android:tint="@color/blitz_faint2" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -511,7 +511,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-bold"
                         android:text="Nenhum replay salvo"
-                        android:textColor="#F2F0EA"
+                        android:textColor="@color/blitz_text"
                         android:textSize="16sp" />
 
                     <TextView
@@ -519,7 +519,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Seus replays instantâneos aparecerão aqui."
-                        android:textColor="#A09C93"
+                        android:textColor="@color/blitz_muted"
                         android:textSize="13sp" />
                 </LinearLayout>
 

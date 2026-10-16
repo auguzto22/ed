@@ -63,7 +63,7 @@ object ExportPanel {
                 setStroke(dp(1), EditorStyle.BORDER)
             }
         }
-        val estimateLabel = label("", 14f, Color.WHITE).apply {
+        val estimateLabel = label("", 14f, EditorStyle.TEXT).apply {
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
         val infoFormat = label("MP4  •  H.264 + AAC", 12f, EditorStyle.MUTED)
@@ -91,7 +91,7 @@ object ExportPanel {
                 setPadding(dp(12), dp(4), dp(12), dp(4))
                 val bg = GradientDrawable().apply {
                     if (isSelected) {
-                        setColor(Color.WHITE)
+                        setColor(EditorStyle.ACCENT)
                         cornerRadius = dp(18).toFloat()
                     } else {
                         setColor(EditorStyle.CARD)
@@ -100,11 +100,11 @@ object ExportPanel {
                     }
                 }
                 background = RippleDrawable(
-                    ColorStateList.valueOf(if (isSelected) 0x33000000 else 0x22FFFFFF),
+                    ColorStateList.valueOf(if (isSelected) 0x33000000 else EditorStyle.RIPPLE),
                     bg,
                     null,
                 )
-                setTextColor(if (isSelected) Color.BLACK else Color.WHITE)
+                setTextColor(if (isSelected) EditorStyle.ON_ACCENT else EditorStyle.TEXT)
                 setOnClickListener { onClick() }
             }
         }

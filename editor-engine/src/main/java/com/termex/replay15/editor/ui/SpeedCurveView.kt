@@ -23,10 +23,10 @@ class SpeedCurveView(context: Context, private val sourceUs: Long) : View(contex
         paint.color = EditorStyle.BG; canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), 18f, 18f, paint)
         paint.textSize = context.dp(11).toFloat()
         listOf(.1f, 1f, 4f, 16f).forEach { speed ->
-            paint.color = if (speed == 1f) 0x99FFFFFF.toInt() else EditorStyle.CARD
+            paint.color = if (speed == 1f) EditorStyle.alpha(EditorStyle.TEXT, 0x99) else EditorStyle.CARD_PRESSED
             paint.strokeWidth = context.dp(if (speed == 1f) 1.5f else 1f).toFloat()
             canvas.drawLine(pad, y(speed), width - pad, y(speed), paint)
-            paint.color = if (speed == 1f) Color.WHITE else EditorStyle.MUTED
+            paint.color = if (speed == 1f) EditorStyle.TEXT else EditorStyle.MUTED
             canvas.drawText(formatSpeed(speed), 2f, y(speed), paint)
         }
         path.reset()
@@ -50,7 +50,7 @@ class SpeedCurveView(context: Context, private val sourceUs: Long) : View(contex
                 paint.color = EditorStyle.alpha(EditorStyle.ACTION, 0x44)
                 canvas.drawCircle(px, py, context.dp(14).toFloat(), paint)
             }
-            paint.color = if (isPointSelected) Color.WHITE else EditorStyle.ACCENT
+            paint.color = if (isPointSelected) EditorStyle.ACTION else EditorStyle.ACCENT
             canvas.drawCircle(px, py, context.dp(if (isPointSelected) 9 else 6).toFloat(), paint)
         }
         paint.color = EditorStyle.MUTED

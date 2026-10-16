@@ -39,7 +39,7 @@ class BootSplashView(context: Context) : View(context) {
     }
     private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = RED }
     private val subtitle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = EditorStyle.MUTED
+        color = 0xFF8E8E93.toInt() // splash é sempre preta (continua a do sistema)
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
@@ -60,7 +60,7 @@ class BootSplashView(context: Context) : View(context) {
     }
 
     init {
-        setBackgroundColor(EditorStyle.BG)
+        setBackgroundColor(0xFF000000.toInt()) // sempre preta, nos dois temas
         isClickable = true
         contentDescription = "BLITZ"
         setOnClickListener { animator.cancel(); exit() }
