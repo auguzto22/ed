@@ -8,11 +8,12 @@ import android.text.InputType
 import android.view.View
 import android.widget.*
 import com.termex.replay15.editor.domain.*
-import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 object SpeedTools {
-    val NORMAL_PRESETS = listOf(.25f, .5f, .75f, 1f, 1.25f, 1.5f, 2f, 3f, 4f, 8f)
+    /** "4.7s", como o CapCut mostra a duração do clipe. */
+    private fun secondsLabel(us: Long): String =
+        String.format(java.util.Locale.ROOT, "%.1fs", us / SECOND.toDouble())
 
     fun show(
         activity: Activity,
@@ -29,8 +30,7 @@ object SpeedTools {
             listOf(SpeedPoint(clip.inUs, clip.speed), SpeedPoint(clip.outUs, clip.speed))
         }
 
-        body.addView(sectionTitle("Velocidade", "A velocidade faz parte do clipe e será usada na timeline, áudio, prévia e exportação."))
-        val modeRow = row()
+                val modeRow = row()
         val normalPanel = column()
         val curvePanel = column()
         lateinit var normalMode: Button
@@ -57,31 +57,24 @@ object SpeedTools {
         modeRow.addView(curveMode, LinearLayout.LayoutParams(0, dp(50), 1f).apply { marginStart = dp(4) })
         body.addView(modeRow)
 
-        val current = label("", 15f, EditorStyle.ACCENT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) }
-        normalPanel.addView(current)
-        val presetGrid = GridLayout(this).apply { columnCount = 5 }
-        val presetButtons = mutableListOf<Pair<Float, Button>>()
-        lateinit var speedSlider: SeekBar
+        // Modo normal no jeito do CapCut: "Duração: antes → depois" e uma régua 0,1× … 16×.
+        val originalDuration = clip.copy(speed = 1f, speedCurve = emptyList()).durationUs
+        val durationRow = row().apply { setPadding(dp(2), dp(14), dp(2), dp(6)) }
+        val durationBefore = label("Duração: ${secondsLabel(originalDuration)}", 15f, EditorStyle.MUTED)
+        val durationArrow = label("  →  ", 15f, EditorStyle.ACTION_TEXT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        val durationAfter = label("", 15f, EditorStyle.TEXT).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        durationRow.addView(durationBefore); durationRow.addView(durationArrow); durationRow.addView(durationAfter)
+        normalPanel.addView(durationRow)
+        val ruler = SpeedRulerView(this)
+        normalPanel.addView(ruler, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(6) })
         fun chooseNormal(value: Float, sendPreview: Boolean = true) {
             normalSpeed = value.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED)
             draft = clip.copy(speed = normalSpeed, speedCurve = emptyList(), preservePitch = draft.preservePitch)
-            current.text = "Selecionado: ${formatSpeed(normalSpeed)}   •   Duração ${timeLabel(draft.durationUs)}"
-            presetButtons.forEach { (preset, button) -> styleChoice(button, kotlin.math.abs(preset - normalSpeed) < .001f) }
-            speedSlider.progress = (normalSpeed * 100).roundToInt()
+            durationAfter.text = secondsLabel(draft.durationUs)
+            if (kotlin.math.abs(ruler.speed - normalSpeed) > .001f) ruler.speed = normalSpeed
             if (sendPreview) preview(draft)
         }
-        NORMAL_PRESETS.forEach { value ->
-            val button = action(formatSpeed(value)) { chooseNormal(value) }
-            presetButtons += value to button
-            presetGrid.addView(button, GridLayout.LayoutParams().apply {
-                width = 0; height = dp(48); columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                setMargins(dp(3), dp(3), dp(3), dp(3))
-            })
-        }
-        normalPanel.addView(presetGrid)
-        speedSlider = slider(normalPanel, "Valor personalizado", (normalSpeed * 100).roundToInt(),
-            (MAX_CLIP_SPEED * 100).roundToInt(), (MIN_CLIP_SPEED * 100).roundToInt(),
-            format = { formatSpeed(it / 100f) }) { chooseNormal(it / 100f) }
+        ruler.onSpeedChange = { chooseNormal(it) }
 
         curvePanel.addView(sectionTitle("Curva de velocidade", "Arraste os pontos. O eixo horizontal representa o arquivo original; cortes e splits preservam o mapeamento."))
         val graph = SpeedCurveView(this, clip.sourceUs).apply { points = curvePoints }
@@ -150,16 +143,24 @@ object SpeedTools {
         })
 
         body.addView(normalPanel); body.addView(curvePanel)
+        // Rodapé como no CapCut: "Alterar tom do áudio" à esquerda e ✓ para aplicar à direita.
+        // Marcado = o tom muda junto com a velocidade (preservePitch desligado).
+        val footer = row().apply { setPadding(0, dp(10), 0, 0) }
         val pitch = CheckBox(this).apply {
-            text = "Preservar tom da voz"; isChecked = clip.preservePitch
-            setOnCheckedChangeListener { _, checked -> draft = draft.copy(preservePitch = checked); preview(draft) }
+            text = "Alterar tom do áudio"; isChecked = !clip.preservePitch
+            setTextColor(EditorStyle.TEXT); textSize = 15f
+            buttonTintList = android.content.res.ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(EditorStyle.ACTION, EditorStyle.MUTED))
+            setOnCheckedChangeListener { _, checked -> draft = draft.copy(preservePitch = !checked); preview(draft) }
         }
-        body.addView(pitch)
-        body.addView(action("Aplicar velocidade", true) {
+        footer.addView(pitch, LinearLayout.LayoutParams(0, -2, 1f))
+        footer.addView(editorIconButton("Aplicar velocidade", com.recly.editor.engine.R.drawable.ic_recly_check, accent = true) {
             runCatching { apply(draft) }.fold({ committed = true; dialog.dismiss() }, {
                 Toast.makeText(this, "Não foi possível aplicar. Verifique o espaço na faixa e a duração do projeto.", Toast.LENGTH_LONG).show()
             })
-        })
+        }, LinearLayout.LayoutParams(dp(52), dp(48)))
+        body.addView(footer)
 
         chooseNormal(normalSpeed, false); updateCurve(false)
         dialog = sheet("Velocidade", body)
