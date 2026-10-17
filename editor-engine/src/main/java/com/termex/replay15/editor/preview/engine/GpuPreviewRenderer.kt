@@ -104,6 +104,14 @@ class GpuPreviewRenderer(
     private val overlayTextLayouts=HashMap<Int,TextLayout.Block>()
     private var overlayTexture = 0
     private var overlaySignature = Long.MIN_VALUE
+    // 3D layers: rendered by Filament on its own thread, uploaded here, drawn above the videos.
+    private var scene3D: com.termex.replay15.editor.scene3d.Scene3DRenderer? = null
+    private val scene3DWorker = Executors.newSingleThreadExecutor()
+    private val scene3DPending = AtomicBoolean()
+    private var scene3DBitmap: Bitmap? = null // scene3DWorker only; never touched while a render is pending
+    private var scene3DTexture = 0
+    private var scene3DSignature = Long.MIN_VALUE
+    private var scene3DReady = false
     private var display = EGL14.EGL_NO_DISPLAY
     @Volatile private var eglContext = EGL14.EGL_NO_CONTEXT
     private var config: EGLConfig? = null
@@ -348,7 +356,7 @@ class GpuPreviewRenderer(
                 // Consume before drawing: an update during draw schedules the next vsync.
                 renderScheduled.set(false)
                 if (!released.get()) runCatching {
-                    state.get()?.let { ensureImages(it); ensureOverlay(it); textRenderer?.update(it) }
+                    state.get()?.let { ensureImages(it); ensureOverlay(it); ensureScene3D(it); textRenderer?.update(it) }
                     draw()
                 }.onFailure(::fail)
             }
@@ -451,6 +459,15 @@ class GpuPreviewRenderer(
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, sceneFramebuffer)
         GLES20.glViewport(0, 0, outputWidth, outputHeight)
         GLES20.glEnable(GLES20.GL_BLEND)
+        if (render.scenes3D.isNotEmpty() && scene3DReady && scene3DTexture != 0) {
+            // Same premultiplied, top-row-first bitmap format as the sticker overlay below.
+            GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+            useQuad(overlayProgram)
+            uniformMatrix(overlayProgram, "uMvp", IDENTITY)
+            uniformMatrix(overlayProgram, "uTexMatrix", FBO_FLIP_Y)
+            bindTexture(overlayProgram, "uTexture", GLES20.GL_TEXTURE_2D, scene3DTexture, 0)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        }
         if (overlayTexture != 0 && (overlaySignature == signature(render) || render.stickers.isNotEmpty())) {
             // Canvas/ImageDecoder bitmaps are premultiplied-alpha.
             GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
@@ -904,6 +921,43 @@ class GpuPreviewRenderer(
         }
     }
 
+    private fun ensureScene3D(render: PreviewRenderState) {
+        if (render.scenes3D.isEmpty()) return
+        val signature = scene3DSignature(render)
+        if (signature == scene3DSignature || !scene3DPending.compareAndSet(false, true)) return
+        val renderer = scene3D ?: com.termex.replay15.editor.scene3d.Scene3DRenderer().also { scene3D = it }
+        // Preview renders at most 720p on the short side; export always uses the full size.
+        val scale = minOf(1f, PREVIEW_3D_SHORT_SIDE / minOf(render.width, render.height).toFloat())
+        val width = (render.width * scale).toInt().coerceAtLeast(2)
+        val height = (render.height * scale).toInt().coerceAtLeast(2)
+        scene3DWorker.execute {
+            val bitmap = scene3DBitmap?.takeIf { it.width == width && it.height == height }
+                ?: Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { scene3DBitmap?.recycle(); scene3DBitmap = it }
+            val drawn = renderer.render(render.scenes3D, render.timeUs, bitmap, com.termex.replay15.editor.scene3d.Scene3DRenderer.Quality.PREVIEW)
+            handler.post {
+                if (!released.get()) {
+                    if (drawn) {
+                        makeCurrent()
+                        if (scene3DTexture == 0) scene3DTexture = texture(GLES20.GL_TEXTURE_2D)
+                        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, scene3DTexture)
+                        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+                        requestRender()
+                    }
+                    scene3DReady = drawn
+                    scene3DSignature = signature
+                }
+                scene3DPending.set(false)
+                if (!released.get()) state.get()?.takeIf { it.scenes3D.isNotEmpty() && scene3DSignature(it) != scene3DSignature }?.let(::ensureScene3D)
+            }
+        }
+    }
+
+    private fun scene3DSignature(s: PreviewRenderState): Long {
+        val animated = s.scenes3D.any { it.isAnimated }
+        val timeBucket = if (animated) s.timeUs / 33_333L else 0L
+        return ((31L * timeBucket + s.scenes3D.hashCode()) * 31 + s.width) * 31 + s.height
+    }
+
     private fun signature(s: PreviewRenderState): Long {
         val animated = s.stickers.any {
             com.termex.replay15.editor.lottie.LottieLayerRenderer.isLottieUri(it.uri) ||
@@ -1005,6 +1059,9 @@ class GpuPreviewRenderer(
             transitionTarget?.let(::deleteEffectTarget);transitionTarget=null
             transitionCompositeTarget?.let(::deleteEffectTarget);transitionCompositeTarget=null;transitionPrograms.values.forEach{GLES20.glDeleteProgram(it.id)};transitionPrograms.clear();failedTransitionPrograms.clear()
             if(overlayTexture!=0)GLES20.glDeleteTextures(1,intArrayOf(overlayTexture),0)
+            if(scene3DTexture!=0)GLES20.glDeleteTextures(1,intArrayOf(scene3DTexture),0); scene3DTexture=0; scene3DReady=false
+            scene3D?.close(); scene3D=null
+            scene3DWorker.execute { scene3DBitmap?.recycle(); scene3DBitmap=null }; scene3DWorker.shutdown()
             textRenderer?.release();textRenderer=null
             overlayWorkBitmap?.recycle();overlayWorkBitmap=null;overlayStickerBitmaps.values.forEach(Bitmap::recycle);overlayStickerBitmaps.clear();overlayTextLayouts.clear()
             overlayStickerSources.values.forEach { if (!it.isRecycled) it.recycle() }; overlayStickerSources.clear()
@@ -1016,6 +1073,8 @@ class GpuPreviewRenderer(
     companion object {
         /** Acima disso (trabalho + swap) o quadro passou de dois vsyncs a 60 Hz: perdido. */
         private const val MISSED_FRAME_MS = 34.0
+        /** Short side of the preview's 3D render; export renders at full size. */
+        private const val PREVIEW_3D_SHORT_SIDE = 720f
         /** Longest time a seek/transition may keep the previous frame on screen before drawing partially. */
         private const val MAX_HOLD_NS = 400_000_000L
         /** Busca em andamento sem nenhum vídeo pronto: o decoder acusa erro em 5 s sem saída. */

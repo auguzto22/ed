@@ -69,7 +69,9 @@ object MediaImport {
 
     fun sourceStatuses(context: Context, project: Project): Map<String, MediaSourceStatus> =
         (project.allVideos.map { it.uri } + project.audio.map { it.uri } + project.stickers.map { it.uri } +
-            project.allVideos.mapNotNull { it.grade.lutPath.takeIf(String::isNotBlank)?.let { path -> Uri.fromFile(File(path)).toString() } })
+            project.allVideos.mapNotNull { it.grade.lutPath.takeIf(String::isNotBlank)?.let { path -> Uri.fromFile(File(path)).toString() } } +
+            project.scenes3D.flatMap { scene -> listOf(scene.modelPath, scene.environment.environmentPath) }
+                .filter(String::isNotBlank).map { path -> Uri.fromFile(File(path)).toString() })
             .distinct().associateWith { MediaSourceAccess.verify(context.contentResolver, Uri.parse(it)) }
 
     /** Compatibility helper: a temporary read/decoder failure is deliberately not "missing". */

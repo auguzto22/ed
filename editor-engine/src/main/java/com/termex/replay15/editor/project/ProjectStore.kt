@@ -89,6 +89,7 @@ object ProjectCodec {
             CompoundCodec.write(project, o)
             MediaSourceCodec.write(project, o)
             CaptionWordFxCodec.write(project, o)
+            Scene3DCodec.write(project, o)
         }
     }
     fun read(stream: InputStream, nested: Boolean = false): Project = DataInputStream(BufferedInputStream(stream)).use { i ->
@@ -178,7 +179,9 @@ object ProjectCodec {
         val sourced = if (schema < 28) compounded else MediaSourceCodec.read(compounded, i)
         val worded = if (schema < 29) sourced else CaptionWordFxCodec.read(sourced, i)
         // Schema 30 changed video mask/track space (y up -> y down); older files are converted.
-        val migrated = if (schema < 30) LegacyMaskSpaceMigration.migrate(worded) else worded
+        // It added no section, so schema 30 files end here; schema 31 appends the 3D layers.
+        val scened = if (schema < 31) worded else Scene3DCodec.read(worded, i)
+        val migrated = if (schema < 30) LegacyMaskSpaceMigration.migrate(scened) else scened
         // Files written before transitions were re-validated on every edit may hold orphaned or
         // over-long transitions; repair them on read so preview and export agree.
         migrated.withSanitizedTransitions()

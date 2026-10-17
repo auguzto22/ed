@@ -185,6 +185,13 @@ class EditorActivity : Activity() {
     private val voiceLimit = Runnable { finishVoiceover(true) }
     private var replaceStickerId: String? = null
     private var pendingLutClipId: String? = null
+    /** 3D layer waiting for the environment image picker (request 713). */
+    private var pendingEnvironmentSceneId: String? = null
+    /** On-screen move/rotate/scale handles for the selected 3D layer. */
+    private lateinit var sceneGizmo: Scene3DGizmoView
+    /** Timeline segment of the selected 3D layer: "sceneId" or "sceneId|cameraId". */
+    private var selectedSceneLayer: String? = null
+    private var realCamera: RealCameraController? = null
     /** UI-only caption scope; it is deliberately not part of Project persistence. */
     private var subtitleApplyRange: ApplyRange = ApplyRange.current()
     private var lastExportState = ExportState()
@@ -201,6 +208,7 @@ class EditorActivity : Activity() {
             handles.visibility = controlVisibility
             stickerHandles.visibility = controlVisibility
             videoHandles.visibility = controlVisibility
+            if (::sceneGizmo.isInitialized) sceneGizmo.visibility = if (isPlaying || realCamera?.isOpen == true) View.GONE else View.VISIBLE
             val iconRes = if (isPlaying) R.drawable.ic_recly_pause else R.drawable.ic_recly_play
             (play as? ViewGroup)?.findViewById<ImageView>(R.id.recly_transport_icon)?.setImageResource(iconRes)
             play.contentDescription = if (isPlaying) "Pausar" else "Reproduzir"
@@ -330,6 +338,7 @@ class EditorActivity : Activity() {
         replaceIndex = retained?.replace ?: savedInstanceState?.getInt("replace", -1) ?: -1
         replaceStickerId = retained?.stickerReplace ?: savedInstanceState?.getString("stickerReplace")
         pendingLutClipId = savedInstanceState?.getString("lutClip")
+        pendingEnvironmentSceneId = savedInstanceState?.getString("environmentScene")
         if (retained != null) {
             history = retained.history; baseline = retained.baseline; position = retained.position; selected = retained.selected
             loaded = true; refresh(false); checkAndRequestProxies(project)
@@ -1000,6 +1009,12 @@ class EditorActivity : Activity() {
         onLayerMove = { track, clip, start -> videoTrackTools.move(track, clip, start) }
         onLayerTrim = { track, clip, start, end -> videoTrackTools.update(track, clip.copy(inUs = start, outUs = end)) }
         onTrack = { id -> videoTrackTools.controls(id, "Faixa") }
+        onScene3D = { sceneId -> selectScene3D(sceneId, null) }
+        onCameraShot = { sceneId, shotId -> selectScene3D(sceneId, shotId) }
+        onScene3DChange = { sceneId, start, end -> retimeScene3D(sceneId, start, end, commit = true) }
+        onScene3DPreviewChange = { sceneId, start, end -> retimeScene3D(sceneId, start, end, commit = false) }
+        onCameraShotChange = { sceneId, shotId, start, end -> retimeCameraShot(sceneId, shotId, start, end, commit = true) }
+        onCameraShotPreviewChange = { sceneId, shotId, start, end -> retimeCameraShot(sceneId, shotId, start, end, commit = false) }
     }
 
     private fun buildTimelineContainer(landscape: Boolean): LinearLayout = column().apply {
@@ -1330,6 +1345,24 @@ class EditorActivity : Activity() {
             onEdit = { stickerPanel(it) }
         }
         frame.addView(stickerHandles, FrameLayout.LayoutParams(-1, -1))
+        sceneGizmo = Scene3DGizmoView(this).apply {
+            // Inside this block `project` is the gizmo's own (possibly draft) project: use the editor's.
+            onPreview = { changed ->
+                PreviewPerformanceController.setInteractionMode(true)
+                previewEdit(this@EditorActivity.project.copy(scenes3D = changed.scenes3D))
+            }
+            onCommit = { changed ->
+                PreviewPerformanceController.setInteractionMode(false)
+                edit(this@EditorActivity.project.copy(scenes3D = changed.scenes3D))
+            }
+            onCancel = {
+                PreviewPerformanceController.setInteractionMode(false)
+                previewEdit(this@EditorActivity.project)
+            }
+            onEdit = { sceneId -> editScene3D(sceneId, Scene3DTools.Section.TRANSFORM) }
+            onClose = { clearSelection() }
+        }
+        frame.addView(sceneGizmo, FrameLayout.LayoutParams(-1, -1))
         trackingOverlay = TrackingOverlayView(this).apply {
             visibility = View.GONE
         }
@@ -1538,6 +1571,7 @@ class EditorActivity : Activity() {
         if (selected in project.videos.indices) return "clip:${project.videos[selected].id}"
         selectedVideoLayer()?.let { (_, clip) -> return "layer:${clip.id}" }
         stickerHandles.selected?.takeIf { id -> project.stickers.any { it.id == id } }?.let { return "sticker:$it" }
+        selectedScene3D()?.let { return "scene3d:${it.id}" }
         return "none"
     }
 
@@ -1631,6 +1665,7 @@ class EditorActivity : Activity() {
             Triple("Keyframe", "Keyframe", { keyframePanel() }),
             Triple("Transição", "Transição", { transitionPanel() }),
             Triple("Câmera 3D", "Transformar", { cameraPanel() }),
+            Triple("Cenas 3D", "Transformar", { scenes3DPanel() }),
             Triple("Rastreamento", "Transformar", { trackingPanel() }),
             Triple("Estabilizar", "Transformar", { stabilizeVideoPanel() }),
             Triple("Motion Blur", "Transformar", { motionBlurPanel() }),
@@ -1660,18 +1695,33 @@ class EditorActivity : Activity() {
      * usadas e depois os grupos (IA, Cor, Movimento...). Grupos abrem na própria barra com ‹.
      */
     private fun updateContextualTools() {
+        syncSceneSelection()
         if (!::contextualTools.isInitialized) return
         contextualTools.removeAllViews()
         val clipSelected = selected in project.videos.indices
         val videoLayer = if (clipSelected) null else selectedVideoLayer()
         val stickerId = if (clipSelected || videoLayer != null) null
             else stickerHandles.selected?.takeIf { id -> project.stickers.any { it.id == id } }
-        val hasSelection = clipSelected || videoLayer != null || stickerId != null
+        val scene3D = if (clipSelected || videoLayer != null || stickerId != null) null else selectedScene3D()
+        val hasSelection = clipSelected || videoLayer != null || stickerId != null || scene3D != null
         if (toolGroup != null && toolGroupOwner != toolSelectionKey()) toolGroup = null
         val groupItems = toolGroup?.let { toolGroupItems(it, clipSelected) }
         if (toolGroup != null && groupItems == null) toolGroup = null
         val items: List<Triple<String, String, () -> Unit>> = if (groupItems != null) groupItems
-        else if (videoLayer != null) {
+        else if (scene3D != null) {
+            // Barra da cena 3D: as mesmas funções dos painéis, direto nos botões.
+            listOf(
+                Triple("Mover", "Transformar", { editScene3D(scene3D.id, Scene3DTools.Section.TRANSFORM) }),
+                Triple("Câmera", "Camada", { editScene3D(scene3D.id, Scene3DTools.Section.CAMERA) }),
+                Triple("Real Camera", "Ajustar", { openRealCamera(scene3D.id, Scene3DTools.cameraOf(scene3D.id).takeIf { id -> id == MAIN_CAMERA || scene3D.shotById(id) != null } ?: MAIN_CAMERA) }),
+                Triple("Ambiente", "Efeitos", { editScene3D(scene3D.id, Scene3DTools.Section.ENVIRONMENT) }),
+                Triple("Tempo", "Cortar", { editScene3D(scene3D.id, Scene3DTools.Section.TIME) }),
+                Triple("Excluir", "Excluir", {
+                    edit(project.copy(scenes3D = project.scenes3D.filterNot { it.id == scene3D.id }))
+                    clearSelection()
+                }),
+            )
+        } else if (videoLayer != null) {
             // Barra da camada de vídeo: as funções agem nesta camada, não no clipe de trás.
             val (trackId, layer) = videoLayer
             listOf(
@@ -1938,6 +1988,7 @@ class EditorActivity : Activity() {
     private fun previewEdit(next: Project) {
         preview.update(next)
         previewDraft = next
+        if (::sceneGizmo.isInitialized) sceneGizmo.project = next
     }
     private fun performHistoryEdit(operation: () -> Unit) {
         val before = project
@@ -2076,6 +2127,7 @@ class EditorActivity : Activity() {
     private fun updatePositionMeasured() {
         timeline.positionUs = position; handles.timeUs = position; stickerHandles.timeUs = position
         videoHandles.timeUs = position; videoHandles.mainClipIndex = selected
+        if (::sceneGizmo.isInitialized) sceneGizmo.timeUs = position
         if (::transportRuler.isInitialized) { transportRuler.durationUs = project.durationUs; transportRuler.positionUs = position }
         val clockKey = (position / 1_000_000L) * 1_000_003L + project.durationUs / 1_000_000L
         if (clockKey != lastClockKey) {
@@ -2221,7 +2273,7 @@ class EditorActivity : Activity() {
         frameSync.start()
     }
     override fun onPause() {
-        resumed = false; preview.pause(); main.removeCallbacks(tick); frameSync.stop()
+        resumed = false; realCamera?.close(); preview.pause(); main.removeCallbacks(tick); frameSync.stop()
         if (voiceRecorder != null) finishVoiceover(true)
         super.onPause()
     }
@@ -2232,6 +2284,7 @@ class EditorActivity : Activity() {
     }
     override fun onDestroy() {
         if (!built) { super.onDestroy(); return }
+        realCamera?.close(); realCamera = null
         if (::previewBox.isInitialized) EditorOverlayHost.detach(previewBox)
         stopPreviewLoop()
         captionSession.cancel()
@@ -2264,6 +2317,7 @@ class EditorActivity : Activity() {
         outState.putInt("replace", replaceIndex)
         outState.putString("stickerReplace", replaceStickerId)
         outState.putString("lutClip", pendingLutClipId)
+        outState.putString("environmentScene", pendingEnvironmentSceneId)
         importing?.let {
             outState.putStringArrayList("importUris", ArrayList(it.uris)); outState.putBoolean("importAudio", it.audio)
             outState.putInt("importReplace", it.replace)
@@ -2272,8 +2326,8 @@ class EditorActivity : Activity() {
     }
 
     private fun addMediaMenu() {
-        choose("Adicionar", listOf("Vídeo ou foto", "Vídeo em camada (por cima)", "Música ou áudio", "Gravar narração", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
-            when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject() }
+        choose("Adicionar", listOf("Vídeo ou foto", "Vídeo em camada (por cima)", "Música ou áudio", "Gravar narração", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)", "Modelo 3D (.glb / .gltf)")) {
+            when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject(); 8 -> scenes3DPanel() }
         }
     }
 
@@ -2360,6 +2414,19 @@ class EditorActivity : Activity() {
             }
             return
         }
+        if (requestCode == 712) {
+            if (resultCode == RESULT_OK && loaded) {
+                val clip = data?.clipData
+                val uris = if (clip != null) (0 until clip.itemCount).mapNotNull { clip.getItemAt(it).uri } else listOfNotNull(data?.data)
+                if (uris.isNotEmpty()) importModel3D(uris)
+            }
+            return
+        }
+        if (requestCode == 713) {
+            val sceneId = pendingEnvironmentSceneId; pendingEnvironmentSceneId = null
+            if (resultCode == RESULT_OK && data?.data != null && sceneId != null && loaded) importEnvironment3D(data.data!!, sceneId)
+            return
+        }
         if (requestCode == 705) {
             val clipId = pendingLutClipId; pendingLutClipId = null
             if (resultCode == RESULT_OK && data?.data != null && clipId != null) importLut(data.data!!, clipId)
@@ -2434,11 +2501,15 @@ class EditorActivity : Activity() {
                 } else {
                     val clips = uris.map { MediaImport.video(this, it) }
                     val list = snapshot.videos.toMutableList()
+                    // The plain background of a 3D-only project gives way to the first real media.
+                    val onlyBackground = list.size == 1 && com.termex.replay15.editor.scene3d.Scene3DImport.isBackground(list[0]) &&
+                        snapshot.videoTracks.all { it.clips.isEmpty() }
+                    if (onlyBackground && replace < 0) list.clear()
                     if (replace in list.indices) list[replace] = clips.first() else list.addAll(clips)
-                    val firstMedia = snapshot.allVideos.isEmpty() && replace < 0
+                    val firstMedia = (snapshot.allVideos.isEmpty() || (onlyBackground && replace < 0)) && replace < 0
                     val automaticExport = if (firstMedia) ExportSettings.forSource(clips.first(), snapshot.export.audioBitrate) else snapshot.export
                     snapshot.copy(videos = list,
-                        name = if (snapshot.videos.isEmpty()) clips.first().name.substringBeforeLast('.').take(100) else snapshot.name,
+                        name = if (snapshot.videos.isEmpty() || onlyBackground) clips.first().name.substringBeforeLast('.').take(100) else snapshot.name,
                         export = automaticExport)
                 }
             }
@@ -2634,6 +2705,172 @@ class EditorActivity : Activity() {
             restore = { previewEdit(project) },
             apply = { changed -> edit(changed) }
         )
+    }
+    private fun scene3DCallbacks() = Scene3DTools.Callbacks(
+        seek = { time -> seek(time) },
+        preview = { changed -> previewEdit(changed) },
+        restore = { previewEdit(project) },
+        apply = { changed -> edit(changed) },
+        pickModel = { pickModel3D() },
+        pickEnvironment = { sceneId -> pickEnvironment3D(sceneId) },
+        openRealCamera = { sceneId, cameraId -> openRealCamera(sceneId, cameraId) },
+    )
+    private fun scenes3DPanel() {
+        preview.pause()
+        position = preview.positionUs
+        Scene3DTools.list(this, project, position, scene3DCallbacks())
+    }
+    private fun editScene3D(sceneId: String, section: Scene3DTools.Section) {
+        preview.pause()
+        val scene = project.scenes3D.firstOrNull { it.id == sceneId } ?: return
+        position = preview.positionUs
+        val at = if (scene.isActiveAt(position)) position else scene.startUs.also { seek(it) }
+        Scene3DTools.edit(this, project, sceneId, at, section, scene3DCallbacks())
+    }
+    private fun pickModel3D() {
+        if (busy) return
+        if (project.scenes3D.size >= MAX_SCENES_3D) { error("Limite de $MAX_SCENES_3D cenas 3D"); return }
+        // Several files at once (model + .mtl/.bin + textures) or a single .zip.
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+            .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        runCatching { startActivityForResult(intent, 712) }
+            .onFailure { error("Não foi possível abrir o seletor de arquivos") }
+    }
+    private fun pickEnvironment3D(sceneId: String) {
+        if (busy) return
+        pendingEnvironmentSceneId = sceneId
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+        runCatching { startActivityForResult(intent, 713) }
+            .onFailure { pendingEnvironmentSceneId = null; error("Não foi possível abrir o seletor de arquivos") }
+    }
+    private fun importModel3D(uris: List<Uri>) {
+        if (busy) return
+        busy = true; info.text = "Importando modelo 3D..."
+        val needsBackground = project.durationUs < Scene3DClip.MIN_SCENE_DURATION_US
+        val backgroundColor = project.backgroundColor
+        io.execute {
+            val result = runCatching {
+                val model = com.termex.replay15.editor.scene3d.Scene3DImport.model(applicationContext, uris)
+                val background = if (needsBackground) runCatching {
+                    com.termex.replay15.editor.scene3d.Scene3DImport.backgroundClip(applicationContext, backgroundColor)
+                }.getOrElse { model.file.delete(); throw it } else null
+                model to background
+            }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                busy = false
+                result.fold({ (model, background) ->
+                    val created = runCatching {
+                        // A project with no video yet becomes a 3D-only project on a plain background.
+                        val base = if (project.durationUs < Scene3DClip.MIN_SCENE_DURATION_US) {
+                            requireNotNull(background) { "Adicione um vídeo ou foto antes da cena 3D" }
+                            project.copy(
+                                videos = project.videos + background,
+                                name = if (project.videos.isEmpty()) model.name.take(100) else project.name,
+                                export = ExportSettings.forSource(background, project.export.audioBitrate),
+                            )
+                        } else project
+                        val scene = com.termex.replay15.editor.scene3d.Scene3DImport.newScene(
+                            base, model, if (base === project) preview.positionUs else 0L)
+                        if (base !== project) preview.suspendSources()
+                        edit(base.copy(scenes3D = base.scenes3D + scene))
+                        scene
+                    }
+                    created.fold({ scene ->
+                        info.text = if (model.warnings.isEmpty()) "Modelo 3D adicionado" else "Modelo 3D adicionado (${model.warnings.size} aviso${if (model.warnings.size > 1) "s" else ""})"
+                        if (model.warnings.isNotEmpty()) model3DWarnings(model.warnings)
+                        selectScene3D(scene.id, null)
+                        editScene3D(scene.id, Scene3DTools.Section.TRANSFORM)
+                    }, { model.file.delete(); error("Falha ao adicionar o modelo 3D: ${it.message}") })
+                }, { error("Falha ao importar o modelo 3D: ${it.message}") })
+            }
+        }
+    }
+    /** What could not be brought over (missing textures, skeleton...), so nothing is silently lost. */
+    private fun model3DWarnings(warnings: List<String>) {
+        AlertDialog.Builder(this).setTitle("Importado, com avisos")
+            .setMessage(warnings.distinct().take(12).joinToString("\n\n") { "• $it" })
+            .setPositiveButton("OK", null).show()
+    }
+    private fun selectedScene3D(): Scene3DClip? {
+        if (selected in project.videos.indices) return null
+        val id = timeline.selectedLayerId?.substringBefore('|') ?: return null
+        return project.scenes3D.firstOrNull { it.id == id }
+    }
+    /** Keeps the on-screen handles on the 3D layer selected in the timeline (and only then). */
+    private fun syncSceneSelection() {
+        val scene = selectedScene3D()
+        if (scene == null) selectedSceneLayer = null
+        if (::sceneGizmo.isInitialized) { sceneGizmo.project = project; sceneGizmo.sceneId = scene?.id }
+    }
+    /** Selects a 3D layer (or one of its camera cuts); selecting it again opens its panel. */
+    private fun selectScene3D(sceneId: String, shotId: String?) {
+        val scene = project.scenes3D.firstOrNull { it.id == sceneId } ?: return
+        val layer = if (shotId == null) sceneId else "$sceneId|$shotId"
+        val wasSelected = selectedSceneLayer == layer
+        selected = -1; timeline.selected = -1
+        handles.selected = null; stickerHandles.selected = null
+        videoHandles.mainClipIndex = -1; videoHandles.trackId = null; videoHandles.clipId = null
+        timeline.selectedLayerId = layer
+        selectedSceneLayer = layer
+        if (shotId != null) Scene3DTools.selectCamera(sceneId, shotId)
+        if (!scene.isActiveAt(position)) seek(scene.startUs)
+        updateContextualTools()
+        if (wasSelected) editScene3D(sceneId, if (shotId != null) Scene3DTools.Section.CAMERA else Scene3DTools.Section.TRANSFORM)
+    }
+    private fun retimeScene3D(sceneId: String, startUs: Long, endUs: Long, commit: Boolean) {
+        val scene = project.scenes3D.firstOrNull { it.id == sceneId } ?: return
+        val limit = project.durationUs
+        val end = if (limit > 0) endUs.coerceAtMost(limit) else endUs
+        val start = startUs.coerceIn(0L, (end - Scene3DClip.MIN_SCENE_DURATION_US).coerceAtLeast(0L))
+        val next = runCatching { scene.retimed(start, end) }.getOrNull()
+        if (next == null || next == scene) { if (commit) previewEdit(project); return }
+        val changed = project.copy(scenes3D = project.scenes3D.map { if (it.id == sceneId) next else it })
+        if (commit) edit(changed) else previewEdit(changed)
+    }
+    private fun retimeCameraShot(sceneId: String, shotId: String, startUs: Long, endUs: Long, commit: Boolean) {
+        val scene = project.scenes3D.firstOrNull { it.id == sceneId } ?: return
+        val next = runCatching { scene.withShotTiming(shotId, startUs, endUs) }.getOrNull()
+        if (next == null || next == scene) { if (commit) previewEdit(project); return }
+        val changed = project.copy(scenes3D = project.scenes3D.map { if (it.id == sceneId) next else it })
+        if (commit) edit(changed) else previewEdit(changed)
+    }
+    private fun openRealCamera(sceneId: String, cameraId: String) {
+        if (busy || !loaded) return
+        preview.pause()
+        position = preview.positionUs.coerceIn(0, project.durationUs)
+        val controller = realCamera ?: RealCameraController(this, frame, object : RealCameraController.Hooks {
+            override fun project(): Project = this@EditorActivity.project
+            override fun positionUs(): Long = if (preview.isPlaying) preview.positionUs else this@EditorActivity.position
+            override fun isPlaying(): Boolean = preview.isPlaying
+            override fun play() { if (!preview.isPlaying) preview.toggle(this@EditorActivity.project.durationUs) }
+            override fun pause() { if (preview.isPlaying) preview.pause() }
+            override fun seek(us: Long) { this@EditorActivity.seek(us) }
+            override fun preview(project: Project) { previewEdit(project) }
+            override fun commit(project: Project) { edit(project) }
+            override fun requestCameraPermission() { requestPermissions(arrayOf(Manifest.permission.CAMERA), 714) }
+            override fun closed() { updateContextualTools() }
+        }).also { realCamera = it }
+        controller.open(sceneId, cameraId)
+    }
+    private fun importEnvironment3D(uri: Uri, sceneId: String) {
+        if (busy || project.scenes3D.none { it.id == sceneId }) return
+        busy = true; info.text = "Importando imagem de ambiente..."
+        io.execute {
+            val result = runCatching { com.termex.replay15.editor.scene3d.Scene3DImport.environment(applicationContext, uri) }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                busy = false
+                result.fold({ file ->
+                    if (project.scenes3D.none { it.id == sceneId }) { file.delete(); return@fold }
+                    edit(project.copy(scenes3D = project.scenes3D.map {
+                        if (it.id == sceneId) it.copy(environment = it.environment.copy(environmentPath = file.absolutePath)) else it
+                    }))
+                    info.text = "Ambiente 3D aplicado"
+                    editScene3D(sceneId, Scene3DTools.Section.ENVIRONMENT)
+                }, { error("Falha ao importar a imagem: ${it.message}") })
+            }
+        }
     }
     private fun pickLut(clipId: String) {
         if (busy) return
@@ -3811,6 +4048,7 @@ class EditorActivity : Activity() {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) voiceoverPanel()
             else error("Permita o microfone para gravar narração.")
         }
+        if (requestCode == 714) realCamera?.onPermissionResult(grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
     }
 
     private fun stickerMenu() {
