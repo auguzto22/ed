@@ -131,9 +131,20 @@ class VideoTrackTools(
         body.addView(action("Pilha de efeitos") { dialog.dismiss(); effects(clipId) })
         body.addView(action("Remover fundo com IA") { dialog.dismiss(); backgroundRemoval(clipId) })
         body.addView(action("Animações de entrada, saída e loop") { dialog.dismiss(); animations(clipId) })
-        body.addView(action("Velocidade e curvas") { dialog.dismiss(); SpeedTools.show(this, clip) { next ->
-            apply(TrackEditing.update(project(), trackId, clipId) { it.copy(clip = next) })
-        } })
+        body.addView(action("Velocidade e curvas") {
+            dialog.dismiss()
+            // A camada sobreposta muda de duração no lugar: empurra só a própria faixa e, se pedido,
+            // leva junto textos e stickers que estavam sobre ela (SpeedEdit, mapa do motor).
+            SpeedTools.show(this, clip, SpeedTools.Callbacks(
+                preview = { next, sync, _ -> runCatching { com.termex.replay15.editor.speed.SpeedEdit.apply(project(), next, sync) }.onSuccess { preview(it) } },
+                restore = { preview(project()) },
+                apply = { next, sync -> apply(com.termex.replay15.editor.speed.SpeedEdit.apply(project(), next, sync)) },
+                playheadSourceUs = {
+                    val local = position() - item.startUs
+                    if (local in 0 until clip.durationUs) clip.timeMap.sourceAt(local) else null
+                },
+            ))
+        })
         body.addView(action("Cor e LUT") {
             dialog.dismiss()
             StudioPanels.grade(

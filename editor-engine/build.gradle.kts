@@ -1,4 +1,5 @@
 import java.util.Properties
+import javax.inject.Inject
 
 plugins {
     id("com.android.library")
@@ -46,6 +47,94 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+}
+
+// ---- Motor de velocidade em Rust (blitz-speed/) -------------------------------------------------
+//
+// A lógica de velocidade (curvas, mapa de tempo, presets, câmera lenta, motion blur na GPU, áudio)
+// é a biblioteca nativa libblitz_speed.so. Requisitos para compilar o app:
+//   * Rust (rustup) com os alvos Android:
+//       rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+//   * cargo-ndk:  cargo install cargo-ndk
+//   * Android NDK instalado pelo SDK Manager (ou ANDROID_NDK_HOME apontando para ele).
+// Os testes de unidade da JVM usam a mesma biblioteca compilada para o computador (cargo build).
+
+val blitzSpeedCrate = rootProject.layout.projectDirectory.dir("blitz-speed")
+val blitzSpeedSources = files(blitzSpeedCrate.file("Cargo.toml"), blitzSpeedCrate.file("Cargo.lock"), fileTree(blitzSpeedCrate.dir("src")))
+
+abstract class CargoNdkBuild : DefaultTask() {
+    @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val sources: ConfigurableFileCollection
+    @get:Internal abstract val crateDir: DirectoryProperty
+    @get:Input abstract val abis: ListProperty<String>
+    @get:Input abstract val minSdk: Property<Int>
+    @get:Internal abstract val ndkDir: DirectoryProperty
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
+    @get:Inject abstract val exec: ExecOperations
+
+    @TaskAction
+    fun build() {
+        val ndk = runCatching { ndkDir.orNull?.asFile }.getOrNull()?.takeIf { it.isDirectory }
+            ?: System.getenv("ANDROID_NDK_HOME")?.let(::File)?.takeIf { it.isDirectory }
+            ?: throw GradleException("Android NDK não encontrado. Instale pelo SDK Manager (NDK side by side) ou defina ANDROID_NDK_HOME — o motor de velocidade (blitz-speed) é compilado em Rust.")
+        val out = outputDir.get().asFile.apply { deleteRecursively(); mkdirs() }
+        val result = exec.exec {
+            workingDir = crateDir.get().asFile
+            environment("ANDROID_NDK_HOME", ndk.absolutePath)
+            commandLine(buildList {
+                add("cargo"); add("ndk")
+                abis.get().forEach { add("-t"); add(it) }
+                add("--platform"); add(minSdk.get().toString())
+                add("-o"); add(out.absolutePath)
+                add("build"); add("--release")
+            })
+            isIgnoreExitValue = true
+        }
+        if (result.exitValue != 0) throw GradleException(
+            "Falha ao compilar blitz-speed para Android (cargo ndk, código ${result.exitValue}). Verifique: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android; cargo install cargo-ndk.")
+    }
+}
+
+abstract class CargoHostBuild : DefaultTask() {
+    @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val sources: ConfigurableFileCollection
+    @get:Internal abstract val crateDir: DirectoryProperty
+    @get:Inject abstract val exec: ExecOperations
+
+    @TaskAction
+    fun build() {
+        val result = exec.exec {
+            workingDir = crateDir.get().asFile
+            commandLine("cargo", "build", "--release")
+            isIgnoreExitValue = true
+        }
+        if (result.exitValue != 0) throw GradleException("Falha ao compilar blitz-speed para os testes (cargo build --release, código ${result.exitValue}). Instale o Rust: https://rustup.rs")
+    }
+}
+
+val cargoBuildAndroid = tasks.register<CargoNdkBuild>("cargoBuildAndroid") {
+    group = "build"; description = "Compila o motor de velocidade (Rust) para os ABIs Android."
+    sources.from(blitzSpeedSources)
+    crateDir.set(blitzSpeedCrate)
+    abis.set(listOf("arm64-v8a", "armeabi-v7a", "x86_64"))
+    minSdk.set(29)
+    ndkDir.set(androidComponents.sdkComponents.ndkDirectory)
+    outputDir.set(layout.buildDirectory.dir("rustJniLibs"))
+}
+
+val cargoBuildHost = tasks.register<CargoHostBuild>("cargoBuildHost") {
+    group = "verification"; description = "Compila o motor de velocidade (Rust) para a JVM dos testes."
+    sources.from(blitzSpeedSources)
+    crateDir.set(blitzSpeedCrate)
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.jniLibs?.addGeneratedSourceDirectory(cargoBuildAndroid, CargoNdkBuild::outputDir)
+    }
+}
+
+tasks.withType<Test>().configureEach {
+    dependsOn(cargoBuildHost)
+    systemProperty("java.library.path", blitzSpeedCrate.dir("target/release").asFile.absolutePath)
 }
 
 dependencies {

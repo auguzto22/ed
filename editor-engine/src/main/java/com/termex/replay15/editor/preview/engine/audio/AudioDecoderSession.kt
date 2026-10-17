@@ -37,7 +37,15 @@ class AudioDecoderSession(
     private var sourceSampleRate = 48000
     private var sourceChannelCount = 2
 
-    private val processorChain = AudioProcessorChain(targetSampleRate, 2)
+    /**
+     * Velocidade e tom pelo motor em Rust: fluxo contínuo, a velocidade pode mudar a cada bloco
+     * sem reiniciar (o Sonic era esvaziado a cada mudança e descartava amostras numa rampa).
+     */
+    private var retime = 0L
+    /** Até a primeira velocidade diferente de 1× (desde a última busca) a leitura é direta. */
+    private var retimeActive = false
+    /** O fim da mídia já foi entregue ao motor (o resto dos buffers saiu). */
+    private var retimeFinished = false
     private val speedInput = FloatArray(1024 * 16 * 2 + 4)
     private var enhancer: AudioEnhanceProcessor? = null
     private var existingSettings: AudioEnhance? = null
@@ -91,7 +99,9 @@ class AudioDecoderSession(
             inputEnded = false
             outputEnded = false
             seekTargetUs = sourceTimeUs.coerceAtLeast(0L)
-            processorChain.flush()
+            if (retime != 0L) runCatching { com.termex.replay15.editor.speed.NativeSpeed.audioReset(retime) }
+            retimeActive = false
+            retimeFinished = false
             // A seek jumps the stream, so the filter memory describes audio that is no longer
             // playing. Carrying it forward would open the gate or the compressor on a phantom.
             enhancer?.reset()
@@ -103,10 +113,6 @@ class AudioDecoderSession(
             runCatching { dec.flush() }
             diagnostics?.decoderFlushed()
         }
-    }
-
-    fun setSpeedAndPitch(speed: Float, preservePitch: Boolean) {
-        processorChain.updateParameters(speed, preservePitch)
     }
 
     /**
@@ -150,13 +156,39 @@ class AudioDecoderSession(
         generation: Long,
         enhance: AudioEnhance = AudioEnhance.NEUTRAL,
     ): Int {
-        val sourceFrames = (frameRequested * speed).toInt().coerceIn(1, frameRequested * 16)
-        val read = readFrames(speedInput, 0, sourceFrames, generation)
-        if (read <= 0) { output.fill(0f, 0, frameRequested * 2); return 0 }
-        processorChain.updateParameters(speed, preservePitch)
-        val produced = processorChain.processFloatPcm(speedInput, read, output, frameRequested)
-        if (produced > 0 && !enhance.isNeutral) enhancerFor(enhance).process(output, produced)
+        val produced = if (speed == 1f && !retimeActive) {
+            readFrames(output, 0, frameRequested, generation)
+        } else {
+            readRetimed(output, frameRequested, speed, preservePitch, generation)
+        }
+        if (produced <= 0) { output.fill(0f, 0, frameRequested * 2); return 0 }
+        if (produced < frameRequested) output.fill(0f, produced * 2, frameRequested * 2)
+        if (!enhance.isNeutral) enhancerFor(enhance).process(output, produced)
         return produced
+    }
+
+    /** Lê mídia na quantidade que o motor pede e tira exatamente o bloco da timeline. */
+    private fun readRetimed(output: FloatArray, frameRequested: Int, speed: Float, preservePitch: Boolean, generation: Long): Int {
+        val native = com.termex.replay15.editor.speed.NativeSpeed
+        if (retime == 0L) retime = native.audioCreate()
+        retimeActive = true
+        val capacity = (speedInput.size - 4) / 2
+        var attempts = 0
+        while (native.audioAvailable(retime) < frameRequested && attempts++ < 32) {
+            val need = native.audioInputNeeded(retime, frameRequested, speed, preservePitch).coerceIn(256, capacity)
+            val read = readFrames(speedInput, 0, need, generation)
+            if (read <= 0) {
+                // Fim real da mídia (não só o decoder atrasado): o motor solta o que guardava à
+                // frente, senão o fim do áudio sumia.
+                val ended = synchronized(lock) { outputEnded } && generation == activeGeneration.get()
+                if (ended && !retimeFinished) { retimeFinished = true; native.audioFinish(retime, speed); continue }
+                break
+            }
+            native.audioPush(retime, speedInput, read, speed, preservePitch, frameRequested)
+        }
+        // Depois de entrar no fluxo retemporizado fica nele até a próxima busca, mesmo em 1×: o
+        // motor guarda mídia à frente e voltar a ler direto pularia esse trecho.
+        return native.audioPull(retime, output, frameRequested)
     }
 
     /**
@@ -276,7 +308,7 @@ class AudioDecoderSession(
             codec = null
             extractor?.let { runCatching { it.release() } }
             extractor = null
-            processorChain.reset()
+            if (retime != 0L) { com.termex.replay15.editor.speed.NativeSpeed.audioRelease(retime); retime = 0L }
         }
     }
 }

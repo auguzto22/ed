@@ -32,6 +32,8 @@ class EditorExportService : Service() {
     private var output: File? = null
     private var started = false
     private var jobId: String? = null
+    /** Problema encontrado na conferência do MP4 (duração/sincronia), mostrado ao terminar. */
+    @Volatile private var validationNote: String? = null
     private val poll = object : Runnable {
         override fun run() {
             val t = transformer ?: return
@@ -105,8 +107,18 @@ class EditorExportService : Service() {
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                         main.removeCallbacks(poll); transformer = null
-                        publish(ExportState(true, 100, "Salvando na galeria..."))
-                        saveToGallery(requireNotNull(output))
+                        publish(ExportState(true, 100, "Conferindo duração e sincronia..."))
+                        val file = requireNotNull(output)
+                        io.execute {
+                            val check = ExportValidator.validate(file, project)
+                            if (!check.ok) Log.w(TAG, "Export validation for ${project.id}: ${check.message}")
+                            main.post {
+                                if (cancelled.get()) return@post
+                                validationNote = if (check.ok) null else check.message
+                                publish(ExportState(true, 100, "Salvando na galeria..."))
+                                saveToGallery(file)
+                            }
+                        }
                     }
                     override fun onError(composition: Composition, exportResult: ExportResult, exportException: ExportException) {
                         Log.e(TAG, "Transformer failed for ${project.id}: ${exportException.errorCodeName}", exportException)
@@ -161,7 +173,8 @@ class EditorExportService : Service() {
             if (result.isFailure) Log.e(TAG, "Could not publish exported MP4: ${file.absolutePath}", result.exceptionOrNull())
             main.post {
                 if (!cancelled.get()) result.fold(
-                    { finishWith(ExportState(progress = 100, message = "Video salvo na galeria", uri = it)) },
+                    { finishWith(ExportState(progress = 100, message = "Video salvo na galeria" +
+                        (validationNote?.let { note -> ". Atenção: $note" } ?: ""), uri = it)) },
                     { finishWith(ExportState(message = "MP4 preservado. Erro ao salvar: ${it.message}"), deleteOutput = false) })
             }
         }

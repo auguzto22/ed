@@ -89,6 +89,7 @@ object ProjectCodec {
             CompoundCodec.write(project, o)
             MediaSourceCodec.write(project, o)
             CaptionWordFxCodec.write(project, o)
+            RetimeCodec.write(project, o)
         }
     }
     fun read(stream: InputStream, nested: Boolean = false): Project = DataInputStream(BufferedInputStream(stream)).use { i ->
@@ -177,8 +178,9 @@ object ProjectCodec {
         val compounded = if (schema < 27) videoEnhanced else CompoundCodec.read(videoEnhanced, i)
         val sourced = if (schema < 28) compounded else MediaSourceCodec.read(compounded, i)
         val worded = if (schema < 29) sourced else CaptionWordFxCodec.read(sourced, i)
+        val retimed = if (schema < 31) worded else RetimeCodec.read(worded, i)
         // Schema 30 changed video mask/track space (y up -> y down); older files are converted.
-        val migrated = if (schema < 30) LegacyMaskSpaceMigration.migrate(worded) else worded
+        val migrated = if (schema < 30) LegacyMaskSpaceMigration.migrate(retimed) else retimed
         // Files written before transitions were re-validated on every edit may hold orphaned or
         // over-long transitions; repair them on read so preview and export agree.
         migrated.withSanitizedTransitions()

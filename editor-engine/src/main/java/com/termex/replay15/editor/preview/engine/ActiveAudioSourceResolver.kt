@@ -57,8 +57,10 @@ class ActiveAudioSourceResolver(
                     id = "video:${clip.id}:audio", key = video.key, uri = clip.uri,
                     projectStartUs = video.startUs, projectEndUs = video.endUs,
                     sourceStartUs = clip.inUs, sourceTimeUs = sourceTime,
-                    volume = AudioTimelineMapper.calculateGain(clip.volume, time - video.startUs, clip.durationUs,
-                        maxOf(clip.audioFadeInUs, entering), maxOf(clip.audioFadeOutUs, leaving)),
+                    // "Silenciar" no painel de velocidade vale enquanto o clipe está retemporizado.
+                    volume = if (clip.retimedAudioMuted && (clip.speed != 1f || clip.speedCurve.isNotEmpty())) 0f
+                        else AudioTimelineMapper.calculateGain(clip.volume, time - video.startUs, clip.durationUs,
+                            maxOf(clip.audioFadeInUs, entering), maxOf(clip.audioFadeOutUs, leaving)),
                     speed = clip.timeMap.speedAtInput(sourceTime - clip.inUs),
                     preservePitch = clip.preservePitch, generation = generation, embedded = true,
                     enhance = clip.enhance,

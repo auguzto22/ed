@@ -75,8 +75,24 @@ object ProjectComposition {
         })
     }
 
+    /**
+     * Perfil do aparelho para a exportação. A exportação é offline: não desce de qualidade por
+     * temperatura nem pelo nível da prévia. O `highp` real é conferido na thread GL pelo próprio
+     * efeito ([MotionRetimeEffect]), que cai para mistura se faltar.
+     */
+    private fun exportDevice(context: android.content.Context): com.termex.replay15.editor.speed.DeviceMotionProfile {
+        val am = context.getSystemService(android.app.ActivityManager::class.java)
+        return com.termex.replay15.editor.speed.DeviceMotionProfile(
+            memoryClassMb = am?.memoryClass ?: 256, lowRamDevice = am?.isLowRamDevice ?: false,
+            highpFragmentShaders = true, maxTextureSize = 4096,
+        )
+    }
+
     fun build(context: android.content.Context, project: Project): Composition {
         require(project.allVideos.isNotEmpty()) { "Adicione um video ou foto" }
+        val motionContext = if (project.export.motionQuality == com.termex.replay15.editor.speed.MotionExportQuality.ECONOMY)
+            com.termex.replay15.editor.speed.MotionContext.EXPORT_ECONOMY else com.termex.replay15.editor.speed.MotionContext.EXPORT_HIGH
+        val device = exportDevice(context)
         val (width, height) = project.dimensions(project.export.shortSide)
         val layers = RenderPlan.layers(project)
         val transitionSessionId = nextTransitionSessionId.incrementAndGet()
@@ -137,6 +153,21 @@ object ProjectComposition {
             // masked-out areas, rotated) and the exported cut-out did not match the preview.
             effects.indexOfFirst { it is BackgroundRemovalExportEffect }.takeIf { it > 0 }
                 ?.let { index -> effects.add(0, effects.removeAt(index)) }
+            // Movimento (câmera lenta suave, blur por vetores, acumulação): logo depois da remoção
+            // de fundo, que segmenta só os quadros reais; tudo depois recebe os quadros novos.
+            val motionPlan = if (clip.image) null else com.termex.replay15.editor.speed.MotionPolicy.plan(clip, motionContext, device, project.export.fps.toFloat())
+            val accumulation = motionPlan != null && clip.motionBlur.enabled && motionPlan.blur != com.termex.replay15.editor.speed.BlurMethod.LAYER_ANIMATION &&
+                clip.timeMap.speedRange().endInclusive * clip.fps > project.export.fps * 1.5f
+            if (motionPlan != null && (!motionPlan.isPassThrough || accumulation)) {
+                val exposure = if (motionPlan.blur == com.termex.replay15.editor.speed.BlurMethod.LAYER_ANIMATION) 0f else clip.motionBlur.exposureFraction
+                val index = if (effects.firstOrNull() is BackgroundRemovalExportEffect) 1 else 0
+                // O item começa em placed.startUs na sequência (as lacunas são preenchidas antes).
+                effects.add(index, MotionRetimeEffect(motionPlan, project.export.fps, exposure, placed.startUs + clip.durationUs))
+            }
+            if (motionPlan?.blur == com.termex.replay15.editor.speed.BlurMethod.LAYER_ANIMATION) {
+                com.termex.replay15.editor.motion.MotionBlurEngine.layerEffect(clip, clip.motionBlur, project.export.fps)
+                    ?.let { blur -> effects += PackageEffect(blur, clip, placed.startUs) } // junto dos efeitos do pacote
+            }
             effects += Presentation.createForWidthAndHeight(width, height, if (project.canvasFill == CanvasFill.FILL)
                 Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP else Presentation.LAYOUT_SCALE_TO_FIT)
             if (
@@ -180,12 +211,18 @@ object ProjectComposition {
             // Same envelope as preview: the outgoing clip is not faded across the whole transition
             // (that left a silent dip at every cut), only a short tail to avoid a click.
             val audioFadeOut = maxOf(clip.audioFadeOutUs, transOut?.durationUs?.coerceAtMost(TRANSITION_AUDIO_TAIL_US) ?: 0L)
-            val audioEffects = gain(clip.volume, audioFadeIn, audioFadeOut, clip.durationUs) +
+            // "Silenciar" no painel de velocidade: ganho zero (o trilho de áudio continua existindo,
+            // então a sequência e a sincronização não mudam).
+            val retimed = clip.speed != 1f || clip.speedCurve.isNotEmpty()
+            val volume = if (clip.retimedAudioMuted && retimed) 0f else clip.volume
+            val audioEffects = gain(volume, audioFadeIn, audioFadeOut, clip.durationUs) +
                 if (clip.enhance.isNeutral) emptyList() else listOf(AudioEnhanceProcessorEffect(clip.enhance))
             val item = EditedMediaItem.Builder(media.build())
                 .setDurationUs((if (clip.image) clip.outUs - clip.inUs else clip.sourceUs).coerceAtLeast(1000L))
                 .setRemoveAudio(!project.audioEnabled(layer.id))
-                .setFrameRate(project.export.fps)
+                // O limite de quadros descarta quadros antes dos efeitos. Com acumulação temporal o
+                // efeito de movimento precisa dos quadros do trecho acelerado (até 8 por saída).
+                .setFrameRate(if (accumulation) project.export.fps * 8 else project.export.fps)
                 .setEffects(Effects(audioEffects, effects))
                 .setSpeed(androidx.media3.common.SpeedParameters(ClipSpeedProvider(clip), clip.preservePitch)).build()
             sequence.addItem(item); endUs = placed.endUs

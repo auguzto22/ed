@@ -20,103 +20,107 @@ object ProjectClipTimeMapper : ClipTimeMapper {
         clipStartUs + clip.timeMap.timelineAt(sourceTimeUs)
 }
 
-data class SpeedPoint(val sourceUs: Long, val speed: Float) {
-    init { require(sourceUs >= 0 && speed in MIN_CLIP_SPEED..MAX_CLIP_SPEED) }
+/** Easings que um segmento de velocidade aceita (os demais ultrapassam o alvo e sairiam da faixa). */
+val SPEED_SEGMENT_EASINGS: Set<Easing> = linkedSetOf(
+    Easing.LINEAR, Easing.SMOOTH, Easing.EASE_IN, Easing.EASE_OUT, Easing.EASE_IN_OUT, Easing.BEZIER, Easing.HOLD,
+)
+
+/**
+ * Um ponto de controle da curva de velocidade, ancorado no tempo da mídia (cortes e splits
+ * preservam a rampa).
+ *
+ * [easing] molda o segmento que sai deste ponto até o próximo ([Easing.LINEAR] é o comportamento
+ * do schema 9, então projetos antigos tocam igual). [bezier] vale quando [easing] é
+ * [Easing.BEZIER]. O easing do último ponto não tem efeito.
+ */
+data class SpeedPoint(
+    val sourceUs: Long,
+    val speed: Float,
+    val easing: Easing = Easing.LINEAR,
+    val bezier: CubicBezier = CubicBezier(),
+) {
+    init {
+        require(sourceUs >= 0 && speed in MIN_CLIP_SPEED..MAX_CLIP_SPEED)
+        require(easing in SPEED_SEGMENT_EASINGS)
+    }
+
+    companion object {
+        private fun pack(low: Float, high: Int): Long = (high.toLong() shl 32) or (low.toRawBits().toLong() and 0xFFFF_FFFFL)
+        private fun pack(low: Float, high: Float): Long = (high.toRawBits().toLong() shl 32) or (low.toRawBits().toLong() and 0xFFFF_FFFFL)
+
+        /** Formato que o motor nativo lê: 4 `long` por ponto. */
+        fun pack(points: List<SpeedPoint>): LongArray = LongArray(points.size * 4).also { out ->
+            points.forEachIndexed { index, point ->
+                out[index * 4] = point.sourceUs
+                out[index * 4 + 1] = pack(point.speed, point.easing.ordinal)
+                out[index * 4 + 2] = pack(point.bezier.x1, point.bezier.y1)
+                out[index * 4 + 3] = pack(point.bezier.x2, point.bezier.y2)
+            }
+        }
+
+        fun unpack(packed: LongArray): List<SpeedPoint> {
+            require(packed.size % 4 == 0)
+            fun low(value: Long) = Float.fromBits(value.toInt())
+            fun high(value: Long) = Float.fromBits((value ushr 32).toInt())
+            return List(packed.size / 4) { index ->
+                val base = index * 4
+                SpeedPoint(
+                    packed[base], low(packed[base + 1]), Easing.entries[(packed[base + 1] ushr 32).toInt()],
+                    CubicBezier(low(packed[base + 2]), high(packed[base + 2]), low(packed[base + 3]), high(packed[base + 3])),
+                )
+            }
+        }
+    }
 }
 
-/** Source-anchored sampling keeps ramps intact when a clip is trimmed or split. */
+/**
+ * Mapa tempo da timeline ↔ tempo da mídia de um clipe, calculado pelo motor em Rust.
+ *
+ * O motor corta a curva em degraus numa grade fixa da mídia; cada degrau toca na média
+ * harmônica da curva, então sua duração é a integral exata de `ds / v(s)` e a duração total do
+ * clipe é exata com qualquer número de mudanças. Prévia e exportação (via
+ * [com.termex.replay15.editor.render.ClipSpeedProvider]) usam os mesmos degraus.
+ *
+ * [table] é memória da JVM: não há objeto nativo para liberar.
+ */
 class ClipTimeMap(private val clip: VideoClip) {
     data class Segment(val sourceUs: Long, val endUs: Long, val speed: Float, val timelineUs: Long) {
         val durationUs: Long get() = ((endUs - sourceUs) / speed.toDouble()).roundToLong()
     }
 
-    private val full: List<Segment> = buildList {
-        val boundaries = sortedSetOf(0L, clip.sourceUs)
-        if (clip.speedCurve.isNotEmpty()) {
-            val step = maxOf(20_000L, ((clip.sourceUs + 2047L) / 2048L + 19_999L) / 20_000L * 20_000L)
-            var at = step
-            while (at < clip.sourceUs) { boundaries.add(at); at += step }
-            clip.speedCurve.forEach { boundaries.add(it.sourceUs) }
-        }
-        var output = 0L
-        boundaries.zipWithNext().forEach { (start, end) ->
-            val segment = Segment(start, end, speedAtSource(start + (end - start) / 2), output)
-            add(segment); output += segment.durationUs
-        }
-    }
-    val segments: List<Segment> = buildList {
-        var output = 0L
-        full.forEach { segment ->
-            val start = maxOf(clip.inUs, segment.sourceUs); val end = minOf(clip.outUs, segment.endUs)
-            if (end > start) {
-                val item = Segment(start, end, segment.speed, output)
-                add(item); output += item.durationUs
-            }
-        }
-    }
-    val durationUs: Long = segments.last().let { it.timelineUs + it.durationUs }
+    val table: LongArray = com.termex.replay15.editor.speed.NativeSpeed.buildTimeMap(
+        clip.sourceUs, clip.inUs, clip.outUs, clip.speed, clip.reverse, SpeedPoint.pack(clip.speedCurve))
 
-    private fun speedAtSource(timeUs: Long): Float {
-        val points = clip.speedCurve
-        if (points.isEmpty()) return clip.speed
-        val upper = points.indexOfFirst { it.sourceUs > timeUs }
-        if (upper == 0) return points.first().speed
-        if (upper < 0) return points.last().speed
-        val a = points[upper - 1]; val b = points[upper]
-        val t = (timeUs - a.sourceUs).toDouble() / (b.sourceUs - a.sourceUs)
-        return (a.speed + (b.speed - a.speed) * t).toFloat().coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED)
+    val durationUs: Long = com.termex.replay15.editor.speed.NativeSpeed.duration(table)
+
+    val segments: List<Segment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val rows = com.termex.replay15.editor.speed.NativeSpeed.segments(table)
+        List(rows.size / 4) { i -> Segment(rows[i * 4], rows[i * 4 + 1], Float.fromBits(rows[i * 4 + 3].toInt()), rows[i * 4 + 2]) }
     }
 
-    fun sourceAt(timelineUs: Long): Long {
-        // Reversal walks the same segment table from the end: the reversed clip at time t shows
-        // what forward playback shows at (duration - t). Trims and speed ramps keep their shape
-        // (anchored to the source), and the duration is unchanged, so every downstream placement,
-        // transition and audio offset stays valid. Mirroring inside each segment instead would
-        // only reverse ~20 ms chunks of a ramped clip while still walking the chunks forward.
-        return if (clip.reverse) forwardSourceAt(durationUs - timelineUs) else forwardSourceAt(timelineUs)
-    }
+    fun sourceAt(timelineUs: Long): Long = com.termex.replay15.editor.speed.NativeSpeed.sourceAt(table, timelineUs)
 
-    private fun forwardSourceAt(timelineUs: Long): Long {
-        if (timelineUs <= 0) return clip.inUs
-        if (timelineUs >= durationUs) return clip.outUs
-        val index = segments.binarySearch { it.timelineUs.compareTo(timelineUs) }.let { if (it >= 0) it else -it - 2 }
-        val item = segments[index.coerceAtLeast(0)]
-        return (item.sourceUs + ((timelineUs - item.timelineUs) * item.speed.toDouble()).roundToLong())
-            .coerceIn(item.sourceUs, item.endUs)
-    }
+    fun timelineAt(sourceUs: Long): Long = com.termex.replay15.editor.speed.NativeSpeed.timelineAt(table, sourceUs)
 
-    fun timelineAt(sourceUs: Long): Long {
-        val forward = forwardTimelineAt(sourceUs)
-        return if (clip.reverse) (durationUs - forward).coerceIn(0, durationUs) else forward
-    }
+    /** Alças de trim podem recuperar mídia fora da janela visível. */
+    fun extendedSourceAt(timelineUs: Long): Long = com.termex.replay15.editor.speed.NativeSpeed.extendedSourceAt(table, timelineUs)
 
-    private fun forwardTimelineAt(sourceUs: Long): Long {
-        val source = sourceUs.coerceIn(clip.inUs, clip.outUs)
-        val index = segments.binarySearch { it.sourceUs.compareTo(source) }.let { if (it >= 0) it else -it - 2 }
-        val item = segments[index.coerceAtLeast(0)]
-        return (item.timelineUs + ((source - item.sourceUs) / item.speed.toDouble()).roundToLong())
-            .coerceIn(0, durationUs)
-    }
+    fun speedAtInput(relativeSourceUs: Long): Float = com.termex.replay15.editor.speed.NativeSpeed.speedAtInput(table, relativeSourceUs)
 
-    /** Trim handles may recover media outside the currently visible source window. */
-    fun extendedSourceAt(timelineUs: Long): Long {
-        if (timelineUs in 0..durationUs) return sourceAt(timelineUs)
-        fun absoluteTime(source: Long): Long {
-            val item = full.last { it.sourceUs <= source }
-            return item.timelineUs + ((source - item.sourceUs) / item.speed.toDouble()).roundToLong()
-        }
-        val target = if (timelineUs < 0) absoluteTime(clip.inUs) + timelineUs
-            else absoluteTime(clip.outUs) + timelineUs - durationUs
-        val item = full.lastOrNull { it.timelineUs <= target } ?: full.first()
-        return (item.sourceUs + ((target - item.timelineUs) * item.speed.toDouble()).roundToLong()).coerceIn(0, clip.sourceUs)
-    }
+    fun nextInputChange(relativeSourceUs: Long): Long? =
+        com.termex.replay15.editor.speed.NativeSpeed.nextInputChange(table, relativeSourceUs).takeIf { it >= 0 }
 
-    fun speedAtInput(relativeSourceUs: Long): Float = segmentAtInput(relativeSourceUs).speed
-    fun nextInputChange(relativeSourceUs: Long): Long? = segmentAtInput(relativeSourceUs).endUs
-        .takeIf { it < clip.outUs }?.minus(clip.inUs)
-    private fun segmentAtInput(relativeSourceUs: Long): Segment {
-        val source = (clip.inUs + relativeSourceUs.coerceAtLeast(0)).coerceAtMost(clip.outUs)
-        val index = segments.binarySearch { it.sourceUs.compareTo(source) }.let { if (it >= 0) it else -it - 2 }
-        return segments[index.coerceIn(0, segments.lastIndex)]
-    }
+    /** Valor contínuo da curva (não do degrau) numa posição absoluta da mídia. */
+    fun curveSpeedAtSource(sourceUs: Long): Float = com.termex.replay15.editor.speed.NativeSpeed.curveSpeedAtSource(table, sourceUs)
+
+    /** Velocidade percebida num instante da timeline do clipe. */
+    fun curveSpeedAtTimeline(timelineUs: Long): Float = com.termex.replay15.editor.speed.NativeSpeed.curveSpeedAtTimeline(table, timelineUs)
+
+    /** Menor e maior velocidade instantânea dentro da janela visível. */
+    fun speedRange(): ClosedFloatingPointRange<Float> =
+        com.termex.replay15.editor.speed.NativeSpeed.speedRange(table).let { it[0]..it[1] }
+
+    /** A curva amostrada pelo motor, para desenhar exatamente o que ele usa. */
+    fun sampleCurve(fromSourceUs: Long, toSourceUs: Long, count: Int): FloatArray =
+        com.termex.replay15.editor.speed.NativeSpeed.sampleCurve(table, fromSourceUs, toSourceUs, count)
 }

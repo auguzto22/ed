@@ -34,10 +34,6 @@ import com.termex.replay15.editor.autoedit.ClipAnalyzer
 import com.termex.replay15.editor.beat.BeatMap
 import com.termex.replay15.editor.beat.BeatDetector
 import com.termex.replay15.editor.beat.BeatOptions
-import com.termex.replay15.editor.motion.SmoothSlowMoCache
-import com.termex.replay15.editor.motion.SmoothSlowMoPlanner
-import com.termex.replay15.editor.motion.SmoothSlowMoPreferences
-import com.termex.replay15.editor.motion.SmoothSlowMoProfile
 import com.termex.replay15.editor.domain.formatSpeed
 import com.termex.replay15.editor.captions.CaptionGenerationSession
 import com.termex.replay15.editor.captions.CaptionCorrectionMemory
@@ -69,8 +65,7 @@ import com.termex.replay15.editor.font.FontRepository
 import com.termex.replay15.editor.timeline.TimelineView
 import com.termex.replay15.editor.color.AutoColorEngine
 import com.termex.replay15.editor.color.ColorMatchEngine
-import com.termex.replay15.editor.motion.MotionBlurEngine
-import com.termex.replay15.editor.motion.MotionBlurSettings
+import com.termex.replay15.editor.speed.SpeedEdit
 import com.termex.replay15.editor.presets.PresetCatalog
 import com.termex.replay15.editor.scopes.ScopeFrameSampler
 import com.termex.replay15.editor.stabilize.LumaFrame
@@ -1634,7 +1629,7 @@ class EditorActivity : Activity() {
             Triple("Rastreamento", "Transformar", { trackingPanel() }),
             Triple("Estabilizar", "Transformar", { stabilizeVideoPanel() }),
             Triple("Motion Blur", "Transformar", { motionBlurPanel() }),
-            Triple("Movimento suave", "Velocidade", { smoothSlowMoPanel() }),
+            Triple("Câmera lenta", "Velocidade", { speedPanel(SpeedTools.Focus.MOTION) }),
         )
         "Clipe" -> if (!clipSelected) null else listOf(
             Triple("Transformar", "Transformar", { transformPanel() }),
@@ -1953,31 +1948,7 @@ class EditorActivity : Activity() {
         else { preview.update(project); refresh(reload = false) }
         main.removeCallbacks(autosave); main.postDelayed(autosave, 1200)
         checkAndRequestProxies(project)
-        checkAndRequestInterpolatedPreviews(project)
-    }
-
-    /**
-     * Interpolated previews are preview-only artifacts and are not persisted with the project,
-     * so they have to be re-attached whenever the editor is opened. The rendered file itself
-     * survives in the cache, so this only costs a cache lookup.
-     */
-    private fun checkAndRequestInterpolatedPreviews(currentProject: Project) {
-        val profile = SmoothSlowMoPreferences.profile(this)
-        if (!profile.enabled) return
-        for (clip in currentProject.allVideos) {
-            if (clip.derivedUri != null || clip.image) continue
-            SmoothSlowMoCache.requestIfNeeded(applicationContext, clip, profile) { clipId, derivedUri ->
-                runOnUiThread {
-                    if (isDestroyed) return@runOnUiThread
-                    val latest = project
-                    val updated = latest.mapVideo(clipId) { it.copy(derivedUri = derivedUri.toString()) }
-                    if (updated != latest) {
-                        history.updateWithoutHistory(updated)
-                        preview.update(updated, redrawIfPaused = true)
-                    }
-                }
-            }
-        }
+        deleteLegacySlowMoCache()
     }
 
     // AdaptiveProxyManager drives Media3 Transformer, which is still marked unstable. The
@@ -2973,32 +2944,8 @@ class EditorActivity : Activity() {
         dialog = sheet("Presets", body)
     }
 
-    private fun motionBlurPanel() {
-        val clip = selectedClip() ?: run { error("Selecione um clipe"); return }
-        if (clip.keyframes.size < 2) {
-            error("Adicione pelo menos 2 keyframes no clipe para gerar motion blur.")
-            return
-        }
-        val body = column().apply { setPadding(dp(4), 0, dp(4), dp(6)) }
-        body.addView(sectionTitle("Motion Blur Vetorial", "Gera desfoque de movimento realista baseado na velocidade dos keyframes."))
-        var amount = 0.5f
-        var samples = 0.4f
-        var shutter = 180f
-        slider(body, "Intensidade (%)", (amount * 100).toInt(), 100) { amount = it / 100f }
-        slider(body, "Amostras", (samples * 100).toInt(), 100) { samples = it / 100f }
-        slider(body, "Ângulo do Shutter (°)", shutter.toInt(), 360) { shutter = it.toFloat() }
-        body.addView(action("Aplicar Motion Blur", accent = true) {
-            val settings = MotionBlurSettings(amount = amount, samples = samples, shutterAngleDegrees = shutter)
-            val effect = MotionBlurEngine.build(clip, settings, id = newId())
-            if (effect != null) {
-                edit(project.changeVideo(selected) { it.copy(effects = it.effects + effect) })
-                feedback("Motion Blur aplicado!")
-            } else {
-                feedback("Velocidade insuficiente nos keyframes para produzir desfoque.")
-            }
-        })
-        sheet("Motion Blur", body)
-    }
+    /** Câmera lenta e motion blur do clipe: o mesmo painel da velocidade, aberto na seção Movimento. */
+    private fun motionBlurPanel() = speedPanel(SpeedTools.Focus.MOTION)
 
     private fun stabilizeVideoPanel() {
         val clip = selectedClip() ?: run { error("Selecione um clipe de vídeo"); return }
@@ -3252,102 +3199,75 @@ class EditorActivity : Activity() {
         body.addView(footer)
         dialog = sheet("Cortar clipe", body)
     }
-    private fun speedPanel() {
+    /**
+     * Velocidade do clipe principal selecionado. O rascunho passa por [SpeedEdit] (o mesmo
+     * caminho do aplicar): textos, legendas, stickers e áudios sobre o clipe acompanham, e a
+     * agulha fica presa ao mesmo instante da mídia. Durante arrastes a prévia entra em busca
+     * rápida; ao soltar, uma busca precisa.
+     */
+    private fun speedPanel(focus: SpeedTools.Focus = SpeedTools.Focus.SPEED) {
         val clip = selectedClip() ?: return
         val clipIndex = project.videos.indexOfFirst { it.id == clip.id }
         if (clipIndex < 0) return
         val originalProject = project
         val originalPosition = position
         val sourceAnchor = clip.timeMap.sourceAt((position - originalProject.startOf(clipIndex)).coerceIn(0L, clip.durationUs))
-        fun candidate(changed: VideoClip): Project {
-            val videos = originalProject.videos.map { if (it.id == clip.id) changed else it }
-            val withoutTransitions = originalProject.copy(videos = videos, transitions = emptyList())
-            return originalProject.transitions.fold(withoutTransitions) { current, transition ->
-                if (videos.zipWithNext().any { (left, right) -> left.id == transition.leftClipId && right.id == transition.rightClipId })
-                    current.withTransition(transition) else current
-            }
-        }
         fun anchoredPosition(snapshot: Project, changed: VideoClip): Long =
             (snapshot.startOf(clipIndex) + changed.timeMap.timelineAt(sourceAnchor))
                 .coerceIn(0L, snapshot.durationUs)
-        SpeedTools.show(this, clip,
-            preview = { changed ->
+        var scrubbing = false
+        fun finishScrub(at: Long) {
+            if (scrubbing) { scrubbing = false; preview.endScrub(at, resumePlayback = false) }
+        }
+        SpeedTools.show(this, clip, SpeedTools.Callbacks(
+            preview = { changed, keepInSync, interactive ->
                 runCatching {
-                    val draft = candidate(changed)
+                    val draft = SpeedEdit.apply(originalProject, changed, keepInSync)
+                    if (interactive && !scrubbing) { scrubbing = true; preview.beginScrub() }
                     previewEdit(draft)
                     timeline.project = draft; timeline.selected = clipIndex
                     position = anchoredPosition(draft, changed)
-                    preview.seek(position); updatePosition()
+                    if (interactive) preview.seek(position)
+                    else if (scrubbing) finishScrub(position)
+                    else preview.seek(position)
+                    updatePosition()
                 }
             },
             restore = {
                 previewDraft = null
+                finishScrub(originalPosition.coerceIn(0L, originalProject.durationUs))
                 preview.update(originalProject)
                 timeline.project = originalProject; timeline.selected = clipIndex
                 position = originalPosition.coerceIn(0L, originalProject.durationUs)
                 preview.seek(position); updatePosition()
             },
-        ) { changed ->
-            val next = candidate(changed)
-            position = anchoredPosition(next, changed)
-            if (isEditorDebuggable()) android.util.Log.d("ReclySpeed", "SPEED_CHANGE clip=${clip.id} old=${clip.speed} new=${changed.speed} curve=${changed.speedCurve.size} sourceDurationUs=${clip.outUs-clip.inUs} timelineDurationUs=${changed.durationUs}")
-            edit(next)
-            seek(position)
-        }
+            apply = { changed, keepInSync ->
+                // Lança se o projeto não aceitar (ex.: duração máxima): o painel continua aberto.
+                val next = SpeedEdit.apply(originalProject, changed, keepInSync)
+                position = anchoredPosition(next, changed)
+                finishScrub(position)
+                if (isEditorDebuggable()) android.util.Log.d("ReclySpeed", "SPEED_CHANGE clip=${clip.id} old=${clip.speed} new=${changed.speed} curve=${changed.speedCurve.size} slowMotion=${changed.slowMotion} blur=${changed.motionBlur.enabled} timelineDurationUs=${changed.durationUs}")
+                edit(next)
+                seek(position)
+            },
+            playheadSourceUs = { sourceAnchor },
+            motionNotice = { preview.motionNotice(it.id) },
+        ), focus)
     }
-    private fun smoothSlowMoPanel() {
-        val clip = selectedClip() ?: return
-        val body = column()
-        val current = SmoothSlowMoPreferences.profile(this)
-        var index = SmoothSlowMoProfile.entries.indexOf(current)
-        val plan = SmoothSlowMoPlanner.plan(clip, current)
 
-        // The panel has to tell the truth about what it will actually do, otherwise the
-        // control reads as broken when the clip simply is not slowed down yet.
-        val explanation = when {
-            clip.image -> "Imagens não têm quadros para interpolar."
-            current == SmoothSlowMoProfile.OFF ->
-                "Desligado: o clipe em câmera lenta mostra os quadros originais esticados."
-            plan == null ->
-                "Este clipe não está em câmera lenta (mínimo ${formatSpeed(SmoothSlowMoPlanner.slowestSpeed(clip))}). " +
-                    "Reduza a velocidade em Velocidade e volte aqui."
-            SmoothSlowMoCache.isRendering(clip.id) -> "Gerando a prévia interpolada em segundo plano..."
-            else -> "Vai gerar ${plan.outputFps} quadros por segundo a partir de ${formatSpeed(plan.slowestSpeed)} de câmera lenta. O arquivo original não é alterado e a exportação usa o original."
+    /**
+     * Restos do antigo "Movimento suave" (vídeos interpolados gerados em segundo plano): a
+     * câmera lenta agora é calculada ao vivo pela GPU, então os arquivos e a preferência antiga
+     * só ocupam espaço.
+     */
+    private var legacySlowMoCleaned = false
+    private fun deleteLegacySlowMoCache() {
+        if (legacySlowMoCleaned) return
+        legacySlowMoCleaned = true
+        io.execute {
+            runCatching { File(cacheDir, "editor-slowmo").deleteRecursively() }
+            runCatching { getSharedPreferences("editor-smooth-slowmo", MODE_PRIVATE).edit().clear().apply() }
         }
-        body.addView(label(explanation, color = EditorStyle.MUTED))
-
-        slider(body, "Qualidade", index, SmoothSlowMoProfile.entries.lastIndex) { index = it }
-        body.addView(label(
-            SmoothSlowMoProfile.entries[index].let { "${it.label} - ${it.maxOutputFps} fps" },
-            color = EditorStyle.MUTED,
-        ))
-
-        lateinit var dialog: Dialog
-        body.addView(action("Aplicar", true) {
-            val profile = SmoothSlowMoProfile.entries[index]
-            SmoothSlowMoPreferences.setProfile(this, profile)
-            val request = SmoothSlowMoPlanner.plan(clip, profile)
-            if (request == null) {
-                feedback("Nada a gerar: este clipe não está em câmera lenta")
-            } else {
-                SmoothSlowMoCache.requestIfNeeded(applicationContext, clip, profile) { clipId, derivedUri ->
-                    runOnUiThread {
-                        if (isDestroyed) return@runOnUiThread
-                        val current = project
-                        val updated = current.mapVideo(clipId) { it.copy(derivedUri = derivedUri.toString()) }
-                        if (updated != current) {
-                            // Swapping preview media is not a user edit, so it must not
-                            // create an undo step the user never made.
-                            history.updateWithoutHistory(updated)
-                            preview.update(updated, redrawIfPaused = true)
-                        }
-                    }
-                }
-                feedback("Gerando prévia interpolada em segundo plano")
-            }
-            dialog.dismiss()
-        })
-        dialog = sheet("Movimento suave", body)
     }
 
     private fun volumePanel() {
@@ -5339,7 +5259,7 @@ class EditorActivity : Activity() {
             "Catálogo de Presets / Looks" to { presetsPanel() },
             "Navegador de LUTs 3D" to { openLutBrowser() },
             "Estabilização de Vídeo / Antitremedeira" to { stabilizeVideoPanel() },
-            "Motion Blur Vetorial" to { motionBlurPanel() },
+            "Motion Blur" to { motionBlurPanel() },
             "Scopes de Vídeo / Waveform / Histograma" to { scopesPanel() },
             "Stickers Animados Lottie" to { lottieStickersPanel() },
             "Aparar" to { trimPanel() }, "Velocidade" to { speedPanel() }, "Volume" to { volumePanel() }, "Extrair áudio" to { extractAudio() },

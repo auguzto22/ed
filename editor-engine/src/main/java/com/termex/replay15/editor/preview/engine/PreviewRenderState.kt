@@ -67,6 +67,8 @@ data class PreviewRenderState(
         val effects: List<Effect>,
         val backgroundRemoval: BackgroundRemovalEffect,
         val mask: MaskState?,
+        /** Câmera lenta suave e blur por vetores desta camada neste quadro; `null` = passa direto. */
+        val motion: com.termex.replay15.editor.speed.LayerMotion? = null,
     )
     data class Effect(
         val id: String,
@@ -98,17 +100,35 @@ data class PreviewRenderState(
 }
 
 object RenderStateEvaluator {
-    fun evaluate(snapshot: ActiveClipResolver.Snapshot, project: Project, generation: Long, projectRevision: Long, width: Int, height: Int): PreviewRenderState {
+    /**
+     * [motionPlanner] e [motionContext] ligam o motor de velocidade: sem eles (testes, miniaturas)
+     * as camadas passam direto, como antes.
+     */
+    fun evaluate(
+        snapshot: ActiveClipResolver.Snapshot, project: Project, generation: Long, projectRevision: Long, width: Int, height: Int,
+        motionPlanner: com.termex.replay15.editor.speed.PreviewMotionPlanner? = null,
+        motionContext: com.termex.replay15.editor.speed.MotionContext = com.termex.replay15.editor.speed.MotionContext.PLAYBACK,
+    ): PreviewRenderState {
         val layers = snapshot.videos.map { placed ->
             val clip = placed.clip; val sourceUs = placed.sourceTimeUs(snapshot.projectTimeUs); val transform = clip.transformAt(sourceUs)
+            val localUs = snapshot.projectTimeUs - placed.startUs
+            val motion = motionPlanner?.let { runCatching { it.layerMotion(clip, localUs, motionContext, project.export.fps) }.getOrNull() }
+            // Blur pela animação da camada (método alternativo): efeito gerado na hora, como na exportação.
+            val layerBlur = motionPlanner?.let { planner ->
+                val plan = runCatching { planner.plan(clip, motionContext, project.export.fps) }.getOrNull()
+                if (plan?.blur == com.termex.replay15.editor.speed.BlurMethod.LAYER_ANIMATION)
+                    com.termex.replay15.editor.motion.MotionBlurEngine.layerEffect(clip, clip.motionBlur, project.export.fps)?.takeIf { it.activeAt(sourceUs) }
+                else null
+            }
             PreviewRenderState.Layer(placed.key, sourceUs, clip.width, clip.height, clip.image, clip.effectivePreviewUri,
                 transform.zoom, transform.x, transform.y, transform.rotation, clip.rotation, clip.flip, transform.opacity,
                 clip.crop, VideoFilter.entries[clip.filter], clip.filterStrength, clip.brightness, clip.contrast,
                 clip.saturation, clip.hue, clip.lightness, clip.temperature, clip.grade,
                 (clip.effects.filter { it.activeAt(sourceUs) }.map { it.toRenderEffect(sourceUs) } +
+                    listOfNotNull(layerBlur?.toRenderEffect(sourceUs)) +
                     snapshot.adjustments.flatMap { adjustment -> adjustment.effects.filter { it.enabled && it.activeAt(snapshot.projectTimeUs) }
                         .map { it.toRenderEffect(snapshot.projectTimeUs) } }),
-                clip.backgroundRemoval, clip.maskAt(sourceUs))
+                clip.backgroundRemoval, clip.maskAt(sourceUs), motion)
         }
         val transition = snapshot.transitions.firstOrNull()?.let { active ->
             val left = layers.firstOrNull { it.key.clipId == active.instance.leftClipId }

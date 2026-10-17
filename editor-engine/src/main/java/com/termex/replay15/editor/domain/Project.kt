@@ -429,10 +429,10 @@ data class VideoClip(
     val mimeType: String = "",
     val proxyUri: String? = null,
     /**
-     * Frame-interpolated render of a slowed-down clip, produced in the background by
-     * [com.termex.replay15.editor.motion.SmoothSlowMoCache]. Like [proxyUri] this is a
-     * preview-only artifact: it is never persisted and export always reads [uri], so the
-     * original media is never replaced.
+     * Legado: arquivo interpolado do antigo "Movimento suave" (gerado em segundo plano). Nunca
+     * foi salvo no projeto e não é mais lido pela prévia nem pela exportação — a câmera lenta é
+     * sintetizada ao vivo pela GPU ([com.termex.replay15.editor.speed.SlowMotionMode]). Fica só
+     * para não quebrar quem ainda constrói clipes com ele.
      */
     val derivedUri: String? = null,
     val is3D: Boolean = false,
@@ -443,8 +443,18 @@ data class VideoClip(
     val mask: MaskState? = null,
     val trackingTracks: List<TrackingTrack> = emptyList(),
     val enhance: AudioEnhance = AudioEnhance.NEUTRAL,
+    /** How missing frames of a slowed clip are produced (preview and export). */
+    val slowMotion: com.termex.replay15.editor.speed.SlowMotionMode = com.termex.replay15.editor.speed.SlowMotionMode.AUTO,
+    val motionBlur: com.termex.replay15.editor.speed.MotionBlurConfig = com.termex.replay15.editor.speed.MotionBlurConfig(),
+    /** Silences the clip's own sound while its speed is changed, without touching [volume]. */
+    val retimedAudioMuted: Boolean = false,
 ) {
-    val effectivePreviewUri: String get() = derivedUri ?: proxyUri ?: uri
+    /**
+     * The decoder input of the preview. [derivedUri] is deliberately ignored: the old
+     * interpolated files used their own time base, so decoding them with this clip's source
+     * timestamps showed the wrong frames. Interpolation now happens on the GPU in real time.
+     */
+    val effectivePreviewUri: String get() = proxyUri ?: uri
     init {
         require(parentId == null || (parentId != id && parentId.matches(Regex("[a-zA-Z0-9-]{1,80}"))))
         require(sourceUs > 0 && inUs >= 0 && outUs <= sourceUs && outUs > inUs)
@@ -707,6 +717,7 @@ data class TextClip(
 data class ExportSettings(
     val shortSide: Int = 720, val fps: Int = 30, val bitrate: Int = 8_000_000,
     val audioBitrate: Int = 192_000,
+    val motionQuality: com.termex.replay15.editor.speed.MotionExportQuality = com.termex.replay15.editor.speed.MotionExportQuality.HIGH,
 ) {
     init {
         require(shortSide in listOf(480, 720, 1080, 1440, 2160))
