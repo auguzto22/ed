@@ -99,7 +99,9 @@ pub struct MotionPipeline {
     backward_filled: Target,
     confidence: Target,
     neighbor_tmp: Target,
+    /// Máximo de velocidade da vizinhança, para o flow de ida (A→B) e de volta (B→A).
     neighbor: Target,
+    neighbor_back: Target,
     stats_target: Target,
     synth: Target,
     accumulator: Target,
@@ -260,6 +262,7 @@ impl MotionPipeline {
             confidence: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             neighbor_tmp: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             neighbor: Target { texture: 0, fbo: 0, width: 0, height: 0 },
+            neighbor_back: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             stats_target: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             synth: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             accumulator: Target { texture: 0, fbo: 0, width: 0, height: 0 },
@@ -291,6 +294,7 @@ impl MotionPipeline {
         self.confidence = self.target(flow_width, flow_height, gl::LINEAR)?;
         self.neighbor_tmp = self.target(flow_width, flow_height, gl::NEAREST)?;
         self.neighbor = self.target(flow_width, flow_height, gl::NEAREST)?;
+        self.neighbor_back = self.target(flow_width, flow_height, gl::NEAREST)?;
         self.stats_target = self.target(16, 16, gl::NEAREST)?;
         // `synth` (só com blur) e `accumulator` (só na exportação) são criados no primeiro uso:
         // na prévia são duas texturas do tamanho do vídeo a menos por camada.
@@ -350,7 +354,7 @@ impl MotionPipeline {
         for pair in self.forward.iter().chain(self.backward.iter()) {
             all.extend(pair.iter().copied());
         }
-        all.extend([self.forward_final, self.backward_final, self.forward_filled, self.backward_filled, self.confidence, self.neighbor_tmp, self.neighbor,
+        all.extend([self.forward_final, self.backward_final, self.forward_filled, self.backward_filled, self.confidence, self.neighbor_tmp, self.neighbor, self.neighbor_back,
             self.stats_target, self.synth, self.accumulator]);
         all.into_iter().filter(|t| t.texture != 0).collect()
     }
@@ -483,6 +487,19 @@ impl MotionPipeline {
         self.draw(p);
     }
 
+    /// Máximo da vizinhança, separável: horizontal e depois vertical.
+    fn neighbor_max(&self, flow: Target, dst: Target) {
+        let n = &self.programs.neighbor;
+        self.begin(n, self.neighbor_tmp.fbo, Self::full(&self.neighbor_tmp));
+        self.texture(n, "uFlow", 0, flow.texture);
+        self.set2f(n, "uStep", 1.0 / self.flow_width as f32, 0.0);
+        self.draw(n);
+        self.begin(n, dst.fbo, Self::full(&dst));
+        self.texture(n, "uFlow", 0, self.neighbor_tmp.texture);
+        self.set2f(n, "uStep", 0.0, 1.0 / self.flow_height as f32);
+        self.draw(n);
+    }
+
     fn fill(&self, flow: Target, luma: Target, channel: f32, dst: Target) {
         let p = &self.programs.fill;
         self.begin(p, dst.fbo, Self::full(&dst));
@@ -550,16 +567,8 @@ impl MotionPipeline {
             self.draw(p);
             self.fill(self.forward_final, luma_a[0], 0.0, self.forward_filled);
             self.fill(self.backward_final, luma_b[0], 1.0, self.backward_filled);
-            // Máximo da vizinhança, separável: horizontal e depois vertical.
-            let n = &self.programs.neighbor;
-            self.begin(n, self.neighbor_tmp.fbo, Self::full(&self.neighbor_tmp));
-            self.texture(n, "uFlow", 0, self.forward_filled.texture);
-            self.set2f(n, "uStep", 1.0 / self.flow_width as f32, 0.0);
-            self.draw(n);
-            self.begin(n, self.neighbor.fbo, Self::full(&self.neighbor));
-            self.texture(n, "uFlow", 0, self.neighbor_tmp.texture);
-            self.set2f(n, "uStep", 0.0, 1.0 / self.flow_height as f32);
-            self.draw(n);
+            self.neighbor_max(self.forward_filled, self.neighbor);
+            self.neighbor_max(self.backward_filled, self.neighbor_back);
             let pixels = self.reduce(self.confidence);
             let count = (pixels.len() / 4) as f32;
             let sum: f32 = pixels.chunks_exact(4).map(|c| (c[0] as f32 + c[1] as f32) / (2.0 * 255.0)).sum();
@@ -651,11 +660,14 @@ impl MotionPipeline {
             }
         }
         if let Some(params) = blur {
+            // A velocidade do instante vem do quadro mais próximo: o flow de ida descreve os
+            // pixels de A, o de volta os de B. O rastro é simétrico, então o sinal não importa.
+            let (flow, neighbor) = if t < 0.5 { (self.forward_filled, self.neighbor) } else { (self.backward_filled, self.neighbor_back) };
             let p = &self.programs.blur;
             self.begin(p, dst_fbo, viewport);
             self.texture(p, "uColor", 0, self.synth.texture);
-            self.texture(p, "uFlow", 1, self.forward_filled.texture);
-            self.texture(p, "uNeighborMax", 2, self.neighbor.texture);
+            self.texture(p, "uFlow", 1, flow.texture);
+            self.texture(p, "uNeighborMax", 2, neighbor.texture);
             self.set2f(p, "uFlowSize", self.flow_width as f32, self.flow_height as f32);
             self.set2f(p, "uOutSize", self.out_width as f32, self.out_height as f32);
             self.set1f(p, "uScale", params.scale);

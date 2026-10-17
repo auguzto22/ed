@@ -302,3 +302,25 @@ pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_segment
         env.new_longs(&rows)
     })
 }
+
+/// `[veredito, diferença em µs]` da conferência do arquivo exportado. `audio_us` < 0 = sem áudio.
+#[no_mangle]
+pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_validateExport(
+    env: RawEnv, _c: jobject, expected_us: jlong, video_us: jlong, audio_us: jlong, expect_audio: jboolean, fps: jint,
+) -> jlongArray {
+    guard(env, null_mut(), |env| {
+        let (verdict, difference) = crate::validate::check(expected_us, video_us, (audio_us >= 0).then_some(audio_us), expect_audio != 0, fps);
+        env.new_longs(&[verdict as i64, difference])
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_exportVerdictText(env: RawEnv, _c: jobject, code: jint, difference: jlong) -> jstring {
+    guard(env, null_mut(), |env| {
+        let verdict = match code {
+            1 => crate::validate::Verdict::VideoTooShort, 2 => crate::validate::Verdict::VideoTooLong,
+            3 => crate::validate::Verdict::AudioMissing, 4 => crate::validate::Verdict::AudioOutOfSync, _ => crate::validate::Verdict::Ok,
+        };
+        env.new_string(&crate::validate::text(verdict, difference))
+    })
+}

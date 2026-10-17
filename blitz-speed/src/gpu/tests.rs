@@ -376,6 +376,26 @@ fn motion_blur_follows_the_motion_and_scales_with_the_shutter() {
 }
 
 #[test]
+fn a_frame_shown_as_is_is_blurred_with_its_own_motion() {
+    // Tempo real (1×): cada quadro de saída é um quadro original (fase 1 = B). O blur usa o flow
+    // de volta, que descreve os pixels de B; o fundo continua nítido.
+    let _egl = Egl::new();
+    let mut p = pipeline();
+    let a = upload(&scene((0.0, 0.0), Some((100.0, 66.0))));
+    let b_pixels = scene((0.0, 0.0), Some((124.0, 66.0)));
+    let b = upload(&b_pixels);
+    let out = upload(&[]);
+    p.analyze(a.texture, b.texture, (0, 1), true);
+    p.render(a.texture, b.texture, 1.0, Synthesis::Repeat, 0.0, Some(BlurParams { scale: 0.5, samples: 24 }), out.fbo, (0, 0, W, H));
+    let blurred = read(&out);
+    // Mesma ordem de grandeza do rastro do quadro A com o mesmo obturador (180°).
+    assert!(smear_width(&blurred, &b_pixels, 90) >= 24, "{}", smear_width(&blurred, &b_pixels, 90));
+    assert!(mae(&blurred, &b_pixels, 0, Some((220, 10, 310, 170))) < 1.0);
+    assert!(mae(&blurred, &b_pixels, 0, Some((10, 10, 90, 170))) < 1.0);
+    p.release();
+}
+
+#[test]
 fn accumulation_averages_frames() {
     let _egl = Egl::new();
     let mut p = pipeline();

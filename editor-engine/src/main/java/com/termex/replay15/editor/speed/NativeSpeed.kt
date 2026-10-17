@@ -69,4 +69,9 @@ object NativeSpeed {
     @JvmStatic external fun motionCopy(handle: Long, texture: Int, fbo: Int, x: Int, y: Int, width: Int, height: Int)
     @JvmStatic external fun motionInvalidate(handle: Long)
     @JvmStatic external fun motionRelease(handle: Long)
+
+    // ---- Conferência da exportação --------------------------------------------------------
+    /** `[veredito (0 = ok), diferença em µs]`; [audioUs] < 0 quando o arquivo não tem áudio. */
+    @JvmStatic external fun validateExport(expectedUs: Long, videoUs: Long, audioUs: Long, expectAudio: Boolean, fps: Int): LongArray
+    @JvmStatic external fun exportVerdictText(code: Int, differenceUs: Long): String
 }
