@@ -230,6 +230,9 @@ object ProjectComposition {
                 }
             }
         }
+        // 3D layers sit above the videos and below stickers and text, exactly as in the preview.
+        val scenes = project.scenes3D.filter { it.startUs < project.durationUs }
+        if (scenes.isNotEmpty()) effects += OverlayEffect(listOf(Scene3DOverlay(scenes, width, height)))
         val texts = project.texts.takeIf { project.visualEnabled(TEXT_TRACK) }
             ?.map { CaptionStyleResolver.resolve(project, it) } ?: emptyList()
         val stickers = project.stickers.takeIf { project.visualEnabled(STICKER_TRACK) } ?: emptyList()

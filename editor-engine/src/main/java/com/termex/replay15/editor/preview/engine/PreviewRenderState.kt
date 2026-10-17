@@ -19,6 +19,8 @@ data class PreviewRenderState(
     val textIds: Set<String>,
     val stickers: List<StickerClip>,
     val camera: Camera3D = Camera3D(),
+    /** 3D layers active at [projectTimeUs], in timeline order. */
+    val scenes3D: List<Scene3DClip> = emptyList(),
 ) {
     val timeUs: Long get() = projectTimeUs
 
@@ -159,7 +161,8 @@ object RenderStateEvaluator {
                 transformKeyframes = emptyList())
         }
         return PreviewRenderState(generation, projectRevision, snapshot.projectTimeUs, width.coerceAtLeast(1), height.coerceAtLeast(1),
-            project.backgroundColor, project.canvasFill, layers, transition, texts, project.texts.mapTo(linkedSetOf()) { it.id }, stickers, project.camera.cameraAt(snapshot.projectTimeUs))
+            project.backgroundColor, project.canvasFill, layers, transition, texts, project.texts.mapTo(linkedSetOf()) { it.id }, stickers, project.camera.cameraAt(snapshot.projectTimeUs),
+            project.scenes3D.filter { it.isActiveAt(snapshot.projectTimeUs) })
     }
 
     private fun EffectInstance.toRenderEffect(sourceUs: Long) = PreviewRenderState.Effect(

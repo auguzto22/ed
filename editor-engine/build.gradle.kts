@@ -68,6 +68,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("com.alphacephei:vosk-android:0.3.75")
     implementation("com.airbnb.android:lottie:6.4.1")
+    // Real-time PBR 3D (glTF models, HDR/studio lighting, bloom, tone mapping) for 3D layers.
+    implementation("com.google.android.filament:filament-android:1.77.2")
+    implementation("com.google.android.filament:gltfio-android:1.77.2")
+    implementation("com.google.android.filament:filament-utils-android:1.77.2")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

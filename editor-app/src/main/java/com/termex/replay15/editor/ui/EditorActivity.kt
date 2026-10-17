@@ -185,6 +185,8 @@ class EditorActivity : Activity() {
     private val voiceLimit = Runnable { finishVoiceover(true) }
     private var replaceStickerId: String? = null
     private var pendingLutClipId: String? = null
+    /** 3D layer waiting for the environment image picker (request 713). */
+    private var pendingEnvironmentSceneId: String? = null
     /** UI-only caption scope; it is deliberately not part of Project persistence. */
     private var subtitleApplyRange: ApplyRange = ApplyRange.current()
     private var lastExportState = ExportState()
@@ -330,6 +332,7 @@ class EditorActivity : Activity() {
         replaceIndex = retained?.replace ?: savedInstanceState?.getInt("replace", -1) ?: -1
         replaceStickerId = retained?.stickerReplace ?: savedInstanceState?.getString("stickerReplace")
         pendingLutClipId = savedInstanceState?.getString("lutClip")
+        pendingEnvironmentSceneId = savedInstanceState?.getString("environmentScene")
         if (retained != null) {
             history = retained.history; baseline = retained.baseline; position = retained.position; selected = retained.selected
             loaded = true; refresh(false); checkAndRequestProxies(project)
@@ -1631,6 +1634,7 @@ class EditorActivity : Activity() {
             Triple("Keyframe", "Keyframe", { keyframePanel() }),
             Triple("Transição", "Transição", { transitionPanel() }),
             Triple("Câmera 3D", "Transformar", { cameraPanel() }),
+            Triple("Cenas 3D", "Transformar", { scenes3DPanel() }),
             Triple("Rastreamento", "Transformar", { trackingPanel() }),
             Triple("Estabilizar", "Transformar", { stabilizeVideoPanel() }),
             Triple("Motion Blur", "Transformar", { motionBlurPanel() }),
@@ -2264,6 +2268,7 @@ class EditorActivity : Activity() {
         outState.putInt("replace", replaceIndex)
         outState.putString("stickerReplace", replaceStickerId)
         outState.putString("lutClip", pendingLutClipId)
+        outState.putString("environmentScene", pendingEnvironmentSceneId)
         importing?.let {
             outState.putStringArrayList("importUris", ArrayList(it.uris)); outState.putBoolean("importAudio", it.audio)
             outState.putInt("importReplace", it.replace)
@@ -2272,8 +2277,8 @@ class EditorActivity : Activity() {
     }
 
     private fun addMediaMenu() {
-        choose("Adicionar", listOf("Vídeo ou foto", "Vídeo em camada (por cima)", "Música ou áudio", "Gravar narração", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)")) {
-            when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject() }
+        choose("Adicionar", listOf("Vídeo ou foto", "Vídeo em camada (por cima)", "Música ou áudio", "Gravar narração", "Texto", "Legendas SRT", "Imagem sobreposta / sticker", "Objeto Nulo (Null 3D)", "Modelo 3D (.glb / .gltf)")) {
+            when (it) { 0 -> pick(false); 1 -> addVideoLayer(); 2 -> pick(true); 3 -> voiceoverPanel(); 4 -> textPanel(); 5 -> pickSubtitles(); 6 -> pickSticker(); 7 -> addNullObject(); 8 -> scenes3DPanel() }
         }
     }
 
@@ -2358,6 +2363,15 @@ class EditorActivity : Activity() {
             if (resultCode == RESULT_OK && data?.data != null) {
                 if (persistPickedAccess(data, listOf(data.data!!))) videoTrackTools.importVideo(data.data!!)
             }
+            return
+        }
+        if (requestCode == 712) {
+            if (resultCode == RESULT_OK && data?.data != null && loaded) importModel3D(data.data!!)
+            return
+        }
+        if (requestCode == 713) {
+            val sceneId = pendingEnvironmentSceneId; pendingEnvironmentSceneId = null
+            if (resultCode == RESULT_OK && data?.data != null && sceneId != null && loaded) importEnvironment3D(data.data!!, sceneId)
             return
         }
         if (requestCode == 705) {
@@ -2634,6 +2648,79 @@ class EditorActivity : Activity() {
             restore = { previewEdit(project) },
             apply = { changed -> edit(changed) }
         )
+    }
+    private fun scene3DCallbacks() = Scene3DTools.Callbacks(
+        seek = { time -> seek(time) },
+        preview = { changed -> previewEdit(changed) },
+        restore = { previewEdit(project) },
+        apply = { changed -> edit(changed) },
+        pickModel = { pickModel3D() },
+        pickEnvironment = { sceneId -> pickEnvironment3D(sceneId) },
+    )
+    private fun scenes3DPanel() {
+        preview.pause()
+        position = preview.positionUs
+        Scene3DTools.list(this, project, position, scene3DCallbacks())
+    }
+    private fun editScene3D(sceneId: String, section: Scene3DTools.Section) {
+        preview.pause()
+        val scene = project.scenes3D.firstOrNull { it.id == sceneId } ?: return
+        position = preview.positionUs
+        val at = if (scene.isActiveAt(position)) position else scene.startUs.also { seek(it) }
+        Scene3DTools.edit(this, project, sceneId, at, section, scene3DCallbacks())
+    }
+    private fun pickModel3D() {
+        if (busy) return
+        if (project.durationUs < Scene3DClip.MIN_SCENE_DURATION_US) { error("Adicione um vídeo ou foto antes da cena 3D"); return }
+        if (project.scenes3D.size >= MAX_SCENES_3D) { error("Limite de $MAX_SCENES_3D cenas 3D"); return }
+        runCatching { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), 712) }
+            .onFailure { error("Não foi possível abrir o seletor de arquivos") }
+    }
+    private fun pickEnvironment3D(sceneId: String) {
+        if (busy) return
+        pendingEnvironmentSceneId = sceneId
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+        runCatching { startActivityForResult(intent, 713) }
+            .onFailure { pendingEnvironmentSceneId = null; error("Não foi possível abrir o seletor de arquivos") }
+    }
+    private fun importModel3D(uri: Uri) {
+        if (busy) return
+        busy = true; info.text = "Importando modelo 3D..."
+        io.execute {
+            val result = runCatching { com.termex.replay15.editor.scene3d.Scene3DImport.model(applicationContext, uri) }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                busy = false
+                result.fold({ model ->
+                    val created = runCatching {
+                        val scene = com.termex.replay15.editor.scene3d.Scene3DImport.newScene(project, model, preview.positionUs)
+                        edit(project.copy(scenes3D = project.scenes3D + scene))
+                        scene
+                    }
+                    created.fold({ scene -> info.text = "Modelo 3D adicionado"; editScene3D(scene.id, Scene3DTools.Section.TRANSFORM) },
+                        { model.file.delete(); error("Falha ao adicionar o modelo 3D: ${it.message}") })
+                }, { error("Falha ao importar o modelo 3D: ${it.message}") })
+            }
+        }
+    }
+    private fun importEnvironment3D(uri: Uri, sceneId: String) {
+        if (busy || project.scenes3D.none { it.id == sceneId }) return
+        busy = true; info.text = "Importando imagem de ambiente..."
+        io.execute {
+            val result = runCatching { com.termex.replay15.editor.scene3d.Scene3DImport.environment(applicationContext, uri) }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                busy = false
+                result.fold({ file ->
+                    if (project.scenes3D.none { it.id == sceneId }) { file.delete(); return@fold }
+                    edit(project.copy(scenes3D = project.scenes3D.map {
+                        if (it.id == sceneId) it.copy(environment = it.environment.copy(environmentPath = file.absolutePath)) else it
+                    }))
+                    info.text = "Ambiente 3D aplicado"
+                    editScene3D(sceneId, Scene3DTools.Section.ENVIRONMENT)
+                }, { error("Falha ao importar a imagem: ${it.message}") })
+            }
+        }
     }
     private fun pickLut(clipId: String) {
         if (busy) return

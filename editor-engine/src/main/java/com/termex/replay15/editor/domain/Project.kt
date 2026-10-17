@@ -763,9 +763,12 @@ data class Project(
     val captionVocabulary: Set<String> = emptySet(),
     /** Nested sequences over [videos]. Grouping is metadata only: the clips never leave this list. */
     val compounds: List<CompoundClip> = emptyList(),
+    /** Real 3D layers (glTF models with studio lighting), drawn over the videos. */
+    val scenes3D: List<Scene3DClip> = emptyList(),
 ) {
     init {
         require(id.matches(Regex("[a-zA-Z0-9-]{1,80}")) && name.length <= 200)
+        require(scenes3D.size <= MAX_SCENES_3D && scenes3D.map { it.id }.distinct().size == scenes3D.size)
         require(videos.size <= 200 && audio.size <= 8 && texts.size <= MAX_TEXTS && stickers.size <= 24)
         require(markers.size <= 500 && backgroundColor ushr 24 == 255)
         require(aspect == 0f || aspect in .2f..5f)

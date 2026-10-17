@@ -124,7 +124,8 @@ class EditorPreviewEngine(
 
     fun update(next:Project,redrawIfPaused:Boolean=true){
         checkMain();if(closed)return
-        if (project.copy(camera = next.camera) == next) {
+        // Camera and 3D layers only change what is drawn: no decoder or timeline work is needed.
+        if (project.copy(camera = next.camera, scenes3D = next.scenes3D) == next) {
             project = next
             projectSnapshot = ProjectSnapshot(++projectRevision, next)
             renderState(clock.positionUs())
