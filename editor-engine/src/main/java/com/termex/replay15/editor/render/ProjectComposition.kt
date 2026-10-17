@@ -161,7 +161,8 @@ object ProjectComposition {
             if (motionPlan != null && (!motionPlan.isPassThrough || accumulation)) {
                 val exposure = if (motionPlan.blur == com.termex.replay15.editor.speed.BlurMethod.LAYER_ANIMATION) 0f else clip.motionBlur.exposureFraction
                 val index = if (effects.firstOrNull() is BackgroundRemovalExportEffect) 1 else 0
-                effects.add(index, MotionRetimeEffect(motionPlan, project.export.fps, exposure))
+                // O item começa em placed.startUs na sequência (as lacunas são preenchidas antes).
+                effects.add(index, MotionRetimeEffect(motionPlan, project.export.fps, exposure, placed.startUs + clip.durationUs))
             }
             if (motionPlan?.blur == com.termex.replay15.editor.speed.BlurMethod.LAYER_ANIMATION) {
                 com.termex.replay15.editor.motion.MotionBlurEngine.layerEffect(clip, clip.motionBlur, project.export.fps)

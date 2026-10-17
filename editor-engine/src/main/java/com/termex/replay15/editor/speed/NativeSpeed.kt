@@ -49,7 +49,8 @@ object NativeSpeed {
     @JvmStatic external fun noticeText(code: Int): String
 
     // ---- Agendador de quadros (exportação) ------------------------------------------------
-    @JvmStatic external fun schedulerCreate(outputFps: Float, exposureFraction: Float): Long
+    /** [endUs]: fim do clipe na base dos carimbos (−1 se desconhecido); a grade nunca passa dele. */
+    @JvmStatic external fun schedulerCreate(outputFps: Float, exposureFraction: Float, endUs: Long): Long
     @JvmStatic external fun schedulerInput(handle: Long, ptsUs: Long): LongArray
     @JvmStatic external fun schedulerEnd(handle: Long): LongArray
     @JvmStatic external fun schedulerReset(handle: Long)

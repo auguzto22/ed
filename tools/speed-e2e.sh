@@ -59,6 +59,9 @@ run_case slow_blend E2E_SPEED=0.25 E2E_SYNTH=1
 run_case slow_flow E2E_SPEED=0.25 E2E_SYNTH=2
 python3 "$ROOT/tools/speed_e2e_metrics.py" "$WORK" $W $H slow_repeat slow_blend slow_flow
 
+echo "== Corte no meio do último quadro (0,25×): a grade para no fim do clipe"
+run_case slow_trim E2E_SPEED=0.25 E2E_SYNTH=2 E2E_TRIM_US=25000
+
 echo "== Rampa (preset Impacto), optical flow + motion blur 180°"
 run_case ramp_flow_blur E2E_PRESET=8 E2E_SYNTH=2 E2E_SHUTTER=180
 echo "== Avanço 4× com acumulação (obturador 360°): amostras nítidas × amostras cobrindo o intervalo"

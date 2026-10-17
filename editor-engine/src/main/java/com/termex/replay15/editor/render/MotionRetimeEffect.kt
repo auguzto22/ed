@@ -25,15 +25,18 @@ import java.util.concurrent.Executor
  *
  * [plan] vem da política do motor no contexto de exportação; [exposureFraction] é a fração do
  * obturador para a acumulação (0 quando o blur é pela animação da camada, que é outro efeito).
+ * [clipEndUs] é onde o clipe termina na base dos carimbos (início do item na sequência + duração
+ * do mapa): a grade de saída é preenchida até ali, mantendo o último quadro, e nunca além.
  */
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class MotionRetimeEffect(
     private val plan: MotionPlan,
     private val outputFps: Int,
     private val exposureFraction: Float,
+    private val clipEndUs: Long,
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
-        MotionRetimeProgram(plan, outputFps, exposureFraction, useHdr)
+        MotionRetimeProgram(plan, outputFps, exposureFraction, clipEndUs, useHdr)
 }
 
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
@@ -41,6 +44,7 @@ internal class MotionRetimeProgram(
     private val plan: MotionPlan,
     private val outputFps: Int,
     private val exposureFraction: Float,
+    private val clipEndUs: Long,
     private val useHdr: Boolean,
 ) : GlShaderProgram {
     private var inputListener: GlShaderProgram.InputListener = object : GlShaderProgram.InputListener {}
@@ -137,7 +141,7 @@ internal class MotionRetimeProgram(
     }
 
     private fun ensureSetup(provider: GlObjectsProvider, frameWidth: Int, frameHeight: Int) {
-        if (scheduler == 0L) scheduler = NativeSpeed.schedulerCreate(outputFps.toFloat(), exposureFraction)
+        if (scheduler == 0L) scheduler = NativeSpeed.schedulerCreate(outputFps.toFloat(), exposureFraction, clipEndUs)
         if (pipeline != 0L && frameWidth == width && frameHeight == height) return
         // Tamanho novo (primeiro quadro ou troca de resolução): recria texturas e pipeline.
         if (pipeline != 0L) NativeSpeed.motionRelease(pipeline)

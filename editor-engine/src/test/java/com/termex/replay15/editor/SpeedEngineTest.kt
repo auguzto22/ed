@@ -186,7 +186,7 @@ class SpeedEngineTest {
     }
 
     @Test fun exportSchedulerActionsCrossTheBridgeIntact() {
-        val handle = NativeSpeed.schedulerCreate(30f, 0f)
+        val handle = NativeSpeed.schedulerCreate(30f, 0f, -1)
         try {
             val rows = NativeSpeed.schedulerInput(handle, 0) + NativeSpeed.schedulerInput(handle, 133_333) + NativeSpeed.schedulerEnd(handle)
             val emits = rows.toList().chunked(8).filter { it[0] == 3L }
@@ -197,8 +197,16 @@ class SpeedEngineTest {
         } finally {
             NativeSpeed.schedulerRelease(handle)
         }
+        // Com o fim do clipe informado a grade para nele (o próximo clipe começa ali).
+        val bounded = NativeSpeed.schedulerCreate(30f, 0f, 150_000)
+        try {
+            val rows = NativeSpeed.schedulerInput(bounded, 0) + NativeSpeed.schedulerInput(bounded, 133_333) + NativeSpeed.schedulerEnd(bounded)
+            assertEquals(listOf(0L, 33_333L, 66_667L, 100_000L, 133_333L), rows.toList().chunked(8).filter { it[0] == 3L }.map { it[1] })
+        } finally {
+            NativeSpeed.schedulerRelease(bounded)
+        }
         // Aceleração com obturador aberto: cada amostra chega com o quadro seguinte como par.
-        val fast = NativeSpeed.schedulerCreate(30f, 1f)
+        val fast = NativeSpeed.schedulerCreate(30f, 1f, -1)
         try {
             val rows = (0 until 12).flatMap { NativeSpeed.schedulerInput(fast, it * 8_333L).toList() } + NativeSpeed.schedulerEnd(fast).toList()
             val actions = rows.chunked(8)

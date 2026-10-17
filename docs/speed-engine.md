@@ -116,8 +116,9 @@ O Media3 aplica a velocidade na fonte (`SpeedProvider` do motor). O `MotionRetim
 começo da cadeia de efeitos do clipe: o agendador decide os quadros na grade absoluta da saída
 (evita duplicar ou pular quadros entre clipes), guarda três quadros de histórico e o pipeline
 sintetiza cada saída. Máscaras, cor, keyframes, textos e stickers vêm depois e recebem os quadros
-novos com os próprios instantes. O último quadro de um clipe cobre o mesmo intervalo que o
-anterior, então a duração bate com o mapa. O áudio da exportação usa o processador de velocidade
+novos com os próprios instantes. O efeito sabe onde o clipe termina na sequência e preenche a
+grade até ali mantendo o último quadro (mesmo com o corte no meio de um quadro), sem invadir o
+clipe seguinte, então a duração bate com o mapa. O áudio da exportação usa o processador de velocidade
 do Media3 alimentado pelo mesmo mapa (mesmos degraus, mesma duração). Ao terminar, o MP4 é lido
 de volta e o motor confere a duração do vídeo (tolerância de 2 quadros + 40 ms) e a sincronia do
 áudio (±100 ms); a mensagem final avisa se algo não bater.
@@ -153,7 +154,10 @@ compilam antes a biblioteca do computador (`cargoBuildHost`) e a encontram por `
 - `tools/speed-e2e.sh` — ensaio de ponta a ponta com vídeo e áudio reais: gera uma cena a 120 fps,
   entrega 30 fps ao motor, roda câmera lenta, rampa e aceleração pelo caminho da exportação,
   codifica em MP4 e mede. Na câmera lenta 0,25× compara os quadros criados com os quadros reais que
-  o motor nunca viu (optical flow 21,6 dB × mistura 17,6 × repetição 16,7 no último ensaio).
+  o motor nunca viu (optical flow 21,6 dB × mistura 17,6 × repetição 16,7 no último ensaio); na
+  aceleração 4× com obturador de 360° compara com a exposição real (28,4 dB com as amostras
+  cobrindo o intervalo × 25,0 com a soma simples); confere durações, sincronia e o tom do áudio
+  (440 Hz mantido a 0,25× e 4×; 220 Hz a 0,5× com “tom acompanha”).
 - Testes da JVM (`SpeedEngineTest`, `MotionBlurEngineTest`, `TimeMappingTest`,
   `ProjectPersistenceTest`) passam pela JNI de verdade.
 

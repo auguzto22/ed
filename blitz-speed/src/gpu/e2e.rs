@@ -104,13 +104,17 @@ fn render_real_video() {
 
     // Mapa de tempo do clipe inteiro (como o VideoClip do projeto).
     let source_us = (count as f64 * 1e6 / input_fps).round() as i64;
+    // Corte no fim (`E2E_TRIM_US`), que pode cair no meio de um quadro, como na timeline.
+    let out_us = source_us - env::<i64>("E2E_TRIM_US", 0);
     let points = if preset >= 0 { presets::build(preset as usize, 0, source_us, 1.0).expect("preset") } else { Vec::new() };
-    let table = timemap::build(&ClipParams { source_us, in_us: 0, out_us: source_us, speed, reverse: false }, &points).unwrap();
+    let table = timemap::build(&ClipParams { source_us, in_us: 0, out_us, speed, reverse: false }, &points).unwrap();
     let map = TimeMap::new(&table).unwrap();
 
     let _egl = Egl::new();
     let exposure_fraction = if shutter > 0.0 { shutter / 360.0 } else { 0.0 };
     let mut scheduler = Scheduler::new(output_fps, exposure_fraction).unwrap();
+    // Como na exportação: o clipe começa em 0 e termina na duração do mapa.
+    scheduler.set_end(Some(map.duration_us()));
     // Exportação em alta qualidade: flow com metade do lado menor (até 540), 5 níveis, 5 iterações.
     let short = (width.min(height) / 2).min(540).max(64);
     let (flow_w, flow_h) = flow_size(width, height, short);
@@ -181,6 +185,9 @@ fn render_real_video() {
     for index in 0..count {
         // O Media3 entrega cada quadro com o instante de timeline do SpeedProvider.
         let source_pts = (index as f64 * 1e6 / input_fps).round() as i64;
+        if source_pts >= out_us {
+            break; // depois do corte: o ClippingMediaSource não entrega
+        }
         let pts = map.timeline_at(source_pts);
         upload(&input, width, height, &frames[index * frame_bytes..(index + 1) * frame_bytes]);
         scheduler.on_input(pts, &mut actions).unwrap();
@@ -192,10 +199,14 @@ fn render_real_video() {
     writer.flush().unwrap();
     pipeline.release();
 
-    // A grade de saída tem de ser contínua, sem buracos nem repetições.
+    // A grade de saída tem de ser contínua, sem buracos nem repetições, e ir até o fim do clipe
+    // sem passar dele (o próximo clipe da sequência começa ali).
     for (k, pts) in emitted.iter().enumerate() {
         assert_eq!(*pts, (k as f64 * 1e6 / output_fps as f64).round() as i64, "grade quebrada no quadro {k}");
     }
+    let end = map.duration_us() - crate::scheduler::END_MARGIN_US;
+    let expected_frames = (0..).take_while(|&k: &i64| ((k as f64 * 1e6 / output_fps as f64).round() as i64) < end).count();
+    assert_eq!(emitted.len(), expected_frames, "quadros até o fim do clipe");
 
     // Áudio retemporizado (o mesmo processador da prévia), guiado pela curva.
     let mut audio_frames_out = 0usize;

@@ -53,6 +53,8 @@ pub struct Scheduler {
     last_interval_us: Option<i64>,
     /// Amostra dentro do obturador esperando o quadro seguinte (para cobrir o intervalo até ele).
     deferred: Option<(Frame, i64)>,
+    /// Fim do clipe na mesma base dos carimbos (onde começa o próximo item da sequência).
+    end_us: Option<i64>,
 }
 
 /// Folga antes do fim do último quadro no fim do fluxo: o próximo clipe da sequência começa ali
@@ -83,7 +85,14 @@ impl Scheduler {
             last_input_us: None,
             last_interval_us: None,
             deferred: None,
+            end_us: None,
         })
+    }
+
+    /// Informa onde o clipe termina. No fim do fluxo a grade é preenchida até ali (o último quadro
+    /// é mantido) e nunca além, para não invadir o próximo clipe da sequência.
+    pub fn set_end(&mut self, end_us: Option<i64>) {
+        self.end_us = end_us;
     }
 
     pub fn grid_time(&self, index: i64) -> i64 {
@@ -145,10 +154,10 @@ impl Scheduler {
         Ok(())
     }
 
-    /// Emite os instantes restantes até o fim do último quadro, mantendo-o.
+    /// Emite os instantes restantes até o fim do clipe, mantendo o último quadro.
     ///
-    /// O último quadro cobre a timeline por tanto quanto o intervalo antes dele (é assim que o
-    /// clipe tem a duração do mapa de tempo: 0,25× de um quadro de 1/30 s cobre 133 ms). Sem
+    /// Com o fim conhecido ([`Scheduler::set_end`]) a grade vai até ele. Sem ele, o último quadro
+    /// cobre tanto quanto o intervalo antes dele (0,25× de um quadro de 1/30 s cobre 133 ms). Sem
     /// isso, a câmera lenta terminaria até `1/velocidade − 1` quadros antes do fim do clipe.
     pub fn on_end_of_stream(&mut self, actions: &mut Vec<Action>) {
         let (Some(last), Some(_)) = (self.last_input_us, self.next_index) else { return };
@@ -156,7 +165,7 @@ impl Scheduler {
             actions.push(Action::Accumulate { slot: frame.slot, output_us, next_slot: None, from_us: frame.pts_us, to_us: frame.pts_us });
         }
         let covered = self.last_interval_us.unwrap_or(self.interval_us.round() as i64).max(1);
-        let end = last + covered - END_MARGIN_US;
+        let end = self.end_us.unwrap_or(last + covered) - END_MARGIN_US;
         loop {
             let output_us = self.grid_time(self.next_index.unwrap());
             if output_us > last && output_us >= end {
@@ -318,6 +327,18 @@ mod tests {
         assert_eq!(out.len(), 240);
         // Um quadro só: cobre um intervalo de saída.
         assert_eq!(outputs(&run(30.0, 0.0, &[0])), vec![0]);
+        // Fim conhecido: o corte do clipe caiu no meio do último quadro (0,25×, corte 10 ms depois
+        // dele = 40 ms de timeline). A grade para ali, antes do próximo clipe.
+        let mut scheduler = Scheduler::new(30.0, 0.0).unwrap();
+        scheduler.set_end(Some(inputs[59] + 40_000));
+        let mut actions = Vec::new();
+        for &pts in &inputs {
+            scheduler.on_input(pts, &mut actions).unwrap();
+        }
+        scheduler.on_end_of_stream(&mut actions);
+        let out = outputs(&actions);
+        assert!(out.iter().all(|&t| t < inputs[59] + 40_000 - END_MARGIN_US));
+        assert_eq!(*out.last().unwrap(), 7_900_000); // 7 866 667 + 40 000 − folga
     }
 
     #[test]

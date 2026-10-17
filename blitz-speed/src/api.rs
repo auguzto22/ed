@@ -229,8 +229,13 @@ pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_noticeT
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_schedulerCreate(env: RawEnv, _c: jobject, fps: jfloat, exposure: jfloat) -> jlong {
-    guard(env, 0, |_| Scheduler::new(fps, exposure).map(jni::into_handle).map_err(|_| illegal("cadência ou obturador inválidos")))
+/// `endUs` < 0 quando o fim do clipe não é conhecido.
+pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_schedulerCreate(env: RawEnv, _c: jobject, fps: jfloat, exposure: jfloat, end_us: jlong) -> jlong {
+    guard(env, 0, |_| {
+        let mut scheduler = Scheduler::new(fps, exposure).map_err(|_| illegal("cadência ou obturador inválidos"))?;
+        scheduler.set_end((end_us >= 0).then_some(end_us));
+        Ok(jni::into_handle(scheduler))
+    })
 }
 
 /// Cada ação em 8 `long`: `[tipo, …]` — 0 guardar `[slot, pts]`, 1 acumular
