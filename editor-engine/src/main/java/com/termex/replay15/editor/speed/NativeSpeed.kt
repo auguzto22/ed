@@ -64,7 +64,10 @@ object NativeSpeed {
     /** [synthesis]: 0 repetir, 1 misturar, 2 optical flow; [blurSamples] 0 = sem blur. */
     @JvmStatic external fun motionRender(handle: Long, textureA: Int, textureB: Int, phase: Float, synthesis: Int, ghostControl: Float,
         blurScale: Float, blurSamples: Int, fbo: Int, x: Int, y: Int, width: Int, height: Int)
-    @JvmStatic external fun motionAccumulate(handle: Long, texture: Int)
+    /** Soma [texture] à média do quadro de saída [outputUs] (outro instante recomeça a média). */
+    @JvmStatic external fun motionAccumulate(handle: Long, texture: Int, outputUs: Long)
+    /** Soma A borrada pelo movimento até B (cobre o intervalo entre as duas amostras). */
+    @JvmStatic external fun motionAccumulatePair(handle: Long, textureA: Int, textureB: Int, keyA: Long, keyB: Long, samples: Int, outputUs: Long)
     @JvmStatic external fun motionEmitAccumulated(handle: Long, fbo: Int, x: Int, y: Int, width: Int, height: Int)
     @JvmStatic external fun motionCopy(handle: Long, texture: Int, fbo: Int, x: Int, y: Int, width: Int, height: Int)
     @JvmStatic external fun motionInvalidate(handle: Long)
@@ -77,6 +80,8 @@ object NativeSpeed {
     @JvmStatic external fun audioPush(handle: Long, input: FloatArray, frames: Int, speed: Float, preservePitch: Boolean, target: Int): Int
     @JvmStatic external fun audioPull(handle: Long, output: FloatArray, frames: Int): Int
     @JvmStatic external fun audioAvailable(handle: Long): Int
+    /** Fim da mídia: solta o que ficou nos buffers; devolve os quadros de timeline produzidos. */
+    @JvmStatic external fun audioFinish(handle: Long, speed: Float): Int
     @JvmStatic external fun audioReset(handle: Long)
     @JvmStatic external fun audioRelease(handle: Long)
 

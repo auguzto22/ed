@@ -318,6 +318,32 @@ impl RetimeStream {
         made
     }
 
+    /// Fim da mídia: empurra silêncio até a timeline cobrir tudo o que foi recebido. Sem isso o
+    /// fim do áudio ficaria preso nos buffers (o WSOLA guarda ~50 ms de mídia à frente, que a
+    /// 0,25× são 200 ms de timeline). Devolve os quadros de timeline produzidos.
+    pub fn finish(&mut self, speed: f64) -> usize {
+        let target = self.consumed_frames;
+        let zeros = [0f32; 512 * CHANNELS];
+        let mut total = 0;
+        for _ in 0..512 {
+            if self.media_position() >= target {
+                break;
+            }
+            self.scratch.clear();
+            let made = if self.preserve_pitch {
+                self.wsola.push(&zeros);
+                self.wsola.produce(HOP, speed, &mut self.scratch)
+            } else {
+                self.varispeed.push(&zeros);
+                self.varispeed.produce(256, speed, &mut self.scratch)
+            };
+            self.produced_frames += made as u64;
+            self.output.extend(self.scratch.iter().copied());
+            total += made;
+        }
+        total
+    }
+
     /// Tira até `frames` quadros (menos se não houver). Devolve quantos.
     pub fn pull(&mut self, out: &mut [f32], frames: usize) -> usize {
         let count = frames.min(self.available()).min(out.len() / CHANNELS);

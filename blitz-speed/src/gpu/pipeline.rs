@@ -105,7 +105,12 @@ pub struct MotionPipeline {
     stats_target: Target,
     synth: Target,
     accumulator: Target,
+    /// Amostra borrada antes de entrar no acumulador (aceleração com vetores).
+    smeared: Target,
     accumulated: u32,
+    /// Quadro de saída que o acumulador está montando; outro instante recomeça do zero (uma
+    /// janela que acabou com uma amostra só vira síntese e não pode vazar para a próxima).
+    accumulating_for: Option<i64>,
     cached: Option<(i64, i64, bool)>,
     stats: PairStats,
     released: bool,
@@ -266,7 +271,8 @@ impl MotionPipeline {
             stats_target: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             synth: Target { texture: 0, fbo: 0, width: 0, height: 0 },
             accumulator: Target { texture: 0, fbo: 0, width: 0, height: 0 },
-            accumulated: 0, cached: None, stats: PairStats::default(), released: false,
+            smeared: Target { texture: 0, fbo: 0, width: 0, height: 0 },
+            accumulated: 0, accumulating_for: None, cached: None, stats: PairStats::default(), released: false,
         };
         if let Err(error) = pipeline.allocate(&sizes) {
             pipeline.release();
@@ -321,6 +327,16 @@ impl MotionPipeline {
         true
     }
 
+    fn ensure_smeared(&mut self) -> bool {
+        if self.smeared.texture == 0 {
+            match self.target(self.out_width, self.out_height, gl::LINEAR) {
+                Ok(target) => self.smeared = target,
+                Err(_) => return false,
+            }
+        }
+        true
+    }
+
     fn target(&self, width: i32, height: i32, filter: GLint) -> Result<Target, String> {
         let gl = self.gl;
         unsafe {
@@ -355,7 +371,7 @@ impl MotionPipeline {
             all.extend(pair.iter().copied());
         }
         all.extend([self.forward_final, self.backward_final, self.forward_filled, self.backward_filled, self.confidence, self.neighbor_tmp, self.neighbor, self.neighbor_back,
-            self.stats_target, self.synth, self.accumulator]);
+            self.stats_target, self.synth, self.accumulator, self.smeared]);
         all.into_iter().filter(|t| t.texture != 0).collect()
     }
 
@@ -676,10 +692,15 @@ impl MotionPipeline {
         }
     }
 
-    /// Integração temporal real (aceleração com blur): soma `source` à média corrente.
-    pub fn accumulate(&mut self, source: GLuint) {
+    /// Integração temporal real (aceleração com blur): soma `source` à média corrente do quadro
+    /// de saída `output_us`.
+    pub fn accumulate(&mut self, source: GLuint, output_us: i64) {
         if self.released {
             return;
+        }
+        if self.accumulating_for != Some(output_us) {
+            self.accumulating_for = Some(output_us);
+            self.accumulated = 0;
         }
         let _guard = StateGuard::capture(self.gl);
         if !self.ensure_accumulator() {
@@ -702,6 +723,27 @@ impl MotionPipeline {
         self.accumulated += 1;
     }
 
+    /// Acumula a amostra `a` borrada ao longo do movimento até a amostra seguinte `b`.
+    ///
+    /// Somar só os quadros que caem no obturador deixa cópias separadas do que se move (a 4× de
+    /// 30 fps são 4 cópias por quadro de saída). Cada amostra aqui cobre o próprio intervalo até
+    /// a próxima (rastro simétrico de um intervalo inteiro, `uScale` = 1), então a soma vira um
+    /// rastro contínuo, como uma exposição longa de verdade. Sem flow confiável (corte, par sem
+    /// flow) a amostra entra nítida.
+    pub fn accumulate_pair(&mut self, a: GLuint, b: GLuint, key: (i64, i64), samples: i32, output_us: i64) {
+        if self.released {
+            return;
+        }
+        let stats = self.analyze(a, b, key, true);
+        if !stats.has_flow || stats.cut || samples <= 0 || !self.ensure_smeared() {
+            self.accumulate(a, output_us);
+            return;
+        }
+        let smeared = self.smeared;
+        self.render(a, b, 0.0, Synthesis::Repeat, 0.0, Some(BlurParams { scale: 1.0, samples }), smeared.fbo, Self::full(&smeared));
+        self.accumulate(smeared.texture, output_us);
+    }
+
     /// Copia a média acumulada para o destino e zera o acumulador.
     pub fn emit_accumulated(&mut self, dst_fbo: GLuint, viewport: (i32, i32, i32, i32)) {
         if self.released || self.accumulator.texture == 0 {
@@ -713,6 +755,7 @@ impl MotionPipeline {
         self.texture(p, "uSource", 0, self.accumulator.texture);
         self.draw(p);
         self.accumulated = 0;
+        self.accumulating_for = None;
     }
 
     /// Copia uma textura (repetição simples) para o destino.
@@ -732,6 +775,7 @@ impl MotionPipeline {
         self.cached = None;
         self.stats = PairStats::default();
         self.accumulated = 0;
+        self.accumulating_for = None;
     }
 
     /// Para testes e diagnóstico: o flow A→B do nível mais fino, em pixels do flow.

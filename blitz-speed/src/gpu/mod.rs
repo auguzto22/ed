@@ -6,3 +6,6 @@ pub mod pipeline;
 
 #[cfg(all(test, feature = "gpu-tests"))]
 mod tests;
+
+#[cfg(all(test, feature = "gpu-tests"))]
+mod e2e;

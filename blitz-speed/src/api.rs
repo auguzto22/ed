@@ -233,7 +233,8 @@ pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_schedul
     guard(env, 0, |_| Scheduler::new(fps, exposure).map(jni::into_handle).map_err(|_| illegal("cadência ou obturador inválidos")))
 }
 
-/// Cada ação em 8 `long`: `[tipo, …]` — 0 guardar `[slot, pts]`, 1 acumular `[slot, saída]`,
+/// Cada ação em 8 `long`: `[tipo, …]` — 0 guardar `[slot, pts]`, 1 acumular
+/// `[slot, saída, próximo slot (−1 nenhum), deUs, paraUs]`,
 /// 2 emitir acumulado `[saída, quadros]`, 3 emitir sintetizado
 /// `[saída, de, para, deUs, paraUs, bitsFase, exposição]`.
 fn encode_actions(actions: &[Action]) -> Vec<i64> {
@@ -241,7 +242,8 @@ fn encode_actions(actions: &[Action]) -> Vec<i64> {
     for action in actions {
         let row: [i64; 8] = match *action {
             Action::Store { slot, pts_us } => [0, slot as i64, pts_us, 0, 0, 0, 0, 0],
-            Action::Accumulate { slot, output_us } => [1, slot as i64, output_us, 0, 0, 0, 0, 0],
+            Action::Accumulate { slot, output_us, next_slot, from_us, to_us } =>
+                [1, slot as i64, output_us, next_slot.map_or(-1, |s| s as i64), from_us, to_us, 0, 0],
             Action::EmitAccumulated { output_us, frames } => [2, output_us, frames as i64, 0, 0, 0, 0, 0],
             Action::EmitSynthesized { output_us, from_slot, to_slot, from_us, to_us, phase, exposure_us } =>
                 [3, output_us, from_slot as i64, to_slot as i64, from_us, to_us, phase.to_bits() as i64, exposure_us],

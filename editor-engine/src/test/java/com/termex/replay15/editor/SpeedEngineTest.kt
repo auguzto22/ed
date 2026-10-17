@@ -190,11 +190,24 @@ class SpeedEngineTest {
         try {
             val rows = NativeSpeed.schedulerInput(handle, 0) + NativeSpeed.schedulerInput(handle, 133_333) + NativeSpeed.schedulerEnd(handle)
             val emits = rows.toList().chunked(8).filter { it[0] == 3L }
-            assertEquals(listOf(0L, 33_333L, 66_667L, 100_000L, 133_333L), emits.map { it[1] })
+            // O último quadro cobre o mesmo intervalo que o anterior (até 266 ms), como no clipe.
+            assertEquals(listOf(0L, 33_333L, 66_667L, 100_000L, 133_333L, 166_667L, 200_000L, 233_333L), emits.map { it[1] })
             assertEquals(.25f, Float.fromBits(emits[1][6].toInt()), 1e-3f)
             assertThrows(IllegalArgumentException::class.java) { NativeSpeed.schedulerInput(handle, 10) }
         } finally {
             NativeSpeed.schedulerRelease(handle)
+        }
+        // Aceleração com obturador aberto: cada amostra chega com o quadro seguinte como par.
+        val fast = NativeSpeed.schedulerCreate(30f, 1f)
+        try {
+            val rows = (0 until 12).flatMap { NativeSpeed.schedulerInput(fast, it * 8_333L).toList() } + NativeSpeed.schedulerEnd(fast).toList()
+            val actions = rows.chunked(8)
+            val accumulates = actions.filter { it[0] == 1L }
+            assertTrue(accumulates.size >= 8)
+            assertTrue(accumulates.dropLast(1).all { it[3] >= 0 && it[5] > it[4] })
+            assertTrue(actions.any { it[0] == 2L })
+        } finally {
+            NativeSpeed.schedulerRelease(fast)
         }
     }
 

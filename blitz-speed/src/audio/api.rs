@@ -53,6 +53,17 @@ pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_audioAv
     guard(env, 0, |_| Ok(unsafe { jni::handle_mut::<RetimeStream>(handle)? }.available() as jint))
 }
 
+/// Fim da mídia: solta o que ficou nos buffers. Devolve os quadros de timeline produzidos.
+#[no_mangle]
+pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_audioFinish(env: RawEnv, _c: jobject, handle: jlong, speed: jfloat) -> jint {
+    guard(env, 0, |_| {
+        if !(speed.is_finite() && speed > 0.0) {
+            return Err(illegal("velocidade inválida"));
+        }
+        Ok(unsafe { jni::handle_mut::<RetimeStream>(handle)? }.finish(speed as f64) as jint)
+    })
+}
+
 #[no_mangle]
 pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_audioReset(env: RawEnv, _c: jobject, handle: jlong) {
     guard(env, (), |_| {

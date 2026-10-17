@@ -44,6 +44,8 @@ class AudioDecoderSession(
     private var retime = 0L
     /** Até a primeira velocidade diferente de 1× (desde a última busca) a leitura é direta. */
     private var retimeActive = false
+    /** O fim da mídia já foi entregue ao motor (o resto dos buffers saiu). */
+    private var retimeFinished = false
     private val speedInput = FloatArray(1024 * 16 * 2 + 4)
     private var enhancer: AudioEnhanceProcessor? = null
     private var existingSettings: AudioEnhance? = null
@@ -99,6 +101,7 @@ class AudioDecoderSession(
             seekTargetUs = sourceTimeUs.coerceAtLeast(0L)
             if (retime != 0L) runCatching { com.termex.replay15.editor.speed.NativeSpeed.audioReset(retime) }
             retimeActive = false
+            retimeFinished = false
             // A seek jumps the stream, so the filter memory describes audio that is no longer
             // playing. Carrying it forward would open the gate or the compressor on a phantom.
             enhancer?.reset()
@@ -174,7 +177,13 @@ class AudioDecoderSession(
         while (native.audioAvailable(retime) < frameRequested && attempts++ < 32) {
             val need = native.audioInputNeeded(retime, frameRequested, speed, preservePitch).coerceIn(256, capacity)
             val read = readFrames(speedInput, 0, need, generation)
-            if (read <= 0) break // fim da mídia: entrega o que houver
+            if (read <= 0) {
+                // Fim real da mídia (não só o decoder atrasado): o motor solta o que guardava à
+                // frente, senão o fim do áudio sumia.
+                val ended = synchronized(lock) { outputEnded } && generation == activeGeneration.get()
+                if (ended && !retimeFinished) { retimeFinished = true; native.audioFinish(retime, speed); continue }
+                break
+            }
             native.audioPush(retime, speedInput, read, speed, preservePitch, frameRequested)
         }
         // Depois de entrar no fluxo retemporizado fica nele até a próxima busca, mesmo em 1×: o

@@ -21,7 +21,7 @@ type EglConfig = *mut c_void;
 type EglContext = *mut c_void;
 type EglSurface = *mut c_void;
 
-struct Egl {
+pub(super) struct Egl {
     display: EglDisplay,
     context: EglContext,
     surface: EglSurface,
@@ -31,7 +31,7 @@ struct Egl {
 }
 
 impl Egl {
-    fn new() -> Egl {
+    pub(super) fn new() -> Egl {
         unsafe {
             std::env::set_var("EGL_PLATFORM", "surfaceless");
             let library = dlopen(c"libEGL.so.1".as_ptr(), 2);
@@ -405,7 +405,7 @@ fn accumulation_averages_frames() {
     let frames = [upload(&black), upload(&white), upload(&gray)];
     let out = upload(&[]);
     for frame in &frames {
-        p.accumulate(frame.texture);
+        p.accumulate(frame.texture, 0);
     }
     p.emit_accumulated(out.fbo, (0, 0, W, H));
     let pixels = read(&out);
@@ -413,6 +413,62 @@ fn accumulation_averages_frames() {
     for c in 0..3 {
         assert!((pixels[c] as i32 - expected[c]).abs() <= 2, "{:?} vs {expected:?}", &pixels[..3]);
     }
+    p.release();
+}
+
+/// Maior salto de cor entre pixels vizinhos numa linha, dentro de [x0, x1).
+fn max_step(pixels: &[u8], row: i32, x0: i32, x1: i32) -> i32 {
+    (x0..x1 - 1).map(|x| {
+        let i = ((row * W + x) * 4) as usize;
+        let j = i + 4;
+        (0..3).map(|c| (pixels[i + c] as i32 - pixels[j + c] as i32).abs()).max().unwrap()
+    }).max().unwrap()
+}
+
+#[test]
+fn accumulation_with_vectors_turns_copies_into_a_continuous_trail() {
+    let _egl = Egl::new();
+    let mut p = pipeline();
+    // Quadrado andando 10 px por amostra sobre fundo parado (aceleração: 4 amostras por saída).
+    let frames: Vec<Tex> = (0..5).map(|i| upload(&scene((0.0, 0.0), Some((90.0 + 10.0 * i as f32, 66.0))))).collect();
+    let plain = upload(&[]);
+    let smeared = upload(&[]);
+    for frame in &frames[..4] {
+        p.accumulate(frame.texture, 1);
+    }
+    p.emit_accumulated(plain.fbo, (0, 0, W, H));
+    for i in 0..4 {
+        p.accumulate_pair(frames[i].texture, frames[i + 1].texture, (i as i64, i as i64 + 1), 24, 2);
+    }
+    p.emit_accumulated(smeared.fbo, (0, 0, W, H));
+    let (a, b) = (read(&plain), read(&smeared));
+    // Borda de entrada do rastro (onde as cópias se empilham): a soma simples tem degraus de
+    // 1/4 do contraste; com vetores o rastro é uma rampa contínua.
+    let rows = [74, 82, 90, 98];
+    let step_plain = rows.iter().map(|&r| max_step(&a, r, 84, 132)).max().unwrap();
+    let step_smeared = rows.iter().map(|&r| max_step(&b, r, 84, 132)).max().unwrap();
+    println!("degraus na borda do rastro: simples {step_plain}, com vetores {step_smeared}");
+    assert!(step_smeared * 3 < step_plain * 2, "degraus: simples {step_plain}, com vetores {step_smeared}");
+    // O fundo parado continua nítido.
+    assert!(mae(&a, &b, 4, Some((200, 20, 300, 160))) < 1.5);
+    p.release();
+}
+
+#[test]
+fn a_window_that_ends_with_one_sample_does_not_leak_into_the_next() {
+    let _egl = Egl::new();
+    let mut p = pipeline();
+    let black: Vec<u8> = (0..W * H).flat_map(|_| [0u8, 0, 0, 255]).collect();
+    let white: Vec<u8> = (0..W * H).flat_map(|_| [255u8, 255, 255, 255]).collect();
+    let (black, white) = (upload(&black), upload(&white));
+    let out = upload(&[]);
+    // Janela de 100 µs ficou com uma amostra só (virou síntese, nunca foi emitida)…
+    p.accumulate(black.texture, 100);
+    // …e a de 200 µs tem duas brancas: o resultado tem de ser branco puro.
+    p.accumulate(white.texture, 200);
+    p.accumulate(white.texture, 200);
+    p.emit_accumulated(out.fbo, (0, 0, W, H));
+    assert!(read(&out)[..3].iter().all(|&c| c >= 253));
     p.release();
 }
 

@@ -59,9 +59,22 @@ pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_motionR
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_motionAccumulate(env: RawEnv, _c: jobject, handle: jlong, texture: jint) {
+pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_motionAccumulate(env: RawEnv, _c: jobject, handle: jlong, texture: jint, output_us: jlong) {
     guard(env, (), |_| {
-        unsafe { jni::handle_mut::<MotionPipeline>(handle)? }.accumulate(texture as u32);
+        unsafe { jni::handle_mut::<MotionPipeline>(handle)? }.accumulate(texture as u32, output_us);
+        Ok(())
+    })
+}
+
+/// Acumula a amostra A borrada pelo movimento até a amostra seguinte B (aceleração com blur por
+/// vetores: as cópias viram um rastro contínuo). Sem flow confiável entra nítida.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub extern "system" fn Java_com_termex_replay15_editor_speed_NativeSpeed_motionAccumulatePair(
+    env: RawEnv, _c: jobject, handle: jlong, texture_a: jint, texture_b: jint, key_a: jlong, key_b: jlong, samples: jint, output_us: jlong,
+) {
+    guard(env, (), |_| {
+        unsafe { jni::handle_mut::<MotionPipeline>(handle)? }.accumulate_pair(texture_a as u32, texture_b as u32, (key_a, key_b), samples, output_us);
         Ok(())
     })
 }

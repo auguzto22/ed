@@ -187,7 +187,15 @@ internal class MotionRetimeProgram(
                     input = null
                     inputListener.onInputFrameProcessed(frame)
                 }
-                ACCUMULATE -> NativeSpeed.motionAccumulate(pipeline, checkNotNull(history[action[1].toInt()]).texId)
+                ACCUMULATE -> {
+                    val sample = checkNotNull(history[action[1].toInt()]).texId
+                    val next = action[3].toInt()
+                    // Com blur por vetores cada amostra cobre o intervalo até a seguinte: as cópias
+                    // do que se move viram um rastro contínuo, como numa exposição longa.
+                    if (next >= 0 && vectorBlur) NativeSpeed.motionAccumulatePair(pipeline, sample, checkNotNull(history[next]).texId,
+                        action[4], action[5], plan.blurSamples.coerceAtLeast(1), action[2])
+                    else NativeSpeed.motionAccumulate(pipeline, sample, action[2])
+                }
                 EMIT_ACCUMULATED -> {
                     val output = free.removeFirstOrNull() ?: return
                     NativeSpeed.motionEmitAccumulated(pipeline, output.fboId, 0, 0, width, height)

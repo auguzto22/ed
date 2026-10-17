@@ -21,8 +21,10 @@
 pub enum Action {
     /// Copiar o quadro que chegou para a posição `slot` do histórico.
     Store { slot: usize, pts_us: i64 },
-    /// Somar a posição `slot` ao acumulador do quadro de saída `output_us`.
-    Accumulate { slot: usize, output_us: i64 },
+    /// Somar a posição `slot` (quadro em `from_us`) ao acumulador do quadro de saída
+    /// `output_us`. Com `next_slot`, o quadro seguinte (em `to_us`) também está no histórico e a
+    /// amostra pode ser borrada ao longo do movimento até ele, cobrindo o intervalo entre os dois.
+    Accumulate { slot: usize, output_us: i64, next_slot: Option<usize>, from_us: i64, to_us: i64 },
     /// Emitir o acumulador (média de `frames` entradas) como o quadro `output_us`.
     EmitAccumulated { output_us: i64, frames: u32 },
     /// Emitir o quadro `output_us` entre `from_slot` (em `from_us`) e `to_slot` (em `to_us`) na
@@ -47,7 +49,15 @@ pub struct Scheduler {
     accumulated: u32,
     accumulating_for: Option<i64>,
     last_input_us: Option<i64>,
+    /// Intervalo entre os dois últimos quadros: quanto tempo de timeline o último cobre.
+    last_interval_us: Option<i64>,
+    /// Amostra dentro do obturador esperando o quadro seguinte (para cobrir o intervalo até ele).
+    deferred: Option<(Frame, i64)>,
 }
+
+/// Folga antes do fim do último quadro no fim do fluxo: o próximo clipe da sequência começa ali
+/// (com arredondamento de alguns µs), e dois quadros no mesmo instante quebrariam o encoder.
+pub const END_MARGIN_US: i64 = 1_000;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ScheduleError {
@@ -71,6 +81,8 @@ impl Scheduler {
             accumulated: 0,
             accumulating_for: None,
             last_input_us: None,
+            last_interval_us: None,
+            deferred: None,
         })
     }
 
@@ -94,6 +106,7 @@ impl Scheduler {
         if self.last_input_us.is_some_and(|last| pts_us <= last) {
             return Err(ScheduleError::NonIncreasingTimestamp);
         }
+        self.last_interval_us = self.last_input_us.map(|last| pts_us - last);
         self.last_input_us = Some(pts_us);
         if self.next_index.is_none() {
             self.next_index = Some(self.first_index_at_or_after(pts_us));
@@ -106,6 +119,10 @@ impl Scheduler {
         }
         self.history.push(Frame { slot, pts_us });
         actions.push(Action::Store { slot, pts_us });
+        // A amostra anterior já pode entrar: o quadro que acabou de chegar é o fim do intervalo dela.
+        if let Some((frame, output_us)) = self.deferred.take() {
+            actions.push(Action::Accumulate { slot: frame.slot, output_us, next_slot: Some(slot), from_us: frame.pts_us, to_us: pts_us });
+        }
         loop {
             let output_us = self.grid_time(self.next_index.unwrap());
             let closes = if self.exposure_us > 0 { pts_us >= output_us + self.half_exposure_us } else { pts_us >= output_us };
@@ -123,16 +140,28 @@ impl Scheduler {
                 self.accumulated = 0;
             }
             self.accumulated += 1;
-            actions.push(Action::Accumulate { slot, output_us: pending });
+            self.deferred = Some((Frame { slot, pts_us }, pending));
         }
         Ok(())
     }
 
-    /// Emite os instantes restantes até o último quadro, mantendo o último.
+    /// Emite os instantes restantes até o fim do último quadro, mantendo-o.
+    ///
+    /// O último quadro cobre a timeline por tanto quanto o intervalo antes dele (é assim que o
+    /// clipe tem a duração do mapa de tempo: 0,25× de um quadro de 1/30 s cobre 133 ms). Sem
+    /// isso, a câmera lenta terminaria até `1/velocidade − 1` quadros antes do fim do clipe.
     pub fn on_end_of_stream(&mut self, actions: &mut Vec<Action>) {
         let (Some(last), Some(_)) = (self.last_input_us, self.next_index) else { return };
-        while self.grid_time(self.next_index.unwrap()) <= last {
+        if let Some((frame, output_us)) = self.deferred.take() {
+            actions.push(Action::Accumulate { slot: frame.slot, output_us, next_slot: None, from_us: frame.pts_us, to_us: frame.pts_us });
+        }
+        let covered = self.last_interval_us.unwrap_or(self.interval_us.round() as i64).max(1);
+        let end = last + covered - END_MARGIN_US;
+        loop {
             let output_us = self.grid_time(self.next_index.unwrap());
+            if output_us > last && output_us >= end {
+                break;
+            }
             self.emit(output_us, actions);
             self.next_index = self.next_index.map(|i| i + 1);
         }
@@ -145,6 +174,8 @@ impl Scheduler {
         self.accumulated = 0;
         self.accumulating_for = None;
         self.last_input_us = None;
+        self.last_interval_us = None;
+        self.deferred = None;
     }
 
     fn emit(&mut self, output_us: i64, actions: &mut Vec<Action>) {
@@ -210,7 +241,13 @@ mod tests {
         for action in actions {
             match *action {
                 Action::Store { slot, pts_us } => slots[slot] = pts_us,
-                Action::Accumulate { slot, .. } => assert_ne!(slots[slot], i64::MIN),
+                Action::Accumulate { slot, next_slot, from_us, to_us, .. } => {
+                    assert_eq!(slots[slot], from_us);
+                    if let Some(next) = next_slot {
+                        assert_eq!(slots[next], to_us);
+                        assert!(to_us > from_us);
+                    }
+                }
                 Action::EmitSynthesized { from_slot, to_slot, from_us, to_us, .. } => {
                     assert_eq!(slots[from_slot], from_us);
                     assert_eq!(slots[to_slot], to_us);
@@ -227,7 +264,7 @@ mod tests {
         let actions = run(30.0, 0.0, &inputs);
         check_slots(&actions);
         let out = outputs(&actions);
-        assert_eq!(out.len(), 37); // 0 … 1,2 s a cada 33,3 ms
+        assert_eq!(out.len(), 40); // 10 quadros × 133 ms = 1,333 s a cada 33,3 ms
         for (k, &t) in out.iter().enumerate() {
             assert_eq!(t, (k as f64 * 1_000_000.0 / 30.0).round() as i64);
         }
@@ -268,11 +305,19 @@ mod tests {
     }
 
     #[test]
-    fn end_of_stream_holds_the_last_frame_and_never_overshoots() {
+    fn end_of_stream_covers_the_last_frame_but_not_the_next_clip() {
+        // Dois quadros a 0,5 s: o último cobre até 1,0 s, onde começaria o próximo clipe.
         let actions = run(30.0, 0.0, &[0, 500_000]);
         let out = outputs(&actions);
-        assert_eq!(*out.last().unwrap(), 500_000);
-        assert!(out.iter().all(|&t| t <= 500_000));
+        assert_eq!(out.len(), 30);
+        assert_eq!(*out.last().unwrap(), 966_667);
+        assert!(out.iter().all(|&t| t < 1_000_000 - END_MARGIN_US));
+        // 30 fps a 0,25×: 60 quadros viram 8 s = 240 quadros de saída, nem um a menos.
+        let inputs: Vec<i64> = (0..60).map(|i| (i as f64 * 1e6 / 30.0 / 0.25).round() as i64).collect();
+        let out = outputs(&run(30.0, 0.0, &inputs));
+        assert_eq!(out.len(), 240);
+        // Um quadro só: cobre um intervalo de saída.
+        assert_eq!(outputs(&run(30.0, 0.0, &[0])), vec![0]);
     }
 
     #[test]
