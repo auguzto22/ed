@@ -23,6 +23,8 @@ class EditorGlyph(
     kindName: String,
     private val tint: Int = Color.WHITE,
     private val context: Context? = null,
+    /** Cor do detalhe de destaque dos ícones Blitz; sem valor usa a mesma cor do traço. */
+    private val accent: Int? = null,
 ) : Drawable() {
 
     /** Lookup key without accents, so "Máscaras" and "Mascaras" draw the same icon. */
@@ -100,7 +102,39 @@ class EditorGlyph(
         canvas.restore()
     }
 
+    /** Ícone novo do Blitz (traço + detalhe de destaque), quando existe para este nome. */
+    private val blitzPaths: List<Pair<BlitzStroke, Path>>? = BLITZ_ICONS[kind]?.mapNotNull { s ->
+        androidx.core.graphics.PathParser.createPathFromPathData(s.d)?.let { s to it }
+    }
+
+    private fun drawBlitzIcon(canvas: Canvas, paths: List<Pair<BlitzStroke, Path>>) {
+        canvas.save()
+        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+        canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
+        val alpha = paint.alpha
+        paths.forEach { (s, path) ->
+            val c = if (s.accent) accent ?: tint else tint
+            val p = Paint(paint).apply {
+                color = c
+                this.alpha = Color.alpha(c) * alpha / 255
+                strokeWidth = s.width
+                style = when {
+                    s.fillOnly -> Paint.Style.FILL
+                    s.fill -> Paint.Style.FILL_AND_STROKE
+                    else -> Paint.Style.STROKE
+                }
+                if (s.dotted) pathEffect = DashPathEffect(floatArrayOf(.1f, 3.4f), 0f)
+            }
+            canvas.drawPath(path, p)
+        }
+        canvas.restore()
+    }
+
     override fun draw(canvas: Canvas) {
+        if (blitzPaths != null) {
+            drawBlitzIcon(canvas, blitzPaths)
+            return
+        }
         if (canvasPaths != null) {
             drawCanvasIcon(canvas, canvasPaths)
             return
@@ -373,6 +407,122 @@ class EditorGlyph(
 }
 
 
+/** Um traço de ícone Blitz: [accent] usa a cor de destaque; [fill] preenche a forma. */
+private class BlitzStroke(
+    val d: String,
+    val accent: Boolean = false,
+    val width: Float = 2f,
+    val fill: Boolean = false,
+    val fillOnly: Boolean = false,
+    val dotted: Boolean = false,
+)
+
+private fun blitzLine(d: String, width: Float = 2f) = BlitzStroke(d, width = width)
+private fun blitzHot(d: String, width: Float = 2f, fill: Boolean = false, fillOnly: Boolean = false) =
+    BlitzStroke(d, accent = true, width = width, fill = fill, fillOnly = fillOnly)
+
+/**
+ * Ícones Blitz da barra de edição (viewBox 24x24): traço redondo com um único detalhe de
+ * destaque. Nos botões pretos o destaque fica na mesma cor do traço; nos coloridos cada
+ * ferramenta usa o seu par de cores (ver [blitzToolColors]).
+ */
+private val BLITZ_ICONS: Map<String, List<BlitzStroke>> = mapOf(
+    "canvas:voltar" to listOf(blitzLine("M14.5 6.5L9 12l5.5 5.5", 2.4f)),
+    "canvas:keyframe" to listOf(
+        blitzLine("M12 3.2L20.8 12 12 20.8 3.2 12z"),
+        blitzHot("M12 9.2L14.8 12 12 14.8 9.2 12z", 1f, fill = true),
+    ),
+    "canvas:cortar" to listOf(
+        blitzHot("M7 4.5H4.5v15H7M17 4.5h2.5v15H17", 2.2f),
+        blitzLine("M8.5 12h7"),
+        blitzLine("M10.5 9.5l-2 2.5 2 2.5M13.5 9.5l2 2.5-2 2.5"),
+    ),
+    "canvas:dividir" to listOf(
+        blitzLine("M4.8 6.5h2.4a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4.8a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"),
+        blitzLine("M16.8 6.5h2.4a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2.4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"),
+        blitzHot("M12 6v15", 2.2f),
+        blitzHot("M9.8 2.8h4.4L12 5.4z", 1.2f, fill = true),
+    ),
+    "canvas:velocidade" to listOf(
+        blitzLine("M4.6 17.5a8.6 8.6 0 1 1 14.8 0"),
+        blitzLine("M12 6.2v1.4M6.6 9.4l1 .8M17.4 9.4l-1 .8"),
+        blitzHot("M12 15l4.6-5.2", 2.3f),
+        blitzHot("M10.4 15a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0", fillOnly = true),
+    ),
+    "canvas:volume" to listOf(
+        blitzLine("M3.8 9.6h3l4.6-4v12.8l-4.6-4h-3z"),
+        blitzHot("M15 9.4a3.8 3.8 0 0 1 0 5.2M17.8 6.8a7.6 7.6 0 0 1 0 10.4"),
+    ),
+    "canvas:duplicar" to listOf(
+        blitzLine("M15.5 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"),
+        blitzLine("M10.5 8.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-7.5a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2z"),
+        blitzHot("M14.25 11.75v5M11.75 14.25h5"),
+    ),
+    "canvas:excluir" to listOf(
+        blitzHot("M4 6.5h16M9.5 6.5V4.8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.7"),
+        blitzLine("M6 6.5l.9 12.2a2 2 0 0 0 2 1.8h6.2a2 2 0 0 0 2-1.8L18 6.5"),
+        blitzLine("M10 10.5v6M14 10.5v6"),
+    ),
+    "canvas:filtros" to listOf(
+        blitzLine("M7 8.5a5 5 0 1 0 10 0a5 5 0 1 0-10 0"),
+        blitzLine("M3.5 14.5a5 5 0 1 0 10 0a5 5 0 1 0-10 0"),
+        blitzHot("M10.5 14.5a5 5 0 1 0 10 0a5 5 0 1 0-10 0"),
+    ),
+    "canvas:ajustar" to listOf(
+        blitzLine("M4 7h3M11 7h9M4 12h9M17 12h3M4 17h2M10 17h10"),
+        blitzHot("M7 7a2 2 0 1 0 4 0a2 2 0 1 0-4 0"),
+        blitzHot("M13 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0"),
+        blitzHot("M6 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0"),
+    ),
+    "canvas:recorte" to listOf(
+        blitzLine("M7 3v14h14"),
+        blitzHot("M3 7h14v14"),
+    ),
+    "canvas:espelhar" to listOf(
+        blitzLine("M10 5L3.5 18H10z"),
+        blitzHot("M14 5l6.5 13H14z"),
+        BlitzStroke("M12 3v18", dotted = true),
+    ),
+    "canvas:animacao" to listOf(
+        blitzLine("M9.5 12a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0"),
+        blitzHot("M3 9h4.5M2.5 12h5M3 15h4.5"),
+    ),
+    "canvas:texto" to listOf(
+        blitzLine("M5.5 6.5v-2h13v2M12 4.5v12M9.5 16.5h5"),
+        blitzHot("M5 20h14", 2.2f),
+    ),
+).let { it + ("canvas:aparar" to it.getValue("canvas:cortar")) }
+
+/** Par de cores (traço, destaque) de cada ícone Blitz nos botões coloridos, tema escuro. */
+private val BLITZ_COLORS: Map<String, Pair<Int, Int>> = mapOf(
+    "canvas:keyframe" to (0xFFFFC93C.toInt() to 0xFFFF7A1A.toInt()),
+    "canvas:cortar" to (0xFF4FD1FF.toInt() to 0xFFFF2D55.toInt()),
+    "canvas:aparar" to (0xFF4FD1FF.toInt() to 0xFFFF2D55.toInt()),
+    "canvas:dividir" to (0xFFB388FF.toInt() to 0xFFFF2D55.toInt()),
+    "canvas:velocidade" to (0xFF3DF5A0.toInt() to 0xFFFFD23F.toInt()),
+    "canvas:volume" to (0xFF5B8CFF.toInt() to 0xFF4FE3FF.toInt()),
+    "canvas:duplicar" to (0xFFFF8A3D.toInt() to 0xFFFFD23F.toInt()),
+    "canvas:excluir" to (0xFFFF7A8A.toInt() to 0xFFFF2D55.toInt()),
+    "canvas:filtros" to (0xFFFF6BD5.toInt() to 0xFF7C6CFF.toInt()),
+    "canvas:ajustar" to (0xFF4FE3C1.toInt() to 0xFFFFD23F.toInt()),
+    "canvas:recorte" to (0xFF7CF26B.toInt() to 0xFF2FE0B0.toInt()),
+    "canvas:espelhar" to (0xFF56C8FF.toInt() to 0xFFB388FF.toInt()),
+    "canvas:animacao" to (0xFFFF6B9E.toInt() to 0xFFFFC93C.toInt()),
+    "canvas:texto" to (0xFFFFD23F.toInt() to 0xFFFF6B3D.toInt()),
+)
+
+/**
+ * Cores do ícone Blitz nos botões coloridos (mais fechadas no tema claro para não sumir no
+ * branco). Com botões pretos devolve null e o ícone usa a cor neutra de [toolColor].
+ */
+fun blitzToolColors(iconKey: String): Pair<Int, Int>? {
+    if (!EditorStyle.COLORED_BUTTONS) return null
+    val (main, accent) = BLITZ_COLORS[iconKey] ?: return null
+    if (!EditorStyle.IS_LIGHT) return main to accent
+    return EditorStyle.darken(main, .32f) to EditorStyle.darken(accent, .32f)
+}
+
+
 /**
  * Ícones da barra de ferramentas no estilo Blitz: traço único (viewBox 24x24, traço 2.1,
  * pontas redondas), desenhados na cor do grupo da ferramenta (ver [toolColor]).
@@ -582,8 +732,11 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
     // contorno leves da mesma cor. Auto Edit continua cheio de vermelho (ação principal).
     // Com botões pretos o Auto Edit também fica neutro (só o Exportar segue vermelho).
     val hot = (name == "Auto Edit" || name == "Analisar") && EditorStyle.COLORED_BUTTONS
-    val color = toolColor(name)
+    val iconKey = canvasIconFor(name) ?: glyph
+    val blitz = if (hot) null else blitzToolColors(iconKey)
+    val color = blitz?.first ?: toolColor(name)
     val tint = if (hot) EditorStyle.ON_ACTION else color
+    val accentTint = blitz?.second ?: tint
     val box = FrameLayout(context).apply {
         importantForAccessibility = 2
         isDuplicateParentStateEnabled = true
@@ -595,7 +748,7 @@ fun Context.toolAction(name: String, click: () -> Unit, glyph: String = name): L
                 cornerRadius = dp(12).toFloat()
             }, null)
         addView(ImageView(context).apply {
-            setImageDrawable(EditorGlyph(canvasIconFor(name) ?: glyph, tint, context))
+            setImageDrawable(EditorGlyph(iconKey, tint, context, accentTint))
             importantForAccessibility = 2
         }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
     }
