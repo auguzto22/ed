@@ -16,3 +16,4 @@ pub mod warp;
 
 pub mod api;
 pub mod jni;
+pub mod gpu;

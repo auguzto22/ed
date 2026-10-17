@@ -54,4 +54,19 @@ object NativeSpeed {
     @JvmStatic external fun schedulerEnd(handle: Long): LongArray
     @JvmStatic external fun schedulerReset(handle: Long)
     @JvmStatic external fun schedulerRelease(handle: Long)
+
+    // ---- Pipeline de movimento na GPU (sempre na thread com o contexto GL atual) ----------
+    /** `[highp (0/1), tamanho máximo de textura]` do contexto atual. */
+    @JvmStatic external fun motionProbe(): IntArray
+    @JvmStatic external fun motionCreate(outWidth: Int, outHeight: Int, flowWidth: Int, flowHeight: Int, levels: Int, iterations: Int): Long
+    /** `[confiança média, correlação, corte (0/1), tem flow (0/1)]`. */
+    @JvmStatic external fun motionAnalyze(handle: Long, textureA: Int, textureB: Int, keyA: Long, keyB: Long, flow: Boolean): FloatArray
+    /** [synthesis]: 0 repetir, 1 misturar, 2 optical flow; [blurSamples] 0 = sem blur. */
+    @JvmStatic external fun motionRender(handle: Long, textureA: Int, textureB: Int, phase: Float, synthesis: Int, ghostControl: Float,
+        blurScale: Float, blurSamples: Int, fbo: Int, x: Int, y: Int, width: Int, height: Int)
+    @JvmStatic external fun motionAccumulate(handle: Long, texture: Int)
+    @JvmStatic external fun motionEmitAccumulated(handle: Long, fbo: Int, x: Int, y: Int, width: Int, height: Int)
+    @JvmStatic external fun motionCopy(handle: Long, texture: Int, fbo: Int, x: Int, y: Int, width: Int, height: Int)
+    @JvmStatic external fun motionInvalidate(handle: Long)
+    @JvmStatic external fun motionRelease(handle: Long)
 }
