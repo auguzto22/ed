@@ -1,0 +1,30 @@
+[package]
+name = "recly-tracker"
+version = "0.1.0"
+edition = "2021"
+description = "Rastreador de movimento e sistema de máscara do Recly, reescritos em Rust"
+license = "UNLICENSED"
+publish = false
+
+[lib]
+name = "recly_tracker"
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "recly-track"
+path = "src/bin/recly-track.rs"
+
+[dependencies]
+# Nenhuma: só a biblioteca padrão (compila offline e no NDK do Android).
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 3
