@@ -59,13 +59,22 @@ class GpuPreviewRenderer(
         val width: Int,
         val height: Int,
         val oes: Int,
-        val texture: Int,
-        val fbo: Int,
+        var texture: Int,
+        var fbo: Int,
         val surfaceTexture: SurfaceTexture,
         val surface: Surface,
         val pending: AtomicReference<VideoDecoderSession.Frame?> = AtomicReference(),
         var hasFrame: Boolean = false,
         var frameGeneration: Long = -1,
+        /**
+         * Quadro anterior, para a câmera lenta e o blur por vetores: criado só quando a camada
+         * precisa. A cada quadro novo contínuo as duas texturas trocam de papel (sem cópia).
+         */
+        var prevTexture: Int = 0,
+        var prevFbo: Int = 0,
+        var prevPtsUs: Long = Long.MIN_VALUE,
+        var prevGeneration: Long = -1,
+        var curPtsUs: Long = Long.MIN_VALUE,
     )
     private data class EffectTarget(val width:Int,val height:Int,val textures:IntArray,val fbos:IntArray)
     private data class EffectProgram(val id:Int,val defaults:Map<String,Float>)
@@ -119,6 +128,10 @@ class GpuPreviewRenderer(
     private var layerMaskPass: LayerMaskGpuPass? = null
     private var textRenderer: TextOverlayRenderer? = null
     private val frameScheduler = VideoFrameScheduler()
+    private val motionStage = PreviewMotionStage { diagnostics.event(it) }
+    /** `[highp, tamanho máximo de textura]` do contexto da prévia, ou `null` sem o motor. */
+    @Volatile var motionCapabilities: IntArray? = null
+        private set
     private val quad: FloatBuffer = ByteBuffer.allocateDirect(16 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply {
         put(floatArrayOf(-1f, -1f, 0f, 0f, 1f, -1f, 1f, 0f, -1f, 1f, 0f, 1f, 1f, 1f, 1f, 1f)); position(0)
     }
@@ -198,6 +211,8 @@ class GpuPreviewRenderer(
         overlayProgram = program(VERTEX, OVERLAY)
         backgroundRemovalPass = BackgroundRemovalGpuPass(context) { requestRender() }
         layerMaskPass = LayerMaskGpuPass()
+        motionCapabilities = runCatching { com.termex.replay15.editor.speed.NativeSpeed.motionProbe() }
+            .onFailure { diagnostics.event("MOTION_ENGINE_UNAVAILABLE ${it.message}") }.getOrNull()
         textRenderer = TextOverlayRenderer(context, imageWorker, { task -> handler.post { task() } }, { state.get() },
             { requestRender() }, diagnostics)
         diagnostics.eglCreated()
@@ -270,6 +285,21 @@ class GpuPreviewRenderer(
             makeCurrent()
             slot.surfaceTexture.updateTexImage()
             if (frame != null && isGenerationCurrent(frame.generation)) {
+                val pts = frame.presentationTimeUs
+                if (slot.prevTexture != 0) {
+                    // Quadro seguinte da mesma busca: o atual vira o anterior trocando as texturas.
+                    val continuous = slot.hasFrame && slot.frameGeneration == frame.generation &&
+                        slot.curPtsUs != Long.MIN_VALUE && pts != slot.curPtsUs &&
+                        kotlin.math.abs(pts - slot.curPtsUs) <= PreviewMotionStage.MAX_PAIR_GAP_US
+                    if (continuous) {
+                        val texture = slot.texture; val fbo = slot.fbo
+                        slot.texture = slot.prevTexture; slot.fbo = slot.prevFbo
+                        slot.prevTexture = texture; slot.prevFbo = fbo
+                        slot.prevPtsUs = slot.curPtsUs; slot.prevGeneration = slot.frameGeneration
+                    } else {
+                        slot.prevPtsUs = Long.MIN_VALUE
+                    }
+                }
                 slot.surfaceTexture.getTransformMatrix(stMatrix)
                 GLES20.glDisable(GLES20.GL_BLEND)
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, slot.fbo)
@@ -281,6 +311,7 @@ class GpuPreviewRenderer(
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
                 slot.hasFrame = true
                 slot.frameGeneration = frame.generation
+                slot.curPtsUs = pts
                 diagnostics.frameAvailable(frame.presentationTimeUs)
                 if (!isPlaying()) requestRender() else when (val decision = frameScheduler.decide(frame.projectPresentationTimeUs, transportPositionUs())) {
                     VideoFrameScheduler.Decision.Present -> requestRender()
@@ -306,7 +337,9 @@ class GpuPreviewRenderer(
                 // the incoming clip: doing so presented the previous clip under the new clip's
                 // transform, and could satisfy a transition's generation check with foreign
                 // content. The layer is simply skipped until the decoder delivers a real frame.
-                val transferred = slot.copy(key = toKey, hasFrame = false, frameGeneration = -1)
+                val transferred = slot.copy(key = toKey, hasFrame = false, frameGeneration = -1,
+                    prevPtsUs = Long.MIN_VALUE, curPtsUs = Long.MIN_VALUE)
+                motionStage.release(fromKey)
                 slot.surfaceTexture.setOnFrameAvailableListener({ source -> consume(toKey, source) }, handler)
                 slots[toKey] = transferred
                 effectTargets.remove(fromKey)?.let { effectTargets[toKey] = it }
@@ -326,7 +359,9 @@ class GpuPreviewRenderer(
                 GLES20.glDeleteTextures(1, intArrayOf(slot.oes), 0)
                 GLES20.glDeleteTextures(1, intArrayOf(slot.texture), 0)
                 GLES20.glDeleteFramebuffers(1, intArrayOf(slot.fbo), 0)
+                deleteHistory(slot)
             }
+            motionStage.release(key)
             decoderSurfaceCount = slots.size
             effectTargets.remove(key)?.let(::deleteEffectTarget)
             layerMaskPass?.remove(maskKey(key))
@@ -430,13 +465,11 @@ class GpuPreviewRenderer(
                 if (layer.image) {
                     imageTextures[layer.uri]
                 } else {
-                    slots[layer.key]
-                        // Generation must be checked here too, not only on the transition path:
-                        // after a seek the FBO still holds the previous generation's pixels, and
-                        // drawing them put stale content on screen instead of holding the last
-                        // good frame.
-                        ?.takeIf { it.hasFrame && it.frameGeneration == render.generation }
-                        ?.texture
+                    // Generation must be checked here too, not only on the transition path:
+                    // after a seek the FBO still holds the previous generation's pixels, and
+                    // drawing them put stale content on screen instead of holding the last
+                    // good frame.
+                    videoTexture(render, layer)
                 }
 
             if (texture == null || texture == 0) return@forEach
@@ -550,7 +583,7 @@ class GpuPreviewRenderer(
         val right = render.layers.firstOrNull { it.key == transition.right } ?: return null
         fun texture(layer: PreviewRenderState.Layer): Int? =
             if (layer.image) imageTextures[layer.uri]
-            else slots[layer.key]?.takeIf { it.hasFrame && it.frameGeneration == render.generation }?.texture
+            else videoTexture(render, layer)
         val rawA = texture(left)?.takeIf { it > 0 } ?: return null
         val rawB = texture(right)?.takeIf { it > 0 } ?: return null
         val mode = diagnostics.transitionDebugMode
@@ -696,6 +729,44 @@ class GpuPreviewRenderer(
         uniform3(drawProgram, "uKeyEdge", chroma.smoothness, chroma.spill, chroma.edgeFeather)
         GLES20.glUniform1f(GLES20.glGetUniformLocation(drawProgram,"uOpacity"), alpha.coerceIn(0f,1f))
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,0,4)
+    }
+
+    /**
+     * Textura de uma camada de vídeo no instante do estado: o quadro decodificado, ou o quadro
+     * sintetizado pelo motor de movimento (câmera lenta suave e blur por vetores) quando a camada
+     * pede e há um par de quadros contínuos envolvendo o instante.
+     */
+    private fun videoTexture(render: PreviewRenderState, layer: PreviewRenderState.Layer): Int? {
+        val slot = slots[layer.key]?.takeIf { it.hasFrame && it.frameGeneration == render.generation } ?: return null
+        val motion = layer.motion ?: return slot.texture
+        if (!motion.needsPair) return slot.texture
+        if (slot.prevTexture == 0 && !enableHistory(slot)) return slot.texture
+        if (slot.prevPtsUs == Long.MIN_VALUE || slot.prevGeneration != slot.frameGeneration) return slot.texture
+        val forward = slot.prevPtsUs < slot.curPtsUs
+        val (textureA, ptsA) = if (forward) slot.prevTexture to slot.prevPtsUs else slot.texture to slot.curPtsUs
+        val (textureB, ptsB) = if (forward) slot.texture to slot.curPtsUs else slot.prevTexture to slot.prevPtsUs
+        return motionStage.apply(layer.key, motion, slot.width, slot.height, textureA, ptsA, textureB, ptsB, layer.sourceTimeUs)
+            ?: slot.texture
+    }
+
+    private fun enableHistory(slot: Slot): Boolean = runCatching {
+        val texture = texture2d(slot.width, slot.height)
+        slot.prevTexture = texture
+        slot.prevFbo = framebuffer(texture, slot.width, slot.height)
+        slot.prevPtsUs = Long.MIN_VALUE
+        diagnostics.event("MOTION_HISTORY_ENABLED key=${slot.key}")
+        true
+    }.getOrElse {
+        if (slot.prevTexture != 0) GLES20.glDeleteTextures(1, intArrayOf(slot.prevTexture), 0)
+        slot.prevTexture = 0; slot.prevFbo = 0
+        diagnostics.event("MOTION_HISTORY_FAILED key=${slot.key} ${it.message}")
+        false
+    }
+
+    private fun deleteHistory(slot: Slot) {
+        if (slot.prevTexture != 0) GLES20.glDeleteTextures(1, intArrayOf(slot.prevTexture), 0)
+        if (slot.prevFbo != 0) GLES20.glDeleteFramebuffers(1, intArrayOf(slot.prevFbo), 0)
+        slot.prevTexture = 0; slot.prevFbo = 0; slot.prevPtsUs = Long.MIN_VALUE
     }
 
     private fun applyBackgroundRemoval(layer: PreviewRenderState.Layer, input: Int): Int {
@@ -996,7 +1067,8 @@ class GpuPreviewRenderer(
 
     private fun releaseGl() {
             makeCurrent()
-            slots.values.forEach { it.pending.getAndSet(null)?.acknowledge(); it.surface.release(); it.surfaceTexture.release(); GLES20.glDeleteTextures(2,intArrayOf(it.oes,it.texture),0); GLES20.glDeleteFramebuffers(1,intArrayOf(it.fbo),0) }
+            slots.values.forEach { it.pending.getAndSet(null)?.acknowledge(); it.surface.release(); it.surfaceTexture.release(); GLES20.glDeleteTextures(2,intArrayOf(it.oes,it.texture),0); GLES20.glDeleteFramebuffers(1,intArrayOf(it.fbo),0); deleteHistory(it) }
+            motionStage.releaseAll()
             slots.clear(); decoderSurfaceCount = 0; imageTextures.values.forEach{GLES20.glDeleteTextures(1,intArrayOf(it),0)}; imageTextures.clear();imageSizes.clear()
             effectTargets.values.forEach(::deleteEffectTarget);effectTargets.clear();effectPrograms.values.forEach{GLES20.glDeleteProgram(it.id)};effectPrograms.clear()
             backgroundRemovalPass?.close();backgroundRemovalPass = null

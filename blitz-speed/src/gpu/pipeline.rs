@@ -273,7 +273,7 @@ impl MotionPipeline {
     }
 
     fn allocate(&mut self, sizes: &[(i32, i32)]) -> Result<(), String> {
-        let (flow_width, flow_height, out_width, out_height) = (self.flow_width, self.flow_height, self.out_width, self.out_height);
+        let (flow_width, flow_height) = (self.flow_width, self.flow_height);
         for &(w, h) in sizes {
             let a = self.target(w, h, gl::LINEAR)?;
             self.luma_a.push(a);
@@ -292,9 +292,29 @@ impl MotionPipeline {
         self.neighbor_tmp = self.target(flow_width, flow_height, gl::NEAREST)?;
         self.neighbor = self.target(flow_width, flow_height, gl::NEAREST)?;
         self.stats_target = self.target(16, 16, gl::NEAREST)?;
-        self.synth = self.target(out_width, out_height, gl::LINEAR)?;
-        self.accumulator = self.target(out_width, out_height, gl::LINEAR)?;
+        // `synth` (só com blur) e `accumulator` (só na exportação) são criados no primeiro uso:
+        // na prévia são duas texturas do tamanho do vídeo a menos por camada.
         Ok(())
+    }
+
+    fn ensure_synth(&mut self) -> bool {
+        if self.synth.texture == 0 {
+            match self.target(self.out_width, self.out_height, gl::LINEAR) {
+                Ok(target) => self.synth = target,
+                Err(_) => return false,
+            }
+        }
+        true
+    }
+
+    fn ensure_accumulator(&mut self) -> bool {
+        if self.accumulator.texture == 0 {
+            match self.target(self.out_width, self.out_height, gl::LINEAR) {
+                Ok(target) => self.accumulator = target,
+                Err(_) => return false,
+            }
+        }
+        true
     }
 
     fn target(&self, width: i32, height: i32, filter: GLint) -> Result<Target, String> {
@@ -593,7 +613,8 @@ impl MotionPipeline {
         let _guard = StateGuard::capture(self.gl);
         let t = t.clamp(0.0, 1.0);
         let stats = self.stats;
-        let blur = blur.filter(|params| stats.has_flow && !stats.cut && params.samples > 0 && params.scale > 0.0);
+        let wants_blur = blur.is_some_and(|params| stats.has_flow && !stats.cut && params.samples > 0 && params.scale > 0.0);
+        let blur = if wants_blur && self.ensure_synth() { blur } else { None };
         let synthesis = match synthesis {
             _ if stats.cut => Synthesis::Repeat,
             Synthesis::OpticalFlow if !stats.has_flow => Synthesis::Blend,
@@ -649,6 +670,9 @@ impl MotionPipeline {
             return;
         }
         let _guard = StateGuard::capture(self.gl);
+        if !self.ensure_accumulator() {
+            return;
+        }
         let gl = self.gl;
         let p = &self.programs.copy;
         self.begin(p, self.accumulator.fbo, Self::full(&self.accumulator));
@@ -668,7 +692,7 @@ impl MotionPipeline {
 
     /// Copia a média acumulada para o destino e zera o acumulador.
     pub fn emit_accumulated(&mut self, dst_fbo: GLuint, viewport: (i32, i32, i32, i32)) {
-        if self.released {
+        if self.released || self.accumulator.texture == 0 {
             return;
         }
         let _guard = StateGuard::capture(self.gl);

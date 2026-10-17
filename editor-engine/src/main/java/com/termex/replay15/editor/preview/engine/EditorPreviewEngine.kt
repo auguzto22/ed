@@ -49,6 +49,35 @@ class EditorPreviewEngine(
         PreviewMediaFailure.SurfaceFailure(null,null,generation,failure).also(diagnostics::mediaFailure).let(::onFailure)
     }
     private val maxDecoders=run{val am=context.getSystemService(ActivityManager::class.java);if(am?.isLowRamDevice==true)2 else 4}
+    // Motor de velocidade (Rust): plano de câmera lenta/blur por camada, conforme o aparelho agora.
+    @Volatile private var thermalStatus = 0
+    private val powerManager = context.getSystemService(android.os.PowerManager::class.java)
+    private val thermalListener = android.os.PowerManager.OnThermalStatusChangedListener { status -> thermalStatus = status }
+    private val motionPlanner = com.termex.replay15.editor.speed.PreviewMotionPlanner {
+        val am = context.getSystemService(ActivityManager::class.java)
+        val caps = renderer.motionCapabilities
+        com.termex.replay15.editor.speed.DeviceMotionProfile(
+            memoryClassMb = am?.memoryClass ?: 256,
+            lowRamDevice = am?.isLowRamDevice ?: false,
+            highpFragmentShaders = caps?.getOrNull(0) == 1,
+            maxTextureSize = caps?.getOrNull(1) ?: 0,
+            thermalStatus = thermalStatus,
+            previewTier = com.termex.replay15.editor.core.PreviewPerformanceController.currentTier.level,
+        )
+    }
+    init {
+        runCatching {
+            thermalStatus = powerManager?.currentThermalStatus ?: 0
+            powerManager?.addThermalStatusListener(context.mainExecutor, thermalListener)
+        }
+    }
+    /** Avisos do motor de movimento por clipe (ex.: optical flow indisponível), para a interface. */
+    fun motionNotice(clipId: String): String? = motionPlanner.notices[clipId]
+    private fun motionContext(): com.termex.replay15.editor.speed.MotionContext = when {
+        scrubbing -> com.termex.replay15.editor.speed.MotionContext.SCRUB
+        clock.isPlaying() -> com.termex.replay15.editor.speed.MotionContext.PLAYBACK
+        else -> com.termex.replay15.editor.speed.MotionContext.PAUSED
+    }
     private val decoders=VideoDecoderManager(context,renderer,mailbox,diagnostics,::onFailure,maxDecoders)
     private var project=Project();private var resolver=ActiveClipResolver(project)
     private var projectRevision=0L
@@ -183,7 +212,7 @@ class EditorPreviewEngine(
         audio.updateProjectPosition(snapshot.projectTimeUs)
     }
     private fun renderState(positionUs:Long)=renderState(resolver.resolve(positionUs))
-    private fun renderState(snapshot:ActiveClipResolver.Snapshot){renderer.update(RenderStateEvaluator.evaluate(snapshot,project,generation,projectRevision,renderer.width,renderer.height))}
+    private fun renderState(snapshot:ActiveClipResolver.Snapshot){renderer.update(RenderStateEvaluator.evaluate(snapshot,project,generation,projectRevision,renderer.width,renderer.height,motionPlanner,motionContext()))}
     private fun onFramePresented(timeUs:Long){
         if(closed||!mailbox.isCurrent(generation))return
         hasPresentedFrame=true
@@ -202,7 +231,7 @@ class EditorPreviewEngine(
     }
     private fun chosenQuality():Int{if(quality!=0)return quality;val am=context.getSystemService(ActivityManager::class.java);return PreviewQualityPolicy.choose(PreviewQualityPolicy.Inputs(am?.memoryClass?:256,am?.isLowRamDevice?:false,minOf(renderer.width,renderer.height),resolver.resolve(clock.positionUs()).videos.size,project.export.fps))}
     private fun checkMain(){check(Looper.myLooper()==Looper.getMainLooper()){ "Preview API must run on main thread" }}
-    override fun close(){checkMain();if(closed)return;closed=true;cancelScheduledSeek();cancelScheduledRedraw();cancelTick();clock.pause();mailbox.close();audio.close();decoders.close { renderer.close() };state=State.EMPTY;diagnostics.event("PREVIEW_RELEASE ${diagnostics.summary()}")}
+    override fun close(){checkMain();if(closed)return;closed=true;runCatching{powerManager?.removeThermalStatusListener(thermalListener)};cancelScheduledSeek();cancelScheduledRedraw();cancelTick();clock.pause();mailbox.close();audio.close();decoders.close { renderer.close() };state=State.EMPTY;diagnostics.event("PREVIEW_RELEASE ${diagnostics.summary()}")}
     fun release()=close()
     companion object{private const val PREWARM_US=800_000L;private const val IMAGE_PREFETCH_US=1_500_000L}
 }
