@@ -1,0 +1,23 @@
+[package]
+name = "blitz-speed"
+version = "0.1.0"
+edition = "2021"
+description = "Motor de velocidade do Blitz: curvas, mapeamento de tempo, câmera lenta, motion blur e áudio."
+publish = false
+
+# Sem dependências externas: o crate compila offline, no host (testes) e no Android (cargo-ndk).
+[dependencies]
+
+[lib]
+name = "blitz_speed"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Testes de GPU numa GPU virtual (Mesa/llvmpipe, EGL surfaceless). Só no host.
+gpu-tests = []
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = false
