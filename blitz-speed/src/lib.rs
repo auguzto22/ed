@@ -18,3 +18,4 @@ pub mod api;
 pub mod jni;
 pub mod gpu;
 pub mod validate;
+pub mod audio;

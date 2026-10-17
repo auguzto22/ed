@@ -155,4 +155,54 @@ class SpeedEngineTest {
         assertEquals(SynthesisMethod.BLEND, degraded.synthesis)
         assertNotNull(degraded.notice)
     }
+
+    @Test fun previewAudioKeepsPitchAndLengthThroughTheBridge() {
+        val stream = NativeSpeed.audioCreate()
+        try {
+            val rate = 48_000
+            val source = FloatArray(rate * 20 * 2) { i -> (kotlin.math.sin(2 * Math.PI * 440.0 * (i / 2) / rate) * .5).toFloat() }
+            var cursor = 0
+            val block = FloatArray(1024 * 2)
+            val out = ArrayList<Float>()
+            repeat(60) {
+                while (NativeSpeed.audioAvailable(stream) < 1024) {
+                    val need = NativeSpeed.audioInputNeeded(stream, 1024, .5f, true).coerceAtLeast(256)
+                    val chunk = source.copyOfRange(cursor, cursor + need * 2)
+                    cursor += need * 2
+                    NativeSpeed.audioPush(stream, chunk, need, .5f, true, 1024)
+                }
+                assertEquals(1024, NativeSpeed.audioPull(stream, block, 1024))
+                for (i in 0 until 1024) out += block[i * 2]
+            }
+            val body = out.subList(out.size / 10, out.size * 9 / 10)
+            val crossings = body.zipWithNext().count { (a, b) -> a <= 0f && b > 0f }
+            val hz = crossings / (body.size.toFloat() / rate)
+            assertEquals(440f, hz, 13f)
+            // Meia velocidade consome cerca de metade da mídia por segundo de timeline.
+            assertEquals(.5, cursor / 2.0 / (60 * 1024), .1)
+        } finally {
+            NativeSpeed.audioRelease(stream)
+        }
+    }
+
+    @Test fun exportSchedulerActionsCrossTheBridgeIntact() {
+        val handle = NativeSpeed.schedulerCreate(30f, 0f)
+        try {
+            val rows = NativeSpeed.schedulerInput(handle, 0) + NativeSpeed.schedulerInput(handle, 133_333) + NativeSpeed.schedulerEnd(handle)
+            val emits = rows.toList().chunked(8).filter { it[0] == 3L }
+            assertEquals(listOf(0L, 33_333L, 66_667L, 100_000L, 133_333L), emits.map { it[1] })
+            assertEquals(.25f, Float.fromBits(emits[1][6].toInt()), 1e-3f)
+            assertThrows(IllegalArgumentException::class.java) { NativeSpeed.schedulerInput(handle, 10) }
+        } finally {
+            NativeSpeed.schedulerRelease(handle)
+        }
+    }
+
+    @Test fun exportValidationRulesComeFromTheEngine() {
+        val ok = NativeSpeed.validateExport(10 * SECOND, 10 * SECOND + 30_000, 10 * SECOND, true, 30)
+        assertEquals(0L, ok[0])
+        val late = NativeSpeed.validateExport(10 * SECOND, 10 * SECOND, 10 * SECOND + 400_000, true, 30)
+        assertEquals(4L, late[0])
+        assertTrue(NativeSpeed.exportVerdictText(late[0].toInt(), late[1]).contains("400 ms"))
+    }
 }

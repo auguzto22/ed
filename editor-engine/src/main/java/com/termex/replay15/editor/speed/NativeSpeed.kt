@@ -70,6 +70,16 @@ object NativeSpeed {
     @JvmStatic external fun motionInvalidate(handle: Long)
     @JvmStatic external fun motionRelease(handle: Long)
 
+    // ---- Áudio retemporizado da prévia (um handle por sessão) ------------------------------
+    @JvmStatic external fun audioCreate(): Long
+    @JvmStatic external fun audioInputNeeded(handle: Long, frames: Int, speed: Float, preservePitch: Boolean): Int
+    /** Empurra [frames] quadros estéreo de [input]; devolve os quadros de timeline produzidos. */
+    @JvmStatic external fun audioPush(handle: Long, input: FloatArray, frames: Int, speed: Float, preservePitch: Boolean, target: Int): Int
+    @JvmStatic external fun audioPull(handle: Long, output: FloatArray, frames: Int): Int
+    @JvmStatic external fun audioAvailable(handle: Long): Int
+    @JvmStatic external fun audioReset(handle: Long)
+    @JvmStatic external fun audioRelease(handle: Long)
+
     // ---- Conferência da exportação --------------------------------------------------------
     /** `[veredito (0 = ok), diferença em µs]`; [audioUs] < 0 quando o arquivo não tem áudio. */
     @JvmStatic external fun validateExport(expectedUs: Long, videoUs: Long, audioUs: Long, expectAudio: Boolean, fps: Int): LongArray
