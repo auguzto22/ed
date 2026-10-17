@@ -97,14 +97,27 @@ object SpeedTools {
         body.addView(normalPanel); body.addView(curvePanel); body.addView(motionPanel); body.addView(audioPanel)
 
         lateinit var refresh: () -> Unit
+        lateinit var refreshLive: () -> Unit
+        // Um gesto (arrastar ponto, régua, slider) vira um passo só de desfazer: o estado de antes
+        // do primeiro movimento é guardado e comparado com o final quando o dedo sai.
+        var gestureStart: VideoClip? = null
         fun commit(next: VideoClip, interactive: Boolean = false, record: Boolean = true) {
-            if (record && next != draft) {
-                undo.addLast(draft); if (undo.size > 60) undo.removeFirst()
+            if (interactive) {
+                if (gestureStart == null) gestureStart = draft
+                draft = next
+                refreshLive() // só curva e números: recriar os chips a cada movimento travaria o gesto
+                schedulePreview(true)
+                return
+            }
+            val base = gestureStart ?: draft
+            gestureStart = null
+            if (record && next != base) {
+                undo.addLast(base); if (undo.size > 60) undo.removeFirst()
                 redo.clear()
             }
             draft = next
             refresh()
-            schedulePreview(interactive)
+            schedulePreview(false)
         }
 
         // ---- velocidade constante --------------------------------------------------------------
@@ -116,15 +129,11 @@ object SpeedTools {
         normalPanel.addView(durationRow)
         val ruler = SpeedRulerView(this)
         normalPanel.addView(ruler, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(4) })
-        var rulerStart: VideoClip? = null
         ruler.onSpeedChange = { value ->
-            if (rulerStart == null) rulerStart = draft
-            commit(draft.copy(speed = value.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED), speedCurve = emptyList()), interactive = true, record = false)
+            commit(draft.copy(speed = value.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED), speedCurve = emptyList()), interactive = true)
         }
         ruler.onRelease = { value ->
-            val start = rulerStart; rulerStart = null
-            if (start != null && start != draft) { undo.addLast(start); redo.clear() }
-            commit(draft.copy(speed = value.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED), speedCurve = emptyList()), record = false)
+            commit(draft.copy(speed = value.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED), speedCurve = emptyList()))
         }
         val (quickScroll, quick) = chipScroller()
         listOf(.1f, .25f, .5f, 1f, 2f, 4f, 8f).forEach { value ->
@@ -171,17 +180,12 @@ object SpeedTools {
             commit(withPoints(next))
         }
 
-        var dragStart: VideoClip? = null
         graph.onEdit = { list, index, finished ->
             graph.selected = index
-            if (dragStart == null && !finished) dragStart = draft
             val next = runCatching { withPoints(list) }.getOrNull()
-            if (next != null) {
-                if (finished) {
-                    val start = dragStart; dragStart = null
-                    if (start != null && start != next) { undo.addLast(start); redo.clear() }
-                    commit(next, record = false)
-                } else commit(next, interactive = true, record = false)
+            when {
+                next != null -> commit(next, interactive = !finished)
+                finished -> commit(draft) // fecha o gesto mesmo que o último movimento fosse inválido
             }
         }
         graph.onAddAt = ::addPointAt
@@ -250,10 +254,15 @@ object SpeedTools {
         blurPanel.addView(shutterScroll)
         val intensitySlider = slider(blurPanel, "Intensidade", (clip.motionBlur.intensity * 100).toInt(), 200, format = { "$it%" },
             onStop = { commit(draft.copy(motionBlur = draft.motionBlur.copy(intensity = it / 100f))) }) { value ->
-            commit(draft.copy(motionBlur = draft.motionBlur.copy(intensity = value / 100f)), interactive = true, record = false)
+            commit(draft.copy(motionBlur = draft.motionBlur.copy(intensity = value / 100f)), interactive = true)
         }
         val blurAdvanced = column()
         blurPanel.addView(blurAdvanced)
+        val shutterSlider = slider(blurAdvanced, "Ângulo do obturador", clip.motionBlur.shutterAngle.toInt(), MotionBlurConfig.MAX_SHUTTER.toInt(),
+            MotionBlurConfig.MIN_SHUTTER.toInt(), format = { "$it°" },
+            onStop = { commit(draft.copy(motionBlur = draft.motionBlur.copy(shutterAngle = it.toFloat()))) }) { value ->
+            commit(draft.copy(motionBlur = draft.motionBlur.copy(shutterAngle = value.toFloat())), interactive = true)
+        }
         blurAdvanced.addView(label("Qualidade", 13f, EditorStyle.MUTED))
         val (qualityScroll, qualityChips) = chipScroller()
         blurAdvanced.addView(qualityScroll)
@@ -272,7 +281,21 @@ object SpeedTools {
         }
         audioPanel.addView(syncBox)
 
-        // ---- atualização de tudo a partir do rascunho -------------------------------------------
+        // ---- atualização a partir do rascunho ---------------------------------------------------
+        fun pointInfo(list: List<SpeedPoint>): String {
+            val point = list[graph.selected.coerceIn(list.indices)]
+            return "Ponto ${graph.selected + 1} de ${list.size} • ${formatSpeed(point.speed)} em ${secondsLabel(point.sourceUs)} • duração ${timeLabel(draft.durationUs)}"
+        }
+        refreshLive = {
+            durationAfter.text = secondsLabel(draft.durationUs)
+            if (curveMode) {
+                val list = points()
+                graph.selected = graph.selected.coerceIn(list.indices)
+                graph.points = list
+                graph.clip = withPoints(list)
+                curveInfo.text = pointInfo(list)
+            }
+        }
         refresh = {
             modeRow.removeAllViews()
             modeRow.addView(chip("Normal", !curveMode) {
@@ -310,7 +333,7 @@ object SpeedTools {
                     }) { value ->
                     presetIntensity = value / 100f
                     runCatching { SpeedPoint.unpack(NativeSpeed.buildPreset(lastPreset, draft.inUs, draft.outUs, presetIntensity)) }
-                        .onSuccess { commit(withPoints(it), interactive = true, record = false) }
+                        .onSuccess { commit(withPoints(it), interactive = true) }
                 }
             }
 
@@ -320,7 +343,7 @@ object SpeedTools {
             graph.clip = if (curveMode) withPoints(list) else draft
             graph.playheadSourceUs = callbacks.playheadSourceUs()
             val point = list[graph.selected]
-            curveInfo.text = "Ponto ${graph.selected + 1} de ${list.size} • ${formatSpeed(point.speed)} em ${secondsLabel(point.sourceUs)} • duração ${timeLabel(draft.durationUs)}"
+            curveInfo.text = pointInfo(list)
             easingRow.removeAllViews()
             SEGMENT_EASINGS.forEach { (easing, name) ->
                 easingRow.addChip(chip(name, point.easing == easing) { setSelected { it.copy(easing = easing) } })
@@ -348,8 +371,12 @@ object SpeedTools {
                 modeChips.addChip(chip(mode.label, draft.slowMotion == mode) { commit(draft.copy(slowMotion = mode)) })
             }
             val slowest = runCatching { draft.timeMap.speedRange().start }.getOrDefault(draft.speed)
+            // Mesma regra do motor (policy.rs): só câmera lenta (abaixo de 1×) ganha quadros novos.
             modeDescription.text = draft.slowMotion.description +
-                if (slowest * draft.fps >= 29f) "\nEste clipe tem quadros suficientes; a síntese entra quando ficar mais lento que ${formatSpeed(29f / draft.fps)}." else ""
+                if (slowest >= .999f) "\nSem câmera lenta neste clipe: os quadros originais são usados como estão." else ""
+            // Foto não tem quadros para interpolar nem som: só a duração muda.
+            motionPanel.visibility = if (draft.image) View.GONE else View.VISIBLE
+            audioPanel.visibility = if (draft.image) View.GONE else View.VISIBLE
             val notice = callbacks.motionNotice(draft)
             motionNotice.text = notice.orEmpty()
             motionNotice.visibility = if (notice.isNullOrBlank()) View.GONE else View.VISIBLE
@@ -363,6 +390,7 @@ object SpeedTools {
                 })
             }
             if (intensitySlider.progress != (draft.motionBlur.intensity * 100).toInt()) intensitySlider.progress = (draft.motionBlur.intensity * 100).toInt()
+            if (shutterSlider.progress != draft.motionBlur.shutterAngle.toInt()) shutterSlider.progress = draft.motionBlur.shutterAngle.toInt()
             blurAdvanced.visibility = if (advanced) View.VISIBLE else View.GONE
             qualityChips.removeAllViews()
             MotionBlurQuality.entries.forEach { quality ->

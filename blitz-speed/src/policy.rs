@@ -113,8 +113,10 @@ impl Notice {
 const THERMAL_MODERATE: i32 = 2;
 
 /// Fontes mais esparsas que a saída: aí a síntese ajuda.
+/// Só câmera lenta de verdade ganha quadros novos: um clipe a 1× ou mais rápido mantém a cadência
+/// original mesmo numa saída de fps maior (30 fps numa exportação a 60 fps não vira "efeito novela").
 pub fn needs_synthesis(facts: &ClipFacts, output_fps: f32) -> bool {
-    !facts.image && facts.slowest_speed * facts.source_fps < output_fps * 0.95
+    !facts.image && facts.slowest_speed < 0.999 && facts.slowest_speed * facts.source_fps < output_fps * 0.95
 }
 
 pub fn plan(facts: &ClipFacts, mode: SlowMotionMode, blur: &BlurConfig, device: &Device, context: Context, output_fps: f32) -> Plan {
@@ -234,6 +236,10 @@ mod tests {
         let sixty = ClipFacts { source_fps: 60.0, ..facts(0.5) };
         assert!(!needs_synthesis(&sixty, 30.0));
         assert!(needs_synthesis(&sixty, 60.0));
+        // 30 fps a 1× numa exportação a 60 fps: nada de interpolar um clipe que não foi desacelerado.
+        assert!(!needs_synthesis(&facts(1.0), 60.0));
+        assert!(!needs_synthesis(&ClipFacts { source_fps: 24.0, ..facts(1.0) }, 30.0));
+        assert!(needs_synthesis(&ClipFacts { source_fps: 24.0, ..facts(0.8) }, 30.0));
     }
 
     #[test]
