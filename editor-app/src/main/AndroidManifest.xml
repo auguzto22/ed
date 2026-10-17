@@ -5,6 +5,11 @@
     <!-- Permissions required by Editor -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Real Camera (3D): the phone's motion tracked by ARCore drives the scene camera. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- ARCore is optional: devices without it still install the app and only lose Real Camera. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false" tools:node="replace" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
@@ -29,6 +34,11 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Replay15">
+
+        <meta-data
+            android:name="com.google.ar.core"
+            android:value="optional"
+            tools:replace="android:value" />
 
         <!-- Seletor de fotos e vídeos do Recly (folha inferior) -->
         <activity

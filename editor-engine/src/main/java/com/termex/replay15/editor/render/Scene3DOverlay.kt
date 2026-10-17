@@ -43,7 +43,8 @@ class Scene3DOverlay(
     }
 
     private fun changesOverTime(clip: Scene3DClip): Boolean {
-        if (clip.poseKeyframes.size > 1 || clip.cameraKeyframes.size > 1) return true
+        if (clip.poseKeyframes.size > 1 || clip.cameraKeyframes.size > 1 || clip.cameraShots.isNotEmpty() ||
+            clip.nulls.any { it.poseKeyframes.size > 1 }) return true
         if (!clip.playAnimation || clip.animationSpeed <= 0f) return false
         val count = animationCounts.getOrPut(clip.modelPath) {
             runCatching { renderer.inspect(clip.modelPath).animationCount }.getOrDefault(0)

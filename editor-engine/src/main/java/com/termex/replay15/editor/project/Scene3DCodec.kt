@@ -4,9 +4,12 @@ import com.termex.replay15.editor.domain.*
 import java.io.DataInputStream
 import java.io.DataOutputStream
 
-/** Appended in schema 31: real 3D layers (glTF model, pose and camera tracks, environment). */
+/**
+ * Appended in schema 31: real 3D layers (glTF model, pose and camera tracks, environment).
+ * Version 2 of the section adds nulls, parenting and camera shots.
+ */
 internal object Scene3DCodec {
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     fun write(project: Project, out: DataOutputStream) {
         out.writeInt(VERSION)
@@ -15,15 +18,9 @@ internal object Scene3DCodec {
             out.writeUTF(scene.id); out.writeUTF(scene.name); out.writeUTF(scene.modelPath)
             out.writeLong(scene.startUs); out.writeLong(scene.endUs)
             writePose(out, scene.pose)
-            out.writeInt(scene.poseKeyframes.size)
-            scene.poseKeyframes.forEach { key ->
-                out.writeLong(key.timeUs); writePose(out, key.pose); writeCurve(out, key.easing, key.bezier)
-            }
+            writePoseKeys(out, scene.poseKeyframes)
             writeCamera(out, scene.camera)
-            out.writeInt(scene.cameraKeyframes.size)
-            scene.cameraKeyframes.forEach { key ->
-                out.writeLong(key.timeUs); writeCamera(out, key.camera); writeCurve(out, key.easing, key.bezier)
-            }
+            writeCameraKeys(out, scene.cameraKeyframes)
             with(scene.environment) {
                 out.writeInt(preset.ordinal); out.writeUTF(environmentPath)
                 out.writeFloat(lightIntensity); out.writeFloat(lightRotation); out.writeBoolean(showBackground)
@@ -31,7 +28,46 @@ internal object Scene3DCodec {
                 out.writeBoolean(floor); out.writeFloat(floorReflection); out.writeBoolean(shadows)
             }
             out.writeBoolean(scene.playAnimation); out.writeFloat(scene.animationSpeed)
+            // Version 2
+            writeOptional(out, scene.modelParentId); writeOptional(out, scene.cameraParentId)
+            out.writeInt(scene.nulls.size)
+            scene.nulls.forEach { n ->
+                out.writeUTF(n.id); out.writeUTF(n.name); writeOptional(out, n.parentId)
+                writePose(out, n.pose); writePoseKeys(out, n.poseKeyframes)
+            }
+            out.writeInt(scene.cameraShots.size)
+            scene.cameraShots.forEach { shot ->
+                out.writeUTF(shot.id); out.writeUTF(shot.name); writeOptional(out, shot.parentId)
+                out.writeLong(shot.startUs); out.writeLong(shot.endUs)
+                writeCamera(out, shot.camera); writeCameraKeys(out, shot.keyframes)
+            }
         }
+    }
+
+    private fun writeOptional(out: DataOutputStream, value: String?) {
+        out.writeBoolean(value != null); if (value != null) out.writeUTF(value)
+    }
+
+    private fun readOptional(input: DataInputStream): String? = if (input.readBoolean()) input.readUTF() else null
+
+    private fun writePoseKeys(out: DataOutputStream, keys: List<ModelKeyframe>) {
+        out.writeInt(keys.size)
+        keys.forEach { key -> out.writeLong(key.timeUs); writePose(out, key.pose); writeCurve(out, key.easing, key.bezier) }
+    }
+
+    private fun readPoseKeys(input: DataInputStream) = List(input.readInt().also { require(it in 0..MAX_SCENE_KEYFRAMES) }) {
+        val time = input.readLong(); val value = readPose(input); val (easing, bezier) = readCurve(input)
+        ModelKeyframe(time, value, easing, bezier)
+    }
+
+    private fun writeCameraKeys(out: DataOutputStream, keys: List<OrbitCameraKeyframe>) {
+        out.writeInt(keys.size)
+        keys.forEach { key -> out.writeLong(key.timeUs); writeCamera(out, key.camera); writeCurve(out, key.easing, key.bezier) }
+    }
+
+    private fun readCameraKeys(input: DataInputStream) = List(input.readInt().also { require(it in 0..MAX_SCENE_KEYFRAMES) }) {
+        val time = input.readLong(); val value = readCamera(input); val (easing, bezier) = readCurve(input)
+        OrbitCameraKeyframe(time, value, easing, bezier)
     }
 
     fun read(project: Project, input: DataInputStream): Project {
@@ -42,15 +78,9 @@ internal object Scene3DCodec {
             val id = input.readUTF(); val name = input.readUTF(); val modelPath = input.readUTF()
             val startUs = input.readLong(); val endUs = input.readLong()
             val pose = readPose(input)
-            val poseKeys = List(input.readInt().also { require(it in 0..200) }) {
-                val time = input.readLong(); val value = readPose(input); val (easing, bezier) = readCurve(input)
-                ModelKeyframe(time, value, easing, bezier)
-            }
+            val poseKeys = readPoseKeys(input)
             val camera = readCamera(input)
-            val cameraKeys = List(input.readInt().also { require(it in 0..200) }) {
-                val time = input.readLong(); val value = readCamera(input); val (easing, bezier) = readCurve(input)
-                OrbitCameraKeyframe(time, value, easing, bezier)
-            }
+            val cameraKeys = readCameraKeys(input)
             val environment = Environment3D(
                 preset = StudioPreset.entries[input.readInt().coerceIn(StudioPreset.entries.indices)],
                 environmentPath = input.readUTF(),
@@ -61,7 +91,22 @@ internal object Scene3DCodec {
                 shadows = input.readBoolean(),
             )
             val play = input.readBoolean(); val speed = input.readFloat()
-            Scene3DClip(id, name, modelPath, startUs, endUs, pose, poseKeys, camera, cameraKeys, environment, play, speed)
+            var modelParent: String? = null; var cameraParent: String? = null
+            var nulls = emptyList<Null3D>(); var shots = emptyList<CameraShot>()
+            if (version >= 2) {
+                modelParent = readOptional(input); cameraParent = readOptional(input)
+                nulls = List(input.readInt().also { require(it in 0..MAX_SCENE_NULLS) }) {
+                    val nullId = input.readUTF(); val nullName = input.readUTF(); val parent = readOptional(input)
+                    Null3D(nullId, nullName, readPose(input), readPoseKeys(input), parent)
+                }
+                shots = List(input.readInt().also { require(it in 0..MAX_CAMERA_SHOTS) }) {
+                    val shotId = input.readUTF(); val shotName = input.readUTF(); val parent = readOptional(input)
+                    val shotStart = input.readLong(); val shotEnd = input.readLong()
+                    CameraShot(shotId, shotName, shotStart, shotEnd, readCamera(input), readCameraKeys(input), parent)
+                }
+            }
+            Scene3DClip(id, name, modelPath, startUs, endUs, pose, poseKeys, camera, cameraKeys, environment, play, speed,
+                nulls, modelParent, cameraParent, shots)
         }
         return project.copy(scenes3D = scenes)
     }

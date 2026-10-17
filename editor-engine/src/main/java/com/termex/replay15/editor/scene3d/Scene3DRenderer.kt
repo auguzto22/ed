@@ -37,6 +37,7 @@ import com.google.android.filament.utils.HDRLoader
 import com.google.android.filament.utils.IBLPrefilterContext
 import com.google.android.filament.utils.Utils
 import com.termex.replay15.editor.domain.Environment3D
+import com.termex.replay15.editor.domain.MODEL_TARGET
 import com.termex.replay15.editor.domain.Scene3DClip
 import com.termex.replay15.editor.domain.StudioPreset
 import com.termex.replay15.editor.domain.ToneMapping
@@ -214,8 +215,7 @@ class Scene3DRenderer : AutoCloseable {
             }
             val env = clip.environment
             val local = clip.localTime(projectTimeUs)
-            val pose = clip.poseAt(local)
-            val orbit = clip.cameraAt(local)
+            val objectMatrix = clip.objectMatrix(MODEL_TARGET, local)
             val stage = env.lightRotation
 
             // Contents of the scene for this layer.
@@ -228,8 +228,8 @@ class Scene3DRenderer : AutoCloseable {
             scene.addEntity(sun); inScene += sun
 
             val tm = engine.transformManager
-            tm.setTransform(tm.getInstance(model.main.root), SceneLayout.world(pose, model.normalization, stage, false, world))
-            tm.setTransform(tm.getInstance(model.mirror.root), SceneLayout.world(pose, model.normalization, stage, true, mirrorMatrix))
+            tm.setTransform(tm.getInstance(model.main.root), SceneLayout.world(objectMatrix, model.normalization, stage, false, world))
+            tm.setTransform(tm.getInstance(model.mirror.root), SceneLayout.world(objectMatrix, model.normalization, stage, true, mirrorMatrix))
             floorAsset?.let { tm.setTransform(tm.getInstance(it.root), SceneLayout.floor(FLOOR_RADIUS, floorMatrix)) }
 
             if (model.animationCount > 0) {
@@ -278,8 +278,9 @@ class Scene3DRenderer : AutoCloseable {
             view.setAntiAliasing(View.AntiAliasing.FXAA)
             renderer.setClearOptions(Renderer.ClearOptions().apply { clear = true; setClearColor(0.0, 0.0, 0.0, 0.0) })
 
-            val (eye, centre, up) = SceneLayout.camera(orbit, stage)
-            camera.setLensProjection(orbit.focalLength.toDouble(), width.toDouble() / height, NEAR, FAR)
+            // The camera on air: the main camera or the shot that cuts in at this time, with its parents.
+            val (eye, centre, up) = SceneLayout.camera(clip.worldCamera(local), stage)
+            camera.setLensProjection(clip.focalLengthAt(local).toDouble(), width.toDouble() / height, NEAR, FAR)
             camera.lookAt(eye[0], eye[1], eye[2], centre[0], centre[1], centre[2], up[0], up[1], up[2])
             camera.setExposure(16f, 1f / 125f, 100f * 2f.pow(env.exposure))
 

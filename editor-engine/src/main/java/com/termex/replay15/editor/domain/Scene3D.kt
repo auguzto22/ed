@@ -14,8 +14,16 @@ import kotlin.math.sqrt
  * its animation intact.
  */
 const val MAX_SCENES_3D = 8
-private const val MAX_SCENE_KEYFRAMES = 200
+/** Large enough for a Real Camera recording (about 3 minutes at 20 samples per second). */
+const val MAX_SCENE_KEYFRAMES = 4000
+const val MAX_SCENE_NULLS = 16
+const val MAX_CAMERA_SHOTS = 16
+/** Target id of the model itself (nulls use their own ids). */
+const val MODEL_TARGET = "model"
+/** Camera id of the scene's main camera (shots use their own ids). */
+const val MAIN_CAMERA = "main"
 private const val NEARBY_KEY_US = 20_000L
+private val SCENE_ID = Regex("[a-zA-Z0-9-]{1,80}")
 
 enum class StudioPreset(val label: String) {
     NEUTRAL("Estúdio neutro"),
@@ -158,7 +166,7 @@ data class OrbitCamera(
     }
 
     companion object {
-        const val MIN_PITCH = -10f
+        const val MIN_PITCH = -85f
         const val MAX_PITCH = 85f
         const val MIN_DISTANCE = .3f
         const val MAX_DISTANCE = 200f
@@ -168,6 +176,69 @@ data class OrbitCamera(
 }
 
 class CameraBasis(val eye: FloatArray, val target: FloatArray, val up: FloatArray)
+
+/**
+ * The orbit camera that looks along [forward] from [eye] with [up], keeping [reference]'s
+ * distance and lens. Yaw is unwrapped next to [reference]'s yaw so recorded motion never jumps
+ * by a full turn. Pitch outside the orbit range is clamped.
+ */
+fun OrbitCamera.Companion.fromBasis(eye: FloatArray, forward: FloatArray, up: FloatArray, reference: OrbitCamera): OrbitCamera {
+    val f = normalize(forward)
+    val back = floatArrayOf(-f[0], -f[1], -f[2])
+    val pitch = Math.toDegrees(kotlin.math.asin(back[1].coerceIn(-1f, 1f).toDouble())).toFloat()
+        .coerceIn(OrbitCamera.MIN_PITCH, OrbitCamera.MAX_PITCH)
+    var yaw = Math.toDegrees(kotlin.math.atan2(back[0].toDouble(), back[2].toDouble())).toFloat()
+    var delta = (yaw - reference.yaw) % 360f
+    if (delta > 180f) delta -= 360f
+    if (delta < -180f) delta += 360f
+    yaw = angle(reference.yaw + delta)
+    val d = reference.distance
+    val target = floatArrayOf(position(eye[0] + f[0] * d), position(eye[1] + f[1] * d), position(eye[2] + f[2] * d))
+    val right = normalize(cross(f, floatArrayOf(0f, 1f, 0f)))
+    val up0 = cross(right, f)
+    val u = normalize(up)
+    val roll = Math.toDegrees(kotlin.math.atan2((u[0] * right[0] + u[1] * right[1] + u[2] * right[2]).toDouble(),
+        (u[0] * up0[0] + u[1] * up0[1] + u[2] * up0[2]).toDouble())).toFloat().coerceIn(-180f, 180f)
+    return reference.copy(yaw = yaw, pitch = pitch, targetX = target[0], targetY = target[1], targetZ = target[2], roll = roll)
+}
+
+/** A null object: an invisible, animatable transform that other objects can be attached to. */
+data class Null3D(
+    val id: String = newId(),
+    val name: String,
+    val pose: ModelPose = ModelPose(),
+    val poseKeyframes: List<ModelKeyframe> = emptyList(),
+    val parentId: String? = null,
+) {
+    init {
+        require(id.matches(SCENE_ID) && id != MODEL_TARGET && id != MAIN_CAMERA)
+        require(name.length in 1..80)
+        require(parentId != id)
+        require(poseKeyframes.size <= MAX_SCENE_KEYFRAMES && poseKeyframes.zipWithNext().all { (a, b) -> a.timeUs < b.timeUs })
+    }
+}
+
+/**
+ * An extra camera that takes over between [startUs] and [endUs] (scene-local). Overlapping
+ * shots: the one that starts later wins, so a shot placed inside another one cuts into it.
+ * Keyframe times are scene-local, like every other track of the scene.
+ */
+data class CameraShot(
+    val id: String = newId(),
+    val name: String,
+    val startUs: Long,
+    val endUs: Long,
+    val camera: OrbitCamera = OrbitCamera(),
+    val keyframes: List<OrbitCameraKeyframe> = emptyList(),
+    val parentId: String? = null,
+) {
+    init {
+        require(id.matches(SCENE_ID) && id != MAIN_CAMERA && id != MODEL_TARGET)
+        require(name.length in 1..80)
+        require(startUs >= 0L && endUs > startUs)
+        require(keyframes.size <= MAX_SCENE_KEYFRAMES && keyframes.zipWithNext().all { (a, b) -> a.timeUs < b.timeUs })
+    }
+}
 
 data class ModelKeyframe(
     val timeUs: Long,
@@ -198,9 +269,15 @@ data class Scene3DClip(
     /** Plays the model's first embedded glTF animation, looped. */
     val playAnimation: Boolean = true,
     val animationSpeed: Float = 1f,
+    val nulls: List<Null3D> = emptyList(),
+    /** Null the model is attached to, if any. */
+    val modelParentId: String? = null,
+    /** Null the main camera is attached to, if any. */
+    val cameraParentId: String? = null,
+    val cameraShots: List<CameraShot> = emptyList(),
 ) {
     init {
-        require(id.matches(Regex("[a-zA-Z0-9-]{1,80}")))
+        require(id.matches(SCENE_ID))
         require(name.length in 1..180)
         require(modelPath.length in 1..1000)
         require(startUs >= 0L && endUs > startUs)
@@ -208,43 +285,167 @@ data class Scene3DClip(
         require(poseKeyframes.zipWithNext().all { (a, b) -> a.timeUs < b.timeUs })
         require(cameraKeyframes.zipWithNext().all { (a, b) -> a.timeUs < b.timeUs })
         require(animationSpeed.isFinite() && animationSpeed in 0f..4f)
+        require(nulls.size <= MAX_SCENE_NULLS && nulls.map { it.id }.distinct().size == nulls.size) { "Nulos repetidos" }
+        require(cameraShots.size <= MAX_CAMERA_SHOTS && cameraShots.map { it.id }.distinct().size == cameraShots.size) { "Câmeras repetidas" }
+        val nullIds = nulls.mapTo(HashSet()) { it.id }
+        val parents = listOf(modelParentId, cameraParentId) + nulls.map { it.parentId } + cameraShots.map { it.parentId }
+        require(parents.all { it == null || it in nullIds }) { "Vínculo com um nulo que não existe" }
+        val parentOf = nulls.associate { it.id to it.parentId }
+        nulls.forEach { start ->
+            var current = start.parentId
+            var steps = 0
+            while (current != null) {
+                require(current != start.id && steps++ <= MAX_SCENE_NULLS) { "Vínculo circular entre nulos" }
+                current = parentOf[current]
+            }
+        }
     }
 
     val durationUs: Long get() = endUs - startUs
+
+    // -------------------------------------------------------------------------------------
+    // Objects (the model or a null) and their hierarchy
+    // -------------------------------------------------------------------------------------
+    fun nullById(id: String): Null3D? = nulls.firstOrNull { it.id == id }
+
+    fun parentOf(target: String): String? = if (target == MODEL_TARGET) modelParentId else nullById(target)?.parentId
+
+    fun poseBase(target: String): ModelPose = if (target == MODEL_TARGET) pose else requireNotNull(nullById(target)).pose
+
+    fun poseKeys(target: String): List<ModelKeyframe> = if (target == MODEL_TARGET) poseKeyframes else requireNotNull(nullById(target)).poseKeyframes
+
+    fun poseAt(target: String, localUs: Long): ModelPose = interpolate(poseKeys(target), localUs, poseBase(target), ModelKeyframe::timeUs,
+        ModelKeyframe::pose, ModelKeyframe::easing, ModelKeyframe::bezier) { a, b, t -> a.mix(b, t) }
+
+    fun withPoseTrack(target: String, base: ModelPose, keys: List<ModelKeyframe>): Scene3DClip =
+        if (target == MODEL_TARGET) copy(pose = base, poseKeyframes = keys)
+        else copy(nulls = nulls.map { if (it.id == target) it.copy(pose = base, poseKeyframes = keys) else it }.also {
+            require(nulls.any { n -> n.id == target }) { "Nulo não encontrado" }
+        })
+
+    /** Attaches [target] (the model, a null or a camera) to [parentId], or detaches it with null. */
+    fun withParent(target: String, parentId: String?): Scene3DClip = when {
+        target == MODEL_TARGET -> copy(modelParentId = parentId)
+        target == MAIN_CAMERA -> copy(cameraParentId = parentId)
+        cameraShots.any { it.id == target } -> copy(cameraShots = cameraShots.map { if (it.id == target) it.copy(parentId = parentId) else it })
+        else -> copy(nulls = nulls.map { if (it.id == target) it.copy(parentId = parentId) else it })
+    }
+
+    /** Nulls [target] may be attached to without creating a loop. */
+    fun eligibleParents(target: String): List<Null3D> = nulls.filter { candidate ->
+        var current: String? = candidate.id
+        var steps = 0
+        while (current != null && steps++ <= MAX_SCENE_NULLS) {
+            if (current == target) return@filter false
+            current = nullById(current)?.parentId
+        }
+        true
+    }
+
+    /** Matrix of [parentId]'s whole chain (identity for no parent), scene space, column-major. */
+    fun parentMatrix(parentId: String?, localUs: Long, out: FloatArray = FloatArray(16)): FloatArray {
+        Matrix4.setIdentity(out)
+        var current = parentId
+        val chain = ArrayList<String>(4)
+        while (current != null && chain.size <= MAX_SCENE_NULLS) { chain += current; current = nullById(current)?.parentId }
+        // Root first: M = P_root * ... * P_parent.
+        for (index in chain.indices.reversed()) Matrix4.multiply(out, out, poseAt(chain[index], localUs).toMatrix())
+        return out
+    }
+
+    /** Scene-space matrix of the model or a null (before the model's own normalization). */
+    fun objectMatrix(target: String, localUs: Long, out: FloatArray = FloatArray(16)): FloatArray {
+        parentMatrix(parentOf(target), localUs, out)
+        Matrix4.multiply(out, out, poseAt(target, localUs).toMatrix())
+        return out
+    }
+
+    // -------------------------------------------------------------------------------------
+    // Cameras: the main camera and the shots that cut over it
+    // -------------------------------------------------------------------------------------
+    fun shotById(id: String): CameraShot? = cameraShots.firstOrNull { it.id == id }
+
+    fun activeShot(localUs: Long): CameraShot? = cameraShots.filter { localUs in it.startUs until it.endUs }.maxByOrNull { it.startUs }
+
+    fun activeCameraId(localUs: Long): String = activeShot(localUs)?.id ?: MAIN_CAMERA
+
+    fun cameraBase(cameraId: String): OrbitCamera = if (cameraId == MAIN_CAMERA) camera else requireNotNull(shotById(cameraId)).camera
+
+    fun cameraKeys(cameraId: String): List<OrbitCameraKeyframe> = if (cameraId == MAIN_CAMERA) cameraKeyframes else requireNotNull(shotById(cameraId)).keyframes
+
+    fun cameraParentOf(cameraId: String): String? = if (cameraId == MAIN_CAMERA) cameraParentId else shotById(cameraId)?.parentId
+
+    fun cameraAt(cameraId: String, localUs: Long): OrbitCamera = interpolate(cameraKeys(cameraId), localUs, cameraBase(cameraId),
+        OrbitCameraKeyframe::timeUs, OrbitCameraKeyframe::camera, OrbitCameraKeyframe::easing, OrbitCameraKeyframe::bezier) { a, b, t -> a.mix(b, t) }
+
+    fun withCameraTrack(cameraId: String, base: OrbitCamera, keys: List<OrbitCameraKeyframe>): Scene3DClip =
+        if (cameraId == MAIN_CAMERA) copy(camera = base, cameraKeyframes = keys)
+        else copy(cameraShots = cameraShots.map { if (it.id == cameraId) it.copy(camera = base, keyframes = keys) else it }.also {
+            require(cameraShots.any { s -> s.id == cameraId }) { "Câmera não encontrada" }
+        })
+
+    /** Eye, target and up of the camera that is on air at [localUs], in scene space. */
+    fun worldCamera(localUs: Long): CameraBasis {
+        val id = activeCameraId(localUs)
+        val local = cameraAt(id, localUs).basis()
+        val parent = cameraParentOf(id) ?: return local
+        val m = parentMatrix(parent, localUs)
+        fun point(v: FloatArray) = Matrix4.transformPoint(m, v[0], v[1], v[2], 1f).copyOf(3)
+        val up = Matrix4.transformPoint(m, local.up[0], local.up[1], local.up[2], 0f).copyOf(3)
+        return CameraBasis(point(local.eye), point(local.target), normalize(up))
+    }
+
+    /** Lens of the camera that is on air at [localUs]. */
+    fun focalLengthAt(localUs: Long): Float = cameraAt(activeCameraId(localUs), localUs).focalLength
 
     fun isActiveAt(projectTimeUs: Long): Boolean = projectTimeUs in startUs until endUs
 
     /** Time inside the layer, clamped to its range. */
     fun localTime(projectTimeUs: Long): Long = (projectTimeUs - startUs).coerceIn(0L, durationUs)
 
-    fun poseAt(localUs: Long): ModelPose = interpolate(poseKeyframes, localUs, pose, ModelKeyframe::timeUs,
-        ModelKeyframe::pose, ModelKeyframe::easing, ModelKeyframe::bezier) { a, b, t -> a.mix(b, t) }
+    /** Pose of the model. */
+    fun poseAt(localUs: Long): ModelPose = poseAt(MODEL_TARGET, localUs)
 
-    fun cameraAt(localUs: Long): OrbitCamera = interpolate(cameraKeyframes, localUs, camera, OrbitCameraKeyframe::timeUs,
-        OrbitCameraKeyframe::camera, OrbitCameraKeyframe::easing, OrbitCameraKeyframe::bezier) { a, b, t -> a.mix(b, t) }
+    /** The main camera (shots excluded). */
+    fun cameraAt(localUs: Long): OrbitCamera = cameraAt(MAIN_CAMERA, localUs)
 
     /** Seconds of embedded animation to show at [localUs]; the renderer loops it over its length. */
     fun animationSeconds(localUs: Long): Float = if (!playAnimation) 0f else localUs / 1_000_000f * animationSpeed
 
     /** True when consecutive frames of this layer can differ, so they must be re-rendered. */
     val isAnimated: Boolean
-        get() = poseKeyframes.size > 1 || cameraKeyframes.size > 1 || (playAnimation && animationSpeed > 0f)
+        get() = poseKeyframes.size > 1 || cameraKeyframes.size > 1 || (playAnimation && animationSpeed > 0f) ||
+            cameraShots.isNotEmpty() || nulls.any { it.poseKeyframes.size > 1 }
 
     /** Writes [state] as a pose keyframe at [localUs], replacing one within 20 ms and keeping its curve. */
-    fun withPoseKey(localUs: Long, state: ModelPose, easing: Easing? = null): Scene3DClip {
+    fun withPoseKey(localUs: Long, state: ModelPose, easing: Easing? = null, target: String = MODEL_TARGET): Scene3DClip {
         require(localUs >= 0L)
-        val nearby = poseKeyframes.minByOrNull { abs(it.timeUs - localUs) }?.takeIf { abs(it.timeUs - localUs) <= NEARBY_KEY_US }
-        require(nearby != null || poseKeyframes.size < MAX_SCENE_KEYFRAMES) { "Limite de $MAX_SCENE_KEYFRAMES pontos" }
+        val keys = poseKeys(target)
+        val nearby = keys.minByOrNull { abs(it.timeUs - localUs) }?.takeIf { abs(it.timeUs - localUs) <= NEARBY_KEY_US }
+        require(nearby != null || keys.size < MAX_SCENE_KEYFRAMES) { "Limite de $MAX_SCENE_KEYFRAMES pontos" }
         val key = ModelKeyframe(nearby?.timeUs ?: localUs, state, easing ?: nearby?.easing ?: Easing.SMOOTH, nearby?.bezier ?: CubicBezier())
-        return copy(poseKeyframes = (poseKeyframes.filterNot { it === nearby } + key).sortedBy { it.timeUs })
+        return withPoseTrack(target, poseBase(target), (keys.filterNot { it === nearby } + key).sortedBy { it.timeUs })
     }
 
-    fun withCameraKey(localUs: Long, state: OrbitCamera, easing: Easing? = null): Scene3DClip {
+    fun withCameraKey(localUs: Long, state: OrbitCamera, easing: Easing? = null, cameraId: String = MAIN_CAMERA): Scene3DClip {
         require(localUs >= 0L)
-        val nearby = cameraKeyframes.minByOrNull { abs(it.timeUs - localUs) }?.takeIf { abs(it.timeUs - localUs) <= NEARBY_KEY_US }
-        require(nearby != null || cameraKeyframes.size < MAX_SCENE_KEYFRAMES) { "Limite de $MAX_SCENE_KEYFRAMES pontos" }
+        val keys = cameraKeys(cameraId)
+        val nearby = keys.minByOrNull { abs(it.timeUs - localUs) }?.takeIf { abs(it.timeUs - localUs) <= NEARBY_KEY_US }
+        require(nearby != null || keys.size < MAX_SCENE_KEYFRAMES) { "Limite de $MAX_SCENE_KEYFRAMES pontos" }
         val key = OrbitCameraKeyframe(nearby?.timeUs ?: localUs, state, easing ?: nearby?.easing ?: Easing.SMOOTH, nearby?.bezier ?: CubicBezier())
-        return copy(cameraKeyframes = (cameraKeyframes.filterNot { it === nearby } + key).sortedBy { it.timeUs })
+        return withCameraTrack(cameraId, cameraBase(cameraId), (keys.filterNot { it === nearby } + key).sortedBy { it.timeUs })
+    }
+
+    /**
+     * Writes a recorded take: every key of [cameraId] from [fromUs] to [toUs] is replaced by
+     * [recorded] (scene-local, strictly increasing, inside that range); the rest is untouched.
+     */
+    fun withCameraRecording(cameraId: String, fromUs: Long, toUs: Long, recorded: List<OrbitCameraKeyframe>): Scene3DClip {
+        require(fromUs in 0L..toUs) { "Trecho de gravação inválido" }
+        require(recorded.all { it.timeUs in fromUs..toUs } && recorded.zipWithNext().all { (a, b) -> a.timeUs < b.timeUs }) { "Gravação fora de ordem" }
+        val outside = cameraKeys(cameraId).filter { it.timeUs < fromUs || it.timeUs > toUs }
+        require(outside.size + recorded.size <= MAX_SCENE_KEYFRAMES) { "Limite de $MAX_SCENE_KEYFRAMES pontos" }
+        return withCameraTrack(cameraId, cameraBase(cameraId), (outside + recorded).sortedBy { it.timeUs })
     }
 
     /** Moves the layer so it starts at [newStartUs], keeping its length. */
@@ -252,6 +453,65 @@ data class Scene3DClip(
 
     /** Changes the length; keyframes after the new end are kept but simply never reached. */
     fun withDuration(newDurationUs: Long): Scene3DClip = copy(endUs = startUs + newDurationUs.coerceAtLeast(MIN_SCENE_DURATION_US))
+
+    /**
+     * Timeline edit: the same length moves the layer with its animation; a different length
+     * trims it, and the animation stays where it was in the project (like trimming a clip), so
+     * moving the start only cuts or reveals the beginning.
+     */
+    fun retimed(newStartUs: Long, newEndUs: Long): Scene3DClip {
+        val start = newStartUs.coerceAtLeast(0L)
+        val end = newEndUs.coerceAtLeast(start + MIN_SCENE_DURATION_US)
+        if (end - start == durationUs) return movedTo(start)
+        val shift = start - startUs
+        return shiftedBy(shift).copy(startUs = start, endUs = end)
+    }
+
+    /**
+     * Timeline edit of a camera cut (scene-local times, kept inside the scene): the same length
+     * moves the cut with its keyframes; a different length trims it and the keyframes stay.
+     */
+    fun withShotTiming(shotId: String, newStartUs: Long, newEndUs: Long): Scene3DClip {
+        val shot = requireNotNull(shotById(shotId)) { "Câmera não encontrada" }
+        val length = (newEndUs - newStartUs).coerceIn(MIN_SCENE_DURATION_US, durationUs)
+        val start = newStartUs.coerceIn(0L, durationUs - length)
+        val end = start + length
+        val delta = start - shot.startUs
+        val keys = if (length == shot.endUs - shot.startUs && delta != 0L) {
+            shot.keyframes.map { it.copy(timeUs = (it.timeUs + delta).coerceAtLeast(0L)) }.distinctBy { it.timeUs }
+        } else shot.keyframes
+        return copy(cameraShots = cameraShots.map { if (it.id == shotId) it.copy(startUs = start, endUs = end, keyframes = keys) else it })
+    }
+
+    /** Moves every scene-local time by -[shiftUs]; what falls before 0 is folded into a key at 0. */
+    private fun shiftedBy(shiftUs: Long): Scene3DClip {
+        if (shiftUs == 0L) return this
+        fun poseTrack(target: String): List<ModelKeyframe> {
+            val keys = poseKeys(target)
+            if (keys.isEmpty()) return keys
+            val kept = keys.filter { it.timeUs >= shiftUs }.map { it.copy(timeUs = it.timeUs - shiftUs) }
+            val dropped = keys.lastOrNull { it.timeUs < shiftUs } ?: return kept
+            // The pose at the new start becomes the first key, so the animation does not jump.
+            return listOf(ModelKeyframe(0L, poseAt(target, shiftUs), dropped.easing, dropped.bezier)) + kept.filter { it.timeUs > 0L }
+        }
+        fun cameraTrack(cameraId: String): List<OrbitCameraKeyframe> {
+            val keys = cameraKeys(cameraId)
+            if (keys.isEmpty()) return keys
+            val kept = keys.filter { it.timeUs >= shiftUs }.map { it.copy(timeUs = it.timeUs - shiftUs) }
+            val dropped = keys.lastOrNull { it.timeUs < shiftUs } ?: return kept
+            return listOf(OrbitCameraKeyframe(0L, cameraAt(cameraId, shiftUs), dropped.easing, dropped.bezier)) + kept.filter { it.timeUs > 0L }
+        }
+        return copy(
+            poseKeyframes = poseTrack(MODEL_TARGET),
+            cameraKeyframes = cameraTrack(MAIN_CAMERA),
+            nulls = nulls.map { it.copy(poseKeyframes = poseTrack(it.id)) },
+            cameraShots = cameraShots.mapNotNull { shot ->
+                val end = shot.endUs - shiftUs
+                if (end <= 0L) null
+                else shot.copy(startUs = (shot.startUs - shiftUs).coerceAtLeast(0L), endUs = end, keyframes = cameraTrack(shot.id))
+            },
+        )
+    }
 
     companion object {
         const val MIN_SCENE_DURATION_US = 300_000L
@@ -270,11 +530,17 @@ enum class SceneCameraMove(val label: String) {
 }
 
 object SceneCameraMoves {
-    fun apply(clip: Scene3DClip, move: SceneCameraMove, fromLocalUs: Long = 0L): Scene3DClip {
-        val start = fromLocalUs.coerceIn(0L, clip.durationUs)
-        val end = clip.durationUs
-        require(end - start >= Scene3DClip.MIN_SCENE_DURATION_US) { "Pouco tempo até o fim da camada" }
-        val base = clip.cameraAt(start)
+    /**
+     * Writes [move] into the track of [cameraId] from [fromLocalUs] to the end of that camera's
+     * range (the scene for the main camera, the shot for a shot).
+     */
+    fun apply(clip: Scene3DClip, move: SceneCameraMove, fromLocalUs: Long = 0L, cameraId: String = MAIN_CAMERA): Scene3DClip {
+        val shot = if (cameraId == MAIN_CAMERA) null else requireNotNull(clip.shotById(cameraId)) { "Câmera não encontrada" }
+        val rangeEnd = minOf(clip.durationUs, shot?.endUs ?: clip.durationUs)
+        val start = fromLocalUs.coerceIn(shot?.startUs ?: 0L, rangeEnd)
+        val end = rangeEnd
+        require(end - start >= Scene3DClip.MIN_SCENE_DURATION_US) { "Pouco tempo até o fim desta câmera" }
+        val base = clip.cameraAt(cameraId, start)
         val (from, to, easing) = when (move) {
             SceneCameraMove.TURNTABLE -> Triple(base, base.copy(yaw = angle(base.yaw + 360f)), Easing.LINEAR)
             SceneCameraMove.ORBIT_HALF -> Triple(base, base.copy(yaw = angle(base.yaw + 180f)), Easing.EASE_IN_OUT)
@@ -292,10 +558,11 @@ object SceneCameraMoves {
                 Triple(base, base.copy(distance = distance, focalLength = focal), Easing.EASE_IN_OUT)
             }
         }
-        val kept = clip.cameraKeyframes.filter { it.timeUs < start - NEARBY_KEY_US }
+        val existing = clip.cameraKeys(cameraId)
+        val kept = existing.filter { it.timeUs < start - NEARBY_KEY_US || it.timeUs > end + NEARBY_KEY_US }
         require(kept.size + 2 <= MAX_SCENE_KEYFRAMES) { "Limite de $MAX_SCENE_KEYFRAMES pontos" }
         val keys = kept + OrbitCameraKeyframe(start, from, easing) + OrbitCameraKeyframe(end, to, Easing.SMOOTH)
-        return clip.copy(cameraKeyframes = keys.sortedBy { it.timeUs })
+        return clip.withCameraTrack(cameraId, clip.cameraBase(cameraId), keys.sortedBy { it.timeUs })
     }
 }
 

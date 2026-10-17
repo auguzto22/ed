@@ -84,9 +84,9 @@ class Scene3DTest {
         val sorted = replaced.withPoseKey(0L, ModelPose()).withPoseKey(3 * second, ModelPose())
         assertEquals(listOf(0L, second, 3 * second), sorted.poseKeyframes.map { it.timeUs })
         var full = scene()
-        repeat(200) { full = full.withCameraKey(it * 25_000L, OrbitCamera()) }
-        assertTrue(runCatching { full.withCameraKey(9 * second, OrbitCamera()) }.isFailure)
-        assertEquals(200, full.withCameraKey(25_000L, OrbitCamera(yaw = 5f)).cameraKeyframes.size)
+        repeat(MAX_SCENE_KEYFRAMES) { full = full.withCameraKey(it * 25_000L, OrbitCamera()) }
+        assertTrue(runCatching { full.withCameraKey(MAX_SCENE_KEYFRAMES * 25_000L + second, OrbitCamera()) }.isFailure)
+        assertEquals(MAX_SCENE_KEYFRAMES, full.withCameraKey(25_000L, OrbitCamera(yaw = 5f)).cameraKeyframes.size)
     }
 
     @Test fun timingHelpers() {

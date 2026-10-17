@@ -52,6 +52,18 @@ class TimelineView(context: Context) : View(context) {
     var onLayerMove: (String, String, Long) -> Unit = { _, _, _ -> }
     var onLayerTrim: (String, VideoClip, Long, Long) -> Unit = { _, _, _, _ -> }
     var onTrack: (String) -> Unit = {}
+    /** 3D layers (lane type 5) and their camera cuts (lane type 6). Times are project time, shot times scene-local. */
+    var onScene3D: (String) -> Unit = {}
+    var onScene3DChange: (String, Long, Long) -> Unit = { _, _, _ -> }
+    var onScene3DPreviewChange: (String, Long, Long) -> Unit = { _, _, _ -> }
+    var onCameraShot: (String, String) -> Unit = { _, _ -> }
+    var onCameraShotChange: (String, String, Long, Long) -> Unit = { _, _, _, _ -> }
+    var onCameraShotPreviewChange: (String, String, Long, Long) -> Unit = { _, _, _, _ -> }
+    private class SceneDrag(val laneType: Int, val segmentId: String, val initialStart: Long, val initialEnd: Long,
+        val side: Int, val minStart: Long, val maxEnd: Long)
+    private var sceneDrag: SceneDrag? = null
+    private var sceneDraftStart: Long? = null
+    private var sceneDraftEnd: Long? = null
     var selectedLayerId: String? = null; set(value) { field = value; invalidate() }
     private var layerDrag: Pair<String, TimedVideoClip>? = null
     private var layerTrim = 0
@@ -181,7 +193,7 @@ class TimelineView(context: Context) : View(context) {
             val packed = mutableListOf<Lane>()
             segments.sortedBy { it.start }.forEach { s ->
                 val lane = packed.firstOrNull { it.segments.last().end <= s.start }
-                    ?: Lane("$prefix${packed.size + 1}", color, type, mutableListOf(), if (type == 1) TEXT_TRACK else STICKER_TRACK).also { packed += it }
+                    ?: Lane("$prefix${packed.size + 1}", color, type, mutableListOf(), when (type) { 1 -> TEXT_TRACK; 2 -> STICKER_TRACK; else -> "" }).also { packed += it }
                 lane.segments += s
             }
             result += packed
@@ -195,6 +207,14 @@ class TimelineView(context: Context) : View(context) {
             mutableListOf(Segment(a.id, a.name, a.startUs, min(project.durationUs, a.startUs + a.durationUs))), "audio:${a.id}") }
         pack(project.texts.map { Segment(it.id, it.text.replace('\n', ' '), it.startUs, it.endUs) }, "T", EditorStyle.TRACK_TEXT, 1)
         pack(project.stickers.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "L", EditorStyle.TRACK_STICKER, 2)
+        pack(project.scenes3D.map { Segment(it.id, it.name, it.startUs, it.endUs) }, "3D", TRACK_3D, 5)
+        project.scenes3D.filter { it.cameraShots.isNotEmpty() }.forEach { scene ->
+            pack(scene.cameraShots.mapNotNull { shot ->
+                val start = scene.startUs + shot.startUs
+                val end = scene.startUs + minOf(shot.endUs, scene.durationUs)
+                if (end > start) Segment(shotSegmentId(scene.id, shot.id), shot.name, start, end) else null
+            }, "C", TRACK_CAMERA, 6)
+        }
         lanes = result; vertical = vertical.coerceIn(0f, maxScroll())
     }
     private fun maxScroll() = max(0f, lanes.size * dp(39f) - (height - dp(140f)))
@@ -242,6 +262,10 @@ class TimelineView(context: Context) : View(context) {
             yieldAll(project.texts.filter { it.id != (textDrag?.first ?: "") }.flatMap { listOf(it.startUs, it.endUs) })
             yieldAll(project.stickers.filter { it.id != (stickerDrag?.first ?: "") }.flatMap { listOf(it.startUs, it.endUs) })
             yieldAll(project.audio.filter { it.id != (audioDrag?.first ?: "") }.flatMap { listOf(it.startUs, it.endUs) })
+            yieldAll(project.scenes3D.filter { it.id != sceneDrag?.segmentId }.flatMap { scene ->
+                listOf(scene.startUs, scene.endUs) + scene.cameraShots.filter { shotSegmentId(scene.id, it.id) != sceneDrag?.segmentId }
+                    .flatMap { listOf(scene.startUs + it.startUs, scene.startUs + it.endUs) }
+            })
             yieldAll(project.texts.flatMap { it.transformKeyframes.map { kf -> kf.timeUs } })
             yieldAll(project.stickers.flatMap { it.transformKeyframes.map { kf -> kf.timeUs } })
             yieldAll(project.audio.flatMap { it.volumeKeyframes.map { kf -> it.startUs + kf.timeUs } })
@@ -509,13 +533,16 @@ class TimelineView(context: Context) : View(context) {
                     val isCurrentStickerDragged = isStickerTrack && stickerDrag?.first == s.id
                     val isCurrentAudioDragged = isAudioTrack && audioDrag?.first == s.id
 
+                    val isCurrentSceneDragged = (lane.type == 5 || lane.type == 6) && sceneDrag?.laneType == lane.type && sceneDrag?.segmentId == s.id
                     val liveStart = when {
+                        isCurrentSceneDragged && sceneDraftStart != null -> sceneDraftStart!!
                         isCurrentTextDragged && textDraftStartUs != null -> textDraftStartUs!!
                         isCurrentStickerDragged && stickerDraftStartUs != null -> stickerDraftStartUs!!
                         isCurrentAudioDragged && audioDraftStartUs != null -> audioDraftStartUs!!
                         else -> s.start
                     }
                     val liveEnd = when {
+                        isCurrentSceneDragged && sceneDraftEnd != null -> sceneDraftEnd!!
                         isCurrentTextDragged && textDraftEndUs != null -> textDraftEndUs!!
                         isCurrentStickerDragged && stickerDraftEndUs != null -> stickerDraftEndUs!!
                         isCurrentAudioDragged -> {
@@ -655,6 +682,28 @@ class TimelineView(context: Context) : View(context) {
                             }
                         }
 
+                        if ((lane.type == 5 || lane.type == 6) && (s.id == selectedLayerId || isCurrentSceneDragged)) {
+                            drawSceneSelection(c, l, r, y, lane.color, isCurrentSceneDragged, liveStart, liveEnd, gutter)
+                        }
+                        if (lane.type == 5) {
+                            // Keyframes of the model and of the main camera, as on other layers.
+                            project.scenes3D.firstOrNull { it.id == s.id }?.let { scene ->
+                                val keys = (scene.poseKeyframes.map { it.timeUs } + scene.cameraKeyframes.map { it.timeUs }).distinct()
+                                    .filter { it in 0..scene.durationUs }
+                                // A recorded camera has thousands of points: draw at most one per 4 dp.
+                                var lastX = Float.NEGATIVE_INFINITY
+                                keys.sorted().forEach { key ->
+                                    val kx = x(liveStart + key)
+                                    if (kx < l - dp(4f) || kx > r + dp(4f) || kx - lastX < dp(4f)) return@forEach
+                                    lastX = kx
+                                    val cy = y + dp(17f)
+                                    paint.color = if (abs(kx - width / 2f) < dp(3f)) Color.WHITE else 0xCCFFFFFF.toInt()
+                                    c.save(); c.rotate(45f, kx, cy)
+                                    c.drawRect(kx - dp(3.5f), cy - dp(3.5f), kx + dp(3.5f), cy + dp(3.5f), paint)
+                                    c.restore()
+                                }
+                            }
+                        }
                         if (lane.type == 3 && s.id == selectedLayerId) {
                             paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = Color.WHITE
                             c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint); paint.style = Paint.Style.FILL
@@ -849,7 +898,8 @@ class TimelineView(context: Context) : View(context) {
                             }
                         }
                         paint.color = lane.color; c.drawRect(l, y + dp(6f), l + dp(2f), y + dp(27f), paint)
-                        val hasHandles = (isTextTrack || isStickerTrack || isAudioTrack) && (s.id == selectedLayerId || isCurrentTextDragged || isCurrentStickerDragged || isCurrentAudioDragged)
+                        val hasHandles = ((isTextTrack || isStickerTrack || isAudioTrack) && (s.id == selectedLayerId || isCurrentTextDragged || isCurrentStickerDragged || isCurrentAudioDragged)) ||
+                            ((lane.type == 5 || lane.type == 6) && (s.id == selectedLayerId || isCurrentSceneDragged))
                         val textPadStart = if (hasHandles) dp(16f) else 0f
                         val textPadEnd = if (hasHandles) dp(16f) else 0f
                         c.save(); c.clipRect(max(gutter, l + textPadStart), y, min(r - textPadEnd, width.toFloat()), y + dp(33f))
@@ -940,7 +990,13 @@ class TimelineView(context: Context) : View(context) {
                     },
                 )
 
-                when (val hit = com.termex.replay15.editor.ui.TimelineHitResolver.resolve(e.x, e.y, hitCtx)) {
+                sceneDrag = null; sceneDraftStart = null; sceneDraftEnd = null
+                val sceneHit = if (e.y >= dp(130f) && e.x >= dp(GUTTER_DP)) sceneHitAt(e.x, e.y) else null
+                if (sceneHit != null) {
+                    sceneDrag = sceneHit
+                    sceneDraftStart = sceneHit.initialStart; sceneDraftEnd = sceneHit.initialEnd
+                    if (sceneHit.side != 0) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                } else when (val hit = com.termex.replay15.editor.ui.TimelineHitResolver.resolve(e.x, e.y, hitCtx)) {
                     is com.termex.replay15.editor.ui.TimelineHitTarget.StickerTrimTarget -> {
                         val sticker = project.stickers.firstOrNull { it.id == hit.stickerId }
                         if (sticker != null) {
@@ -1111,6 +1167,7 @@ class TimelineView(context: Context) : View(context) {
                     val pressedSelected = downY in dp(48f)..dp(120f) && time(downX) in selectedStart..selectedEnd
 
                     gesture = when {
+                        sceneDrag != null && (sceneDrag!!.side != 0 || abs(e.x - downX) >= abs(e.y - downY)) -> 9
                         lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.KEYFRAME_DRAG -> 5
                         lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.TRIM_START || lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.TRIM_END -> 1
                         lockedTarget == com.termex.replay15.editor.ui.TimelineGestureLock.PLAYHEAD_GRAB -> 1
@@ -1130,6 +1187,30 @@ class TimelineView(context: Context) : View(context) {
                 if (gesture == 2) {
                     vertical = (vertical - (e.y - lastY)).coerceIn(0f, maxScroll())
                     invalidate()
+                } else if (gesture == 9) {
+                    sceneDrag?.let { drag ->
+                        selectedLayerId = drag.segmentId
+                        val shiftUs = (delta / pixelsPerSecond * SECOND).toLong()
+                        val minimum = MIN_SCENE_SEGMENT_US
+                        when (drag.side) {
+                            -1 -> {
+                                val target = snap((drag.initialStart + shiftUs).coerceIn(drag.minStart, drag.initialEnd - minimum))
+                                sceneDraftStart = target.coerceIn(drag.minStart, drag.initialEnd - minimum); sceneDraftEnd = drag.initialEnd
+                            }
+                            1 -> {
+                                val target = snap((drag.initialEnd + shiftUs).coerceIn(drag.initialStart + minimum, drag.maxEnd))
+                                sceneDraftStart = drag.initialStart; sceneDraftEnd = target.coerceIn(drag.initialStart + minimum, drag.maxEnd)
+                            }
+                            else -> {
+                                val length = drag.initialEnd - drag.initialStart
+                                val maxStart = (drag.maxEnd - length).coerceAtLeast(drag.minStart)
+                                val target = snap((drag.initialStart + shiftUs).coerceIn(drag.minStart, maxStart)).coerceIn(drag.minStart, maxStart)
+                                sceneDraftStart = target; sceneDraftEnd = target + length
+                            }
+                        }
+                        previewSceneDrag(drag)
+                        invalidate()
+                    }
                 } else if (gesture == 6) {
                     selectedLayerId = textDrag?.first
                     textDrag?.let { (textId, _) ->
@@ -1279,7 +1360,13 @@ class TimelineView(context: Context) : View(context) {
             MotionEvent.ACTION_UP -> {
                 val rawDelta = delta
                 if (!scaled && isDragging) {
-                    if (gesture == 7) {
+                    if (gesture == 9) {
+                        sceneDrag?.let { drag ->
+                            val start = sceneDraftStart ?: drag.initialStart; val end = sceneDraftEnd ?: drag.initialEnd
+                            if (start != drag.initialStart || end != drag.initialEnd) commitSceneDrag(drag, start, end)
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        }
+                    } else if (gesture == 7) {
                         stickerDrag?.let { (stickerId, _) ->
                             val finalStart = stickerDraftStartUs ?: stickerInitialStartUs
                             val finalEnd = stickerDraftEndUs ?: stickerInitialEndUs
@@ -1370,7 +1457,15 @@ class TimelineView(context: Context) : View(context) {
                     } else if (e.x < dp(40f) && downY >= dp(130f)) {
                         lanes.getOrNull(((downY - dp(132f) + vertical) / dp(39f)).toInt())?.let {
                             handledTap = true
-                            if (it.type == 4) it.segments.firstOrNull()?.let { segment -> onAdjustment(segment.id) } else onTrack(it.trackId)
+                            when {
+                                it.type == 4 -> it.segments.firstOrNull()?.let { segment -> onAdjustment(segment.id) }
+                                it.type == 5 -> it.segments.firstOrNull()?.let { segment -> selectedLayerId = segment.id; onScene3D(segment.id) }
+                                it.type == 6 -> it.segments.firstOrNull()?.let { segment ->
+                                    selectedLayerId = segment.id
+                                    val (sceneId, shotId) = splitShotSegment(segment.id); onCameraShot(sceneId, shotId)
+                                }
+                                it.trackId.isNotEmpty() -> onTrack(it.trackId)
+                            }
                         }
                     } else if (downY < dp(48f)) {
                         handledTap = true
@@ -1421,6 +1516,12 @@ class TimelineView(context: Context) : View(context) {
                                 }
                                 3 -> { selectedLayerId = s.id; onVideoLayer(lane.trackId, s.id) }
                                 4 -> onAdjustment(s.id)
+                                5 -> { selectedLayerId = s.id; onScene3D(s.id) }
+                                6 -> {
+                                    selectedLayerId = s.id
+                                    val (sceneId, shotId) = splitShotSegment(s.id)
+                                    onCameraShot(sceneId, shotId)
+                                }
                             }
                         }
                     }
@@ -1431,6 +1532,7 @@ class TimelineView(context: Context) : View(context) {
                 trimSide = 0; delta = 0f; keyframeDrag = null; keyframeDraftSourceUs = null
                 textDrag = null; textTrimSide = 0; textDraftStartUs = null; textDraftEndUs = null
                 stickerDrag = null; stickerTrimSide = 0; stickerDraftStartUs = null; stickerDraftEndUs = null
+                sceneDrag = null; sceneDraftStart = null; sceneDraftEnd = null
                 audioDrag = null; audioTrimSide = 0; audioFadeSide = 0; audioDraftStartUs = null; audioDraftInUs = null; audioDraftOutUs = null; audioDraftFadeInUs = null; audioDraftFadeOutUs = null
                 audioKeyframeDrag = null; audioKeyframeDraftTimeUs = null
                 isPlayheadGrabbed = false
@@ -1446,6 +1548,9 @@ class TimelineView(context: Context) : View(context) {
                 endScrubSession()
             }
             MotionEvent.ACTION_CANCEL -> {
+                // A cancelled 3D drag goes back to where it was.
+                sceneDrag?.let { drag -> if (isDragging) previewSceneDrag(drag, drag.initialStart, drag.initialEnd) }
+                sceneDrag = null; sceneDraftStart = null; sceneDraftEnd = null
                 trimSide = 0
                 delta = 0f
                 moveTarget = -1
@@ -1492,8 +1597,97 @@ class TimelineView(context: Context) : View(context) {
     override fun performClick(): Boolean { super.performClick(); return true }
     fun clearThumbnails() { thumbs.clear() }
     fun release() { thumbs.close(); waves.close() }
+    /** 3D bar under a touch in the lanes area: trim handles of the selected bar, else its body. */
+    private fun sceneHitAt(touchX: Float, touchY: Float): SceneDrag? {
+        val lane = lanes.getOrNull(((touchY - dp(132f) + vertical) / dp(39f)).toInt()) ?: return null
+        if (lane.type != 5 && lane.type != 6) return null
+        val touchTime = time(touchX)
+        val selectedSegment = lane.segments.firstOrNull { it.id == selectedLayerId }
+        val segment = selectedSegment?.takeIf { touchX in x(it.start) - dp(16f)..x(it.end) + dp(16f) }
+            ?: lane.segments.firstOrNull { touchTime in it.start until it.end } ?: return null
+        val (minStart, maxEnd) = if (lane.type == 5) 0L to project.durationUs else {
+            val sceneId = splitShotSegment(segment.id).first
+            val scene = project.scenes3D.firstOrNull { it.id == sceneId } ?: return null
+            scene.startUs to scene.endUs
+        }
+        val side = if (segment.id != selectedLayerId) 0 else {
+            val dStart = abs(touchX - x(segment.start)); val dEnd = abs(touchX - x(segment.end))
+            when {
+                dStart <= dp(16f) && dStart <= dEnd -> -1
+                dEnd <= dp(16f) -> 1
+                else -> 0
+            }
+        }
+        return SceneDrag(lane.type, segment.id, segment.start, segment.end, side, minStart, maxEnd)
+    }
+
+    private fun previewSceneDrag(drag: SceneDrag, start: Long = sceneDraftStart ?: drag.initialStart, end: Long = sceneDraftEnd ?: drag.initialEnd) {
+        if (drag.laneType == 5) onScene3DPreviewChange(drag.segmentId, start, end)
+        else {
+            val (sceneId, shotId) = splitShotSegment(drag.segmentId)
+            onCameraShotPreviewChange(sceneId, shotId, start - drag.minStart, end - drag.minStart)
+        }
+    }
+
+    private fun commitSceneDrag(drag: SceneDrag, start: Long, end: Long) {
+        if (drag.laneType == 5) onScene3DChange(drag.segmentId, start, end)
+        else {
+            val (sceneId, shotId) = splitShotSegment(drag.segmentId)
+            onCameraShotChange(sceneId, shotId, start - drag.minStart, end - drag.minStart)
+        }
+    }
+
+    private fun drawSceneSelection(c: Canvas, l: Float, r: Float, y: Float, color: Int, dragging: Boolean, liveStart: Long, liveEnd: Long, gutter: Float) {
+        paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2f); paint.color = color
+        c.drawRoundRect(l, y, r, y + dp(33f), dp(6f), dp(6f), paint)
+        paint.style = Paint.Style.FILL
+        val handleW = dp(14f).coerceAtMost((r - l) / 2f)
+        if (handleW >= dp(6f)) {
+            for (left in listOf(true, false)) {
+                c.save()
+                if (left) c.clipRect(l, y, l + handleW, y + dp(33f)) else c.clipRect(r - handleW, y, r, y + dp(33f))
+                paint.color = Color.WHITE
+                if (left) c.drawRoundRect(l, y, l + handleW * 2f, y + dp(33f), dp(6f), dp(6f), paint)
+                else c.drawRoundRect(r - handleW * 2f, y, r, y + dp(33f), dp(6f), dp(6f), paint)
+                paint.color = 0xFF121213.toInt(); paint.strokeWidth = dp(1.5f); paint.style = Paint.Style.STROKE
+                val edge = if (left) l + dp(4f) else r - dp(4f)
+                c.drawLine(edge, y + dp(9f), edge, y + dp(24f), paint)
+                val tip = if (left) l + dp(10.5f) else r - dp(10.5f)
+                val base = if (left) l + dp(6.5f) else r - dp(6.5f)
+                c.drawPath(Path().apply { moveTo(base, y + dp(12f)); lineTo(tip, y + dp(16.5f)); lineTo(base, y + dp(21f)) }, paint)
+                paint.style = Paint.Style.FILL
+                c.restore()
+            }
+        }
+        if (dragging && isDragging && gesture == 9) {
+            val fps = project.export.fps.coerceAtLeast(1)
+            val drag = sceneDrag
+            val label = when (drag?.side) {
+                -1 -> "IN  ${formatTimecodeFrames(liveStart, fps)}"
+                1 -> "OUT  ${formatTimecodeFrames(liveEnd, fps)}  (DUR ${formatTimecodeFrames(liveEnd - liveStart, fps)})"
+                else -> "IN ${formatTimecodeFrames(liveStart, fps)} - OUT ${formatTimecodeFrames(liveEnd, fps)}"
+            }
+            paint.textSize = dp(10.5f); paint.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+            val textW = paint.measureText(label)
+            val badgeX = (l + (r - l - textW) / 2f).coerceIn(gutter + dp(8f), width - textW - dp(20f))
+            val badgeY = if (y - dp(18f) >= dp(130f)) y - dp(6f) else y + dp(48f)
+            paint.color = 0xEE121213.toInt(); paint.style = Paint.Style.FILL
+            c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
+            paint.color = color; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(1f)
+            c.drawRoundRect(badgeX - dp(6f), badgeY - dp(13f), badgeX + textW + dp(6f), badgeY + dp(5f), dp(5f), dp(5f), paint)
+            paint.style = Paint.Style.FILL; paint.color = Color.WHITE
+            c.drawText(label, badgeX, badgeY, paint)
+        }
+    }
+
     private companion object {
         /** Left gutter: narrow, only for layer tags and the main-track header tap. */
         const val GUTTER_DP = 26f
+        const val TRACK_3D = 0xFFB18CFF.toInt()
+        const val TRACK_CAMERA = 0xFF4FD1C5.toInt()
+        const val MIN_SCENE_SEGMENT_US = 300_000L
+
+        fun shotSegmentId(sceneId: String, shotId: String) = "$sceneId|$shotId"
+        fun splitShotSegment(id: String): Pair<String, String> = id.substringBefore('|') to id.substringAfter('|')
     }
 }

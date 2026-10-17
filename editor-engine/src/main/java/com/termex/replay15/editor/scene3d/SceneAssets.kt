@@ -173,14 +173,18 @@ object SceneLayout {
      * the whole stage (model, floor and camera) inside a fixed environment, which keeps the
      * backdrop, the reflections and the key light's shadows in agreement.
      */
-    fun world(pose: ModelPose, normalization: FloatArray, stageDegrees: Float, mirror: Boolean, out: FloatArray = FloatArray(16)): FloatArray {
+    fun world(objectMatrix: FloatArray, normalization: FloatArray, stageDegrees: Float, mirror: Boolean, out: FloatArray = FloatArray(16)): FloatArray {
         Matrix4.setIdentity(out)
         Matrix4.rotateY(out, stageDegrees)
         if (mirror) Matrix4.scale(out, 1f, -1f, 1f)
-        Matrix4.multiply(out, out, pose.toMatrix())
+        Matrix4.multiply(out, out, objectMatrix)
         Matrix4.multiply(out, out, normalization)
         return out
     }
+
+    /** Convenience for a model without parents. */
+    fun world(pose: ModelPose, normalization: FloatArray, stageDegrees: Float, mirror: Boolean, out: FloatArray = FloatArray(16)): FloatArray =
+        world(pose.toMatrix(), normalization, stageDegrees, mirror, out)
 
     fun floor(radius: Float, out: FloatArray = FloatArray(16)): FloatArray {
         Matrix4.setIdentity(out)
@@ -189,8 +193,10 @@ object SceneLayout {
     }
 
     /** Camera eye/target/up for [camera], turned with the stage. */
-    fun camera(camera: OrbitCamera, stageDegrees: Float): Array<DoubleArray> {
-        val basis = camera.basis()
+    fun camera(camera: OrbitCamera, stageDegrees: Float): Array<DoubleArray> = camera(camera.basis(), stageDegrees)
+
+    /** Camera eye/target/up for a scene-space [basis], turned with the stage. */
+    fun camera(basis: com.termex.replay15.editor.domain.CameraBasis, stageDegrees: Float): Array<DoubleArray> {
         val rotation = FloatArray(16).also { Matrix4.setIdentity(it); Matrix4.rotateY(it, stageDegrees) }
         fun turn(v: FloatArray, w: Float): DoubleArray {
             val p = Matrix4.transformPoint(rotation, v[0], v[1], v[2], w)

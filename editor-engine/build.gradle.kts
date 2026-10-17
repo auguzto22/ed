@@ -72,6 +72,8 @@ dependencies {
     implementation("com.google.android.filament:filament-android:1.77.2")
     implementation("com.google.android.filament:gltfio-android:1.77.2")
     implementation("com.google.android.filament:filament-utils-android:1.77.2")
+    // Real Camera: 6DoF phone tracking (ARCore is installed from Google Play only when used).
+    implementation("com.google.ar:core:1.56.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
