@@ -164,7 +164,10 @@ class EditorPreviewEngine(
         projectSnapshot=ProjectSnapshot(++projectRevision,next);audio.updateTimeline(projectSnapshot,resolver);clock.setDuration(next.durationUs)
         when(kind){
             EditorChangeClassifier.ChangeKind.RENDER_ONLY->{redraw()}
-            EditorChangeClassifier.ChangeKind.TIMELINE_MAPPING,EditorChangeClassifier.ChangeKind.DECODER_SEEK,EditorChangeClassifier.ChangeKind.ACTIVE_SOURCE,EditorChangeClassifier.ChangeKind.STRUCTURAL_LAYER->request(clock.positionUs(),SeekMailbox.Mode.PRECISE,true)
+            EditorChangeClassifier.ChangeKind.TIMELINE_MAPPING,EditorChangeClassifier.ChangeKind.DECODER_SEEK,EditorChangeClassifier.ChangeKind.ACTIVE_SOURCE,EditorChangeClassifier.ChangeKind.STRUCTURAL_LAYER->
+                // Enquanto um controle é arrastado (curva de velocidade, por exemplo), cada rascunho
+                // vira uma busca rápida; a precisa vem no endScrub ao soltar.
+                request(clock.positionUs(),if(scrubbing)SeekMailbox.Mode.FAST_SCRUB else SeekMailbox.Mode.PRECISE,true)
         }
     }
     fun seek(targetUs:Long){

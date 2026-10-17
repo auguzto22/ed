@@ -429,10 +429,10 @@ data class VideoClip(
     val mimeType: String = "",
     val proxyUri: String? = null,
     /**
-     * Frame-interpolated render of a slowed-down clip, produced in the background by
-     * [com.termex.replay15.editor.motion.SmoothSlowMoCache]. Like [proxyUri] this is a
-     * preview-only artifact: it is never persisted and export always reads [uri], so the
-     * original media is never replaced.
+     * Legado: arquivo interpolado do antigo "Movimento suave" (gerado em segundo plano). Nunca
+     * foi salvo no projeto e não é mais lido pela prévia nem pela exportação — a câmera lenta é
+     * sintetizada ao vivo pela GPU ([com.termex.replay15.editor.speed.SlowMotionMode]). Fica só
+     * para não quebrar quem ainda constrói clipes com ele.
      */
     val derivedUri: String? = null,
     val is3D: Boolean = false,
